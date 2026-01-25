@@ -26,6 +26,9 @@ export const Controls = () => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [showLayersPanel, setShowLayersPanel] = React.useState(false);
   const [uiFocusLayer, setUiFocusLayer] = React.useState(0);
+  const [svgExportOpen, setSvgExportOpen] = React.useState(false);
+  const [showComplexityWarning, setShowComplexityWarning] = React.useState(false);
+  const [pendingExportFormat, setPendingExportFormat] = React.useState<'svg' | 'svgz' | null>(null);
 
   // Sync uiFocusLayer with state when locked
   React.useEffect(() => {
@@ -35,6 +38,61 @@ export const Controls = () => {
   }, [state.postProcessing.focusTargetLayer]);
   
   const getActiveZ = (layerIndex: number) => layerIndex * -BASE_DEPTH_STEP;
+
+  // Calculate scene complexity
+  const getSceneComplexity = React.useCallback(() => {
+    let totalShapes = 0;
+    let visibleLayers = 0;
+    
+    if (state.shapes) {
+      // Count total shapes, excluding hidden layers
+      totalShapes = state.shapes.filter(shape => {
+        return !state.hiddenLayers.includes(shape.zIndex);
+      }).length;
+      
+      // Count visible layers
+      const layersWithShapes = new Set(state.shapes.map(s => s.zIndex));
+      visibleLayers = Array.from(layersWithShapes).filter(
+        layerIndex => !state.hiddenLayers.includes(layerIndex)
+      ).length;
+    }
+    
+    return { totalShapes, visibleLayers };
+  }, [state.shapes, state.hiddenLayers]);
+
+  // Complexity threshold (shapes count that triggers warning)
+  const COMPLEXITY_THRESHOLD = 800;
+
+  // Handle export request with complexity check
+  const handleExportRequest = React.useCallback((format: 'svg' | 'svgz') => {
+    const { totalShapes } = getSceneComplexity();
+    
+    if (totalShapes > COMPLEXITY_THRESHOLD) {
+      // Scene is complex, show warning
+      setPendingExportFormat(format);
+      setShowComplexityWarning(true);
+      setSvgExportOpen(false);
+    } else {
+      // Scene is simple enough, proceed directly
+      dispatch({ type: 'REQUEST_EXPORT', payload: format });
+      setSvgExportOpen(false);
+    }
+  }, [getSceneComplexity, dispatch]);
+
+  // Proceed with export after user confirms warning
+  const handleProceedWithExport = React.useCallback(() => {
+    if (pendingExportFormat) {
+      dispatch({ type: 'REQUEST_EXPORT', payload: pendingExportFormat });
+    }
+    setShowComplexityWarning(false);
+    setPendingExportFormat(null);
+  }, [pendingExportFormat, dispatch]);
+
+  // Cancel export
+  const handleCancelExport = React.useCallback(() => {
+    setShowComplexityWarning(false);
+    setPendingExportFormat(null);
+  }, []);
   
   // Check if current layer has any shapes
   const currentLayerZ = getActiveZ(state.currentLayerIndex);
@@ -46,6 +104,20 @@ export const Controls = () => {
       // Ignore if typing in text session
       if (state.textSession.isActive) return;
       
+      // Export SVG: Cmd/Ctrl + E
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e' && !e.shiftKey) {
+        e.preventDefault();
+        handleExportRequest('svg');
+        return;
+      }
+      
+      // Export SVGZ: Cmd/Ctrl + Shift + E
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        handleExportRequest('svgz');
+        return;
+      }
+      
       // Canvas Dark Mode: Shift + D  
       if (e.shiftKey && e.key.toLowerCase() === 'd') {
         e.preventDefault();
@@ -56,7 +128,7 @@ export const Controls = () => {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [dispatch, state.textSession.isActive]);
+  }, [handleExportRequest, dispatch, state.textSession.isActive]);
 
   const handleReturnToDraw = () => {
       dispatch({ type: 'SET_MODE', payload: 'drawing' });
@@ -346,20 +418,52 @@ export const Controls = () => {
                 accept=".dior,.json"
              />
              
-             <EnhancedTooltip content="Export as SVG" shortcut="Cmd+E">
-               <RippleButton
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation",
-                    uiTheme.hover
-                  )}
-                  onClick={() => dispatch({ type: 'REQUEST_EXPORT', payload: 'svg' })}
-                  disabled={state.isExporting}
+             <Popover open={svgExportOpen} onOpenChange={setSvgExportOpen}>
+               <EnhancedTooltip content="Export SVG" shortcut="Cmd+E">
+                 <PopoverTrigger asChild>
+                   <RippleButton
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation",
+                        uiTheme.hover
+                      )}
+                      disabled={state.isExporting}
+                   >
+                      <FileCode className={cn("w-4 h-4", uiTheme.iconColor)} />
+                   </RippleButton>
+                 </PopoverTrigger>
+               </EnhancedTooltip>
+               <PopoverContent 
+                 className={cn("w-auto p-2", uiTheme.bg, uiTheme.border)}
+                 align="start"
+                 sideOffset={8}
                >
-                  <FileCode className={cn("w-4 h-4", uiTheme.iconColor)} />
-               </RippleButton>
-             </EnhancedTooltip>
+                 <div className="flex flex-col gap-1">
+                   <button
+                     onClick={() => handleExportRequest('svg')}
+                     className={cn(
+                       "px-3 py-2 text-sm rounded-md text-left transition-colors",
+                       uiTheme.hover,
+                       uiTheme.text
+                     )}
+                   >
+                     SVG
+                   </button>
+                   <button
+                     onClick={() => handleExportRequest('svgz')}
+                     className={cn(
+                       "px-3 py-2 text-sm rounded-md text-left transition-colors",
+                       uiTheme.hover,
+                       uiTheme.text
+                     )}
+                   >
+                     SVG (Compressed)
+                   </button>
+                 </div>
+               </PopoverContent>
+             </Popover>
+             
              <div className={cn("w-[1px] h-4 mx-1", uiTheme.divider)} />
              <EnhancedTooltip content="About & Help" shortcut="?">
                <RippleButton
@@ -2010,6 +2114,78 @@ export const Controls = () => {
                   </div>
               </div>
           </div>
+      )}
+
+      {/* Complexity Warning Dialog */}
+      {showComplexityWarning && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-[2px] transition-all duration-300 opacity-100"
+          onClick={handleCancelExport}
+        >
+          <div 
+            className="relative bg-white w-[90%] max-w-[420px] p-8 flex flex-col items-center text-center shadow-2xl transition-all duration-300 scale-100 opacity-100"
+            style={{ borderRadius: '2rem' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button 
+              onClick={handleCancelExport}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 transition-all duration-200 text-slate-400 hover:text-slate-600 hover:scale-110 active:scale-95"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Title */}
+            <h1 
+              className="text-2xl mb-4 leading-tight"
+              style={{ color: '#353535', fontWeight: 678, letterSpacing: '-0.02em' }}
+            >
+              Complex Scene Warning
+            </h1>
+
+            {/* Description */}
+            <div 
+              className="text-base leading-relaxed max-w-[360px] space-y-4"
+              style={{ color: '#666666', fontWeight: 398 }}
+            >
+              <p>
+                Your scene contains <span className="font-semibold" style={{ color: '#353535' }}>{getSceneComplexity().totalShapes} shapes</span>, which may cause export to fail due to browser memory limits.
+              </p>
+              
+              <div className="text-left">
+                <p className="font-medium mb-2" style={{ color: '#353535', fontWeight: 500 }}>
+                  Recommendations:
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-sm">
+                  <li>Save your project (.dior) before exporting</li>
+                  <li>Use SVG (Compressed) format for better performance</li>
+                  <li>Consider reducing scene complexity or hiding unused layers</li>
+                </ul>
+              </div>
+
+              <p className="text-sm">
+                Do you want to continue with the export?
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 mt-6 w-full max-w-[320px]">
+              <button
+                onClick={handleCancelExport}
+                className="flex-1 px-4 py-2.5 bg-slate-100 rounded-full text-sm font-medium tracking-wide transition-colors cursor-pointer hover:bg-slate-200 active:scale-95"
+                style={{ color: '#353535' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleProceedWithExport}
+                className="flex-1 px-4 py-2.5 bg-[rgb(3,2,19)] rounded-full text-sm text-white font-medium tracking-wide transition-colors cursor-pointer hover:bg-[#1d293d] shadow-sm active:scale-95"
+              >
+                Continue Anyway
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

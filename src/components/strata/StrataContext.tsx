@@ -26,7 +26,7 @@ export interface Shape {
 export type AppMode = 'drawing' | 'cinematic';
 export type ToolType = 'brush' | 'eraser' | 'text' | 'move' | 'line';
 export type CinematicType = 'forward' | 'spiral' | 'yoyo' | 'pulse' | 'twist' | 'arc' | 'crane' | 'truck' | 'orbit' | 'zoom';
-export type ExportType = 'none' | 'png' | 'webm' | 'mp4' | 'svg';
+export type ExportType = 'none' | 'png' | 'webm' | 'mp4' | 'svg' | 'svgz';
 export type LineMode = 'tapered' | 'uniform';
 
 export type PostProcessingSettings = {

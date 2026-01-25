@@ -110,6 +110,8 @@
     --text-lg--line-height: calc(1.75 / 1.125);
     --text-xl: 1.25rem;
     --text-xl--line-height: calc(1.75 / 1.25);
+    --text-2xl: 1.5rem;
+    --text-2xl--line-height: calc(2 / 1.5);
     --text-4xl: 2.25rem;
     --text-4xl--line-height: calc(2.5 / 2.25);
     --text-6xl: 3.75rem;
@@ -120,6 +122,7 @@
     --font-weight-bold: 700;
     --tracking-wide: .025em;
     --tracking-wider: .05em;
+    --leading-tight: 1.25;
     --leading-relaxed: 1.625;
     --radius-2xl: 1rem;
     --ease-out: cubic-bezier(0, 0, .2, 1);
@@ -616,6 +619,10 @@
     margin-top: calc(var(--spacing) * 4);
   }
 
+  .mt-6 {
+    margin-top: calc(var(--spacing) * 6);
+  }
+
   .mt-8 {
     margin-top: calc(var(--spacing) * 8);
   }
@@ -878,6 +885,10 @@
     max-width: 320px;
   }
 
+  .max-w-\[360px\] {
+    max-width: 360px;
+  }
+
   .max-w-\[420px\] {
     max-width: 420px;
   }
@@ -1020,6 +1031,10 @@
 
   .resize-none {
     resize: none;
+  }
+
+  .list-disc {
+    list-style-type: disc;
   }
 
   .appearance-none {
@@ -1247,6 +1262,10 @@
 
   .bg-\[\#9a0ff9\] {
     background-color: #9a0ff9;
+  }
+
+  .bg-\[rgb\(3\,2\,19\)\] {
+    background-color: #030213;
   }
 
   .bg-background {
@@ -1518,6 +1537,10 @@
     padding-block: calc(var(--spacing) * 2);
   }
 
+  .py-2\.5 {
+    padding-block: calc(var(--spacing) * 2.5);
+  }
+
   .py-3 {
     padding-block: calc(var(--spacing) * 3);
   }
@@ -1546,8 +1569,16 @@
     padding-bottom: calc(var(--spacing) * 1.5);
   }
 
+  .pl-5 {
+    padding-left: calc(var(--spacing) * 5);
+  }
+
   .text-center {
     text-align: center;
+  }
+
+  .text-left {
+    text-align: left;
   }
 
   .text-right {
@@ -1560,6 +1591,11 @@
 
   .font-mono {
     font-family: var(--font-mono);
+  }
+
+  .text-2xl {
+    font-size: var(--text-2xl);
+    line-height: var(--tw-leading, var(--text-2xl--line-height));
   }
 
   .text-4xl {
@@ -1621,6 +1657,11 @@
   .leading-relaxed {
     --tw-leading: var(--leading-relaxed);
     line-height: var(--leading-relaxed);
+  }
+
+  .leading-tight {
+    --tw-leading: var(--leading-tight);
+    line-height: var(--leading-tight);
   }
 
   .font-bold {
@@ -2020,6 +2061,12 @@
       --tw-scale-y: 110%;
       --tw-scale-z: 110%;
       scale: var(--tw-scale-x) var(--tw-scale-y);
+    }
+  }
+
+  @media (hover: hover) {
+    .hover\:bg-\[\#1d293d\]:hover {
+      background-color: #1d293d;
     }
   }
 

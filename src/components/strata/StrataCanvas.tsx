@@ -402,8 +402,9 @@ export const StrataCanvas = () => {
           dispatch({ type: 'FINISH_EXPORT' });
       }
 
-      if (state.exportRequest === 'svg') {
-          try {
+      if (state.exportRequest === 'svg' || state.exportRequest === 'svgz') {
+          (async () => {
+              try {
               // Filter visible shapes (not erasers)
               const visibleShapes = state.shapes.filter(shape => !shape.isEraser);
               
@@ -431,9 +432,10 @@ export const StrataCanvas = () => {
               const offsetX = -minX + padding;
               const offsetY = -minY + padding;
 
-              // Create SVG
-              let svgContent = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n`;
-              svgContent += `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" version="1.1">\n`;
+              // Create SVG using array buffer to avoid string length limits
+              const parts: string[] = [];
+              parts.push(`<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n`);
+              parts.push(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" version="1.1">\n`);
               
               // Helper function to create smooth path from points
               // Matches the drawSmoothLine function used in canvas rendering
@@ -475,9 +477,11 @@ export const StrataCanvas = () => {
               const sortedZIndices = Array.from(shapesByLayer.keys()).sort((a, b) => b - a);
               
               let clipPathCounter = 0;
+              let processedShapeCount = 0;
               
               // Process each layer
-              sortedZIndices.forEach(zIndex => {
+              for (let layerIdx = 0; layerIdx < sortedZIndices.length; layerIdx++) {
+                  const zIndex = sortedZIndices[layerIdx];
                   const layerShapes = shapesByLayer.get(zIndex)!;
                   
                   // Simulate canvas behavior: process shapes in order
@@ -527,7 +531,7 @@ export const StrataCanvas = () => {
                               transform += ` rotate(${(rotation * 180) / Math.PI})`;
                           }
                           
-                          svgContent += `  <text x="0" y="0" fill="${shape.color}" font-size="${fontSize}" text-anchor="${textAnchor}" font-family="sans-serif" transform="${transform}"${clipAttr}>${shape.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>\n`;
+                          parts.push(`  <text x="0" y="0" fill="${shape.color}" font-size="${fontSize}" text-anchor="${textAnchor}" font-family="sans-serif" transform="${transform}"${clipAttr}>${shape.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>\n`);
                       } else if (shape.points.length > 0) {
                           const adjustedPoints = shape.points.map(p => ({
                               x: p.x + offsetX,
@@ -535,7 +539,7 @@ export const StrataCanvas = () => {
                           }));
                           
                           const pathData = createSmoothPath(adjustedPoints);
-                          svgContent += `  <path d="${pathData}" fill="${shape.color}" stroke="none"${clipAttr} />\n`;
+                          parts.push(`  <path d="${pathData}" fill="${shape.color}" stroke="none"${clipAttr} />\n`);
                       }
                   };
                   
@@ -546,8 +550,8 @@ export const StrataCanvas = () => {
                   drawInsideShapes.forEach(({shape, clipShapes}) => {
                       if (clipShapes.length > 0) {
                           const clipId = `clip-${zIndex}-${clipPathCounter++}`;
-                          svgContent += `  <defs>\n`;
-                          svgContent += `    <clipPath id="${clipId}">\n`;
+                          parts.push(`  <defs>\n`);
+                          parts.push(`    <clipPath id="${clipId}">\n`);
                           
                           clipShapes.forEach(clipShape => {
                               if (clipShape.type === 'text' && clipShape.text) {
@@ -555,19 +559,19 @@ export const StrataCanvas = () => {
                                   const y = clipShape.points[0].y + offsetY;
                                   const fontSize = clipShape.fontSize || 40;
                                   const textWidth = clipShape.text.length * fontSize * 0.6;
-                                  svgContent += `      <rect x="${x - 10}" y="${y - fontSize}" width="${textWidth + 20}" height="${fontSize + 10}" />\n`;
+                                  parts.push(`      <rect x="${x - 10}" y="${y - fontSize}" width="${textWidth + 20}" height="${fontSize + 10}" />\n`);
                               } else if (clipShape.points.length > 0) {
                                   const adjustedPoints = clipShape.points.map(p => ({
                                       x: p.x + offsetX,
                                       y: p.y + offsetY
                                   }));
                                   const pathData = createSmoothPath(adjustedPoints);
-                                  svgContent += `      <path d="${pathData}" />\n`;
+                                  parts.push(`      <path d="${pathData}" />\n`);
                               }
                           });
                           
-                          svgContent += `    </clipPath>\n`;
-                          svgContent += `  </defs>\n`;
+                          parts.push(`    </clipPath>\n`);
+                          parts.push(`  </defs>\n`);
                           
                           renderShape(shape, clipId);
                       } else {
@@ -575,21 +579,50 @@ export const StrataCanvas = () => {
                           renderShape(shape);
                       }
                   });
-              });
+                  
+                  processedShapeCount += layerShapes.length;
+                  
+                  // Yield every 100 shapes to prevent UI freeze
+                  if (processedShapeCount >= 100) {
+                      await new Promise(r => setTimeout(r, 0));
+                      processedShapeCount = 0;
+                  }
+              }
 
-              svgContent += `</svg>`;
+              parts.push(`</svg>`);
+              
+              // Join parts into final SVG string
+              const svgContent = parts.join('');
 
-              // Download SVG
-              const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+              // Download SVG or SVGZ
+              const sanitizedName = state.projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+              let blob: Blob;
+              let filename: string;
+              
+              if (state.exportRequest === 'svgz' && typeof CompressionStream !== 'undefined') {
+                  // Compress as SVGZ using gzip
+                  const textEncoder = new TextEncoder();
+                  const svgBytes = textEncoder.encode(svgContent);
+                  const compressedStream = new Blob([svgBytes]).stream().pipeThrough(new CompressionStream('gzip'));
+                  const compressedBlob = await new Response(compressedStream).blob();
+                  blob = compressedBlob;
+                  filename = `${sanitizedName}-${Date.now()}.svgz`;
+              } else {
+                  // Regular SVG
+                  blob = new Blob([svgContent], { type: 'image/svg+xml' });
+                  filename = `${sanitizedName}-${Date.now()}.svg`;
+              }
+              
               const url = URL.createObjectURL(blob);
               const link = document.createElement('a');
               link.href = url;
-              const sanitizedName = state.projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-              link.download = `${sanitizedName}-${Date.now()}.svg`;
+              link.download = filename;
               link.click();
               URL.revokeObjectURL(url);
+              
+              const isCompressed = state.exportRequest === 'svgz' && typeof CompressionStream !== 'undefined';
               toast.success('Vector exported!', {
-                  description: 'SVG file downloaded successfully',
+                  description: isCompressed ? 'SVGZ file downloaded successfully' : 'SVG file downloaded successfully',
                   duration: 2000,
               });
           } catch (e) { 
@@ -600,6 +633,7 @@ export const StrataCanvas = () => {
               });
           }
           dispatch({ type: 'FINISH_EXPORT' });
+      })();
       }
 
       if (state.exportRequest === 'mp4') {
@@ -1256,6 +1290,31 @@ export const StrataCanvas = () => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d', { alpha: false }); 
     if (!ctx) return;
+
+    // Context Loss Detection Instrumentation
+    let contextLossCount = 0;
+    let lastContextLossTime = 0;
+
+    const handleContextLost = (e: Event) => {
+      e.preventDefault(); // Attempt to restore context
+      contextLossCount++;
+      lastContextLossTime = Date.now();
+      console.warn(`[Diorame] Canvas 2D context lost (count: ${contextLossCount}) at ${new Date(lastContextLossTime).toISOString()}`);
+      toast.error('Canvas context lost', {
+        description: 'Attempting to restore rendering...',
+        duration: 2000,
+      });
+    };
+
+    const handleContextRestored = () => {
+      console.warn(`[Diorame] Canvas 2D context restored at ${new Date().toISOString()}`);
+      toast.success('Canvas context restored', {
+        duration: 2000,
+      });
+    };
+
+    canvas.addEventListener('contextlost', handleContextLost);
+    canvas.addEventListener('contextrestored', handleContextRestored);
 
     let animationFrameId: number;
     let accumulatedTime = 0;
@@ -2813,7 +2872,11 @@ export const StrataCanvas = () => {
     };
 
     animationFrameId = requestAnimationFrame(render);
-    return () => cancelAnimationFrame(animationFrameId);
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      canvas.removeEventListener('contextlost', handleContextLost);
+      canvas.removeEventListener('contextrestored', handleContextRestored);
+    };
   }, [dispatch]);
 
   return (
