@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
 import { Button } from '../ui/button';
-import { Eye, EyeOff, Lock, Unlock, Trash2, Copy, GripVertical } from 'lucide-react';
+import { Eye, EyeOff, Lock, Unlock, Trash2, Copy, ChevronUp, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { cn } from '../ui/utils';
 
@@ -12,25 +12,19 @@ interface LayerItemProps {
   isLocked: boolean;
   hasShapes: boolean;
   onSelect: () => void;
-  onDragStart: (index: number) => void;
-  onDragOver: (e: React.DragEvent, index: number) => void;
-  onDrop: (index: number) => void;
   onDuplicate: () => void;
   onToggleVisibility: () => void;
   onToggleLock: () => void;
   onDelete: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   canDelete: boolean;
   canDuplicate: boolean;
-  isDragging: boolean;
-  dragOverIndex: number | null;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   theme: any;
   duplicateTooltip: string;
-  // Touch drag props
   isTouchDevice: boolean;
-  onTouchDragStart: (index: number, y: number) => void;
-  onTouchDragMove: (y: number) => void;
-  onTouchDragEnd: () => void;
-  isTouchDraggingThis: boolean;
 }
 
 const LayerItem: React.FC<LayerItemProps> = ({
@@ -40,92 +34,28 @@ const LayerItem: React.FC<LayerItemProps> = ({
   isLocked,
   hasShapes,
   onSelect,
-  onDragStart,
-  onDragOver,
-  onDrop,
   onDuplicate,
   onToggleVisibility,
   onToggleLock,
   onDelete,
+  onMoveUp,
+  onMoveDown,
   canDelete,
   canDuplicate,
-  isDragging,
-  dragOverIndex,
+  canMoveUp,
+  canMoveDown,
   theme,
   duplicateTooltip,
-  isTouchDevice,
-  onTouchDragStart,
-  onTouchDragMove,
-  onTouchDragEnd,
-  isTouchDraggingThis
+  isTouchDevice
 }) => {
   const [showActions, setShowActions] = useState(false);
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
-  const touchStartYRef = useRef(0);
-  const hasDraggedRef = useRef(false);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!isTouchDevice) return;
-    
-    const touch = e.touches[0];
-    touchStartYRef.current = touch.clientY;
-    hasDraggedRef.current = false;
-
-    // Long press to activate drag mode (500ms)
-    const timer = setTimeout(() => {
-      onTouchDragStart(layerIndex, touch.clientY);
-      hasDraggedRef.current = true;
-      // Haptic feedback if available
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }, 500);
-    
-    setLongPressTimer(timer);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isTouchDevice) return;
-    
-    const touch = e.touches[0];
-    const deltaY = Math.abs(touch.clientY - touchStartYRef.current);
-    
-    // If moved significantly, cancel long press timer
-    if (deltaY > 10 && longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
-    
-    // If already dragging, update position
-    if (isTouchDraggingThis) {
-      e.preventDefault();
-      onTouchDragMove(touch.clientY);
-      hasDraggedRef.current = true;
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
-    
-    if (isTouchDraggingThis) {
-      onTouchDragEnd();
-    } else if (!hasDraggedRef.current) {
-      // Simple tap without drag - toggle actions visibility
+  const handleClick = () => {
+    if (isTouchDevice) {
       setShowActions(!showActions);
-    }
-    
-    hasDraggedRef.current = false;
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
-    // On desktop, just select the layer
-    if (!isTouchDevice) {
+    } else {
       onSelect();
     }
-    // On touch, handled by touch events
   };
 
   // Auto-hide actions after 3 seconds on touch devices
@@ -140,40 +70,52 @@ const LayerItem: React.FC<LayerItemProps> = ({
   }, [showActions, isTouchDevice]);
 
   return (
-    <div
-      className={cn(
-        "relative group",
-        dragOverIndex === layerIndex && "border-t-2 border-blue-500"
-      )}
-    >
+    <div className="relative group">
       <div
-        draggable={!isTouchDevice}
-        onDragStart={() => !isTouchDevice && onDragStart(layerIndex)}
-        onDragOver={(e) => !isTouchDevice && onDragOver(e, layerIndex)}
-        onDrop={() => !isTouchDevice && onDrop(layerIndex)}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         onClick={handleClick}
         className={cn(
           "flex items-center gap-2 px-3 py-2 rounded-lg transition-all select-none",
           isTouchDevice ? "cursor-default touch-manipulation active:scale-98" : "cursor-pointer",
           isActive ? theme.bgActive : theme.bg,
           isActive ? theme.borderActive : "border border-transparent",
-          !isActive && !isTouchDevice && theme.hover,
-          isDragging && "opacity-50",
-          isTouchDraggingThis && "scale-105 shadow-2xl z-50 bg-blue-100 border-2 border-blue-400"
+          !isActive && !isTouchDevice && theme.hover
         )}
       >
-        {/* Drag Handle */}
-        <GripVertical 
-          className={cn(
-            "w-4 h-4",
-            isTouchDevice ? "text-slate-400" : "cursor-grab active:cursor-grabbing",
-            theme.textMuted,
-            isTouchDraggingThis && "text-blue-600"
-          )} 
-        />
+        {/* Move Up/Down Buttons */}
+        <div className="flex flex-col gap-0.5 mr-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoveUp();
+            }}
+            disabled={!canMoveUp}
+            className="h-5 w-5 p-0 rounded disabled:opacity-20 touch-manipulation active:scale-95 hover:bg-blue-100 transition-colors"
+            title="Move Layer Up"
+          >
+            <ChevronUp className={cn(
+              "w-3.5 h-3.5",
+              canMoveUp ? "text-slate-700" : "text-slate-300"
+            )} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoveDown();
+            }}
+            disabled={!canMoveDown}
+            className="h-5 w-5 p-0 rounded disabled:opacity-20 touch-manipulation active:scale-95 hover:bg-blue-100 transition-colors"
+            title="Move Layer Down"
+          >
+            <ChevronDown className={cn(
+              "w-3.5 h-3.5",
+              canMoveDown ? "text-slate-700" : "text-slate-300"
+            )} />
+          </Button>
+        </div>
 
         {/* Layer Number */}
         <div className={cn(
@@ -228,23 +170,23 @@ const LayerItem: React.FC<LayerItemProps> = ({
             )}
           </Button>
 
-          {/* 3D Lock (for any layer) */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleLock();
-              }}
-              className="h-7 w-7 sm:h-6 sm:w-6 rounded touch-manipulation active:scale-95"
-              title={isLocked ? "Unlock 3D (Enable Parallax)" : "Lock 3D (Disable Parallax)"}
-            >
-              {isLocked ? (
-                <Lock className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-amber-600" />
-              ) : (
-                <Unlock className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-slate-700" />
-              )}
-            </Button>
+          {/* 3D Lock */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleLock();
+            }}
+            className="h-7 w-7 sm:h-6 sm:w-6 rounded touch-manipulation active:scale-95"
+            title={isLocked ? "Unlock 3D (Enable Parallax)" : "Lock 3D (Disable Parallax)"}
+          >
+            {isLocked ? (
+              <Lock className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-amber-600" />
+            ) : (
+              <Unlock className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-slate-700" />
+            )}
+          </Button>
 
           {/* Delete */}
           <Button
@@ -263,30 +205,13 @@ const LayerItem: React.FC<LayerItemProps> = ({
           </Button>
         </div>
       </div>
-      
-      {/* Touch drag hint overlay */}
-      {isTouchDevice && isTouchDraggingThis && (
-        <div className="absolute inset-0 flex items-center justify-center bg-blue-500/10 rounded-lg pointer-events-none">
-          <span className="text-xs font-bold text-blue-600 bg-white/90 px-2 py-1 rounded shadow">
-            Drag to reorder
-          </span>
-        </div>
-      )}
     </div>
   );
 };
 
 export const LayersPanel: React.FC = () => {
   const { state, dispatch } = useStrata();
-  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  
-  // Touch drag state
-  const [touchDragIndex, setTouchDragIndex] = useState<number | null>(null);
-  const [touchDragY, setTouchDragY] = useState(0);
-  const [touchDragStartY, setTouchDragStartY] = useState(0);
-  const layerItemsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   // Detect touch device
   useEffect(() => {
@@ -314,68 +239,38 @@ export const LayersPanel: React.FC = () => {
 
   const getActiveZ = (layerIndex: number) => layerIndex * -BASE_DEPTH_STEP;
 
-  const handleDragStart = (index: number) => {
-    setDraggingIndex(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDragOverIndex(index);
-  };
-
-  const handleDrop = (toIndex: number) => {
-    if (draggingIndex === null || draggingIndex === toIndex) {
-      setDraggingIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-
-    // Dispatch reorder action
-    dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: draggingIndex, toIndex } });
+  const handleMoveUp = (layerIndex: number) => {
+    // In UI, layers are displayed top-to-bottom (high index to low)
+    // Moving "up" in UI means increasing the layer index
+    const layers = Array.from({ length: state.totalLayers }, (_, i) => state.totalLayers - 1 - i);
+    const currentPos = layers.indexOf(layerIndex);
     
-    toast.success(`Layer ${draggingIndex + 1} moved to position ${toIndex + 1}`, {
+    if (currentPos === 0) return; // Already at top
+    
+    const toIndex = layers[currentPos - 1];
+    
+    dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: layerIndex, toIndex } });
+    
+    toast.success(`Layer ${layerIndex + 1} moved up`, {
       duration: 1500,
     });
-
-    setDraggingIndex(null);
-    setDragOverIndex(null);
   };
 
-  // Touch drag handlers
-  const handleTouchDragStart = (index: number, y: number) => {
-    setTouchDragIndex(index);
-    setTouchDragStartY(y);
-    setTouchDragY(y);
-  };
-
-  const handleTouchDragMove = (y: number) => {
-    setTouchDragY(y);
-    
-    // Calculate which layer we're over based on Y position
+  const handleMoveDown = (layerIndex: number) => {
+    // In UI, layers are displayed top-to-bottom (high index to low)
+    // Moving "down" in UI means decreasing the layer index
     const layers = Array.from({ length: state.totalLayers }, (_, i) => state.totalLayers - 1 - i);
-    const delta = y - touchDragStartY;
-    const itemHeight = 44; // Approximate height of each layer item
-    const positionChange = Math.round(delta / itemHeight);
+    const currentPos = layers.indexOf(layerIndex);
     
-    if (touchDragIndex !== null) {
-      const currentPos = layers.indexOf(touchDragIndex);
-      const newPos = Math.max(0, Math.min(layers.length - 1, currentPos + positionChange));
-      setDragOverIndex(layers[newPos]);
-    }
-  };
-
-  const handleTouchDragEnd = () => {
-    if (touchDragIndex !== null && dragOverIndex !== null && touchDragIndex !== dragOverIndex) {
-      dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: touchDragIndex, toIndex: dragOverIndex } });
-      toast.success(`Layer ${touchDragIndex + 1} moved to position ${dragOverIndex + 1}`, {
-        duration: 1500,
-      });
-    }
+    if (currentPos === layers.length - 1) return; // Already at bottom
     
-    setTouchDragIndex(null);
-    setDragOverIndex(null);
-    setTouchDragY(0);
-    setTouchDragStartY(0);
+    const toIndex = layers[currentPos + 1];
+    
+    dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: layerIndex, toIndex } });
+    
+    toast.success(`Layer ${layerIndex + 1} moved down`, {
+      duration: 1500,
+    });
   };
 
   const handleDuplicate = (layerIndex: number) => {
@@ -448,13 +343,14 @@ export const LayersPanel: React.FC = () => {
       
       {isTouchDevice && (
         <div className={cn("px-2 py-1 text-[9px] italic", uiTheme.textMuted)}>
-          Tap to show controls • Hold to reorder
+          Tap to show controls
         </div>
       )}
       
       {layers.map((layerIndex) => {
         const layerZ = getActiveZ(layerIndex);
         const hasShapes = state.shapes.some(s => s.zIndex === layerZ);
+        const currentPos = layers.indexOf(layerIndex);
         
         // Determine duplicate tooltip
         let duplicateTooltip = "Duplicate Layer";
@@ -473,24 +369,19 @@ export const LayersPanel: React.FC = () => {
             isLocked={state.locked3DLayers.includes(layerIndex)}
             hasShapes={hasShapes}
             onSelect={() => handleSelectLayer(layerIndex)}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
             onDuplicate={() => handleDuplicate(layerIndex)}
             onToggleVisibility={() => dispatch({ type: 'TOGGLE_LAYER_VISIBILITY', payload: layerIndex })}
             onToggleLock={() => dispatch({ type: 'TOGGLE_3D_LOCK', payload: layerIndex })}
             onDelete={() => handleDelete(layerIndex)}
+            onMoveUp={() => handleMoveUp(layerIndex)}
+            onMoveDown={() => handleMoveDown(layerIndex)}
             canDelete={state.totalLayers > 1}
             canDuplicate={state.totalLayers < 10 && hasShapes}
+            canMoveUp={currentPos > 0}
+            canMoveDown={currentPos < layers.length - 1}
             duplicateTooltip={duplicateTooltip}
-            isDragging={draggingIndex === layerIndex}
-            dragOverIndex={dragOverIndex}
             theme={uiTheme}
             isTouchDevice={isTouchDevice}
-            onTouchDragStart={handleTouchDragStart}
-            onTouchDragMove={handleTouchDragMove}
-            onTouchDragEnd={handleTouchDragEnd}
-            isTouchDraggingThis={touchDragIndex === layerIndex}
           />
         );
       })}

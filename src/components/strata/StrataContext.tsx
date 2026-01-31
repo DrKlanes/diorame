@@ -75,6 +75,17 @@ export type TextSession = {
     align: 'left' | 'center' | 'right';
 };
 
+export type HistorySnapshot = {
+    shapes: Shape[];
+    totalLayers: number;
+    currentLayerIndex: number;
+    hiddenLayers: number[];
+    locked3DLayers: number[];
+    layerRenderModes: Record<number, 'flat' | 'grad'>;
+    layerGradParams: Record<number, { angle: number; intensity: number }>;
+    layerBrushSettings: Record<number, { thickness: number; mode: LineMode }>;
+};
+
 export interface AppState {
   shapes: Shape[];
   palette: string[];
@@ -95,7 +106,7 @@ export interface AppState {
   layerSpacingFactor: number; // New: Z-spacing multiplier for layers in VIEW mode (0.5 to 2.0, default 1.0)
   postProcessing: PostProcessingSettings; 
   postProcessingEnabled: PostProcessingEnabled;
-  history: Shape[][];
+  history: HistorySnapshot[];
   historyIndex: number;
   exportRequest: ExportType; 
   isExporting: boolean; 
@@ -127,7 +138,7 @@ export interface AppState {
 // --- Constants ---
 export const BASE_DEPTH_STEP = 150;  
 export const MAX_LAYERS = 10;
-export const APP_VERSION = "1.7.3"; // Release version
+export const APP_VERSION = "1.7.4"; // Release version
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 export const FIXED_PALETTE = [
@@ -457,7 +468,16 @@ const initialState: AppState = {
       pixelArt: false,
       grungeOverlay: false
   },
-  history: [[]],
+  history: [{
+      shapes: [],
+      totalLayers: 1,
+      currentLayerIndex: 0,
+      hiddenLayers: [],
+      locked3DLayers: [],
+      layerRenderModes: {},
+      layerGradParams: {},
+      layerBrushSettings: {}
+  }],
   historyIndex: 0,
   exportRequest: 'none',
   isExporting: false,
@@ -487,9 +507,13 @@ const initialState: AppState = {
 };
 
 // --- Helper: Push to History with Limit ---
-function pushHistory(history: Shape[][], index: number, newShapes: Shape[]): { history: Shape[][], index: number } {
+function pushHistory(
+    history: HistorySnapshot[], 
+    index: number, 
+    snapshot: HistorySnapshot
+): { history: HistorySnapshot[], index: number } {
     let newHistory = history.slice(0, index + 1);
-    newHistory.push(newShapes);
+    newHistory.push(snapshot);
     
     // Cap history size
     if (newHistory.length > MAX_HISTORY_STEPS) {
@@ -499,6 +523,20 @@ function pushHistory(history: Shape[][], index: number, newShapes: Shape[]): { h
     return {
         history: newHistory,
         index: newHistory.length - 1
+    };
+}
+
+// Helper to create a snapshot from current state
+function createSnapshot(state: AppState): HistorySnapshot {
+    return {
+        shapes: state.shapes,
+        totalLayers: state.totalLayers,
+        currentLayerIndex: state.currentLayerIndex,
+        hiddenLayers: state.hiddenLayers,
+        locked3DLayers: state.locked3DLayers,
+        layerRenderModes: state.layerRenderModes,
+        layerGradParams: state.layerGradParams,
+        layerBrushSettings: state.layerBrushSettings
     };
 }
 
@@ -565,7 +603,7 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, drawingZoom: 1, drawingPan: { x: 0, y: 0 } };
     case 'ADD_SHAPE': {
       const newShapes = [...state.shapes, action.payload];
-      const { history, index } = pushHistory(state.history, state.historyIndex, newShapes);
+      const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
       
       return {
         ...state,
@@ -576,7 +614,7 @@ function appReducer(state: AppState, action: Action): AppState {
     }
     case 'ADD_SHAPES': {
         const newShapes = [...state.shapes, ...action.payload];
-        const { history, index } = pushHistory(state.history, state.historyIndex, newShapes);
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         
         return {
           ...state,
@@ -588,12 +626,21 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'UNDO': {
       if (state.historyIndex <= 0) return state;
       const newIndex = state.historyIndex - 1;
-      const newShapes = state.history[newIndex];
-      const currentLayerZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
-      const hasShapesInCurrentLayer = newShapes.some(s => s.zIndex === currentLayerZ);
+      const snapshot = state.history[newIndex];
+      const currentLayerZ = snapshot.currentLayerIndex * -BASE_DEPTH_STEP;
+      const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
+      
+      // Restore full snapshot
       return {
         ...state,
-        shapes: newShapes,
+        shapes: snapshot.shapes,
+        totalLayers: snapshot.totalLayers,
+        currentLayerIndex: snapshot.currentLayerIndex,
+        hiddenLayers: snapshot.hiddenLayers,
+        locked3DLayers: snapshot.locked3DLayers,
+        layerRenderModes: snapshot.layerRenderModes,
+        layerGradParams: snapshot.layerGradParams,
+        layerBrushSettings: snapshot.layerBrushSettings,
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -602,12 +649,21 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'REDO': {
       if (state.historyIndex >= state.history.length - 1) return state;
       const newIndex = state.historyIndex + 1;
-      const newShapes = state.history[newIndex];
-      const currentLayerZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
-      const hasShapesInCurrentLayer = newShapes.some(s => s.zIndex === currentLayerZ);
+      const snapshot = state.history[newIndex];
+      const currentLayerZ = snapshot.currentLayerIndex * -BASE_DEPTH_STEP;
+      const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
+      
+      // Restore full snapshot
       return {
         ...state,
-        shapes: newShapes,
+        shapes: snapshot.shapes,
+        totalLayers: snapshot.totalLayers,
+        currentLayerIndex: snapshot.currentLayerIndex,
+        hiddenLayers: snapshot.hiddenLayers,
+        locked3DLayers: snapshot.locked3DLayers,
+        layerRenderModes: snapshot.layerRenderModes,
+        layerGradParams: snapshot.layerGradParams,
+        layerBrushSettings: snapshot.layerBrushSettings,
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -667,10 +723,11 @@ function appReducer(state: AppState, action: Action): AppState {
               lineMode: nextBrush.mode
           };
       } else if (state.totalLayers < MAX_LAYERS) {
-          // Create new layer (always empty)
+          // Create new layer (always empty) - Save to history
           const nextIndex = state.currentLayerIndex + 1;
           const newZ = nextIndex * -BASE_DEPTH_STEP;
-          return {
+          
+          const newState = {
               ...state,
               currentLayerIndex: nextIndex,
               totalLayers: state.totalLayers + 1,
@@ -682,6 +739,14 @@ function appReducer(state: AppState, action: Action): AppState {
               paletteGradientIntensity: 0.2,
               currentLineThickness: 25,
               lineMode: 'tapered'
+          };
+          
+          const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
+          
+          return {
+              ...newState,
+              history,
+              historyIndex: index
           };
       }
       return state;
@@ -744,7 +809,16 @@ function appReducer(state: AppState, action: Action): AppState {
       return {
           ...state,
           shapes: [],
-          history: [[]],
+          history: [{
+              shapes: [],
+              totalLayers: 1,
+              currentLayerIndex: 0,
+              hiddenLayers: [],
+              locked3DLayers: [],
+              layerRenderModes: {},
+              layerGradParams: {},
+              layerBrushSettings: {}
+          }],
           historyIndex: 0,
           currentLayerIndex: 0,
           totalLayers: 1,
@@ -781,13 +855,25 @@ function appReducer(state: AppState, action: Action): AppState {
       const loadedPaletteId = action.payload.activePaletteId || 'primary';
       const loadedPalette = loadedPaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
 
+      // Create initial history snapshot with loaded state
+      const initialSnapshot: HistorySnapshot = {
+          shapes: action.payload.shapes || [],
+          totalLayers: action.payload.totalLayers || 1,
+          currentLayerIndex: 0,
+          hiddenLayers: action.payload.hiddenLayers || [],
+          locked3DLayers: action.payload.locked3DLayers || [],
+          layerRenderModes: loadedLayerRenderModes,
+          layerGradParams: loadedLayerGradParams,
+          layerBrushSettings: loadedLayerBrushSettings
+      };
+
       return {
           ...state,
           ...action.payload,
           postProcessing: mergedPostProcessing,
           postProcessingEnabled: mergedPostProcessingEnabled,
           // Ensure critical state is reset/set correctly if not in payload or to ensure consistency
-          history: [action.payload.shapes || []],
+          history: [initialSnapshot],
           historyIndex: 0,
           camera: { x: 0, y: 0, z: 0, rotation: 0 },
           currentLayerIndex: 0,
@@ -853,7 +939,7 @@ function appReducer(state: AppState, action: Action): AppState {
             }
             return shape;
         });
-        const { history, index } = pushHistory(state.history, state.historyIndex, newShapes);
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         return {
             ...state,
             shapes: newShapes,
@@ -909,7 +995,7 @@ function appReducer(state: AppState, action: Action): AppState {
             }
             return shape;
         });
-        const { history, index } = pushHistory(state.history, state.historyIndex, newShapes);
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         return {
             ...state,
             shapes: newShapes,
@@ -973,7 +1059,7 @@ function appReducer(state: AppState, action: Action): AppState {
         // Sync global settings with new current layer
         const nextBrush = newBrushSettings[newCurrentLayer] || { thickness: 25, mode: 'tapered' as LineMode };
         
-        const { history, index } = pushHistory(state.history, state.historyIndex, newShapes);
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         
         return {
             ...state,
@@ -1032,7 +1118,7 @@ function appReducer(state: AppState, action: Action): AppState {
         };
         
         const shapesWithText = [...state.shapes, textShape];
-        const { history: textHistory, index: textIndex } = pushHistory(state.history, state.historyIndex, shapesWithText);
+        const { history: textHistory, index: textIndex } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: shapesWithText }));
         
         return {
             ...state,
@@ -1139,7 +1225,7 @@ function appReducer(state: AppState, action: Action): AppState {
              return s;
         });
         
-        const { history, index } = pushHistory(state.history, state.historyIndex, newShapes);
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         
         return { 
             ...state, 
@@ -1215,7 +1301,7 @@ function appReducer(state: AppState, action: Action): AppState {
         // And brushSettings moved with it.
         // So currentLineThickness (global) is still valid for the content.
         
-        return {
+        const newState = {
             ...state,
             shapes: newShapes,
             currentLayerIndex: newCurrent,
@@ -1224,6 +1310,14 @@ function appReducer(state: AppState, action: Action): AppState {
             layerRenderModes: newRenderModes,
             layerGradParams: newGradParams,
             layerBrushSettings: newBrushSettings
+        };
+        
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
+        
+        return {
+            ...newState,
+            history,
+            historyIndex: index
         };
     }
     case 'DUPLICATE_LAYER': {
@@ -1274,7 +1368,7 @@ function appReducer(state: AppState, action: Action): AppState {
         // Sync global
         const nextBrush = newBrushSettings[newLayerIndex];
 
-        return {
+        const newState = {
             ...state,
             shapes: [...newShapes, ...clonedShapes],
             totalLayers: state.totalLayers + 1,
@@ -1286,6 +1380,14 @@ function appReducer(state: AppState, action: Action): AppState {
             layerBrushSettings: newBrushSettings,
             currentLineThickness: nextBrush.thickness,
             lineMode: nextBrush.mode
+        };
+        
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
+        
+        return {
+            ...newState,
+            history,
+            historyIndex: index
         };
     }
     case 'DISMISS_ONBOARDING':
@@ -1309,7 +1411,7 @@ function appReducer(state: AppState, action: Action): AppState {
             return shape;
         });
         
-        const { history, index } = pushHistory(state.history, state.historyIndex, newShapes);
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         
         return {
             ...state,
