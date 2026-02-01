@@ -312,6 +312,16 @@ export const StrataCanvas = () => {
     }
   }, [state]);
 
+  // Fit to View on Load
+  useEffect(() => {
+      if (state.shouldFitToView) {
+          // User requested "Reset View" behavior on load (Center 0,0, Zoom 1)
+          // instead of calculating bounds to fit content.
+          dispatch({ type: 'RESET_DRAWING_VIEW' });
+          dispatch({ type: 'COMPLETE_FIT_TO_VIEW' });
+      }
+  }, [state.shouldFitToView, dispatch]);
+
   // Cache Shapes by Z
   useEffect(() => {
       const map = new Map<number, Shape[]>();
@@ -1755,9 +1765,11 @@ export const StrataCanvas = () => {
           const camZ = isLocked3D ? 0 : effectiveCameraZ;
           const dz = shapeZ - camZ;
           
-          if (FL + dz <= NEAR_CLIP) return; // Clip behind camera
-          const layerScale = FL / (FL + dz);
-          const layerOpacity = (FL + dz < 250) ? Math.max(0, ((FL + dz) - NEAR_CLIP) / 200) : 1;
+          const activeFL = (!isCinematic) ? DRAW_FOCAL_LENGTH : FL;
+
+          if (activeFL + dz <= NEAR_CLIP) return; // Clip behind camera
+          const layerScale = activeFL / (activeFL + dz);
+          const layerOpacity = (activeFL + dz < 250) ? Math.max(0, ((activeFL + dz) - NEAR_CLIP) / 200) : 1;
           
           if (layerOpacity <= 0) return;
 

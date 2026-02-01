@@ -133,12 +133,13 @@ export interface AppState {
   handheldIntensity: HandheldIntensity; // New: Handheld shake intensity
   lineMode: LineMode; // New: Line mode (tapered or uniform)
   projectName: string; // New: Project name for saving
+  shouldFitToView?: boolean; // New: Trigger fit-to-view on load
 }
 
 // --- Constants ---
 export const BASE_DEPTH_STEP = 150;  
 export const MAX_LAYERS = 10;
-export const APP_VERSION = "1.7.4"; // Release version
+export const APP_VERSION = "1.7.5"; // Release version
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 export const FIXED_PALETTE = [
@@ -155,7 +156,7 @@ export const FIXED_PALETTE = [
     '#4261a1',
     '#387fba',
     '#5ba3d3',
-    '#b2e0e1',
+    '#8bcfd0',
     '#80355b',
     '#8569cd',
     '#bd301e',
@@ -406,7 +407,8 @@ type Action =
   | { type: 'REORDER_LAYERS'; payload: { fromIndex: number; toIndex: number } }
   | { type: 'DUPLICATE_LAYER'; payload: number }
   | { type: 'DISMISS_ONBOARDING' }
-  | { type: 'SET_ACTIVE_PALETTE'; payload: 'primary' | 'alternative' };
+  | { type: 'SET_ACTIVE_PALETTE'; payload: 'primary' | 'alternative' }
+  | { type: 'COMPLETE_FIT_TO_VIEW' };
 
 // --- Initial State ---
 
@@ -503,7 +505,8 @@ const initialState: AppState = {
   isHandheldEnabled: false,
   handheldIntensity: 'medium',
   lineMode: 'tapered',
-  projectName: 'Untitled Project' // Default project name
+  projectName: 'Untitled Project', // Default project name
+  shouldFitToView: false
 };
 
 // --- Helper: Push to History with Limit ---
@@ -627,16 +630,23 @@ function appReducer(state: AppState, action: Action): AppState {
       if (state.historyIndex <= 0) return state;
       const newIndex = state.historyIndex - 1;
       const snapshot = state.history[newIndex];
-      const currentLayerZ = snapshot.currentLayerIndex * -BASE_DEPTH_STEP;
+      
+      // Preserve current layer UNLESS totalLayers changed (layer creation/deletion)
+      // If totalLayers changed, clamp currentLayerIndex to valid range
+      const layerIndexToUse = snapshot.totalLayers !== state.totalLayers
+        ? Math.min(state.currentLayerIndex, snapshot.totalLayers - 1)
+        : state.currentLayerIndex;
+      
+      const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
       const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
       
-      // Restore full snapshot
+      // Restore snapshot WITHOUT changing active layer (unless layer count changed)
       return {
         ...state,
         shapes: snapshot.shapes,
         totalLayers: snapshot.totalLayers,
-        currentLayerIndex: snapshot.currentLayerIndex,
-        camera: { ...state.camera, z: snapshot.currentLayerIndex * -BASE_DEPTH_STEP, rotation: 0 },
+        currentLayerIndex: layerIndexToUse,
+        camera: { ...state.camera, z: layerIndexToUse * -BASE_DEPTH_STEP, rotation: 0 },
         hiddenLayers: snapshot.hiddenLayers,
         locked3DLayers: snapshot.locked3DLayers,
         layerRenderModes: snapshot.layerRenderModes,
@@ -651,16 +661,23 @@ function appReducer(state: AppState, action: Action): AppState {
       if (state.historyIndex >= state.history.length - 1) return state;
       const newIndex = state.historyIndex + 1;
       const snapshot = state.history[newIndex];
-      const currentLayerZ = snapshot.currentLayerIndex * -BASE_DEPTH_STEP;
+      
+      // Preserve current layer UNLESS totalLayers changed (layer creation/deletion)
+      // If totalLayers changed, clamp currentLayerIndex to valid range
+      const layerIndexToUse = snapshot.totalLayers !== state.totalLayers
+        ? Math.min(state.currentLayerIndex, snapshot.totalLayers - 1)
+        : state.currentLayerIndex;
+      
+      const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
       const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
       
-      // Restore full snapshot
+      // Restore snapshot WITHOUT changing active layer (unless layer count changed)
       return {
         ...state,
         shapes: snapshot.shapes,
         totalLayers: snapshot.totalLayers,
-        currentLayerIndex: snapshot.currentLayerIndex,
-        camera: { ...state.camera, z: snapshot.currentLayerIndex * -BASE_DEPTH_STEP, rotation: 0 },
+        currentLayerIndex: layerIndexToUse,
+        camera: { ...state.camera, z: layerIndexToUse * -BASE_DEPTH_STEP, rotation: 0 },
         hiddenLayers: snapshot.hiddenLayers,
         locked3DLayers: snapshot.locked3DLayers,
         layerRenderModes: snapshot.layerRenderModes,
@@ -895,8 +912,11 @@ function appReducer(state: AppState, action: Action): AppState {
           currentLineThickness: action.payload.currentLineThickness || 25,
           lineMode: action.payload.lineMode || 'tapered',
           activePaletteId: loadedPaletteId,
-          palette: loadedPalette
+          palette: loadedPalette,
+          shouldFitToView: true
       };
+    case 'COMPLETE_FIT_TO_VIEW':
+        return { ...state, shouldFitToView: false };
     case 'TOGGLE_LAYER_VISIBILITY': {
         const layerIndex = action.payload;
         const isHidden = state.hiddenLayers.includes(layerIndex);
