@@ -139,7 +139,7 @@ export interface AppState {
 // --- Constants ---
 export const BASE_DEPTH_STEP = 150;  
 export const MAX_LAYERS = 10;
-export const APP_VERSION = "1.7.5"; // Release version
+export const APP_VERSION = "1.7.7"; // Release version
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 export const FIXED_PALETTE = [
