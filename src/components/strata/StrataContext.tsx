@@ -139,7 +139,7 @@ export interface AppState {
 // --- Constants ---
 export const BASE_DEPTH_STEP = 150;  
 export const MAX_LAYERS = 10;
-export const APP_VERSION = "1.7.7"; // Release version
+export const APP_VERSION = "1.8.2"; // Release version
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 export const FIXED_PALETTE = [
@@ -408,7 +408,8 @@ type Action =
   | { type: 'DUPLICATE_LAYER'; payload: number }
   | { type: 'DISMISS_ONBOARDING' }
   | { type: 'SET_ACTIVE_PALETTE'; payload: 'primary' | 'alternative' }
-  | { type: 'COMPLETE_FIT_TO_VIEW' };
+  | { type: 'COMPLETE_FIT_TO_VIEW' }
+  | { type: 'FLIP_LAYER'; payload: { layerIndex: number; direction: 'horizontal' | 'vertical'; centerX: number; centerY: number } };
 
 // --- Initial State ---
 
@@ -647,7 +648,7 @@ function appReducer(state: AppState, action: Action): AppState {
         totalLayers: snapshot.totalLayers,
         currentLayerIndex: layerIndexToUse,
         camera: { ...state.camera, z: layerIndexToUse * -BASE_DEPTH_STEP, rotation: 0 },
-        hiddenLayers: snapshot.hiddenLayers,
+        hiddenLayers: state.hiddenLayers, // Preserve current visibility (view-only, not undoable)
         locked3DLayers: snapshot.locked3DLayers,
         layerRenderModes: snapshot.layerRenderModes,
         layerGradParams: snapshot.layerGradParams,
@@ -678,7 +679,7 @@ function appReducer(state: AppState, action: Action): AppState {
         totalLayers: snapshot.totalLayers,
         currentLayerIndex: layerIndexToUse,
         camera: { ...state.camera, z: layerIndexToUse * -BASE_DEPTH_STEP, rotation: 0 },
-        hiddenLayers: snapshot.hiddenLayers,
+        hiddenLayers: state.hiddenLayers, // Preserve current visibility (view-only, not undoable)
         locked3DLayers: snapshot.locked3DLayers,
         layerRenderModes: snapshot.layerRenderModes,
         layerGradParams: snapshot.layerGradParams,
@@ -1017,6 +1018,53 @@ function appReducer(state: AppState, action: Action): AppState {
             }
             return shape;
         });
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
+        return {
+            ...state,
+            shapes: newShapes,
+            history,
+            historyIndex: index
+        };
+    }
+    case 'FLIP_LAYER': {
+        const { layerIndex, direction, centerX, centerY } = action.payload;
+        const layerZ = layerIndex * -BASE_DEPTH_STEP;
+
+        const newShapes = state.shapes.map(shape => {
+            if (shape.zIndex !== layerZ) return shape;
+
+            const flipPoint = (point: Point): Point => {
+                if (direction === 'horizontal') {
+                    return { ...point, x: 2 * centerX - point.x };
+                } else {
+                    return { ...point, y: 2 * centerY - point.y };
+                }
+            };
+
+            let newProps: Partial<Shape> = {};
+            if (shape.type === 'text') {
+                // Negate rotation on flip
+                newProps.rotation = -(shape.rotation || 0);
+                // Swap text alignment on horizontal flip
+                if (direction === 'horizontal') {
+                    if (shape.align === 'left') newProps.align = 'right';
+                    else if (shape.align === 'right') newProps.align = 'left';
+                }
+            }
+
+            const updatedShape: Shape = {
+                ...shape,
+                ...newProps,
+                points: shape.points.map(flipPoint)
+            };
+
+            if (shape.originalPoints) {
+                updatedShape.originalPoints = shape.originalPoints.map(flipPoint);
+            }
+
+            return updatedShape;
+        });
+
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         return {
             ...state,

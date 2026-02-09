@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
 import { Button } from '../ui/button';
 import { Eye, EyeOff, Lock, Unlock, Trash2, Copy, ChevronUp, ChevronDown } from 'lucide-react';
@@ -25,6 +25,8 @@ interface LayerItemProps {
   theme: any;
   duplicateTooltip: string;
   isTouchDevice: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
 }
 
 const LayerItem: React.FC<LayerItemProps> = ({
@@ -46,28 +48,22 @@ const LayerItem: React.FC<LayerItemProps> = ({
   canMoveDown,
   theme,
   duplicateTooltip,
-  isTouchDevice
+  isTouchDevice,
+  isExpanded,
+  onToggleExpand
 }) => {
-  const [showActions, setShowActions] = useState(false);
-
   const handleClick = () => {
+    onSelect();
     if (isTouchDevice) {
-      setShowActions(!showActions);
-    } else {
-      onSelect();
+      onToggleExpand();
     }
   };
 
-  // Auto-hide actions after 3 seconds on touch devices
-  useEffect(() => {
-    if (!isTouchDevice || !showActions) return;
-    
-    const timer = setTimeout(() => {
-      setShowActions(false);
-    }, 3000);
-    
-    return () => clearTimeout(timer);
-  }, [showActions, isTouchDevice]);
+  // Determine if actions should be visible:
+  // - Active layer: always visible
+  // - Touch device: visible when expanded (tapped)
+  // - Desktop: visible on hover (handled via CSS group-hover)
+  const actionsAlwaysVisible = isActive || (isTouchDevice && isExpanded);
 
   return (
     <div className="relative group">
@@ -126,12 +122,14 @@ const LayerItem: React.FC<LayerItemProps> = ({
           {!hasShapes && <span className={cn("ml-1 text-[10px]", theme.textMuted)}>(empty)</span>}
         </div>
 
-        {/* Actions - Always visible on touch when showActions is true, or on hover for desktop */}
+        {/* Actions - Always visible for active layer, hover on desktop, expanded on touch */}
         <div className={cn(
-          "flex items-center gap-1 transition-opacity",
-          isTouchDevice 
-            ? (showActions || isActive ? "opacity-100" : "opacity-0")
-            : "opacity-0 group-hover:opacity-100"
+          "flex items-center gap-1 transition-opacity duration-150",
+          actionsAlwaysVisible
+            ? "opacity-100"
+            : isTouchDevice
+              ? "opacity-0 pointer-events-none"
+              : "opacity-0 group-hover:opacity-100"
         )}>
           {/* Duplicate */}
           <Button
@@ -141,7 +139,6 @@ const LayerItem: React.FC<LayerItemProps> = ({
               e.stopPropagation();
               if (!canDuplicate) return;
               onDuplicate();
-              setShowActions(false);
             }}
             disabled={!canDuplicate}
             className={cn(
@@ -195,7 +192,6 @@ const LayerItem: React.FC<LayerItemProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
-              setShowActions(false);
             }}
             disabled={!canDelete}
             className="h-7 w-7 sm:h-6 sm:w-6 rounded disabled:opacity-50 touch-manipulation active:scale-95"
@@ -212,6 +208,8 @@ const LayerItem: React.FC<LayerItemProps> = ({
 export const LayersPanel: React.FC = () => {
   const { state, dispatch } = useStrata();
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  // Track which layer has its actions expanded (for touch devices)
+  const [expandedLayerIndex, setExpandedLayerIndex] = useState<number | null>(null);
 
   // Detect touch device
   useEffect(() => {
@@ -222,6 +220,13 @@ export const LayersPanel: React.FC = () => {
     window.addEventListener('resize', checkTouch);
     return () => window.removeEventListener('resize', checkTouch);
   }, []);
+
+  // Auto-expand active layer's actions on touch, collapse when switching
+  useEffect(() => {
+    if (isTouchDevice) {
+      setExpandedLayerIndex(state.currentLayerIndex);
+    }
+  }, [state.currentLayerIndex, isTouchDevice]);
 
   // UI Theme - Light Mode (Single Source of Truth)
   const uiTheme = {
@@ -328,24 +333,22 @@ export const LayersPanel: React.FC = () => {
     }, 50);
   };
 
+  const handleToggleExpand = useCallback((layerIndex: number) => {
+    setExpandedLayerIndex(prev => prev === layerIndex ? null : layerIndex);
+  }, []);
+
   // Build layer array (reverse order: top layer first in UI)
   const layers = Array.from({ length: state.totalLayers }, (_, i) => state.totalLayers - 1 - i);
 
   return (
     <div className={cn(
-      "w-56 max-h-[400px] overflow-y-auto rounded-lg shadow-lg border backdrop-blur-sm p-2 space-y-1",
+      "w-64 max-h-[400px] overflow-y-auto overflow-x-hidden rounded-lg shadow-lg border backdrop-blur-sm p-2 space-y-1",
       uiTheme.bg,
       uiTheme.border
     )}>
       <div className={cn("px-2 py-1 text-[10px] uppercase font-bold tracking-wider", uiTheme.textMuted)}>
         Layers ({state.totalLayers}/10)
       </div>
-      
-      {isTouchDevice && (
-        <div className={cn("px-2 py-1 text-[9px] italic", uiTheme.textMuted)}>
-          Tap to show controls
-        </div>
-      )}
       
       {layers.map((layerIndex) => {
         const layerZ = getActiveZ(layerIndex);
@@ -382,6 +385,8 @@ export const LayersPanel: React.FC = () => {
             duplicateTooltip={duplicateTooltip}
             theme={uiTheme}
             isTouchDevice={isTouchDevice}
+            isExpanded={expandedLayerIndex === layerIndex}
+            onToggleExpand={() => handleToggleExpand(layerIndex)}
           />
         );
       })}

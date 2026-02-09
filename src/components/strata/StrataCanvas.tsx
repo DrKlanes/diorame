@@ -145,6 +145,9 @@ export const StrataCanvas = () => {
       rotate: {x:number, y:number}, center: {x:number, y:number}
   } | null>(null);
 
+  // Flip buttons overlay ref (positioned via DOM manipulation in render loop)
+  const flipButtonsRef = useRef<HTMLDivElement>(null);
+
   // Pan & Zoom Desktop State
   const isPanningRef = useRef(false);
   const [cursorOverride, setCursorOverride] = useState<string | null>(null);
@@ -951,6 +954,15 @@ export const StrataCanvas = () => {
     }
 
     if (state.mode === 'drawing') {
+        // Block all interactions on hidden layers
+        if (state.hiddenLayers.includes(state.currentLayerIndex)) {
+            toast.error('Layer is hidden', {
+                description: 'Make the layer visible to edit it',
+                duration: 2000,
+            });
+            return;
+        }
+
         if (state.tool === 'text') {
             dispatch({ type: 'START_TEXT_SESSION', payload: { x: worldX, y: worldY } });
             return;
@@ -2751,6 +2763,20 @@ export const StrataCanvas = () => {
            drawHandle(pBL, 'scale');
            ctx.fillStyle = '#3b82f6';
            drawHandle(pRot, 'rotate');
+
+           // Position flip buttons overlay below bounding box
+           if (flipButtonsRef.current) {
+               const bottomMid = { x: (pBL.x + pBR.x) / 2, y: (pBL.y + pBR.y) / 2 };
+               flipButtonsRef.current.style.transform = `translate(${bottomMid.x}px, ${bottomMid.y + 16}px) translate(-50%, 0)`;
+               flipButtonsRef.current.style.opacity = tr.isActive ? '0' : '1';
+               flipButtonsRef.current.style.pointerEvents = tr.isActive ? 'none' : 'auto';
+           }
+      } else {
+           // Hide flip buttons when gizmo is not visible
+           if (flipButtonsRef.current) {
+               flipButtonsRef.current.style.opacity = '0';
+               flipButtonsRef.current.style.pointerEvents = 'none';
+           }
       }
 
       // --- Symmetry Axis Guide ---
@@ -2891,9 +2917,63 @@ export const StrataCanvas = () => {
     };
   }, [dispatch]);
 
+  const handleFlip = (direction: 'horizontal' | 'vertical') => {
+    if (state.hiddenLayers.includes(state.currentLayerIndex)) return;
+    const bb = transformRef.current.layerBB;
+    if (!bb) return;
+    const cx = (bb.minX + bb.maxX) / 2;
+    const cy = (bb.minY + bb.maxY) / 2;
+    dispatch({
+      type: 'FLIP_LAYER',
+      payload: {
+        layerIndex: state.currentLayerIndex,
+        direction,
+        centerX: cx,
+        centerY: cy
+      }
+    });
+  };
+
   return (
     <div ref={containerRef} className={cn("absolute inset-0 z-0 overflow-hidden touch-none", state.mode === 'drawing' ? cn("inset-4 sm:inset-6 md:inset-8 lg:inset-10 rounded-[32px] shadow-2xl bg-white border border-slate-100/50", cursorOverride ? cursorOverride : (state.tool === 'move' ? "cursor-move" : "cursor-crosshair")) : "inset-0 bg-slate-50 cursor-default")} style={{ touchAction: 'none' }}>
       <canvas ref={canvasRef} tabIndex={0} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel} className={cn("block w-full h-full", state.mode === 'drawing' ? "rounded-[32px]" : "")} style={{ touchAction: 'none', outline: 'none' }} />
+      {/* Flip buttons overlay - positioned via render loop */}
+      <div
+        ref={flipButtonsRef}
+        className="absolute top-0 left-0 flex gap-1 z-10"
+        style={{ opacity: 0, pointerEvents: 'none', transition: 'opacity 0.15s ease' }}
+      >
+        <button
+          onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+          onClick={(e) => { e.stopPropagation(); handleFlip('horizontal'); }}
+          className="flex items-center justify-center w-7 h-7 rounded-md bg-white/90 border border-slate-200 shadow-sm hover:bg-blue-50 hover:border-blue-300 active:bg-blue-100 transition-colors backdrop-blur-sm"
+          title="Flip Horizontal"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h3" />
+            <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3" />
+            <path d="M12 20v2" />
+            <path d="M12 14v2" />
+            <path d="M12 8v2" />
+            <path d="M12 2v2" />
+          </svg>
+        </button>
+        <button
+          onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+          onClick={(e) => { e.stopPropagation(); handleFlip('vertical'); }}
+          className="flex items-center justify-center w-7 h-7 rounded-md bg-white/90 border border-slate-200 shadow-sm hover:bg-blue-50 hover:border-blue-300 active:bg-blue-100 transition-colors backdrop-blur-sm"
+          title="Flip Vertical"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 8V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3" />
+            <path d="M3 16v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3" />
+            <path d="M20 12h2" />
+            <path d="M14 12h2" />
+            <path d="M8 12h2" />
+            <path d="M2 12h2" />
+          </svg>
+        </button>
+      </div>
       <OnboardingOverlay />
     </div>
   );
