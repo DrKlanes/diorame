@@ -138,51 +138,72 @@ export const Controls = () => {
   };
 
   const handleSaveProject = () => {
-      const projectData = {
-          shapes: state.shapes,
-          palette: state.palette,
-          totalLayers: state.totalLayers,
-          isDarkMode: state.isDarkMode,
-          postProcessing: state.postProcessing,
-          postProcessingEnabled: state.postProcessingEnabled,
-          cinematicType: state.cinematicType,
-          hiddenLayers: state.hiddenLayers,
-          locked3DLayers: state.locked3DLayers,
-          projectName: state.projectName,
-          layerRenderModes: state.layerRenderModes,
-          layerGradParams: state.layerGradParams,
-          currentLineThickness: state.currentLineThickness,
-          lineMode: state.lineMode,
-          tool: state.tool,
-          activePaletteId: state.activePaletteId
-      };
-      
-      const blob = new Blob([JSON.stringify(projectData)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      // Sanitize project name for filename
-      const sanitizedName = state.projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-      link.download = `${sanitizedName}-${Date.now()}.dior`;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Show success toast
-      toast.success('Project saved successfully', {
-          description: `Saved as ${sanitizedName}.dior`,
-          duration: 2000,
-      });
-      
-      // Clean up properly with a small delay
-      setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          // Refocus the canvas to restore event listeners
-          const canvas = document.querySelector('canvas');
-          if (canvas) {
-              (canvas as HTMLCanvasElement).focus();
-          }
-      }, 100);
+      try {
+          const projectData = {
+              shapes: state.shapes,
+              palette: state.palette,
+              totalLayers: state.totalLayers,
+              isDarkMode: state.isDarkMode,
+              postProcessing: state.postProcessing,
+              postProcessingEnabled: state.postProcessingEnabled,
+              cinematicType: state.cinematicType,
+              hiddenLayers: state.hiddenLayers,
+              locked3DLayers: state.locked3DLayers,
+              projectName: state.projectName,
+              layerRenderModes: state.layerRenderModes,
+              layerGradParams: state.layerGradParams,
+              currentLineThickness: state.currentLineThickness,
+              lineMode: state.lineMode,
+              tool: state.tool,
+              activePaletteId: state.activePaletteId
+          };
+
+          const sanitizedName = state.projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+
+          // Defer the heavy JSON.stringify + download to avoid blocking the
+          // click handler's synchronous path (which can freeze event processing
+          // and cause the toast timer / UI handlers to desynchronise).
+          setTimeout(() => {
+              let url: string | null = null;
+              let link: HTMLAnchorElement | null = null;
+              try {
+                  const blob = new Blob([JSON.stringify(projectData)], { type: 'application/json' });
+                  url = URL.createObjectURL(blob);
+                  link = document.createElement('a');
+                  link.href = url;
+                  link.download = `${sanitizedName}-${Date.now()}.dior`;
+                  link.style.display = 'none';
+                  document.body.appendChild(link);
+                  link.click();
+
+                  toast.success('Project saved successfully', {
+                      description: `Saved as ${sanitizedName}.dior`,
+                      duration: 2000,
+                  });
+              } catch (err) {
+                  console.error('Save failed', err);
+                  toast.error('Failed to save project', {
+                      description: 'Please try again',
+                      duration: 3000,
+                  });
+              } finally {
+                  // Clean up DOM + blob URL after the browser has picked up the download
+                  setTimeout(() => {
+                      try { if (link && link.parentNode) document.body.removeChild(link); } catch (_) { /* already removed */ }
+                      if (url) URL.revokeObjectURL(url);
+                      // Refocus the canvas to restore keyboard event handling
+                      const canvas = document.querySelector('canvas');
+                      if (canvas) (canvas as HTMLCanvasElement).focus();
+                  }, 200);
+              }
+          }, 0);
+      } catch (err) {
+          console.error('Save setup failed', err);
+          toast.error('Failed to save project', {
+              description: 'Please try again',
+              duration: 3000,
+          });
+      }
   };
 
   const handleLoadProject = (e: React.ChangeEvent<HTMLInputElement>) => {

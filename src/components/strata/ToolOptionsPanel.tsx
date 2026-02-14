@@ -50,6 +50,55 @@ export const ToolOptionsPanel = () => {
           
           {/* Content */}
           <div className="p-3 pt-2 flex flex-col gap-2">
+            {/* Gradient Type Selector */}
+            <div className={cn("flex items-center gap-1 p-0.5 rounded-lg", uiTheme.toggleBg)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => dispatch({ type: 'SET_PALETTE_GRADIENT_TYPE', payload: 'solid' })}
+                className={cn(
+                  "flex-1 h-7 rounded-md transition-all text-[10px]",
+                  state.paletteGradientType === 'solid'
+                    ? cn("shadow-sm", uiTheme.toggleActiveBg, uiTheme.toggleActiveText)
+                    : cn(uiTheme.toggleInactiveText, uiTheme.toggleHoverBg, uiTheme.toggleHoverText)
+                )}
+                title="Solid gradient (light → dark)"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16">
+                  <defs>
+                    <linearGradient id="solidGradIcon" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="currentColor" stopOpacity="0.4"/>
+                      <stop offset="100%" stopColor="currentColor" stopOpacity="1"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="1" y="3" width="14" height="10" rx="2" fill="url(#solidGradIcon)"/>
+                </svg>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => dispatch({ type: 'SET_PALETTE_GRADIENT_TYPE', payload: 'fade' })}
+                className={cn(
+                  "flex-1 h-7 rounded-md transition-all text-[10px]",
+                  state.paletteGradientType === 'fade'
+                    ? cn("shadow-sm", uiTheme.toggleActiveBg, uiTheme.toggleActiveText)
+                    : cn(uiTheme.toggleInactiveText, uiTheme.toggleHoverBg, uiTheme.toggleHoverText)
+                )}
+                title="Fade gradient (solid → transparent)"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16">
+                  <defs>
+                    <linearGradient id="fadeGradIcon" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="currentColor" stopOpacity="1"/>
+                      <stop offset="100%" stopColor="currentColor" stopOpacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="1" y="3" width="14" height="10" rx="2" fill="url(#fadeGradIcon)"/>
+                  <rect x="1" y="3" width="14" height="10" rx="2" fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="0.5"/>
+                </svg>
+              </Button>
+            </div>
+
             <div className="flex justify-between items-center text-xs font-medium">
               <span className={cn("flex items-center gap-1", uiTheme.textMuted)}>
                 <RotateCw className="w-3 h-3"/> Angle

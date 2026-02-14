@@ -82,7 +82,7 @@ export type HistorySnapshot = {
     hiddenLayers: number[];
     locked3DLayers: number[];
     layerRenderModes: Record<number, 'flat' | 'grad'>;
-    layerGradParams: Record<number, { angle: number; intensity: number }>;
+    layerGradParams: Record<number, { angle: number; intensity: number; gradType?: 'solid' | 'fade' }>;
     layerBrushSettings: Record<number, { thickness: number; mode: LineMode }>;
 };
 
@@ -118,10 +118,11 @@ export interface AppState {
   isSymmetryEnabled: boolean; // New: Vertical Symmetry Mode
   paletteMode: 'flat' | 'grad'; // New: Palette Rendering Mode
   layerRenderModes: Record<number, 'flat' | 'grad'>; // New: Per-layer render mode
-  layerGradParams: Record<number, { angle: number; intensity: number }>; // New: Per-layer gradient params
+  layerGradParams: Record<number, { angle: number; intensity: number; gradType?: 'solid' | 'fade' }>; // New: Per-layer gradient params
   layerBrushSettings: Record<number, { thickness: number; mode: LineMode }>; // New: Per-layer brush settings
   paletteGradientAngle: number; // New: Gradient Angle in degrees
   paletteGradientIntensity: number; // New: Gradient Intensity (0 to 1)
+  paletteGradientType: 'solid' | 'fade'; // New: Gradient type (solid-to-solid vs solid-to-transparent)
   pointOfInterest: { x: number; y: number; z: number } | null; // New: Point of Interest for camera focus
   cinematicSpeed: number; // New: Speed multiplier for cinematic moves (0.1 to 1.0)
   isDrawBehind: boolean; // New: Draw Behind mode
@@ -139,7 +140,7 @@ export interface AppState {
 // --- Constants ---
 export const BASE_DEPTH_STEP = 150;  
 export const MAX_LAYERS = 10;
-export const APP_VERSION = "1.8.2"; // Release version
+export const APP_VERSION = "1.8.7"; // Release version
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 export const FIXED_PALETTE = [
@@ -384,6 +385,7 @@ type Action =
   | { type: 'SET_PALETTE_MODE'; payload: 'flat' | 'grad' }
   | { type: 'SET_PALETTE_GRADIENT_ANGLE'; payload: number }
   | { type: 'SET_PALETTE_GRADIENT_INTENSITY'; payload: number }
+  | { type: 'SET_PALETTE_GRADIENT_TYPE'; payload: 'solid' | 'fade' }
   | { type: 'RESET_DRAWING_VIEW' }
   | { type: 'DELETE_CURRENT_LAYER' }
   | { type: 'START_TEXT_SESSION'; payload: { x: number; y: number } }
@@ -496,6 +498,7 @@ const initialState: AppState = {
   layerBrushSettings: {},
   paletteGradientAngle: 90, // Default Vertical
   paletteGradientIntensity: 0.2,
+  paletteGradientType: 'solid',
   pointOfInterest: null,
   cinematicSpeed: 1.0, // Default Normal Speed
   isDrawBehind: false,
@@ -603,6 +606,17 @@ function appReducer(state: AppState, action: Action): AppState {
           }
       };
     }
+    case 'SET_PALETTE_GRADIENT_TYPE': {
+      const currentParams = state.layerGradParams[state.currentLayerIndex] || { angle: 90, intensity: 0.2 };
+      return {
+          ...state,
+          paletteGradientType: action.payload,
+          layerGradParams: {
+              ...state.layerGradParams,
+              [state.currentLayerIndex]: { ...currentParams, gradType: action.payload }
+          }
+      };
+    }
     case 'RESET_DRAWING_VIEW':
       return { ...state, drawingZoom: 1, drawingPan: { x: 0, y: 0 } };
     case 'ADD_SHAPE': {
@@ -653,6 +667,7 @@ function appReducer(state: AppState, action: Action): AppState {
         layerRenderModes: snapshot.layerRenderModes,
         layerGradParams: snapshot.layerGradParams,
         layerBrushSettings: snapshot.layerBrushSettings,
+        paletteGradientType: (snapshot.layerGradParams?.[layerIndexToUse]?.gradType) || 'solid',
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -684,6 +699,7 @@ function appReducer(state: AppState, action: Action): AppState {
         layerRenderModes: snapshot.layerRenderModes,
         layerGradParams: snapshot.layerGradParams,
         layerBrushSettings: snapshot.layerBrushSettings,
+        paletteGradientType: (snapshot.layerGradParams?.[layerIndexToUse]?.gradType) || 'solid',
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -739,6 +755,7 @@ function appReducer(state: AppState, action: Action): AppState {
               paletteMode: state.layerRenderModes[nextIndex] || 'flat',
               paletteGradientAngle: nextParams.angle,
               paletteGradientIntensity: nextParams.intensity,
+              paletteGradientType: nextParams.gradType || 'solid',
               currentLineThickness: nextBrush.thickness,
               lineMode: nextBrush.mode
           };
@@ -757,6 +774,7 @@ function appReducer(state: AppState, action: Action): AppState {
               paletteMode: 'flat',
               paletteGradientAngle: 90,
               paletteGradientIntensity: 0.2,
+              paletteGradientType: 'solid',
               currentLineThickness: 25,
               lineMode: 'tapered'
           };
@@ -787,6 +805,7 @@ function appReducer(state: AppState, action: Action): AppState {
                 paletteMode: state.layerRenderModes[prevIndex] || 'flat',
                 paletteGradientAngle: prevParams.angle,
                 paletteGradientIntensity: prevParams.intensity,
+                paletteGradientType: prevParams.gradType || 'solid',
                 currentLineThickness: prevBrush.thickness,
                 lineMode: prevBrush.mode
             };
@@ -854,7 +873,8 @@ function appReducer(state: AppState, action: Action): AppState {
           layerBrushSettings: {},
           paletteMode: 'flat',
           paletteGradientAngle: 90,
-          paletteGradientIntensity: 0.2
+          paletteGradientIntensity: 0.2,
+          paletteGradientType: 'solid'
       }
     case 'LOAD_PROJECT':
       // Ensure we merge postProcessing settings correctly to avoid undefined values
@@ -910,6 +930,7 @@ function appReducer(state: AppState, action: Action): AppState {
           paletteMode: loadedLayerRenderModes[0] || 'flat',
           paletteGradientAngle: firstLayerParams.angle,
           paletteGradientIntensity: firstLayerParams.intensity,
+          paletteGradientType: firstLayerParams.gradType || 'solid',
           currentLineThickness: action.payload.currentLineThickness || 25,
           lineMode: action.payload.lineMode || 'tapered',
           activePaletteId: loadedPaletteId,
@@ -1128,6 +1149,7 @@ function appReducer(state: AppState, action: Action): AppState {
         
         // Sync global settings with new current layer
         const nextBrush = newBrushSettings[newCurrentLayer] || { thickness: 25, mode: 'tapered' as LineMode };
+        const nextGradP = newGradParams[newCurrentLayer] || { angle: 90, intensity: 0.2 };
         
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         
@@ -1142,6 +1164,10 @@ function appReducer(state: AppState, action: Action): AppState {
             layerRenderModes: newRenderModes,
             layerGradParams: newGradParams,
             layerBrushSettings: newBrushSettings,
+            paletteMode: newRenderModes[newCurrentLayer] || 'flat',
+            paletteGradientAngle: nextGradP.angle,
+            paletteGradientIntensity: nextGradP.intensity,
+            paletteGradientType: nextGradP.gradType || 'solid',
             currentLineThickness: nextBrush.thickness,
             lineMode: nextBrush.mode,
             history,
@@ -1266,7 +1292,7 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'COMMIT_LINE_THICKNESS': {
         const prevShapes = state.lineThicknessBeforePreview;
         if (prevShapes) {
-             const { history, index } = pushHistory(state.history, state.historyIndex, state.shapes);
+             const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
              return { ...state, lineThicknessBeforePreview: null, history, historyIndex: index };
         }
         return { ...state, lineThicknessBeforePreview: null };
@@ -1439,6 +1465,7 @@ function appReducer(state: AppState, action: Action): AppState {
 
         // Sync global
         const nextBrush = newBrushSettings[newLayerIndex];
+        const nextGradP = newGradParams[newLayerIndex] || { angle: 90, intensity: 0.2 };
 
         const newState = {
             ...state,
@@ -1451,6 +1478,10 @@ function appReducer(state: AppState, action: Action): AppState {
             layerRenderModes: newRenderModes,
             layerGradParams: newGradParams,
             layerBrushSettings: newBrushSettings,
+            paletteMode: newRenderModes[newLayerIndex] || 'flat',
+            paletteGradientAngle: nextGradP.angle,
+            paletteGradientIntensity: nextGradP.intensity,
+            paletteGradientType: nextGradP.gradType || 'solid',
             currentLineThickness: nextBrush.thickness,
             lineMode: nextBrush.mode
         };

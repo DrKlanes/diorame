@@ -1721,7 +1721,19 @@ export const StrataCanvas = () => {
           }
           pCtx.putImageData(iData,0,0);
           
-          // Draw back (Upscale)
+          // 4. Quantize alpha for fade gradient compatibility
+           // Converts smooth alpha into ordered-dithered binary alpha
+           for (let j = 3; j < d.length; j += 4) {
+               if (d[j] > 0 && d[j] < 255) {
+                   const pi = (j - 3) / 4;
+                   const px = pi % sw, py = Math.floor(pi / sw);
+                   const bayerVal = bayerMatrix4x4[py % 4][px % 4] / 64;
+                   d[j] = (d[j] / 255) > bayerVal ? 255 : 0;
+               }
+           }
+           pCtx.putImageData(iData, 0, 0);
+
+           // Draw back (Upscale)
           targetCtx.save();
           targetCtx.globalCompositeOperation = 'copy';
           targetCtx.imageSmoothingEnabled = false;
@@ -2136,6 +2148,9 @@ export const StrataCanvas = () => {
                       const shapeLayerIndex = Math.round(Math.abs(shape.zIndex / BASE_DEPTH_STEP));
                       const renderMode = currentState.layerRenderModes?.[shapeLayerIndex] || 'flat';
                       
+                      let isFadeGrad = false;
+                      let fadeBounds = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+                      
                       if (renderMode === 'grad' && !shape.isEraser) {
                           // Gradient logic simplified
                           let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -2156,9 +2171,19 @@ export const StrataCanvas = () => {
                               cx + Math.cos(ang)*r, cy + Math.sin(ang)*r
                           );
                           const c = shape.color, ints = gradParams.intensity;
-                          grad.addColorStop(0, getVibrantVariant(c, ints, 'light'));
-                          grad.addColorStop(0.5, c);
-                          grad.addColorStop(1, getVibrantVariant(c, ints, 'dark'));
+                          if (gradParams.gradType === 'fade') {
+                              // Fade gradient: solid color → transparent
+                              const endAlpha = Math.max(0, 1 - (0.2 + ints * 0.8));
+                              grad.addColorStop(0, hexToRgba(c, 1));
+                              grad.addColorStop(1, hexToRgba(c, endAlpha));
+                              isFadeGrad = true;
+                              fadeBounds = { minX, minY, maxX, maxY };
+                          } else {
+                              // Solid gradient: light variant → color → dark variant (default)
+                              grad.addColorStop(0, getVibrantVariant(c, ints, 'light'));
+                              grad.addColorStop(0.5, c);
+                              grad.addColorStop(1, getVibrantVariant(c, ints, 'dark'));
+                          }
                           layerCtx.fillStyle = grad;
                       } else {
                           layerCtx.fillStyle = shape.color;
@@ -2167,6 +2192,19 @@ export const StrataCanvas = () => {
                       if (useStraightLines) drawStraightLine(layerCtx, renderPoints);
                       else drawSmoothLine(layerCtx, renderPoints);
                       layerCtx.fill();
+                      
+                      // Fade grain removed for performance stability
+                      if (false) { // grain disabled
+                          layerCtx.save();
+                          layerCtx.clip(); // Clip grain to current stroke path
+                          layerCtx.globalCompositeOperation = 'source-over';
+                          layerCtx.globalAlpha = 0.14;
+                          const gw = Math.ceil(fadeBounds.maxX - fadeBounds.minX) + 2;
+                          const gh = Math.ceil(fadeBounds.maxY - fadeBounds.minY) + 2;
+                          const grainTex = null; // createFadeGrain removed
+                          if (grainTex) layerCtx.drawImage(grainTex, fadeBounds.minX - 1, fadeBounds.minY - 1, gw, gh);
+                          layerCtx.restore();
+                      }
                   }
                   
                   layerCtx.globalCompositeOperation = 'source-over';
@@ -2607,7 +2645,17 @@ export const StrataCanvas = () => {
           pCtx.putImageData(iData,0,0);
           ctx.imageSmoothingEnabled = false;
           ctx.globalCompositeOperation = 'source-over';
-          ctx.drawImage(pixelCanvasRef.current!, 0, 0, sw, sh, 0, 0, w, h);
+          // Quantize alpha for fade gradient compatibility (final composite)
+           for (let j = 3; j < d.length; j += 4) {
+               if (d[j] > 0 && d[j] < 255) {
+                   const pi = (j - 3) / 4;
+                   const px = pi % sw, py = Math.floor(pi / sw);
+                   const bayerVal = bayerMatrix4x4[py % 4][px % 4] / 64;
+                   d[j] = (d[j] / 255) > bayerVal ? 255 : 0;
+               }
+           }
+           pCtx.putImageData(iData, 0, 0);
+           ctx.drawImage(pixelCanvasRef.current!, 0, 0, sw, sh, 0, 0, w, h);
           ctx.imageSmoothingEnabled = true;
       }
 
@@ -3005,6 +3053,31 @@ const getVibrantVariant = (hex: string, intensity: number, direction: 'light' | 
     if (direction === 'light') { hsl.l = Math.min(92, hsl.l + shift); if (hsl.s > 0) hsl.s = Math.min(100, hsl.s + (intensity * 10)); }
     else { hsl.l = Math.max(20, hsl.l - shift); if (hsl.s > 0) hsl.s = Math.min(100, hsl.s + (intensity * 30)); }
     return hslToHex(hsl.h, hsl.s, hsl.l);
+};
+
+const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+};
+
+// createFadeGrain removed — grain no longer applied to fade gradients
+const _createFadeGrain_REMOVED = (_w: number, _h: number): HTMLCanvasElement | null => {
+    return null; /* Dead code below — original grain generator */
+    if (w <= 0 || h <= 0) return null;
+    const scale = 3;
+    const nw = Math.ceil(w / scale), nh = Math.ceil(h / scale);
+    const nc = document.createElement('canvas'); nc.width = nw; nc.height = nh;
+    const nCtx = nc.getContext('2d'); if (!nCtx) return null;
+    const iData = nCtx.createImageData(nw, nh), data = iData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        if (Math.random() < 0.4) {
+            const v = Math.random() < 0.5 ? 0 : 255;
+            data[i] = v; data[i+1] = v; data[i+2] = v;
+            data[i+3] = 70;
+        }
+    }
+    nCtx.putImageData(iData, 0, 0);
+    return nc;
 };
 
 const createNoise = (w: number, h: number, alpha = 100, scale = 2, density = 0.45) => {
