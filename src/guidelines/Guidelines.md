@@ -1,61 +1,53 @@
-**Add your own guidelines here**
-<!--
+# Diorame — Architecture Guidelines
 
-System Guidelines
+## Golden Rules
 
-Use this file to provide the AI with rules and guidelines you want it to follow.
-This template outlines a few examples of things you can add. You can add your own sections and format it to suit your needs
+1. **No new code in StrataCanvas.tsx.** This file is a frozen monolith (~3200 lines). Only _extract_ code out of it; never add lines to it.
+2. **Max 400 lines per file.** If a new file approaches this limit, split it before continuing.
+3. **Tabs for indentation.** The entire codebase uses tabs. Never mix in spaces.
 
-TIP: More context isn't always better. It can confuse the LLM. Try and add the most important rules you need
+## Where to Put New Code
 
-# General guidelines
+| Type of code | Target location | Example |
+|---|---|---|
+| Pure data / constants | `/components/strata/<name>.ts` | `pixelArtPalettes.ts` |
+| Reusable logic / helpers | `/components/strata/hooks/use<Name>.ts` or `/components/strata/utils/<name>.ts` | `useCanvasGestures.ts`, `projectionMath.ts` |
+| UI sub-components | `/components/strata/<Name>.tsx` | `LayersPanel.tsx`, `ToolOptionsPanel.tsx` |
+| Shared types | `/components/strata/StrataContext.tsx` (existing) or a dedicated `types.ts` if it grows | — |
 
-Any general rules you want the AI to follow.
-For example:
+## Extracting from StrataCanvas (incremental strategy)
 
-* Only use absolute positioning when necessary. Opt for responsive and well structured layouts that use flexbox and grid by default
-* Refactor code as you go to keep code clean
-* Keep file sizes small and put helper functions and components in their own files.
+* Identify a self-contained block (e.g., gesture handling, pixel-art post-processing, SVG export).
+* Create a new file following the table above.
+* Import into StrataCanvas replacing the inline code.
+* Verify the app compiles and behavior is identical before moving on.
+* Leave a one-line comment at the extraction point: `// Extracted to <filename>`.
 
---------------
+## Editing StrataCanvas (when you must)
 
-# Design system guidelines
-Rules for how the AI should make generations look like your company's design system
+The file uses tab indentation which breaks multi-line diffs in most AI editing tools. Follow these rules:
 
-Additionally, if you select a design system to use in the prompt box, you can reference
-your design system's components, tokens, variables and components.
-For example:
+* Use **short, unique anchors** — match 1-3 lines of distinctive context, avoid leading whitespace in search strings.
+* Prefer single-line edits or very small blocks (< 5 lines).
+* When a search string matches multiple locations (live code + dead code inside `/* */` blocks), include surrounding context from _before_ the block to disambiguate.
+* Never reformat or re-indent existing lines.
 
-* Use a base font-size of 16px
-* Date formats should always be in the format “Jun 10”
-* The bottom toolbar should only ever have a maximum of 4 items
-* Never use the floating action button with the bottom toolbar
-* Chips should always come in sets of 3 or more
-* Don't use a dropdown if there are 2 or fewer options
+## Protected Behaviors (do NOT modify)
 
-You can also create sub sections and add more specific details
-For example:
+* Eraser tool logic
+* Draw Inside / Draw Behind compositing
+* Clipping / composition / rendering pipeline
+* `hiddenLayers` is excluded from undo/redo
 
+## Versioning
 
-## Button
-The Button component is a fundamental interactive element in our design system, designed to trigger actions or navigate
-users through the application. It provides visual feedback and clear affordances to enhance user experience.
+* `APP_VERSION` lives in `StrataContext.tsx`.
+* Bump it (semver) on any user-facing change or structural refactor.
+* Current version: **1.9.0**
 
-### Usage
-Buttons should be used for important actions that users need to take, such as form submissions, confirming choices,
-or initiating processes. They communicate interactivity and should have clear, action-oriented labels.
+## General
 
-### Variants
-* Primary Button
-  * Purpose : Used for the main action in a section or page
-  * Visual Style : Bold, filled with the primary brand color
-  * Usage : One primary button per section to guide users toward the most important action
-* Secondary Button
-  * Purpose : Used for alternative or supporting actions
-  * Visual Style : Outlined with the primary color, transparent background
-  * Usage : Can appear alongside a primary button for less important actions
-* Tertiary Button
-  * Purpose : Used for the least important actions
-  * Visual Style : Text-only with no border, using primary color
-  * Usage : For actions that should be available but not emphasized
--->
+* Use `sonner@2.0.3` for toasts.
+* Use `figma:asset/...` for raster image imports (no path prefix).
+* SVGs go in `/imports` and use relative paths.
+* Prefer `readonly` types for extracted constant data (arrays, palettes, matrices).

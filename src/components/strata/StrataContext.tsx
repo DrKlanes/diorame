@@ -140,7 +140,7 @@ export interface AppState {
 // --- Constants ---
 export const BASE_DEPTH_STEP = 150;  
 export const MAX_LAYERS = 10;
-export const APP_VERSION = "1.8.7"; // Release version
+export const APP_VERSION = "1.9.0"; // Release version
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 export const FIXED_PALETTE = [
@@ -895,13 +895,31 @@ function appReducer(state: AppState, action: Action): AppState {
       const loadedPaletteId = action.payload.activePaletteId || 'primary';
       const loadedPalette = loadedPaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
 
+      // ── Whitelist validation: only accept known keys with type guards ──
+      const safeShapes = Array.isArray(action.payload.shapes) ? action.payload.shapes : [];
+      const safeTotalLayers = (typeof action.payload.totalLayers === 'number' && action.payload.totalLayers > 0)
+          ? Math.min(action.payload.totalLayers, MAX_LAYERS) : 1;
+      const safeHiddenLayers = Array.isArray(action.payload.hiddenLayers) ? action.payload.hiddenLayers : [];
+      const safeLocked3DLayers = Array.isArray(action.payload.locked3DLayers) ? action.payload.locked3DLayers : [];
+      const safeTool = (typeof action.payload.tool === 'string' && ['brush', 'eraser', 'line', 'move', 'lasso'].includes(action.payload.tool))
+          ? action.payload.tool : 'brush';
+      const safeLineMode = (typeof action.payload.lineMode === 'string' && ['tapered', 'uniform'].includes(action.payload.lineMode))
+          ? action.payload.lineMode : 'tapered';
+      const safeLineThickness = (typeof action.payload.currentLineThickness === 'number' && action.payload.currentLineThickness > 0)
+          ? action.payload.currentLineThickness : 25;
+      const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : state.isDarkMode;
+      const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['orbit', 'flythrough'].includes(action.payload.cinematicType))
+          ? action.payload.cinematicType : state.cinematicType;
+      const safeProjectName = typeof action.payload.projectName === 'string'
+          ? action.payload.projectName.slice(0, 100) : state.projectName;
+
       // Create initial history snapshot with loaded state
       const initialSnapshot: HistorySnapshot = {
-          shapes: action.payload.shapes || [],
-          totalLayers: action.payload.totalLayers || 1,
+          shapes: safeShapes,
+          totalLayers: safeTotalLayers,
           currentLayerIndex: 0,
-          hiddenLayers: action.payload.hiddenLayers || [],
-          locked3DLayers: action.payload.locked3DLayers || [],
+          hiddenLayers: safeHiddenLayers,
+          locked3DLayers: safeLocked3DLayers,
           layerRenderModes: loadedLayerRenderModes,
           layerGradParams: loadedLayerGradParams,
           layerBrushSettings: loadedLayerBrushSettings
@@ -909,19 +927,23 @@ function appReducer(state: AppState, action: Action): AppState {
 
       return {
           ...state,
-          ...action.payload,
+          // Whitelisted fields only — no ...action.payload spread
+          shapes: safeShapes,
+          totalLayers: safeTotalLayers,
+          isDarkMode: safeIsDarkMode,
+          cinematicType: safeCinematicType,
+          projectName: safeProjectName,
           postProcessing: mergedPostProcessing,
           postProcessingEnabled: mergedPostProcessingEnabled,
-          // Ensure critical state is reset/set correctly if not in payload or to ensure consistency
+          // Ensure critical state is reset/set correctly
           history: [initialSnapshot],
           historyIndex: 0,
           camera: { x: 0, y: 0, z: 0, rotation: 0 },
           currentLayerIndex: 0,
           mode: 'drawing',
-          tool: action.payload.tool || 'brush',
-          hiddenLayers: action.payload.hiddenLayers || [],
-          // Allow any layer to be locked
-          locked3DLayers: action.payload.locked3DLayers || [],
+          tool: safeTool,
+          hiddenLayers: safeHiddenLayers,
+          locked3DLayers: safeLocked3DLayers,
           drawingZoom: 1,
           drawingPan: { x: 0, y: 0 },
           layerRenderModes: loadedLayerRenderModes,
@@ -931,8 +953,8 @@ function appReducer(state: AppState, action: Action): AppState {
           paletteGradientAngle: firstLayerParams.angle,
           paletteGradientIntensity: firstLayerParams.intensity,
           paletteGradientType: firstLayerParams.gradType || 'solid',
-          currentLineThickness: action.payload.currentLineThickness || 25,
-          lineMode: action.payload.lineMode || 'tapered',
+          currentLineThickness: safeLineThickness,
+          lineMode: safeLineMode,
           activePaletteId: loadedPaletteId,
           palette: loadedPalette,
           shouldFitToView: true

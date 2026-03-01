@@ -210,21 +210,36 @@ export const Controls = () => {
       const file = e.target.files?.[0];
       if (!file) return;
 
+      // Size guard: reject files larger than 50 MB to prevent memory issues
+      const MAX_FILE_SIZE = 50 * 1024 * 1024;
+      if (file.size > MAX_FILE_SIZE) {
+          toast.error('File too large', {
+              description: 'Maximum file size is 50 MB',
+              duration: 3000,
+          });
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          return;
+      }
+
       const reader = new FileReader();
       reader.onload = (event) => {
           try {
               const json = JSON.parse(event.target?.result as string);
-              if (json.shapes) {
-                  dispatch({ type: 'LOAD_PROJECT', payload: json });
-                  toast.success('Project loaded successfully', {
-                      description: `Loaded ${json.shapes.length} shapes`,
-                      duration: 2000,
-                  });
+              if (!json || typeof json !== 'object' || Array.isArray(json)) {
+                  throw new Error('Invalid project format');
               }
+              if (!Array.isArray(json.shapes)) {
+                  throw new Error('Missing or invalid shapes data');
+              }
+              dispatch({ type: 'LOAD_PROJECT', payload: json });
+              toast.success('Project loaded successfully', {
+                  description: `Loaded ${json.shapes.length} shapes`,
+                  duration: 2000,
+              });
           } catch (err) {
               console.error("Failed to load project", err);
               toast.error('Failed to load project', {
-                  description: 'Please check if the file is valid',
+                  description: err instanceof Error ? err.message : 'Please check if the file is valid',
                   duration: 3000,
               });
           }

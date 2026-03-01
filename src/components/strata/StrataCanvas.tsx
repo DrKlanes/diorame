@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStrata, Shape, Point, BASE_DEPTH_STEP, generateTaperedStroke, generateUniformStroke } from './StrataContext';
 import paperTexture from "figma:asset/dedf59e02015e1400029a84197a5242f42fdbb01.png";
 import risoTexture from "figma:asset/cb8694f26c4e972edf10545cd26da5e5d135c92e.png";
@@ -6,6 +6,7 @@ import grungeTexture from "figma:asset/cbf89ce40bab5dc98000a75dbc50509b964706a0.
 import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingOverlay } from './OnboardingOverlay';
+import { BAYER_MATRIX_4X4, PALETTE_CGA, PALETTE_RGB8, PALETTE_RETRO, PALETTE_HANDHELD, PALETTE_STYLIZED } from './pixelArtPalettes';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -24,6 +25,7 @@ export const StrataCanvas = () => {
   const currentPointsRef = useRef<Point[]>([]); 
   const isDrawingRef = useRef(false);
   const drawingPointerTypeRef = useRef<string | null>(null);
+  const pinchEndTimestampRef = useRef(0); // Cooldown after pinch to prevent ghost strokes
   const drawingPressureRef = useRef(0.5);
   
   const gestureRef = useRef<{
@@ -79,13 +81,8 @@ export const StrataCanvas = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
 
-  // --- Bayer Matrix for Ordered Dithering (4x4) ---
-  const bayerMatrix4x4 = useMemo(() => [
-      [ 0, 32,  8, 40],
-      [48, 16, 56, 24],
-      [12, 44,  4, 36],
-      [60, 28, 52, 20]
-  ], []);
+  // Bayer Matrix imported from pixelArtPalettes.ts
+  const bayerMatrix4x4 = BAYER_MATRIX_4X4;
 
   // Orbit Camera State
   const orbitRef = useRef({ 
@@ -706,7 +703,8 @@ export const StrataCanvas = () => {
               const t1 = e.touches[0];
               const t2 = e.touches[1];
               const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-              if (dist < 5) return; 
+              drawingPointerTypeRef.current = null; // Clear to prevent orphan touch strokes
+               if (dist < 5) return; 
 
               const cx = (t1.clientX + t2.clientX) / 2;
               const cy = (t1.clientY + t2.clientY) / 2;
@@ -846,6 +844,7 @@ export const StrataCanvas = () => {
   const handleTouchEnd = (e: React.TouchEvent) => {
       if (state.mode === 'drawing') {
           if (gestureRef.current.isPinching && e.touches.length < 2) {
+               pinchEndTimestampRef.current = Date.now(); // cooldown to prevent ghost strokes
               gestureRef.current.isPinching = false;
           }
       } else if (state.mode === 'cinematic' && state.cinematicType === 'orbit') {
@@ -863,7 +862,8 @@ export const StrataCanvas = () => {
       }
   };
   
-  const handleTouchCancel = (e: React.TouchEvent) => { 
+  const handleTouchCancel = (e: React.TouchEvent) => {
+       pinchEndTimestampRef.current = Date.now(); 
       gestureRef.current.isPinching = false; 
       gestureRef.current.isOrbitTouch = false;
   };
@@ -875,6 +875,8 @@ export const StrataCanvas = () => {
     } else {
         if (gestureRef.current.isPinching) return;
         if (!e.isPrimary) return;
+         // Post-pinch cooldown: ignore touch shortly after pinch to prevent ghost strokes
+         if (e.pointerType === 'touch' && (Date.now() - pinchEndTimestampRef.current) < 150) return;
     } 
 
     if (e.button === 1) { // Middle Mouse Button: Pan/Zoom
@@ -1223,7 +1225,14 @@ export const StrataCanvas = () => {
         }
         
         if (currentPointsRef.current.length > 0) {
-            // Ensure visibility for small shapes (dots/lines) since fill() requires area
+            // Discard micro-strokes from finger/palm touches (not pen or mouse)
+             if (drawingPointerTypeRef.current === 'touch' && currentPointsRef.current.length <= 2) {
+                 currentPointsRef.current = [];
+                 isDrawingRef.current = false;
+                 drawingPointerTypeRef.current = null;
+                 return;
+             }
+             // Ensure visibility for small shapes (dots/lines) since fill() requires area
             let finalPoints = [...currentPointsRef.current];
             const isLineTool = state.tool === 'line';
 
@@ -1563,50 +1572,11 @@ export const StrataCanvas = () => {
           const iData = pCtx.getImageData(0,0,sw,sh);
           const d = iData.data;
           
-          // Palette Selection based on Depth
+          // Palette Selection based on Depth (palettes imported from pixelArtPalettes.ts)
           const depthVal = currentState.postProcessing.pixelArtDepth || 4;
           let mode = 'quantize';
-          let activePalette: number[][] | null = null;
+          let activePalette: readonly number[][] | null = null;
           let quantLevels = 4;
-
-          // CGA-inspired (Cyan/Magenta/White/Black) - High Contrast
-          const PALETTE_CGA = [
-              [0,0,0], [85,255,255], [255,85,255], [255,255,255]
-          ];
-
-          // 3-bit RGB (8 Colors) - Classic Computer
-          const PALETTE_RGB8 = [
-              [0,0,0], [255,0,0], [0,255,0], [0,0,255],
-              [255,255,0], [0,255,255], [255,0,255], [255,255,255]
-          ];
-          
-          // Retro Palette (Pico-8 inspired) - 16 Colors
-          const PALETTE_RETRO = [
-            [0,0,0], [29,43,83], [126,37,83], [0,135,81],
-            [171,82,54], [95,87,79], [194,195,199], [255,241,232],
-            [255,0,77], [255,163,0], [255,236,39], [0,228,54],
-            [41,173,255], [131,118,156], [255,119,168], [255,204,170]
-          ];
-          
-          // Classic Handheld (Game Boy Style) - Expanded to 8 Colors
-          const PALETTE_HANDHELD = [
-             [8,24,8],      // Deepest Shadow
-             [15,56,15],    // Original Darkest
-             [30,80,30],    // Mid Shadow
-             [48,98,48],    // Original Dark
-             [85,130,35],   // Mid Light (Bridge)
-             [139,172,15],  // Original Light
-             [155,188,15],  // Original Lightest
-             [205,230,80]   // New Highlight
-          ];
-
-          // Stylized Limited - Modern/Artistic (13 Colors)
-          const PALETTE_STYLIZED = [
-             [20,12,28], [68,36,52], [48,52,109], [78,74,78],
-             [133,76,48], [52,101,36], [208,70,72], [117,113,97],
-             [89,125,206], [210,125,44], [133,149,161], [218,212,94],
-             [83,95,95]     // Shadow Complement (#535f5f)
-          ];
 
           if (depthVal <= 2) {
               mode = '1bit';
@@ -1636,7 +1606,7 @@ export const StrataCanvas = () => {
           }
           
           // Helper: Find closest palette color
-          const getClosest = (r: number, g: number, b: number, palette: number[][]) => {
+          const getClosest = (r: number, g: number, b: number, palette: readonly number[][]) => {
               let minD = Infinity, best = palette[0];
               for (let i = 0; i < palette.length; i++) {
                   const c = palette[i];
@@ -2193,8 +2163,8 @@ export const StrataCanvas = () => {
                       else drawSmoothLine(layerCtx, renderPoints);
                       layerCtx.fill();
                       
-                      // Fade grain removed for performance stability
-                      if (false) { // grain disabled
+                      
+                      /* Dead code removed: synthetic grain (11 lines)
                           layerCtx.save();
                           layerCtx.clip(); // Clip grain to current stroke path
                           layerCtx.globalCompositeOperation = 'source-over';
@@ -2203,6 +2173,10 @@ export const StrataCanvas = () => {
                           const gh = Math.ceil(fadeBounds.maxY - fadeBounds.minY) + 2;
                           const grainTex = null; // createFadeGrain removed
                           if (grainTex) layerCtx.drawImage(grainTex, fadeBounds.minX - 1, fadeBounds.minY - 1, gw, gh);
+                           layerCtx.restore();
+                       } end of dead grain block
+                           layerCtx.restore();
+                       } */ if (false) { // orphaned dead lines
                           layerCtx.restore();
                       }
                   }
@@ -2254,9 +2228,9 @@ export const StrataCanvas = () => {
                       if (currentState.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
                       else layerCtx.globalCompositeOperation = currentState.isDrawInside ? 'source-atop' : 'source-over';
                       
-                      layerCtx.fillStyle = currentState.paletteMode === 'grad' 
-                        ? currentState.palette[currentState.currentColorIndex] // Simple color for live drawing to save perf
-                        : currentState.palette[currentState.currentColorIndex];
+                      layerCtx.fillStyle = currentState.palette[currentState.currentColorIndex]; /* Redundant ternary removed — both branches identical
+                        ? currentState.palette[currentState.currentColorIndex] // Color for live drawing (gradient not applied during stroke for perf) both branches were identical
+                        : currentState.palette[currentState.currentColorIndex]; */
                         
                       drawSmoothLine(layerCtx, projPoints);
                       layerCtx.fill();
@@ -2454,7 +2428,9 @@ export const StrataCanvas = () => {
       }
 
       // Pixel Art (Global Pass - Disabled in favor of per-layer pass to support smooth DoF)
-      if (false && isPixelArt) {
+      /* Dead code removed: duplicate global Pixel Art pass (~200 lines)
+       Disabled in favor of per-layer pass to support smooth DoF.
+       if (false && isPixelArt) {
           const pSize = Math.max(2, currentState.postProcessing.pixelArtSize || 4);
           const sw = Math.ceil(w/pSize), sh = Math.ceil(h/pSize);
           
@@ -2657,7 +2633,10 @@ export const StrataCanvas = () => {
            pCtx.putImageData(iData, 0, 0);
            ctx.drawImage(pixelCanvasRef.current!, 0, 0, sw, sh, 0, 0, w, h);
           ctx.imageSmoothingEnabled = true;
+       } end of dead pixel art block
       }
+
+      end of dead pixel art outer brace */
 
       // --- Grunge Overlay (Animated) ---
       if (isCinematic && currentState.postProcessingEnabled.grungeOverlay && grungeImgRef.current) {
@@ -3060,25 +3039,7 @@ const hexToRgba = (hex: string, alpha: number) => {
     return `rgba(${r},${g},${b},${alpha})`;
 };
 
-// createFadeGrain removed — grain no longer applied to fade gradients
-const _createFadeGrain_REMOVED = (_w: number, _h: number): HTMLCanvasElement | null => {
-    return null; /* Dead code below — original grain generator */
-    if (w <= 0 || h <= 0) return null;
-    const scale = 3;
-    const nw = Math.ceil(w / scale), nh = Math.ceil(h / scale);
-    const nc = document.createElement('canvas'); nc.width = nw; nc.height = nh;
-    const nCtx = nc.getContext('2d'); if (!nCtx) return null;
-    const iData = nCtx.createImageData(nw, nh), data = iData.data;
-    for (let i = 0; i < data.length; i += 4) {
-        if (Math.random() < 0.4) {
-            const v = Math.random() < 0.5 ? 0 : 255;
-            data[i] = v; data[i+1] = v; data[i+2] = v;
-            data[i+3] = 70;
-        }
-    }
-    nCtx.putImageData(iData, 0, 0);
-    return nc;
-};
+// _createFadeGrain_REMOVED — dead code eliminated (was ~20 lines)
 
 const createNoise = (w: number, h: number, alpha = 100, scale = 2, density = 0.45) => {
     if (w <= 0 || h <= 0) return null;
