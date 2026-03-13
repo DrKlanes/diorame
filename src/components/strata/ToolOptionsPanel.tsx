@@ -183,6 +183,22 @@ export const ToolOptionsPanel = () => {
                   <rect x="2" y="6" width="12" height="4" />
                 </svg>
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => dispatch({ type: 'SET_LINE_MODE', payload: 'ink' })}
+                className={cn(
+                  "flex-1 h-7 rounded-md transition-all",
+                  state.lineMode === 'ink' 
+                    ? cn("shadow-sm", uiTheme.toggleActiveBg, uiTheme.toggleActiveText)
+                    : cn(uiTheme.toggleInactiveText, uiTheme.toggleHoverBg, uiTheme.toggleHoverText)
+                )}
+                title="Ink"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M2 9.5 C3 7, 5 6.2, 7 7.5 C9 8.8, 11 6, 14 6.5 L14 9.5 C11 10, 9 12.2, 7 10.8 C5 9.5, 3 11, 2 9.5 Z" />
+                </svg>
+              </Button>
             </div>
             
             {/* Thickness Slider */}

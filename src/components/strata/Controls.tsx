@@ -839,7 +839,7 @@ export const Controls = () => {
                                 FX MIX
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-64 p-4 mr-6 mt-2 font-manrope bg-white border-slate-200 text-[#353535]" align="end">
+                        <PopoverContent className="w-64 p-4 mr-6 mt-2 font-manrope bg-white border-slate-200 text-[#353535] max-h-[calc(100vh-8rem)] overflow-y-auto" align="end">
                             <div className="space-y-4">
                                 <h4 className="font-medium text-sm mb-2 flex items-center gap-2 text-slate-900">
                                     <SlidersHorizontal className="w-3.5 h-3.5" /> Post Processing
@@ -1541,7 +1541,7 @@ export const Controls = () => {
                       </div>
                       <input
                           type="range"
-                          min="0.5"
+                          min="0"
                           max="2.0"
                           step="0.05"
                           value={state.layerSpacingFactor}

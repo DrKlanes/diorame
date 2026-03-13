@@ -1,7 +1,7 @@
 # Diorame — Project Reference Document
 
-**Version**: 1.7.3  
-**Last Updated**: January 2026  
+**Version**: 1.10.1  
+**Last Updated**: March 2026  
 **Purpose**: Single source of truth for AI collaborators, designers, and developers.
 
 ---
@@ -63,7 +63,7 @@ These principles are the foundation of every decision:
 - **Organic Line Quality**: Tapered strokes, fluid curves, hand-drawn feel
 
 ### UX Approach
-- **Zero Onboarding Friction**: The welcome modal is dismissible immediately
+- **Zero Onboarding Friction**: The welcome modal is dismissible immediately; an onboarding overlay appears on the empty canvas and auto-dismisses once drawing begins
 - **Keyboard-First Shortcuts**: Power users should never need to reach for the mouse
 - **Instant Feedback**: Every action reflects immediately on canvas
 - **No Hidden Modes**: Active tool, layer, and modifiers are always visible in the top-right indicator
@@ -84,10 +84,12 @@ These principles are the foundation of every decision:
    - Supports symmetry, draw-inside, draw-behind modes  
 
 2. **Brush** (Internal: `line`)  
-   - Stroke-based drawing with two modes:  
-     - **Tapered**: Variable width, natural taper at ends  
-     - **Uniform**: Consistent width, smooth curves  
-   - Adjustable thickness (1–100)  
+   - Stroke-based drawing with three modes:  
+     - **Tapered**: Variable width, natural taper at ends (sine-arch profile)  
+     - **Uniform**: Consistent width, smooth curves (densified + multi-pass smoothing)  
+     - **Ink**: Organic, hand-drawn feel with deterministic noise-based wobble, width variation, rough ink-bleed edges, and round end caps  
+   - Adjustable thickness (1-100)  
+   - Per-layer brush settings: thickness and mode are saved per layer and restored when switching layers  
    - Supports organic/fluid mode for more randomness  
 
 3. **Eraser**  
@@ -102,6 +104,7 @@ These principles are the foundation of every decision:
 5. **Move**  
    - Transform entire layers (translate, rotate, scale)  
    - Bounding box with corner handles  
+   - Flip buttons overlay (horizontal / vertical) appear near the bounding box  
    - Disables all drawing modifiers when active  
 
 ### Drawing Modes & Modifiers
@@ -129,14 +132,18 @@ These principles are the foundation of every decision:
 ## 5. Color System
 
 ### Palette Structure
-- **2 Fixed Palettes**: Primary (default), Alternative  
+- **2 Fixed Palettes**: Primary (default), Alternative — switchable via `SET_ACTIVE_PALETTE` action  
 - **24 Colors Each**: Organized in 3 rows of 8 colors  
 - **No Custom Colors**: Artists must work within constraints (part of the Riso philosophy)  
 
 ### Palette Behavior
 - **Index-Based Mapping**: Shapes store color by palette index, not hex value  
 - **Palette Switching**: Changing palettes re-colors all shapes based on their index  
-- **Gradient Mode**: Optional per-layer gradient overlay (adjustable angle and intensity)  
+- **Gradient Mode**: Optional per-layer gradient overlay with configurable parameters:  
+  - **Gradient Type**: Solid-to-solid or Solid-to-transparent (fade)  
+  - **Gradient Angle**: Configurable direction in degrees (default 90 - vertical)  
+  - **Gradient Intensity**: Adjustable strength (0-1)  
+  - Per-layer gradient params are stored independently via `layerGradParams`  
 
 ### Color Philosophy
 Constraints breed creativity. Fixed palettes force intentional color choices and maintain the Riso print aesthetic.
@@ -148,13 +155,20 @@ Constraints breed creativity. Fixed palettes force intentional color choices and
 ### Layer System
 - **Maximum 10 Layers** (`MAX_LAYERS = 10`)  
 - **Depth Step**: 150 units per layer (`BASE_DEPTH_STEP`)  
-- **Layer 0 (Front)** → **Layer 9 (Back)**  
+- **Layer 0 (Front)** -> **Layer 9 (Back)**  
 - Layers are created on-demand (next layer created when you navigate forward from the last layer)
+
+### Layer Operations
+- **Reorder**: Move layers up/down in the stack (swaps all shapes between layers)
+- **Duplicate**: Clone all shapes from a layer into a new adjacent layer (respects `MAX_LAYERS` limit)
+- **Delete**: Remove a layer and all its shapes (re-maps remaining layers to close gaps)
+- **Flip**: Mirror all shapes on a layer horizontally or vertically around the layer's bounding box center
+- **Per-Layer Settings**: Each layer stores its own render mode (flat/grad), gradient params, and brush settings (thickness + line mode)
 
 ### 3D Depth & Parallax
 - **DRAW Mode**: Orthographic, no parallax (camera at active layer Z)  
 - **VIEW Mode**: Perspective projection, full parallax based on layer depth  
-- **Layer Spacing Factor**: Adjustable multiplier (0.5–2.0) to compress/expand depth  
+- **Layer Spacing Factor**: Adjustable multiplier (0.00-2.00) to compress/expand depth; value of 0 produces a flat 2D visualization  
 
 ### 3D Lock (Per-Layer)
 - Layers can be "locked" in 3D space  
@@ -185,12 +199,14 @@ Constraints breed creativity. Fixed palettes force intentional color choices and
 - **Purpose**: Cinematic preview and composition evaluation  
 - **Camera**: Free orbit, full parallax  
 - **Controls**:  
-  - Click + Drag: Orbit camera  
-  - Scroll Wheel: Zoom in/out  
+  - Click + Drag: Pan camera  
+  - Shift + Drag: Orbit camera  
+  - Scroll Wheel / MMB: Zoom in/out  
   - Arrow Keys: Manual camera pan  
   - Double-Click: Set Point of Interest (camera focus target)  
+- **Touch Controls**: 1-finger pan, 2-finger orbit, pinch zoom  
 - **Cinematic Moves**: 10 preset camera animations (Forward, Spiral, Yoyo, Pulse, Twist, Arc, Crane, Truck, Orbit, Zoom)  
-- **Speed Control**: Adjustable cinematic speed (0.1–1.0)  
+- **Speed Control**: Adjustable cinematic speed (0.1-1.0)  
 - **Handheld Shake**: Optional camera shake (Low, Medium, High)  
 
 ### Depth of Field (DoF) System
@@ -201,11 +217,33 @@ Constraints breed creativity. Fixed palettes force intentional color choices and
   - In FREE mode: Acts as "one-shot focus" (sets focus to layer Z, no tracking)  
   - In LOCK mode: Enables dynamic tracking (focus follows layer as camera moves)  
 - **Focus Distance**: Adjustable manually in FREE mode  
-- **DoF Intensity**: Adjustable blur amount (0–1)  
+- **DoF Intensity**: Adjustable blur amount (0-1)  
 
 ---
 
-## 8. Performance Guidelines
+## 8. Project Persistence
+
+### Save / Load (.dior format)
+- **Save**: Serializes project state to a `.dior` file (JSON) and triggers a browser download  
+  - Serialization uses `setTimeout` deferral to avoid blocking the main thread's click handler path  
+  - Canvas is refocused after download to prevent stuck pointer/keyboard state  
+  - Saved data includes: shapes, palette, layers, dark mode, post-processing settings, hidden/locked layers, project name, per-layer render modes, gradient params, brush settings, line mode, active palette ID  
+- **Load**: Reads `.dior` files via `FileReader`, validates structure, and dispatches `LOAD_PROJECT`  
+  - File size guard: rejects files larger than 50 MB  
+  - Triggers fit-to-view on successful load  
+- **Project Name**: Editable via the UI; sanitized for filename generation  
+
+### Export Formats
+- **PNG**: Rasterized canvas export  
+- **WebM / MP4**: Video capture of cinematic camera moves  
+- **SVG**: Vector export of all visible layers (Cmd/Ctrl + E)  
+- **SVGZ**: Compressed SVG export (Cmd/Ctrl + Shift + E)  
+- **Complexity Warning**: SVG/SVGZ exports with more than 800 shapes trigger a confirmation dialog  
+- **Export Progress**: Visual progress indicator overlay during video exports  
+
+---
+
+## 9. Performance Guidelines
 
 Performance is a first-class concern. Any change that degrades performance is rejected.
 
@@ -237,6 +275,12 @@ Performance is a first-class concern. Any change that degrades performance is re
    - Touch events use native listeners for palm rejection  
    - Pinch-to-zoom is hardware-accelerated  
 
+7. **Canvas Recovery**  
+   - `useCanvasRecovery` hook monitors page visibility and window focus events  
+   - Dispatches synthetic `pointerup` events to reset stuck drawing state after download dialogs or tab switches  
+   - Intercepts native `pointercancel` events (not bound by StrataCanvas) and forwards as `pointerup`  
+   - Refocuses the canvas element with staggered delays (50ms, 300ms) to restore keyboard/pointer input  
+
 ### Performance Metrics to Preserve
 - **Draw Latency**: < 10ms from pointer down to first render  
 - **Frame Rate**: Consistent 60 fps in DRAW mode, 30+ fps in VIEW mode  
@@ -244,36 +288,76 @@ Performance is a first-class concern. Any change that degrades performance is re
 
 ---
 
-## 9. What NOT To Do
+## 10. Architecture & File Structure
+
+### Frozen Monolith
+- **StrataCanvas.tsx** (~3200 lines): The main rendering and interaction file. **Frozen** — no new code may be added; code may only be extracted out. See `Guidelines.md` for extraction strategy.
+
+### Extracted Components
+| File | Purpose |
+|---|---|
+| `Controls.tsx` | Top-level UI: toolbar, palette, mode switcher, save/load, export, all panel triggers |
+| `LayersPanel.tsx` | Layer management panel: visibility, lock, reorder, duplicate, delete |
+| `ToolOptionsPanel.tsx` | Context-sensitive options for Brush (line mode, thickness) and Gradient settings |
+| `WelcomeModal.tsx` | First-launch welcome dialog with version display |
+| `OnboardingOverlay.tsx` | Empty-canvas onboarding hints, auto-dismissed on first stroke |
+| `ExportProgress.tsx` | Visual overlay showing export progress during video captures |
+| `MobileBlockScreen.tsx` | Full-screen block for mobile devices (tablet+ required) |
+
+### State Management
+| File | Purpose |
+|---|---|
+| `StrataContext.tsx` | React Context + useReducer: all app state, types, constants, stroke generators, reducer |
+
+### Hooks
+| File | Purpose |
+|---|---|
+| `hooks/useCanvasRecovery.ts` | Monitors visibility/focus changes, resets stuck pointer state, refocuses canvas |
+
+### Data & Constants
+| File | Purpose |
+|---|---|
+| `pixelArtPalettes.ts` | Readonly palette data for the Pixel Art post-processing effect |
+
+---
+
+## 11. What NOT To Do
 
 This section is critical. These actions are **forbidden**:
 
 ### Code Changes
-- ❌ **No Large Refactors**: Do not rewrite entire files or systems  
-- ❌ **No Speculative Optimization**: Only optimize proven bottlenecks  
-- ❌ **No Experimental Features**: Every feature must be justified and tested  
-- ❌ **No Dependency Bloat**: Avoid adding new libraries unless absolutely necessary  
-- ❌ **No Breaking Changes**: Existing behavior must remain identical  
+- **No New Code in StrataCanvas.tsx**: Only extract code out; never add lines (see Guidelines.md)
+- **No Large Refactors**: Do not rewrite entire files or systems  
+- **No Speculative Optimization**: Only optimize proven bottlenecks  
+- **No Experimental Features**: Every feature must be justified and tested  
+- **No Dependency Bloat**: Avoid adding new libraries unless absolutely necessary  
+- **No Breaking Changes**: Existing behavior must remain identical  
+
+### Protected Behaviors (do NOT modify)
+- Eraser tool logic
+- Draw Inside / Draw Behind compositing
+- Clipping / composition / rendering pipeline
+- `hiddenLayers` is excluded from undo/redo
 
 ### UX Changes
-- ❌ **No Hidden Complexity**: Every interaction must be transparent  
-- ❌ **No Mode Confusion**: Users should always know what mode they're in  
-- ❌ **No Inconsistent Shortcuts**: Keyboard shortcuts must be memorable and conflict-free  
-- ❌ **No Palette Bloat**: Do not add more than 2–3 palettes  
+- **No Hidden Complexity**: Every interaction must be transparent  
+- **No Mode Confusion**: Users should always know what mode they're in  
+- **No Inconsistent Shortcuts**: Keyboard shortcuts must be memorable and conflict-free  
+- **No Palette Bloat**: Do not add more than 2-3 palettes  
 
 ### Performance Violations
-- ❌ **No Frame Drops**: Changes that cause stuttering are reverted  
-- ❌ **No Synchronous Heavy Operations**: Use async for file I/O, exports, etc.  
-- ❌ **No Unbounded Memory Growth**: History, particles, and caches must have limits  
+- **No Frame Drops**: Changes that cause stuttering are reverted  
+- **No Synchronous Heavy Operations**: Use async/deferred for file I/O, exports, etc.  
+- **No Unbounded Memory Growth**: History, particles, and caches must have limits  
 
 ### Visual Violations
-- ❌ **No Dark Patterns**: UI must be honest and straightforward  
-- ❌ **No Cluttered UI**: Less is more — every UI element must earn its space  
-- ❌ **No Accessibility Regressions**: Tooltips, shortcuts, and focus states must remain functional  
+- **No Dark Patterns**: UI must be honest and straightforward  
+- **No Cluttered UI**: Less is more — every UI element must earn its space  
+- **No Accessibility Regressions**: Tooltips, shortcuts, and focus states must remain functional  
 
 ---
 
-## 10. Collaboration Rules
+## 12. Collaboration Rules
 
 ### How to Propose Changes
 1. **Start with "Why"**: Explain the problem being solved  
@@ -288,27 +372,30 @@ This section is critical. These actions are **forbidden**:
 4. **Conservative Cleanup**: Only remove obvious dead code, unused imports, etc.  
 
 ### Acceptable Change Categories
-✅ **Bug Fixes**: Correct broken behavior  
-✅ **Performance Wins**: Proven optimizations with benchmarks  
-✅ **UX Polish**: Small tweaks that improve clarity or efficiency  
-✅ **New Tools/Features**: Justified additions that fit the philosophy  
-✅ **Accessibility**: Improvements to keyboard nav, tooltips, focus states  
+- **Bug Fixes**: Correct broken behavior  
+- **Performance Wins**: Proven optimizations with benchmarks  
+- **UX Polish**: Small tweaks that improve clarity or efficiency  
+- **New Tools/Features**: Justified additions that fit the philosophy  
+- **Accessibility**: Improvements to keyboard nav, tooltips, focus states  
+- **Extractions**: Moving self-contained blocks out of StrataCanvas into dedicated files  
 
 ### Unacceptable Change Categories
-❌ **Rewrites**: "Let's rebuild this from scratch"  
-❌ **Bikeshedding**: Arguing over trivial naming or formatting  
-❌ **Scope Creep**: "While we're at it, let's also add..."  
-❌ **Aesthetic Overhauls**: Changing the visual identity without justification  
+- **Rewrites**: "Let's rebuild this from scratch"  
+- **Bikeshedding**: Arguing over trivial naming or formatting  
+- **Scope Creep**: "While we're at it, let's also add..."  
+- **Aesthetic Overhauls**: Changing the visual identity without justification  
 
 ### Code Review Standards
 - **Performance First**: If it slows down, it doesn't ship  
 - **Behavior Preservation**: Existing workflows must work identically  
 - **Clarity Over Cleverness**: Readable code beats clever code  
 - **Documentation**: Complex logic requires inline comments  
+- **Max 400 lines per file**: Split before exceeding  
+- **Tabs for indentation**: Never mix spaces  
 
 ---
 
-## Appendix: Technical Constants
+## Appendix A: Technical Constants
 
 ### Key Configuration Values
 ```typescript
@@ -319,36 +406,70 @@ CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
 DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
+APP_VERSION = "1.10.1"          // Current release version
 ```
 
 ### Post-Processing Effects
-- **Grain**: Film grain overlay (0–1)  
-- **Vignette**: Edge darkening (0–1)  
-- **Distortion**: Lens distortion (0–1)  
-- **DoF**: Depth of field blur (0–1)  
-- **Chromatic Aberration**: RGB channel offset (0–1)  
-- **Fog**: Atmospheric depth fog (0–1)  
+- **Grain**: Film grain overlay (0-1)  
+- **Vignette**: Edge darkening (0-1)  
+- **Distortion**: Lens distortion (0-1)  
+- **DoF**: Depth of field blur (0-1)  
+- **Chromatic Aberration**: RGB channel offset (0-1)  
+- **Fog**: Atmospheric depth fog (0-1)  
 - **Particles**: Floating particles (circle, square, stroke types)  
-- **Glow**: Soft glow around shapes (0–1)  
-- **Riso**: Risograph halftone texture (0–1)  
-- **Pixel Art**: Pixelation effect (size 2–16, depth 2–32 colors, dither 0–1)  
+- **Glow**: Soft glow around shapes (0-1)  
+- **Riso**: Risograph halftone texture (0-1)  
+- **Pixel Art**: Pixelation effect (size 2-16, depth 2-32 colors, dither 0-1)  
 - **Grunge**: Overlay texture (subtle, medium, intense)  
 - **Wiggle**: Hand-drawn line wobble (light, medium, heavy)  
 
-### Keyboard Shortcuts (Summary)
-- **D**: DRAW mode  
-- **V**: VIEW mode  
-- **Shift + D**: Toggle dark canvas  
-- **Shift + H**: Hide/Show UI (VIEW mode only)  
-- **Shift + S**: Symmetry mode  
-- **Shift + I**: Draw Inside mode  
-- **Shift + B**: Draw Behind mode  
-- **Shift + O**: Organic/Fluid mode  
-- **[** / **]**: Previous/Next layer  
-- **Cmd/Ctrl + Z**: Undo  
-- **Cmd/Ctrl + Shift + Z**: Redo  
-- **Space**: Hand tool (pan in DRAW mode)  
-- **Arrow Keys**: Camera pan (VIEW mode)  
+---
+
+## Appendix B: Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| **D** | DRAW mode |
+| **V** | VIEW mode |
+| **Shift + D** | Toggle dark canvas |
+| **Shift + H** | Hide/Show UI (VIEW mode only) |
+| **Shift + S** | Symmetry mode |
+| **Shift + I** | Draw Inside mode |
+| **Shift + B** | Draw Behind mode |
+| **Shift + O** | Organic/Fluid mode |
+| **[** / **]** | Previous / Next layer |
+| **Cmd/Ctrl + Z** | Undo |
+| **Cmd/Ctrl + Shift + Z** | Redo |
+| **Cmd/Ctrl + E** | Export SVG |
+| **Cmd/Ctrl + Shift + E** | Export SVGZ |
+| **Space** | Hand tool (pan in DRAW mode) |
+| **Arrow Keys** | Camera pan (VIEW mode) |
+
+---
+
+## Appendix C: Changelog Highlights (1.7.3 -> 1.10.1)
+
+### 1.8.x — Brush & Stroke Enhancements
+- Added **Ink line mode** (`generateInkStroke`): deterministic noise-based wobble, width variation, ink-bleed edges, round end caps
+- Per-layer brush settings (thickness + mode stored per layer, restored on layer switch)
+- Stroke generators extracted to `StrataContext.tsx` as shared utilities (`generateStrokeForMode`)
+
+### 1.9.x — Layer Management & Persistence
+- **Layers Panel** (`LayersPanel.tsx`): dedicated UI for layer visibility, 3D lock, reorder (up/down), duplicate, and delete
+- **Layer flip** (horizontal/vertical): flip buttons appear as overlay near Move tool bounding box
+- **Project save/load** (`.dior` format): JSON serialization with browser download; file reader with validation and 50 MB size guard
+- **Alternative palette**: second 24-color palette; switchable via `SET_ACTIVE_PALETTE` action
+- **Onboarding overlay** (`OnboardingOverlay.tsx`): contextual hints on empty canvas, persists dismissal to localStorage
+- **Export progress indicator** (`ExportProgress.tsx`): visual overlay during video captures
+- **SVG/SVGZ export**: vector export with complexity warning (>800 shapes), keyboard shortcuts Cmd+E / Cmd+Shift+E
+
+### 1.10.x — Depth, Recovery & Polish
+- **Layer Spacing slider**: range expanded to 0.00-2.00 (was 0.5-2.0); value of 0 produces flat 2D visualization
+- **Canvas recovery hook** (`useCanvasRecovery.ts`): monitors page visibility and window focus; dispatches synthetic `pointerup` to reset stuck pointer state after download dialogs; intercepts native `pointercancel` events
+- **Save deferral**: `handleSaveProject` wraps heavy JSON.stringify + download in `setTimeout(_, 0)` to avoid blocking the synchronous click path
+- **Tool Options Panel** (`ToolOptionsPanel.tsx`): extracted context-sensitive UI for Brush line mode/thickness and Gradient settings
+- **Fit-to-view on load**: `shouldFitToView` flag triggers auto-fit after loading a project
+- **VIEW mode controls refinement**: drag = pan, Shift+drag = orbit, scroll/MMB = zoom (touch: 1-finger pan, 2-finger orbit, pinch zoom)
 
 ---
 

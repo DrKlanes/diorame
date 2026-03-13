@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useStrata, Shape, Point, BASE_DEPTH_STEP, generateTaperedStroke, generateUniformStroke } from './StrataContext';
+import { useStrata, Shape, Point, BASE_DEPTH_STEP, generateTaperedStroke, generateUniformStroke, generateStrokeForMode } from './StrataContext';
 import paperTexture from "figma:asset/dedf59e02015e1400029a84197a5242f42fdbb01.png";
 import risoTexture from "figma:asset/cb8694f26c4e972edf10545cd26da5e5d135c92e.png";
 import grungeTexture from "figma:asset/cbf89ce40bab5dc98000a75dbc50509b964706a0.png";
@@ -1245,8 +1245,7 @@ export const StrataCanvas = () => {
                 }
                 originalPoints = [...finalPoints];
                 const thicknessVal = state.currentLineThickness;
-                const generateFunc = state.lineMode === 'tapered' ? generateTaperedStroke : generateUniformStroke;
-                finalPoints = generateFunc(finalPoints, thicknessVal);
+                finalPoints = generateStrokeForMode(state.lineMode, finalPoints, thicknessVal);
             } else if (finalPoints.length < 3) {
                 const offset = 1.5 / (state.drawingZoom || 1);
                 const last = finalPoints[finalPoints.length - 1];
@@ -1283,8 +1282,7 @@ export const StrataCanvas = () => {
                 if (isLineTool) {
                      const mirroredOriginals = originalPoints.map(p => ({ ...p, x: -p.x }));
                      const thicknessVal = state.currentLineThickness;
-                     const generateFunc = state.lineMode === 'tapered' ? generateTaperedStroke : generateUniformStroke;
-                     const mirroredFinals = generateFunc(mirroredOriginals, thicknessVal);
+                     const mirroredFinals = generateStrokeForMode(state.lineMode, mirroredOriginals, thicknessVal);
                      shapeMirrored = {
                         id: crypto.randomUUID(),
                         points: mirroredFinals,
