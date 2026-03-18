@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useStrata, BASE_DEPTH_STEP, generateTaperedStroke, generateUniformStroke, generateStrokeForMode } from './StrataContext';
+import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
+import { generateTaperedStroke, generateUniformStroke, generateStrokeForMode } from '../../utils/strokeGenerators';
 import { Shape, Point } from '../../types/strataTypes';
 import paperTexture from "figma:asset/dedf59e02015e1400029a84197a5242f42fdbb01.png";
 import risoTexture from "figma:asset/cb8694f26c4e972edf10545cd26da5e5d135c92e.png";
