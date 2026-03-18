@@ -7,9 +7,10 @@ import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { processPixelArt } from './canvas/PixelArtProcessor';
+import { applyFog, applyGlow, applyDoFBlur, applyRiso, applyChromaticAberration, applyVignette, applyGrain, applyGrunge } from './canvas/postProcessing';
 import { hexToHSL, hslToHex, getVibrantVariant, hexToRgba } from '../../utils/colorUtils';
 import { createNoise, drawSmoothLine, drawStraightLine } from '../../utils/canvasUtils';
-import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, FOG_DENSITY_FACTOR, HANDHELD_SWAY_FREQ, HANDHELD_TREMOR_FREQ, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS } from '../../constants/renderConstants';
+import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, HANDHELD_SWAY_FREQ, HANDHELD_TREMOR_FREQ, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS } from '../../constants/renderConstants';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -2122,29 +2123,7 @@ export const StrataCanvas = () => {
 
              // Fog
              if (isCinematic && currentState.postProcessingEnabled.fog) {
-                 const fogInt = currentState.postProcessing.fog;
-                 if (fogInt > 0.01) {
-                     // Dynamic Fog based on distance from camera plane
-                     // Allows controlling both density and effective range with one slider
-                     const depth = FL + layerAvgZ;
-                     
-                     // Curve start distance: Low fog = starts far away, High fog = starts closer
-                     const startDist = 2000 + (1.0 - Math.pow(fogInt, 0.5)) * 4000;
-                     // Curve density: Standard exponential fog
-                     const density = FOG_DENSITY_FACTOR * fogInt;
-
-                     const dist = Math.max(0, depth - startDist);
-                     const fogFactor = 1.0 - Math.exp(-dist * density);
-
-                     if (fogFactor > 0.01) {
-                         layerCtx.globalCompositeOperation = 'source-atop';
-                         layerCtx.fillStyle = currentState.isDarkMode ? '#050505' : '#f8f9fa';
-                         layerCtx.globalAlpha = Math.min(1, fogFactor);
-                         layerCtx.fillRect(0,0,w,h);
-                         layerCtx.globalAlpha = 1.0;
-                         layerCtx.globalCompositeOperation = 'source-over';
-                     }
-                 }
+                 applyFog(layerCtx, w, h, currentState.postProcessing.fog, currentState.isDarkMode, FL + layerAvgZ);
              }
 
              // Composition to Offscreen
@@ -2161,25 +2140,15 @@ export const StrataCanvas = () => {
              }
 
              const glowInt = currentState.postProcessing.glow;
-             let dofBlur = 0;
-             if (isCinematic && currentState.postProcessingEnabled.dof) {
-                 dofBlur = Math.min((Math.abs(layerAvgZ - fxFocusDist)/1000)*(FL/400)*4, 30*currentState.postProcessing.dof);
-             }
+             const dofBlur = (isCinematic && currentState.postProcessingEnabled.dof)
+                 ? Math.min((Math.abs(layerAvgZ - fxFocusDist)/1000)*(FL/400)*4, 30*currentState.postProcessing.dof)
+                 : 0;
 
              if (isCinematic && currentState.postProcessingEnabled.glow && glowInt > 0.01) {
-                 offCtx.save();
-                 offCtx.filter = `blur(${ (currentState.isDarkMode ? 35:20)*glowInt + dofBlur }px)`;
-                 offCtx.globalCompositeOperation = currentState.isDarkMode ? 'lighter' : 'source-over';
-                 offCtx.globalAlpha = currentState.isDarkMode ? 1.0 : (0.3 + glowInt*0.4);
-                 offCtx.drawImage(helperCanvasRef.current!, 0, 0);
-                 offCtx.restore();
+                 applyGlow(offCtx, helperCanvasRef.current!, glowInt, dofBlur, currentState.isDarkMode);
              }
-             
-             offCtx.save();
-             if (dofBlur > 0.5) offCtx.filter = `blur(${dofBlur}px)`;
-             offCtx.drawImage(helperCanvasRef.current!, 0, 0);
-             offCtx.restore();
-             offCtx.filter = 'none';
+
+             applyDoFBlur(offCtx, helperCanvasRef.current!, dofBlur);
           }
       }); // End Layer Loop
 
@@ -2187,58 +2156,20 @@ export const StrataCanvas = () => {
       
       // RISO Texture
       if (isCinematic && currentState.postProcessingEnabled.riso && !isPixelArt && currentState.postProcessing.riso > 0.01 && processedRisoRef.current) {
-          const rc = processedRisoRef.current;
-          const scale = Math.max((w*1.5)/rc.width, (h*1.5)/rc.height);
-          const dw = rc.width*scale, dh = rc.height*scale;
-          offCtx.save();
-          offCtx.globalCompositeOperation = 'destination-out';
-          offCtx.globalAlpha = currentState.postProcessing.riso;
-          offCtx.imageSmoothingEnabled = false;
-          offCtx.drawImage(rc, (w-dw)/2, (h-dh)/2, dw, dh);
-          offCtx.restore();
+          applyRiso(offCtx, processedRisoRef.current, w, h, currentState.postProcessing.riso);
       }
 
       // Chromatic Aberration & Transfer to Main
       const caInt = currentState.postProcessing.chromaticAberration;
       const useCA = isCinematic && currentState.postProcessingEnabled.chromaticAberration && caInt > 0.01;
-      
+
       ctx.globalCompositeOperation = currentState.isDarkMode ? 'source-over' : 'multiply';
-      
-          if (useCA) {
-          const hCtx = helperCanvasRef.current!.getContext('2d')!;
-          const cCtx = compositionCanvasRef.current!.getContext('2d')!;
-          cCtx.clearRect(0,0,w,h); 
-          if (!currentState.isDarkMode) { cCtx.fillStyle='#FFFFFF'; cCtx.fillRect(0,0,w,h); }
 
-          const drawChan = (col: string, s: number, mode: GlobalCompositeOperation) => {
-              hCtx.clearRect(0,0,w,h);
-              
-              if (currentState.isDarkMode) {
-                  // Dark Mode: Colorize with source-in, then Multiply to restore shading
-                  hCtx.globalCompositeOperation = 'source-over';
-                  hCtx.drawImage(offscreenCanvasRef.current!, 0, 0);
-                  hCtx.globalCompositeOperation = 'source-in'; hCtx.fillStyle = col; hCtx.fillRect(0,0,w,h);
-                  hCtx.globalCompositeOperation = 'multiply'; hCtx.drawImage(offscreenCanvasRef.current!, 0, 0);
-              } else {
-                  // Light Mode: White BG -> Black Ink -> Screen Color (CMY)
-                  hCtx.globalCompositeOperation = 'source-over';
-                  hCtx.fillStyle = '#FFFFFF'; hCtx.fillRect(0,0,w,h);
-                  hCtx.drawImage(offscreenCanvasRef.current!, 0, 0);
-                  hCtx.globalCompositeOperation = 'screen';
-                  hCtx.fillStyle = col; hCtx.fillRect(0,0,w,h);
-              }
-              cCtx.globalCompositeOperation = mode;
-              const dx = (w - w*s)/2, dy = (h - h*s)/2;
-              cCtx.drawImage(helperCanvasRef.current!, dx, dy, w*s, h*s);
-          };
-
-          const cols = currentState.isDarkMode ? ['#FF0000','#00FF00','#0000FF'] : ['#00FFFF','#FF00FF','#FFFF00'];
-          const blend = currentState.isDarkMode ? 'lighten' : 'multiply';
-          drawChan(cols[0], 1 + 0.03*caInt, blend);
-          drawChan(cols[1], 1 + 0.015*caInt, blend);
-          drawChan(cols[2], 1, blend);
-          
-          ctx.drawImage(compositionCanvasRef.current!, 0, 0);
+      if (useCA) {
+          applyChromaticAberration(
+              ctx, offscreenCanvasRef.current!, helperCanvasRef.current!,
+              compositionCanvasRef.current!, w, h, caInt, currentState.isDarkMode
+          );
       } else {
           ctx.drawImage(offscreenCanvasRef.current!, 0, 0);
       }
@@ -2248,99 +2179,18 @@ export const StrataCanvas = () => {
       ctx.globalCompositeOperation = 'source-over';
       
       if (isCinematic && currentState.postProcessingEnabled.vignette) {
-          const vig = currentState.postProcessing.vignette;
-          if (vig > 0.01) {
-              const g = ctx.createRadialGradient(w/2, h/2, h/3, w/2, h/2, h*0.8);
-              g.addColorStop(0, 'rgba(0,0,0,0)');
-              g.addColorStop(1, `rgba(0,0,0,${0.95 * vig})`);
-              ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-          }
+          applyVignette(ctx, w, h, currentState.postProcessing.vignette);
       }
 
       const grain = (!isPixelArt && isCinematic && currentState.postProcessingEnabled.grain) ? currentState.postProcessing.grain : 0;
       if (grain > 0.01 && noiseCanvasRef.current) {
-          ctx.globalCompositeOperation = 'overlay';
-          ctx.globalAlpha = grain;
-          // Add vibration to grain by random offset
-          const offsetX = Math.random() * 100 - 50;
-          const offsetY = Math.random() * 100 - 50;
-          
-          // Use pattern to ensure coverage with offset
-          const pattern = ctx.createPattern(noiseCanvasRef.current, 'repeat');
-          if (pattern) {
-              ctx.fillStyle = pattern;
-              ctx.save();
-              ctx.translate(offsetX, offsetY);
-              ctx.fillRect(-offsetX, -offsetY, w + Math.abs(offsetX), h + Math.abs(offsetY));
-              ctx.restore();
-          } else {
-              // Fallback
-              ctx.drawImage(noiseCanvasRef.current, 0, 0);
-          }
-          
-          ctx.globalAlpha = 1.0;
+          applyGrain(ctx, noiseCanvasRef.current, w, h, grain);
       }
 
 
       // --- Grunge Overlay (Animated) ---
       if (isCinematic && currentState.postProcessingEnabled.grungeOverlay && grungeImgRef.current) {
-          // Posterize time to ~3fps (350ms)
-          const step = Math.floor(Date.now() / 350);
-          
-          // Seed random based on step
-          const seed = step * 123.456;
-          const rand = (n: number) => {
-              const x = Math.sin(seed + n) * 10000;
-              return x - Math.floor(x);
-          };
-          
-          const gImg = grungeImgRef.current;
-          
-          ctx.save();
-          ctx.globalCompositeOperation = 'overlay'; 
-          
-          const intensityVal = currentState.postProcessing.grungeIntensity ?? 0.5;
-          // Reduced intensity: 0.15 (Low), 0.35 (Med), 0.65 (High)
-          const opacity = intensityVal <= 0.2 ? 0.15 : intensityVal >= 0.8 ? 0.65 : 0.35;
-          ctx.globalAlpha = opacity;
-          
-          const screenDiag = Math.hypot(w, h);
-          
-          // 1. Determine Scale
-          // Target scale is 0.5 for "fine grain", but we must ensure we cover the screen diagonal
-          // so we don't see edges (the "cuts").
-          const targetScale = 0.5;
-          const minImgDim = Math.min(gImg.width, gImg.height);
-          // Minimum scale needed to ensure the image's smallest side covers the screen rotation
-          const minSafeScale = (screenDiag * 1.05) / minImgDim; 
-          
-          // Use the larger of the two to guarantee coverage
-          const finalScale = Math.max(targetScale, minSafeScale);
-          
-          // 2. Calculate Safe Wiggle Range
-          // How much surplus image do we have?
-          const scaledMinDim = minImgDim * finalScale;
-          const surplus = Math.max(0, scaledMinDim - screenDiag);
-          const safeRadius = surplus / 2;
-          
-          // 3. Random Parameters
-          const rot = rand(1) * Math.PI * 2;
-          // Constrain wiggle to safe zone so edges never enter viewport
-          const offX = (rand(2) - 0.5) * 2 * (safeRadius * 0.9); 
-          const offY = (rand(3) - 0.5) * 2 * (safeRadius * 0.9);
-          
-          // Random Flip (Mirroring) for extra variety
-          const flipX = rand(4) > 0.5 ? 1 : -1;
-          const flipY = rand(5) > 0.5 ? 1 : -1;
-
-          ctx.translate(w/2, h/2);
-          ctx.rotate(rot);
-          ctx.translate(offX, offY);
-          ctx.scale(finalScale * flipX, finalScale * flipY);
-          
-          ctx.drawImage(gImg, -gImg.width/2, -gImg.height/2);
-          
-          ctx.restore();
+          applyGrunge(ctx, grungeImgRef.current, w, h, currentState.postProcessing.grungeIntensity ?? 0.5);
       }
 
       // --- Gizmo Drawing ---
