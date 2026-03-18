@@ -6,7 +6,7 @@ import grungeTexture from "figma:asset/cbf89ce40bab5dc98000a75dbc50509b964706a0.
 import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingOverlay } from './OnboardingOverlay';
-import { BAYER_MATRIX_4X4, PALETTE_CGA, PALETTE_RGB8, PALETTE_RETRO, PALETTE_HANDHELD, PALETTE_STYLIZED } from './pixelArtPalettes';
+import { processPixelArt } from './canvas/PixelArtProcessor';
 import { hexToHSL, hslToHex, getVibrantVariant, hexToRgba } from '../../utils/colorUtils';
 import { createNoise, drawSmoothLine, drawStraightLine } from '../../utils/canvasUtils';
 import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, FOG_DENSITY_FACTOR, HANDHELD_SWAY_FREQ, HANDHELD_TREMOR_FREQ, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS } from '../../constants/renderConstants';
@@ -84,8 +84,7 @@ export const StrataCanvas = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
 
-  // Bayer Matrix imported from pixelArtPalettes.ts
-  const bayerMatrix4x4 = BAYER_MATRIX_4X4;
+  // Bayer Matrix + palettes moved to canvas/PixelArtProcessor.ts
 
   // Orbit Camera State
   const orbitRef = useRef({ 
@@ -1557,160 +1556,7 @@ export const StrataCanvas = () => {
          }
       }
 
-      // Pixel Art logic helper (defined outside loop for reuse)
-      const processPixelArt = (targetCtx: CanvasRenderingContext2D, w: number, h: number) => {
-          const pSize = Math.max(2, currentState.postProcessing.pixelArtSize || 4);
-          const sw = Math.ceil(w/pSize), sh = Math.ceil(h/pSize);
-          
-          const pCanvas = ensureCanvas(pixelCanvasRef, sw, sh);
-          const pCtx = pCanvas.getContext('2d', { willReadFrequently: true })!;
-          
-          pCtx.imageSmoothingEnabled = false;
-          // Draw target canvas to pixel buffer (Downscale)
-          pCtx.clearRect(0, 0, sw, sh);
-          pCtx.drawImage(targetCtx.canvas, 0, 0, w, h, 0, 0, sw, sh);
-          
-          const iData = pCtx.getImageData(0,0,sw,sh);
-          const d = iData.data;
-          
-          // Palette Selection based on Depth (palettes imported from pixelArtPalettes.ts)
-          const depthVal = currentState.postProcessing.pixelArtDepth || 4;
-          let mode = 'quantize';
-          let activePalette: readonly number[][] | null = null;
-          let quantLevels = 4;
-
-          if (depthVal <= 2) {
-              mode = '1bit';
-          } else if (depthVal <= 4) {
-              mode = 'palette';
-              activePalette = PALETTE_CGA;
-          } else if (depthVal <= 6) {
-              mode = 'palette';
-              activePalette = PALETTE_RGB8;
-          } else if (depthVal <= 8) {
-              mode = 'palette';
-              activePalette = PALETTE_RETRO;
-          } else if (depthVal === 10) {
-              // Standard Hi-Color (Quantize 5 levels)
-              mode = 'quantize';
-              quantLevels = 5;
-          } else if (depthVal === 12) {
-              // Classic Handheld (Depth 12)
-              mode = 'palette';
-              activePalette = PALETTE_HANDHELD;
-          } else if (depthVal === 14) {
-              // Stylized Limited (Depth 14)
-              mode = 'palette';
-              activePalette = PALETTE_STYLIZED;
-          } else if (depthVal >= 16) {
-              mode = 'original';
-          }
-          
-          // Helper: Find closest palette color
-          const getClosest = (r: number, g: number, b: number, palette: readonly number[][]) => {
-              let minD = Infinity, best = palette[0];
-              for (let i = 0; i < palette.length; i++) {
-                  const c = palette[i];
-                  const dist = (r-c[0])*(r-c[0]) + (g-c[1])*(g-c[1]) + (b-c[2])*(b-c[2]);
-                  if (dist < minD) { minD = dist; best = c; }
-              }
-              return best;
-          };
-
-          const qStep = 255 / (quantLevels - 1);
-          const ditherAmount = currentState.postProcessing.pixelArtDither ?? 0;
-          
-          // Pre-calculate user palette for Original mode dithering
-          const userPaletteRGB = (mode === 'original' && ditherAmount > 0 && currentState.palette) 
-              ? currentState.palette.map((hex: string) => {
-                  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                  return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [0,0,0];
-              }) 
-              : null;
-
-          for(let y=0; y<sh; y++) {
-              const row = ditherAmount > 0 ? bayerMatrix4x4[y%4] : null;
-              for(let x=0; x<sw; x++) {
-                  const i = (y*sw + x)*4;
-                  
-                  // 1. Get Original Color
-                  let r = d[i], g = d[i+1], b = d[i+2];
-
-                  // 2. Apply Dithering (Noise before mapping)
-                  if (row) {
-                      const baseScale = mode === '1bit' ? 64 : ((mode === 'palette' || mode === 'original') ? 32 : qStep); 
-                      const dScale = (baseScale * 0.4) * ditherAmount; 
-                      
-                      const noise = (row[x%4]-31.5) / 32 * dScale;
-                      r = Math.max(0, Math.min(255, r + noise));
-                      g = Math.max(0, Math.min(255, g + noise));
-                      b = Math.max(0, Math.min(255, b + noise));
-                  }
-
-                  // 3. Map Color
-                  if (mode === 'original') {
-                      if (ditherAmount > 0 && userPaletteRGB && userPaletteRGB.length > 0) {
-                          const r0 = d[i], g0 = d[i+1], b0 = d[i+2]; 
-                          
-                          const best = getClosest(r0, g0, b0, userPaletteRGB);
-                          const distSq = (r0-best[0])*(r0-best[0]) + (g0-best[1])*(g0-best[1]) + (b0-best[2])*(b0-best[2]);
-                          
-                          const t = Math.max(0, Math.min(1, (distSq - 20) / 780));
-                          let factor = t * t * (3 - 2 * t);
-                          factor = Math.pow(factor, 0.65);
-                          
-                          if (factor > 0.01 && row) {
-                              const baseScale = 32;
-                              const dScale = (baseScale * 0.4) * ditherAmount * factor;
-                              const noise = (row[x%4]-31.5) / 32 * dScale;
-                              
-                              const rN = Math.max(0, Math.min(255, r0 + noise));
-                              const gN = Math.max(0, Math.min(255, g0 + noise));
-                              const bN = Math.max(0, Math.min(255, b0 + noise));
-                              
-                              const bestN = getClosest(rN, gN, bN, userPaletteRGB);
-                              d[i] = bestN[0]; d[i+1] = bestN[1]; d[i+2] = bestN[2];
-                          } else {
-                              d[i] = best[0]; d[i+1] = best[1]; d[i+2] = best[2];
-                          }
-                      } else if (ditherAmount > 0) {
-                           d[i] = r; d[i+1] = g; d[i+2] = b;
-                      }
-                  } else if (mode === '1bit') {
-                      const lum = 0.299*r + 0.587*g + 0.114*b;
-                      const val = lum > 128 ? 255 : 0;
-                      d[i] = val; d[i+1] = val; d[i+2] = val;
-                  } else if (mode === 'palette' && activePalette) {
-                      const c = getClosest(r, g, b, activePalette);
-                      d[i] = c[0]; d[i+1] = c[1]; d[i+2] = c[2];
-                  } else if (mode === 'quantize') {
-                       d[i] = Math.floor(r / qStep + 0.5) * qStep;
-                       d[i+1] = Math.floor(g / qStep + 0.5) * qStep;
-                       d[i+2] = Math.floor(b / qStep + 0.5) * qStep;
-                  }
-              }
-          }
-          pCtx.putImageData(iData,0,0);
-          
-          // 4. Quantize alpha for fade gradient compatibility
-           // Converts smooth alpha into ordered-dithered binary alpha
-           for (let j = 3; j < d.length; j += 4) {
-               if (d[j] > 0 && d[j] < 255) {
-                   const pi = (j - 3) / 4;
-                   const px = pi % sw, py = Math.floor(pi / sw);
-                   const bayerVal = bayerMatrix4x4[py % 4][px % 4] / 64;
-                   d[j] = (d[j] / 255) > bayerVal ? 255 : 0;
-               }
-           }
-           pCtx.putImageData(iData, 0, 0);
-
-           // Draw back (Upscale)
-          targetCtx.save();
-          targetCtx.globalCompositeOperation = 'copy';
-          targetCtx.imageSmoothingEnabled = false;
-          targetCtx.drawImage(pCanvas, 0, 0, sw, sh, 0, 0, w, h);
-          targetCtx.restore();
-      };
+      // processPixelArt moved to canvas/PixelArtProcessor.ts
 
       // --- 2. Render Layers ---
       offCtx.setTransform(1, 0, 0, 1, 0, 0);
@@ -2304,7 +2150,14 @@ export const StrataCanvas = () => {
              // Composition to Offscreen
              // Apply Pixel Art per-layer to support smooth DoF on top
              if (isPixelArt) {
-                 processPixelArt(layerCtx, w, h);
+                 const pSize = Math.max(2, currentState.postProcessing.pixelArtSize || 4);
+                 const pixelCanvas = ensureCanvas(pixelCanvasRef, Math.ceil(w / pSize), Math.ceil(h / pSize));
+                 processPixelArt(
+                     layerCtx, w, h, pixelCanvas,
+                     currentState.postProcessing.pixelArtDepth ?? 4,
+                     currentState.postProcessing.pixelArtDither ?? 0,
+                     currentState.palette
+                 );
              }
 
              const glowInt = currentState.postProcessing.glow;
@@ -2428,216 +2281,6 @@ export const StrataCanvas = () => {
           ctx.globalAlpha = 1.0;
       }
 
-      // Pixel Art (Global Pass - Disabled in favor of per-layer pass to support smooth DoF)
-      /* Dead code removed: duplicate global Pixel Art pass (~200 lines)
-       Disabled in favor of per-layer pass to support smooth DoF.
-       if (false && isPixelArt) {
-          const pSize = Math.max(2, currentState.postProcessing.pixelArtSize || 4);
-          const sw = Math.ceil(w/pSize), sh = Math.ceil(h/pSize);
-          
-          // Ensure pixel buffer size matches logic
-          const pCanvas = pixelCanvasRef.current;
-          if (pCanvas && (pCanvas.width !== sw || pCanvas.height !== sh)) {
-              pCanvas.width = sw; pCanvas.height = sh;
-          }
-          
-          const pCtx = pCanvas!.getContext('2d', { willReadFrequently: true })!;
-          pCtx.imageSmoothingEnabled = false;
-          pCtx.drawImage(canvas, 0, 0, w, h, 0, 0, sw, sh);
-          
-          const iData = pCtx.getImageData(0,0,sw,sh);
-          const d = iData.data;
-          
-          // Palette Selection based on Depth
-          const depthVal = currentState.postProcessing.pixelArtDepth || 4;
-          let mode = 'quantize';
-          let activePalette: number[][] | null = null;
-          let quantLevels = 4;
-
-          // CGA-inspired (Cyan/Magenta/White/Black) - High Contrast
-          const PALETTE_CGA = [
-              [0,0,0], [85,255,255], [255,85,255], [255,255,255]
-          ];
-
-          // 3-bit RGB (8 Colors) - Classic Computer
-          const PALETTE_RGB8 = [
-              [0,0,0], [255,0,0], [0,255,0], [0,0,255],
-              [255,255,0], [0,255,255], [255,0,255], [255,255,255]
-          ];
-          
-          // Retro Palette (Pico-8 inspired) - 16 Colors
-          const PALETTE_RETRO = [
-            [0,0,0], [29,43,83], [126,37,83], [0,135,81],
-            [171,82,54], [95,87,79], [194,195,199], [255,241,232],
-            [255,0,77], [255,163,0], [255,236,39], [0,228,54],
-            [41,173,255], [131,118,156], [255,119,168], [255,204,170]
-          ];
-          
-          // Classic Handheld (Game Boy Style) - Expanded to 8 Colors
-          const PALETTE_HANDHELD = [
-             [8,24,8],      // Deepest Shadow
-             [15,56,15],    // Original Darkest
-             [30,80,30],    // Mid Shadow
-             [48,98,48],    // Original Dark
-             [85,130,35],   // Mid Light (Bridge)
-             [139,172,15],  // Original Light
-             [155,188,15],  // Original Lightest
-             [205,230,80]   // New Highlight
-          ];
-
-          // Stylized Limited - Modern/Artistic (13 Colors)
-          const PALETTE_STYLIZED = [
-             [20,12,28], [68,36,52], [48,52,109], [78,74,78],
-             [133,76,48], [52,101,36], [208,70,72], [117,113,97],
-             [89,125,206], [210,125,44], [133,149,161], [218,212,94],
-             [83,95,95]     // Shadow Complement (#535f5f)
-          ];
-
-          if (depthVal <= 2) {
-              mode = '1bit';
-          } else if (depthVal <= 4) {
-              mode = 'palette';
-              activePalette = PALETTE_CGA;
-          } else if (depthVal <= 6) {
-              mode = 'palette';
-              activePalette = PALETTE_RGB8;
-          } else if (depthVal <= 8) {
-              mode = 'palette';
-              activePalette = PALETTE_RETRO;
-          } else if (depthVal === 10) {
-              // Standard Hi-Color (Quantize 5 levels)
-              mode = 'quantize';
-              quantLevels = 5;
-          } else if (depthVal === 12) {
-              // Classic Handheld (Depth 12)
-              mode = 'palette';
-              activePalette = PALETTE_HANDHELD;
-          } else if (depthVal === 14) {
-              // Stylized Limited (Depth 14)
-              mode = 'palette';
-              activePalette = PALETTE_STYLIZED;
-          } else if (depthVal >= 16) {
-              mode = 'original';
-          }
-          
-          // Helper: Find closest palette color
-          const getClosest = (r: number, g: number, b: number, palette: number[][]) => {
-              let minD = Infinity, best = palette[0];
-              for (let i = 0; i < palette.length; i++) {
-                  const c = palette[i];
-                  // Simple Euclidean distance is sufficient for retro aesthetic
-                  const dist = (r-c[0])*(r-c[0]) + (g-c[1])*(g-c[1]) + (b-c[2])*(b-c[2]);
-                  if (dist < minD) { minD = dist; best = c; }
-              }
-              return best;
-          };
-
-          // Step for Quantization Mode
-          const qStep = 255 / (quantLevels - 1);
-          
-          const ditherAmount = currentState.postProcessing.pixelArtDither ?? 0;
-          
-          // Pre-calculate user palette for Original mode dithering
-          const userPaletteRGB = (mode === 'original' && ditherAmount > 0 && currentState.palette) 
-              ? currentState.palette.map((hex: string) => {
-                  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                  return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [0,0,0];
-              }) 
-              : null;
-
-          for(let y=0; y<sh; y++) {
-              const row = ditherAmount > 0 ? bayerMatrix4x4[y%4] : null;
-              for(let x=0; x<sw; x++) {
-                  const i = (y*sw + x)*4;
-                  
-                  // 1. Get Original Color
-                  let r = d[i], g = d[i+1], b = d[i+2];
-
-                  // 2. Apply Dithering (Noise before mapping)
-                  if (row) {
-                      // Adjust dither scale based on depth
-                      // Lower depth needs more aggressive dither to be visible, higher depth needs subtlety
-                      const baseScale = mode === '1bit' ? 64 : ((mode === 'palette' || mode === 'original') ? 32 : qStep); 
-                      const dScale = (baseScale * 0.4) * ditherAmount; 
-                      
-                      const noise = (row[x%4]-31.5) / 32 * dScale;
-                      r = Math.max(0, Math.min(255, r + noise));
-                      g = Math.max(0, Math.min(255, g + noise));
-                      b = Math.max(0, Math.min(255, b + noise));
-                  }
-
-                  // 3. Map Color
-                  if (mode === 'original') {
-                      if (ditherAmount > 0 && userPaletteRGB && userPaletteRGB.length > 0) {
-                          // Error-Gated Dithering: Only dither if quantization error is significant
-                          // This avoids "dirtying" flat areas that already match the palette
-                          const r0 = d[i], g0 = d[i+1], b0 = d[i+2]; // Use clean original color
-                          
-                          const best = getClosest(r0, g0, b0, userPaletteRGB);
-                          const distSq = (r0-best[0])*(r0-best[0]) + (g0-best[1])*(g0-best[1]) + (b0-best[2])*(b0-best[2]);
-                          
-                          // Gate dither strength: Low error = No dither
-                          // Thresholds: ~4.5 unit distance (20 sq) to ~28 unit distance (800 sq)
-                          // This expands dithering range significantly to cover more intermediate tones
-                          const t = Math.max(0, Math.min(1, (distSq - 20) / 780));
-                          let factor = t * t * (3 - 2 * t); // Smoothstep
-                          
-                          // Boost factor curve to increase mid-range coverage
-                          factor = Math.pow(factor, 0.65);
-                          
-                          if (factor > 0.01 && row) {
-                              // Apply Gated Noise
-                              const baseScale = 32;
-                              const dScale = (baseScale * 0.4) * ditherAmount * factor;
-                              const noise = (row[x%4]-31.5) / 32 * dScale;
-                              
-                              const rN = Math.max(0, Math.min(255, r0 + noise));
-                              const gN = Math.max(0, Math.min(255, g0 + noise));
-                              const bN = Math.max(0, Math.min(255, b0 + noise));
-                              
-                              const bestN = getClosest(rN, gN, bN, userPaletteRGB);
-                              d[i] = bestN[0]; d[i+1] = bestN[1]; d[i+2] = bestN[2];
-                          } else {
-                              d[i] = best[0]; d[i+1] = best[1]; d[i+2] = best[2];
-                          }
-                      } else if (ditherAmount > 0) {
-                           // Fallback if no palette: keep noisy original (legacy behavior)
-                           d[i] = r; d[i+1] = g; d[i+2] = b;
-                      }
-                  } else if (mode === '1bit') {
-                      // Simple Threshold (Luminance)
-                      const lum = 0.299*r + 0.587*g + 0.114*b;
-                      const val = lum > 128 ? 255 : 0;
-                      d[i] = val; d[i+1] = val; d[i+2] = val;
-                  } else if (mode === 'palette' && activePalette) {
-                      const c = getClosest(r, g, b, activePalette);
-                      d[i] = c[0]; d[i+1] = c[1]; d[i+2] = c[2];
-                  } else if (mode === 'quantize') {
-                       d[i] = Math.floor(r / qStep + 0.5) * qStep;
-                       d[i+1] = Math.floor(g / qStep + 0.5) * qStep;
-                       d[i+2] = Math.floor(b / qStep + 0.5) * qStep;
-                  }
-              }
-          }
-          pCtx.putImageData(iData,0,0);
-          ctx.imageSmoothingEnabled = false;
-          ctx.globalCompositeOperation = 'source-over';
-          // Quantize alpha for fade gradient compatibility (final composite)
-           for (let j = 3; j < d.length; j += 4) {
-               if (d[j] > 0 && d[j] < 255) {
-                   const pi = (j - 3) / 4;
-                   const px = pi % sw, py = Math.floor(pi / sw);
-                   const bayerVal = bayerMatrix4x4[py % 4][px % 4] / 64;
-                   d[j] = (d[j] / 255) > bayerVal ? 255 : 0;
-               }
-           }
-           pCtx.putImageData(iData, 0, 0);
-           ctx.drawImage(pixelCanvasRef.current!, 0, 0, sw, sh, 0, 0, w, h);
-          ctx.imageSmoothingEnabled = true;
-       } end of dead pixel art block
-      }
-
-      end of dead pixel art outer brace */
 
       // --- Grunge Overlay (Animated) ---
       if (isCinematic && currentState.postProcessingEnabled.grungeOverlay && grungeImgRef.current) {
