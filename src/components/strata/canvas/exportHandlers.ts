@@ -1,5 +1,5 @@
 import { toast } from 'sonner@2.0.3';
-import { Shape } from '../StrataContext';
+import { Shape } from '../../../types/strataTypes';
 
 /**
  * Exports the current canvas frame as a PNG file.
