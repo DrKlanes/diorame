@@ -7,6 +7,9 @@ import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { BAYER_MATRIX_4X4, PALETTE_CGA, PALETTE_RGB8, PALETTE_RETRO, PALETTE_HANDHELD, PALETTE_STYLIZED } from './pixelArtPalettes';
+import { hexToHSL, hslToHex, getVibrantVariant, hexToRgba } from '../../utils/colorUtils';
+import { createNoise, drawSmoothLine, drawStraightLine } from '../../utils/canvasUtils';
+import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, FOG_DENSITY_FACTOR, HANDHELD_SWAY_FREQ, HANDHELD_TREMOR_FREQ, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS } from '../../constants/renderConstants';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -107,14 +110,14 @@ export const StrataCanvas = () => {
 
   // Double Click State for Point of Interest
   const lastClickTimeRef = useRef(0);
-  const DOUBLE_CLICK_DELAY = 300; 
+  // DOUBLE_CLICK_DELAY moved to src/constants/renderConstants.ts
 
   // Organic Brush State
   const organicPhaseRef = useRef(0);
 
   // Throttle state for drawing performance
   const lastRenderTimeRef = useRef(0);
-  const RENDER_THROTTLE_MS = 8; // ~120 fps max for drawing
+  // RENDER_THROTTLE_MS moved to src/constants/renderConstants.ts
 
   // Transform Tool State
   const transformRef = useRef<{
@@ -275,7 +278,7 @@ export const StrataCanvas = () => {
 
   // Initialize Particles
   useEffect(() => {
-      const count = 700; // Increased from 550
+      const count = PARTICLE_COUNT;
       particlesRef.current = Array.from({ length: count }).map(() => {
           const shade = Math.random();
           const points = 4 + Math.floor(shade * 3); 
@@ -1226,7 +1229,7 @@ export const StrataCanvas = () => {
         
         if (currentPointsRef.current.length > 0) {
             // Discard micro-strokes from finger/palm touches (not pen or mouse)
-             if (drawingPointerTypeRef.current === 'touch' && currentPointsRef.current.length <= 2) {
+             if (drawingPointerTypeRef.current === 'touch' && currentPointsRef.current.length <= MIN_TOUCH_STROKE_POINTS) {
                  currentPointsRef.current = [];
                  isDrawingRef.current = false;
                  drawingPointerTypeRef.current = null;
@@ -2282,7 +2285,7 @@ export const StrataCanvas = () => {
                      // Curve start distance: Low fog = starts far away, High fog = starts closer
                      const startDist = 2000 + (1.0 - Math.pow(fogInt, 0.5)) * 4000;
                      // Curve density: Standard exponential fog
-                     const density = 0.0004 * fogInt; 
+                     const density = FOG_DENSITY_FACTOR * fogInt;
 
                      const dist = Math.max(0, depth - startDist);
                      const fogFactor = 1.0 - Math.exp(-dist * density);
@@ -2896,12 +2899,12 @@ export const StrataCanvas = () => {
               const ht = accumulatedHandheldTime;
               
               // Base sway (breathing/body movement)
-              const t1 = ht * 1.5 * freqMult;
+              const t1 = ht * HANDHELD_SWAY_FREQ * freqMult;
               const swayX = Math.sin(t1) * 3 + Math.cos(t1 * 1.3) * 2;
               const swayY = Math.cos(t1 * 0.9) * 3 + Math.sin(t1 * 1.4) * 2;
               
               // Micro-tremors (muscle tension/weight) - Faster frequencies
-              const t2 = ht * 8.0 * freqMult;
+              const t2 = ht * HANDHELD_TREMOR_FREQ * freqMult;
               const tremorX = Math.sin(t2) * 0.5 + Math.cos(t2 * 1.7) * 0.4;
               const tremorY = Math.cos(t2 * 1.2) * 0.5 + Math.sin(t2 * 2.3) * 0.4;
               const tremorZ = Math.sin(t2 * 1.5) * 0.5;
@@ -3004,71 +3007,11 @@ export const StrataCanvas = () => {
   );
 };
 
-// --- Helpers ---
-const hexToHSL = (hex: string) => {
-    let r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
-    if (max !== min) {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; break; }
-        h /= 6;
-    }
-    return { h: h * 360, s: s * 100, l: l * 100 };
-};
-
-const hslToHex = (h: number, s: number, l: number) => {
-    l /= 100; const a = s * Math.min(l, 1 - l) / 100;
-    const f = (n: number) => { const k = (n + h / 30) % 12; const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1); return Math.round(255 * color).toString(16).padStart(2, '0'); };
-    return `#${f(0)}${f(8)}${f(4)}`;
-};
-
-const getVibrantVariant = (hex: string, intensity: number, direction: 'light' | 'dark') => {
-    const hsl = hexToHSL(hex);
-    const shift = 10 + (intensity * 30);
-    if (direction === 'light') { hsl.l = Math.min(92, hsl.l + shift); if (hsl.s > 0) hsl.s = Math.min(100, hsl.s + (intensity * 10)); }
-    else { hsl.l = Math.max(20, hsl.l - shift); if (hsl.s > 0) hsl.s = Math.min(100, hsl.s + (intensity * 30)); }
-    return hslToHex(hsl.h, hsl.s, hsl.l);
-};
-
-const hexToRgba = (hex: string, alpha: number) => {
-    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
-};
+// --- Helpers --- (color utilities moved to src/utils/colorUtils.ts)
 
 // _createFadeGrain_REMOVED — dead code eliminated (was ~20 lines)
 
-const createNoise = (w: number, h: number, alpha = 100, scale = 2, density = 0.45) => {
-    if (w <= 0 || h <= 0) return null;
-    const nw = Math.ceil(w / scale), nh = Math.ceil(h / scale);
-    const nc = document.createElement('canvas'); nc.width = nw; nc.height = nh;
-    const nCtx = nc.getContext('2d'); if (!nCtx) return null;
-    const iData = nCtx.createImageData(nw, nh), buffer = new Uint32Array(iData.data.buffer);
-    for (let i = 0; i < buffer.length; i++) if (Math.random() < density) buffer[i] = (alpha << 24) | 0;
-    nCtx.putImageData(iData, 0, 0); return nc;
-};
-
-const drawSmoothLine = (context: CanvasRenderingContext2D, points: { x: number, y: number }[]) => {
-    if (points.length < 2) return;
-    context.beginPath(); 
-    context.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length - 1; i++) {
-        const xc = (points[i].x + points[i + 1].x) / 2, yc = (points[i].y + points[i + 1].y) / 2;
-        context.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
-    }
-    context.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-};
-
-// Draw without smoothing - for uniform line strokes to maintain exact width
-const drawStraightLine = (context: CanvasRenderingContext2D, points: { x: number, y: number }[]) => {
-    if (points.length < 2) return;
-    context.beginPath();
-    context.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-        context.lineTo(points[i].x, points[i].y);
-    }
-};
+// canvas utilities moved to src/utils/canvasUtils.ts
 
 const getLayerBoundingBox = (shapes: Shape[]) => {
     if (shapes.length === 0) return null;
