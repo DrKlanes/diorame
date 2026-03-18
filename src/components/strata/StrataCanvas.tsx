@@ -10,7 +10,8 @@ import { processPixelArt } from './canvas/PixelArtProcessor';
 import { applyFog, applyGlow, applyDoFBlur, applyRiso, applyChromaticAberration, applyVignette, applyGrain, applyGrunge } from './canvas/postProcessing';
 import { hexToHSL, hslToHex, getVibrantVariant, hexToRgba } from '../../utils/colorUtils';
 import { createNoise, drawSmoothLine, drawStraightLine } from '../../utils/canvasUtils';
-import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, HANDHELD_SWAY_FREQ, HANDHELD_TREMOR_FREQ, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS } from '../../constants/renderConstants';
+import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS } from '../../constants/renderConstants';
+import { computeCinematicTick, CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -19,7 +20,6 @@ export const StrataCanvas = () => {
   const { state, dispatch } = useStrata();
 
   // --- Constants ---
-  const CINEMATIC_DEPTH_MULTIPLIER = 3; 
   const DRAW_FOCAL_LENGTH = 5000;
   const NEAR_CLIP = 50;
   const MAX_PAN = 1500;
@@ -2322,105 +2322,23 @@ export const StrataCanvas = () => {
       const dt = Math.min((now - lastTime)/1000, 0.1);
       lastTime = now;
       if (isCinematic) {
-          accumulatedTime += dt * (currentState.cinematicSpeed ?? 1.0);
-          accumulatedHandheldTime += dt; // Independent time for handheld shake
-          wiggleFrame = Math.floor(now / 250); // 4 FPS for stop motion effect
-          const t = accumulatedTime;
-          const type = currentState.cinematicType;
-          let nc = { ...currentState.camera };
-          const spd = 2 * (currentState.cinematicSpeed ?? 1.0);
-          const maxD = (currentState.totalLayers) * -BASE_DEPTH_STEP * CINEMATIC_DEPTH_MULTIPLIER;
-          
-          if (type === 'forward') {
-              nc.z -= spd; nc.x = poiX + Math.sin(t)*50; nc.y = poiY + Math.cos(t*0.7)*50;
-              if (nc.z < maxD - 1000) nc.z = 500;
-          } else if (type === 'spiral') {
-              nc.z -= spd*1.5; nc.x = poiX + Math.cos(t)*200; nc.y = poiY + Math.sin(t)*200;
-              if (nc.z < maxD - 1000) nc.z = 500;
-          } else if (type === 'yoyo') {
-              nc.z = (500 + maxD)/2 + Math.sin(t*0.5)*(Math.abs(maxD)+500)/2;
-              nc.x = poiX + Math.sin(t*2)*20; nc.y = poiY;
-          } else if (type === 'pulse') {
-              nc.z -= spd*(2+Math.sin(t*3)); nc.x = poiX + Math.sin(t*5)*10; nc.y = poiY + Math.cos(t*5)*10;
-              if (nc.z < maxD - 1000) nc.z = 500;
-          } else if (type === 'twist') {
-              nc.z -= spd*1.2; nc.x = poiX; nc.y = poiY; nc.rotation = Math.sin(t*0.5)*0.5;
-              // Add subtle zoom in/out
-              nc.z += Math.sin(t*0.25) * 400; 
-              if (nc.z < maxD - 1000) nc.z = 500;
-          } else if (type === 'arc') {
-              nc.z = centerZ + 1200; nc.y = poiY; nc.x = poiX + Math.sin(t*0.4)*800;
-          } else if (type === 'orbit') {
-              // Free View Mode: smooth interpolation for orbit angles
-              orbitRef.current.azimuth += (orbitRef.current.targetAzimuth - orbitRef.current.azimuth)*0.1;
-              orbitRef.current.elevation += (orbitRef.current.targetElevation - orbitRef.current.elevation)*0.1;
-              
-              // Calculate orbit position around center
-              const cd = 1200;
-              const orbitX = cd * Math.sin(orbitRef.current.azimuth) * Math.cos(orbitRef.current.elevation);
-              const orbitY = cd * Math.sin(orbitRef.current.elevation);
-              const orbitZ = cd * Math.cos(orbitRef.current.azimuth) * Math.cos(orbitRef.current.elevation);
-              
-              // Apply pan offset to orbit position for free movement
-              nc.x = poiX + orbitX + orbitRef.current.panOffsetX;
-              nc.y = poiY + orbitY + orbitRef.current.panOffsetY;
-              nc.z = centerZ + orbitZ;
-          } else if (type === 'crane') {
-              nc.y = poiY + Math.sin(t*0.3)*400;
-              nc.z = centerZ + 1200 - Math.cos(t*0.3)*150;
-              nc.x = poiX + Math.sin(t*0.15)*30;
-          } else if (type === 'truck') {
-              nc.x = poiX + Math.sin(t*0.2)*400;
-              nc.y = poiY;
-              nc.z = centerZ + 1200 + Math.abs(Math.cos(t*0.2)) * 150;
-          } else if (type === 'zoom') {
-              nc.x = poiX;
-              nc.y = poiY;
-              nc.z = centerZ + 1200;
-          }
-          
-          // Apply Handheld Camera Shake (if enabled)
-          if (currentState.isHandheldEnabled && isCinematic) {
-              const intensityMap = { low: 0.8, medium: 2.0, high: 3.5 };
-              // Increase frequency for High intensity to simulate more frantic movement
-              const freqMap = { low: 1.0, medium: 1.0, high: 2.5 };
-              
-              const baseIntensity = intensityMap[currentState.handheldIntensity];
-              const freqMult = freqMap[currentState.handheldIntensity];
-              
-              // More complex frequency mixing for organic feel using independent time
-              const ht = accumulatedHandheldTime;
-              
-              // Base sway (breathing/body movement)
-              const t1 = ht * HANDHELD_SWAY_FREQ * freqMult;
-              const swayX = Math.sin(t1) * 3 + Math.cos(t1 * 1.3) * 2;
-              const swayY = Math.cos(t1 * 0.9) * 3 + Math.sin(t1 * 1.4) * 2;
-              
-              // Micro-tremors (muscle tension/weight) - Faster frequencies
-              const t2 = ht * HANDHELD_TREMOR_FREQ * freqMult;
-              const tremorX = Math.sin(t2) * 0.5 + Math.cos(t2 * 1.7) * 0.4;
-              const tremorY = Math.cos(t2 * 1.2) * 0.5 + Math.sin(t2 * 2.3) * 0.4;
-              const tremorZ = Math.sin(t2 * 1.5) * 0.5;
-
-              // Combined noise
-              const shakeX = (swayX + tremorX) * baseIntensity;
-              const shakeY = (swayY + tremorY) * baseIntensity;
-              const shakeZ = (swayX * 1.5 + tremorZ) * baseIntensity;
-
-              nc.x += shakeX;
-              nc.y += shakeY;
-              nc.z += shakeZ;
-              
-              lastShakeRef.current = { x: shakeX, y: shakeY, z: shakeZ };
-              
-              // Rotation shake (roll/pitch)
-              const tr = ht * freqMult;
-              nc.rotation += ((Math.sin(tr * 1.1) * 0.005) + (Math.cos(tr * 3.7) * 0.003)) * baseIntensity;
-          } else {
-              lastShakeRef.current = { x: 0, y: 0, z: 0 };
-          }
-          
-          cameraRef.current = nc;
+          const cinematicResult = computeCinematicTick(
+              dt, now,
+              accumulatedTime, accumulatedHandheldTime,
+              currentState.cinematicSpeed ?? 1.0,
+              currentState.cinematicType,
+              currentState.camera,
+              currentState.totalLayers,
+              currentState.isHandheldEnabled,
+              currentState.handheldIntensity,
+              poiX, poiY, centerZ,
+              orbitRef.current
+          );
+          accumulatedTime = cinematicResult.accumulatedTime;
+          accumulatedHandheldTime = cinematicResult.accumulatedHandheldTime;
+          wiggleFrame = cinematicResult.wiggleFrame;
+          cameraRef.current = cinematicResult.newCamera;
+          lastShakeRef.current = cinematicResult.newShake;
       }
       
       animationFrameId = requestAnimationFrame(render);
