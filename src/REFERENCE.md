@@ -474,7 +474,15 @@ APP_VERSION = "1.11.0"          // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 -> 1.11.0)
+## Appendix C: Changelog Highlights (1.7.3 -> 1.12.0)
+
+### 1.12.x — Design System (DS-1 through DS-5)
+- **DS-1 — Token centralization** (`src/design-system/tokens.ts`): single `diTokens` object with 35+ keys covering surfaces, borders, text, interaction, sliders/toggles, spinners, brand and dialog colors; replaces all `uiTheme` prop drilling
+- **DS-2 — Primitive components** (`src/design-system/`): six new Di* components — `DiButton` (variants: default, ghost, icon, brand), `DiIconButton` (icon button with `EnhancedTooltip` integrated), `DiSlider` (label + formatted value + range), `DiPanel` (surface container), `DiDivider` (horizontal/vertical separator), `DiBadge` (status pill with optional icon)
+- **DS-3 — Primitive adoption**: `ControlsDrawing.tsx` — 4 DiBadge, 9 DiDivider, 4 DiIconButton; `ControlsCinematic.tsx` — 3 DiIconButton, 3 DiSlider, 3 DiPanel, 2 DiDivider; `ToolOptionsPanel.tsx` — 2 DiSlider (Angle, Intensity)
+- **DS-4 — Prop drilling eliminated**: `Controls.tsx` no longer creates or passes `uiTheme`; `ControlsDrawing` and `ControlsCinematic` import `diTokens` directly
+- **DS-5 — Local uiTheme objects removed**: `LayersPanel.tsx` and `ToolOptionsPanel.tsx` local `uiTheme` replaced with `diTokens`; 6 new tokens added (`layerBgActive`, `layerBorderActive`, `borderSubtle`, `segmentActiveBg`, `segmentHoverBg`, `segmentHoverText`); `theme: any` typed as `typeof diTokens` in `LayerItemProps`
+- **Bugfix**: Symmetry, Draw Inside, Draw Behind, and Organic Mode buttons now correctly disabled when Text tool is active
 
 ### 1.8.x — Brush & Stroke Enhancements
 - Added **Ink line mode** (`generateInkStroke`): deterministic noise-based wobble, width variation, ink-bleed edges, round end caps
