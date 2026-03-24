@@ -7,6 +7,7 @@ import { EnhancedTooltip } from '../ui/enhanced-tooltip';
 import { ControlsDrawing } from './ControlsDrawing';
 import { ControlsCinematic } from './ControlsCinematic';
 import { ControlsExport } from './ControlsExport';
+import { diTokens } from '../../design-system/tokens';
 
 export const Controls = () => {
 	const { state, dispatch } = useStrata();
@@ -99,31 +100,6 @@ export const Controls = () => {
 		return () => window.removeEventListener('keydown', handleKeyDown);
 	}, [handleExportRequest, dispatch, state.textSession.isActive]);
 
-	// UI Theme - Light Mode (Single Source of Truth)
-	const uiTheme = {
-		bg: "bg-white/95",
-		bgAlt: "bg-white/90",
-		bgPanel: "bg-white/90",
-		bgPanelAlt: "bg-white/80",
-		border: "border-slate-200",
-		text: "text-slate-900",
-		textMuted: "text-slate-600",
-		textSubtle: "text-slate-400",
-		iconColor: "text-slate-700",
-		hover: "hover:bg-slate-50",
-		hoverAlt: "hover:bg-slate-100",
-		divider: "bg-slate-200",
-		sliderBg: "bg-slate-200",
-		sliderAccent: "accent-slate-900",
-		badgeBg: "bg-slate-100",
-		toggleBg: "bg-slate-100",
-		toggleHoverBg: "hover:bg-white",
-		toggleActiveText: "text-slate-900",
-		toggleActiveBg: "bg-slate-900",
-		spinnerBorder: "border-slate-400",
-		spinnerTop: "border-t-slate-900",
-	};
-
 	if (state.isUIHidden) {
 		return (
 			<div className="absolute top-6 right-6 z-50 animate-in fade-in duration-300">
@@ -145,7 +121,7 @@ export const Controls = () => {
 			{/* Top Center: Mode Switch */}
 			<div className={cn(
 				"absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 p-1.5 rounded-full shadow-sm border transition-all duration-200 hover:shadow-md z-50 select-none backdrop-blur-sm",
-				uiTheme.bgAlt, uiTheme.border
+				diTokens.bgAlt, diTokens.border
 			)}>
 				<EnhancedTooltip content="Drawing Mode" shortcut="D" disabled={state.mode === 'drawing'}>
 					<Button
@@ -192,7 +168,7 @@ export const Controls = () => {
 							className="rounded-full w-8 h-8"
 							title="Hide UI"
 						>
-							<EyeOff className={cn("w-3.5 h-3.5", uiTheme.textSubtle)} />
+							<EyeOff className={cn("w-3.5 h-3.5", diTokens.textSubtle)} />
 						</Button>
 					</>
 				)}
@@ -201,7 +177,6 @@ export const Controls = () => {
 			{/* Drawing Mode */}
 			{state.mode === 'drawing' && (
 				<ControlsDrawing
-					uiTheme={uiTheme}
 					svgExportOpen={svgExportOpen}
 					setSvgExportOpen={setSvgExportOpen}
 					handleExportRequest={handleExportRequest}
@@ -211,7 +186,6 @@ export const Controls = () => {
 			{/* Cinematic Mode */}
 			{state.mode === 'cinematic' && (
 				<ControlsCinematic
-					uiTheme={uiTheme}
 					uiFocusLayer={uiFocusLayer}
 					setUiFocusLayer={setUiFocusLayer}
 				/>

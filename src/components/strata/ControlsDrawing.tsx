@@ -21,18 +21,17 @@ import { EnhancedTooltip } from '../ui/enhanced-tooltip';
 import { DiIconButton } from '../../design-system/DiIconButton';
 import { DiDivider } from '../../design-system/DiDivider';
 import { DiBadge } from '../../design-system/DiBadge';
+import { diTokens } from '../../design-system/tokens';
 import { LayersPanel } from './LayersPanel';
 import { ToolOptionsPanel } from './ToolOptionsPanel';
 
 interface ControlsDrawingProps {
-	uiTheme: Record<string, string>;
 	svgExportOpen: boolean;
 	setSvgExportOpen: (v: boolean) => void;
 	handleExportRequest: (format: 'svg' | 'svgz') => void;
 }
 
 export const ControlsDrawing = ({
-	uiTheme,
 	svgExportOpen,
 	setSvgExportOpen,
 	handleExportRequest,
@@ -155,20 +154,20 @@ export const ControlsDrawing = ({
 			{/* Active Tool & Layer Indicator */}
 			<div className={cn(
 				"absolute top-6 right-4 sm:right-6 z-40 px-4 py-2 rounded-full shadow-lg flex items-center gap-3 transition-all duration-200 backdrop-blur-sm",
-				uiTheme.bg, uiTheme.border, "border"
+				diTokens.bg, diTokens.border, "border"
 			)}>
 				<div className="flex items-center gap-2">
-					<span className={cn("text-[11px] font-bold tracking-wider uppercase", uiTheme.textMuted)}>
+					<span className={cn("text-[11px] font-bold tracking-wider uppercase", diTokens.textMuted)}>
 						Layer {state.currentLayerIndex + 1}
 					</span>
 					<DiDivider orientation="vertical" />
 					<div className="flex items-center gap-1.5">
-						{state.tool === 'brush' && <Droplet className={cn("w-4 h-4", uiTheme.iconColor)} />}
-						{state.tool === 'line' && <Paintbrush className={cn("w-4 h-4", uiTheme.iconColor)} />}
-						{state.tool === 'eraser' && <Eraser className={cn("w-4 h-4", uiTheme.iconColor)} />}
-						{state.tool === 'text' && <Type className={cn("w-4 h-4", uiTheme.iconColor)} />}
-						{state.tool === 'move' && <Move className={cn("w-4 h-4", uiTheme.iconColor)} />}
-						<span className={cn("text-sm font-semibold capitalize", uiTheme.text)}>
+						{state.tool === 'brush' && <Droplet className={cn("w-4 h-4", diTokens.iconColor)} />}
+						{state.tool === 'line' && <Paintbrush className={cn("w-4 h-4", diTokens.iconColor)} />}
+						{state.tool === 'eraser' && <Eraser className={cn("w-4 h-4", diTokens.iconColor)} />}
+						{state.tool === 'text' && <Type className={cn("w-4 h-4", diTokens.iconColor)} />}
+						{state.tool === 'move' && <Move className={cn("w-4 h-4", diTokens.iconColor)} />}
+						<span className={cn("text-sm font-semibold capitalize", diTokens.text)}>
 							{state.tool === 'brush' ? 'Blob' : state.tool === 'line' ? 'Brush' : state.tool === 'eraser' ? 'Eraser' : state.tool === 'text' ? 'Text' : 'Move'}
 						</span>
 					</div>
@@ -204,7 +203,7 @@ export const ControlsDrawing = ({
 				{/* File Controls */}
 				<div className={cn(
 					"p-1.5 rounded-full shadow-sm border flex items-center gap-2 sm:gap-1 select-none pointer-events-auto backdrop-blur-sm",
-					uiTheme.bgAlt, uiTheme.border
+					diTokens.bgAlt, diTokens.border
 				)}>
 					<DiIconButton
 						icon={<Save className="w-4 h-4" />}
@@ -237,16 +236,16 @@ export const ControlsDrawing = ({
 									size="icon"
 									className={cn(
 										"h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation",
-										uiTheme.hover
+										diTokens.hover
 									)}
 									disabled={state.isExporting}
 								>
-									<FileCode className={cn("w-4 h-4", uiTheme.iconColor)} />
+									<FileCode className={cn("w-4 h-4", diTokens.iconColor)} />
 								</RippleButton>
 							</PopoverTrigger>
 						</EnhancedTooltip>
 						<PopoverContent
-							className={cn("w-auto p-2", uiTheme.bg, uiTheme.border)}
+							className={cn("w-auto p-2", diTokens.bg, diTokens.border)}
 							align="start"
 							sideOffset={8}
 						>
@@ -255,8 +254,8 @@ export const ControlsDrawing = ({
 									onClick={() => handleExportRequest('svg')}
 									className={cn(
 										"px-3 py-2 text-sm rounded-md text-left transition-colors",
-										uiTheme.hover,
-										uiTheme.text
+										diTokens.hover,
+										diTokens.text
 									)}
 								>
 									SVG
@@ -265,8 +264,8 @@ export const ControlsDrawing = ({
 									onClick={() => handleExportRequest('svgz')}
 									className={cn(
 										"px-3 py-2 text-sm rounded-md text-left transition-colors",
-										uiTheme.hover,
-										uiTheme.text
+										diTokens.hover,
+										diTokens.text
 									)}
 								>
 									SVG (Compressed)
@@ -288,9 +287,9 @@ export const ControlsDrawing = ({
 				{/* Project Name Editor */}
 				<div className={cn(
 					"px-3 py-1.5 rounded-full shadow-sm border select-none pointer-events-auto backdrop-blur-sm flex items-center gap-2",
-					uiTheme.bgAlt, uiTheme.border
+					diTokens.bgAlt, diTokens.border
 				)}>
-					<Pen className={cn("w-3.5 h-3.5", uiTheme.textMuted)} />
+					<Pen className={cn("w-3.5 h-3.5", diTokens.textMuted)} />
 					<input
 						type="text"
 						value={state.projectName}
@@ -299,7 +298,7 @@ export const ControlsDrawing = ({
 						maxLength={50}
 						className={cn(
 							"bg-transparent border-none outline-none text-xs font-medium w-32 placeholder:text-slate-400",
-							uiTheme.text
+							diTokens.text
 						)}
 						placeholder="Project Name"
 					/>
@@ -308,7 +307,7 @@ export const ControlsDrawing = ({
 				{/* Dark Mode */}
 				<div className={cn(
 					"p-1.5 rounded-full shadow-sm border select-none w-fit pointer-events-auto backdrop-blur-sm flex items-center gap-1",
-					uiTheme.bgAlt, uiTheme.border
+					diTokens.bgAlt, diTokens.border
 				)}>
 					<DiIconButton
 						icon={state.isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -322,7 +321,7 @@ export const ControlsDrawing = ({
 
 			{/* Layer Control (Bottom Center) */}
 			<div className="absolute bottom-6 left-4 translate-x-0 sm:bottom-8 sm:left-1/2 sm:-translate-x-1/2 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300 z-50 select-none pointer-events-none">
-				<div className={cn("backdrop-blur-sm px-2 py-1.5 rounded-full shadow-sm border flex items-center gap-1 pointer-events-auto", uiTheme.bg, uiTheme.border)}>
+				<div className={cn("backdrop-blur-sm px-2 py-1.5 rounded-full shadow-sm border flex items-center gap-1 pointer-events-auto", diTokens.bg, diTokens.border)}>
 
 					{/* Visibility Toggle */}
 					<Button
@@ -333,9 +332,9 @@ export const ControlsDrawing = ({
 						title={state.hiddenLayers.includes(state.currentLayerIndex) ? "Show Layer" : "Hide Layer"}
 					>
 						{state.hiddenLayers.includes(state.currentLayerIndex) ? (
-							<EyeOff className={cn("w-4 h-4", uiTheme.textMuted)} />
+							<EyeOff className={cn("w-4 h-4", diTokens.textMuted)} />
 						) : (
-							<Eye className={cn("w-4 h-4", uiTheme.iconColor)} />
+							<Eye className={cn("w-4 h-4", diTokens.iconColor)} />
 						)}
 					</Button>
 
@@ -350,7 +349,7 @@ export const ControlsDrawing = ({
 						{state.locked3DLayers.includes(state.currentLayerIndex) ? (
 							<Lock className="w-4 h-4 text-amber-600" />
 						) : (
-							<Unlock className={cn("w-4 h-4", uiTheme.iconColor)} />
+							<Unlock className={cn("w-4 h-4", diTokens.iconColor)} />
 						)}
 					</Button>
 
@@ -393,7 +392,7 @@ export const ControlsDrawing = ({
 									: "Duplicate Current Layer"
 						}
 					>
-						<Copy className={cn("w-4 h-4", uiTheme.iconColor)} />
+						<Copy className={cn("w-4 h-4", diTokens.iconColor)} />
 					</Button>
 
 					{/* Delete Layer */}
@@ -405,7 +404,7 @@ export const ControlsDrawing = ({
 						className="h-8 w-8 rounded-full disabled:opacity-50"
 						title="Delete Current Layer"
 					>
-						<Trash2 className={cn("w-4 h-4 hover:text-red-500", uiTheme.iconColor)} />
+						<Trash2 className={cn("w-4 h-4 hover:text-red-500", diTokens.iconColor)} />
 					</Button>
 
 					<DiDivider orientation="vertical" />
@@ -427,14 +426,14 @@ export const ControlsDrawing = ({
 							disabled={state.currentLayerIndex === 0}
 							className="h-8 w-8 rounded-full hover:scale-110 active:scale-95 transition-transform"
 						>
-							<ChevronLeft className={cn("w-4 h-4", uiTheme.iconColor)} />
+							<ChevronLeft className={cn("w-4 h-4", diTokens.iconColor)} />
 						</Button>
 					</EnhancedTooltip>
 
 					<div className="px-3 flex flex-col items-center">
-						<span className={cn("text-[10px] uppercase font-bold tracking-wider", uiTheme.textMuted)}>Layer</span>
-						<span className={cn("text-sm font-semibold leading-none transition-all", uiTheme.text)}>
-							{state.currentLayerIndex + 1} <span className={cn("font-normal", uiTheme.textMuted)}>/ {state.totalLayers}</span>
+						<span className={cn("text-[10px] uppercase font-bold tracking-wider", diTokens.textMuted)}>Layer</span>
+						<span className={cn("text-sm font-semibold leading-none transition-all", diTokens.text)}>
+							{state.currentLayerIndex + 1} <span className={cn("font-normal", diTokens.textMuted)}>/ {state.totalLayers}</span>
 						</span>
 					</div>
 
@@ -472,7 +471,7 @@ export const ControlsDrawing = ({
 							{state.currentLayerIndex === state.totalLayers - 1 ? (
 								<Plus className="w-4 h-4" />
 							) : (
-								<ChevronRight className={cn("w-4 h-4", uiTheme.iconColor)} />
+								<ChevronRight className={cn("w-4 h-4", diTokens.iconColor)} />
 							)}
 						</Button>
 					</EnhancedTooltip>
@@ -491,7 +490,7 @@ export const ControlsDrawing = ({
 								)}
 								title="All Layers"
 							>
-								<Layers className={cn("w-4 h-4", uiTheme.iconColor)} />
+								<Layers className={cn("w-4 h-4", diTokens.iconColor)} />
 							</Button>
 						</PopoverTrigger>
 						<PopoverContent
@@ -510,7 +509,7 @@ export const ControlsDrawing = ({
 			<div className="absolute bottom-6 left-4 sm:bottom-8 sm:left-6 flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-200 z-50 select-none pointer-events-none">
 				<div className={cn(
 					"flex items-center gap-1 p-1 rounded-lg shadow-sm border pointer-events-auto backdrop-blur-sm",
-					uiTheme.bgAlt, uiTheme.border
+					diTokens.bgAlt, diTokens.border
 				)}>
 					<EnhancedTooltip content="Undo" shortcut="Cmd+Z" disabled={state.historyIndex <= 0}>
 						<Button
@@ -518,9 +517,9 @@ export const ControlsDrawing = ({
 							size="icon"
 							onClick={() => dispatch({ type: 'UNDO' })}
 							disabled={state.historyIndex <= 0}
-							className={cn("h-8 w-8 active:scale-95 transition-transform", uiTheme.hover)}
+							className={cn("h-8 w-8 active:scale-95 transition-transform", diTokens.hover)}
 						>
-							<Undo className={cn("w-4 h-4", uiTheme.iconColor)} />
+							<Undo className={cn("w-4 h-4", diTokens.iconColor)} />
 						</Button>
 					</EnhancedTooltip>
 					<EnhancedTooltip content="Redo" shortcut="Cmd+Shift+Z" disabled={state.historyIndex >= state.history.length - 1}>
@@ -529,9 +528,9 @@ export const ControlsDrawing = ({
 							size="icon"
 							onClick={() => dispatch({ type: 'REDO' })}
 							disabled={state.historyIndex >= state.history.length - 1}
-							className={cn("h-8 w-8 active:scale-95 transition-transform", uiTheme.hover)}
+							className={cn("h-8 w-8 active:scale-95 transition-transform", diTokens.hover)}
 						>
-							<Redo className={cn("w-4 h-4", uiTheme.iconColor)} />
+							<Redo className={cn("w-4 h-4", diTokens.iconColor)} />
 						</Button>
 					</EnhancedTooltip>
 
@@ -542,9 +541,9 @@ export const ControlsDrawing = ({
 							variant="ghost"
 							size="icon"
 							onClick={() => dispatch({ type: 'RESET_DRAWING_VIEW' })}
-							className={cn("h-8 w-8 active:scale-95 transition-transform", uiTheme.hover)}
+							className={cn("h-8 w-8 active:scale-95 transition-transform", diTokens.hover)}
 						>
-							<Maximize className={cn("w-4 h-4", uiTheme.iconColor)} />
+							<Maximize className={cn("w-4 h-4", diTokens.iconColor)} />
 						</Button>
 					</EnhancedTooltip>
 
@@ -555,7 +554,7 @@ export const ControlsDrawing = ({
 							<Button
 								variant="ghost"
 								size="icon"
-								className={cn("h-8 w-8 text-red-500 hover:text-red-600", uiTheme.hover)}
+								className={cn("h-8 w-8 text-red-500 hover:text-red-600", diTokens.hover)}
 								title="Clear Canvas"
 							>
 								<Trash2 className="w-4 h-4" />
@@ -591,7 +590,7 @@ export const ControlsDrawing = ({
 				{/* Tool Selector */}
 				<div className={cn(
 					"p-1 rounded-lg shadow-sm border flex flex-col gap-1 pointer-events-auto backdrop-blur-sm",
-					uiTheme.bgAlt, uiTheme.border
+					diTokens.bgAlt, diTokens.border
 				)}>
 					{/* Palette Mode Toggle */}
 					<Button
@@ -600,7 +599,7 @@ export const ControlsDrawing = ({
 						onClick={() => dispatch({ type: 'SET_PALETTE_MODE', payload: state.paletteMode === 'flat' ? 'grad' : 'flat' })}
 						className={cn(
 							"h-6 text-[10px] font-bold px-0 w-full mb-1 border-b",
-							uiTheme.border
+							diTokens.border
 						)}
 						title="Toggle Gradient Mode"
 					>
@@ -762,7 +761,7 @@ export const ControlsDrawing = ({
 				{/* Palette */}
 				<div className={cn(
 					"p-2 rounded-xl shadow-sm border flex flex-col gap-2 pointer-events-auto backdrop-blur-sm",
-					uiTheme.bgAlt, uiTheme.border
+					diTokens.bgAlt, diTokens.border
 				)}>
 					{/* Palette Switcher */}
 					<div className="flex justify-between items-center px-1 pb-1 mb-1 border-b border-slate-200/50">

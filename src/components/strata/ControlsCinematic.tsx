@@ -9,24 +9,24 @@ import { DiIconButton } from '../../design-system/DiIconButton';
 import { DiDivider } from '../../design-system/DiDivider';
 import { DiPanel } from '../../design-system/DiPanel';
 import { DiSlider } from '../../design-system/DiSlider';
+import { diTokens } from '../../design-system/tokens';
 
 const flToMm = (fl: number) => Math.round((fl / 800) * 50);
 const mmToFl = (mm: number) => (mm / 50) * 800;
 
 interface ControlsCinematicProps {
-	uiTheme: Record<string, string>;
 	uiFocusLayer: number;
 	setUiFocusLayer: React.Dispatch<React.SetStateAction<number>>;
 }
 
-export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: ControlsCinematicProps) => {
+export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCinematicProps) => {
 	const { state, dispatch } = useStrata();
 
 	return (
 		<>
 			{/* Export Controls (View Mode Top Left) */}
 			<div className="absolute top-6 left-4 sm:left-6 flex flex-col gap-2 z-50">
-				<div className={cn("backdrop-blur-sm p-1.5 rounded-full shadow-sm border flex items-center gap-2 sm:gap-1 select-none", uiTheme.bgPanel, uiTheme.border)}>
+				<div className={cn("backdrop-blur-sm p-1.5 rounded-full shadow-sm border flex items-center gap-2 sm:gap-1 select-none", diTokens.bgPanel, diTokens.border)}>
 					<DiIconButton
 						icon={<Camera className="w-4 h-4" />}
 						label="Save Snapshot (PNG)"
@@ -35,7 +35,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 						onClick={() => dispatch({ type: 'REQUEST_EXPORT', payload: 'png' })}
 					/>
 					<DiIconButton
-						icon={state.isExporting && state.exportRequest === 'mp4' ? <div className={cn("w-3 h-3 border-2 rounded-full animate-spin", uiTheme.spinnerBorder, uiTheme.spinnerTop)} /> : <Video className="w-4 h-4" />}
+						icon={state.isExporting && state.exportRequest === 'mp4' ? <div className={cn("w-3 h-3 border-2 rounded-full animate-spin", diTokens.spinnerBorder, diTokens.spinnerTop)} /> : <Video className="w-4 h-4" />}
 						label="Save Animation Loop (MP4)"
 						className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
 						disabled={state.isExporting}
@@ -56,13 +56,13 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 
 				{/* Point of Interest Control (Above Panel) */}
 				{state.pointOfInterest && (
-					<div className={cn("absolute bottom-36 left-1/2 -translate-x-1/2 pointer-events-auto backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border flex items-center gap-2 z-50", uiTheme.bgPanel, uiTheme.border)}>
-						<Target className={cn("w-3.5 h-3.5", uiTheme.textMuted)} />
-						<span className={cn("text-xs", uiTheme.textMuted)}>POI Set</span>
+					<div className={cn("absolute bottom-36 left-1/2 -translate-x-1/2 pointer-events-auto backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border flex items-center gap-2 z-50", diTokens.bgPanel, diTokens.border)}>
+						<Target className={cn("w-3.5 h-3.5", diTokens.textMuted)} />
+						<span className={cn("text-xs", diTokens.textMuted)}>POI Set</span>
 						<Button
 							variant="ghost"
 							size="icon"
-							className={cn("h-5 w-5 rounded-full", uiTheme.hoverAlt)}
+							className={cn("h-5 w-5 rounded-full", diTokens.hoverAlt)}
 							onClick={() => dispatch({ type: 'CLEAR_POINT_OF_INTEREST' })}
 							title="Clear Point of Interest"
 						>
@@ -72,7 +72,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 				)}
 
 				<div className="pointer-events-auto w-full sm:w-auto flex justify-center overflow-x-auto no-scrollbar max-w-full">
-					<div className={cn("flex items-center gap-1 backdrop-blur-md p-1 rounded-full shadow-sm border", uiTheme.bgPanelAlt, uiTheme.border)}>
+					<div className={cn("flex items-center gap-1 backdrop-blur-md p-1 rounded-full shadow-sm border", diTokens.bgPanelAlt, diTokens.border)}>
 						<Button
 							variant={state.cinematicType === 'forward' ? 'default' : 'ghost'}
 							size="icon"
@@ -168,11 +168,11 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 			</div>
 
 			{/* Speed & Handheld Control (Combined) */}
-			<div className={cn("absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border pointer-events-auto z-40 animate-in fade-in slide-in-from-bottom-2 duration-300", uiTheme.bgPanel, uiTheme.border)}>
+			<div className={cn("absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-3 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border pointer-events-auto z-40 animate-in fade-in slide-in-from-bottom-2 duration-300", diTokens.bgPanel, diTokens.border)}>
 				{/* Speed - Hidden in Orbit Mode */}
 				{state.cinematicType !== 'orbit' && (
-					<div className={cn("flex items-center gap-2 border-r pr-3 mr-1", uiTheme.border)}>
-						<Activity className={cn("w-3.5 h-3.5", uiTheme.textSubtle)} />
+					<div className={cn("flex items-center gap-2 border-r pr-3 mr-1", diTokens.border)}>
+						<Activity className={cn("w-3.5 h-3.5", diTokens.textSubtle)} />
 						<input
 							type="range"
 							min="0.1"
@@ -180,9 +180,9 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 							step="0.1"
 							value={state.cinematicSpeed ?? 1.0}
 							onChange={(e) => dispatch({ type: 'SET_CINEMATIC_SPEED', payload: parseFloat(e.target.value) })}
-							className={cn("w-20 h-1.5 rounded-lg appearance-none cursor-pointer", uiTheme.sliderBg, uiTheme.sliderAccent)}
+							className={cn("w-20 h-1.5 rounded-lg appearance-none cursor-pointer", diTokens.sliderBg, diTokens.sliderAccent)}
 						/>
-						<span className={cn("text-[10px] font-mono font-medium w-6 text-right", uiTheme.textSubtle)}>
+						<span className={cn("text-[10px] font-mono font-medium w-6 text-right", diTokens.textSubtle)}>
 							{(state.cinematicSpeed ?? 1.0).toFixed(1)}x
 						</span>
 					</div>
@@ -196,7 +196,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 						onClick={() => dispatch({ type: 'TOGGLE_HANDHELD' })}
 						className={cn(
 							"h-6 px-2 rounded-full text-[10px] font-medium transition-all",
-							state.isHandheldEnabled ? "bg-slate-900 text-white shadow-sm" : cn(uiTheme.textSubtle, uiTheme.toggleHoverBg, uiTheme.toggleActiveText)
+							state.isHandheldEnabled ? "bg-slate-900 text-white shadow-sm" : cn(diTokens.textSubtle, diTokens.toggleHoverBg, diTokens.toggleActiveText)
 						)}
 						title="Handheld Camera Shake"
 					>
@@ -205,15 +205,15 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 					</Button>
 
 					{state.isHandheldEnabled && (
-						<div className={cn("flex items-center rounded-full p-0.5 animate-in fade-in zoom-in duration-200", uiTheme.toggleBg)}>
+						<div className={cn("flex items-center rounded-full p-0.5 animate-in fade-in zoom-in duration-200", diTokens.toggleBg)}>
 							<Button
 								variant="ghost"
 								size="sm"
 								onClick={() => dispatch({ type: 'SET_HANDHELD_INTENSITY', payload: 'low' })}
 								className={cn(
 									"h-5 w-6 rounded-full text-[9px] transition-all",
-									uiTheme.toggleHoverBg,
-									state.handheldIntensity === 'low' && cn("shadow-sm font-bold text-white", uiTheme.toggleActiveBg)
+									diTokens.toggleHoverBg,
+									state.handheldIntensity === 'low' && cn("shadow-sm font-bold text-white", diTokens.toggleActiveBg)
 								)}
 								title="Low Intensity"
 							>
@@ -225,8 +225,8 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 								onClick={() => dispatch({ type: 'SET_HANDHELD_INTENSITY', payload: 'medium' })}
 								className={cn(
 									"h-5 w-6 rounded-full text-[9px] transition-all",
-									uiTheme.toggleHoverBg,
-									state.handheldIntensity === 'medium' && cn("shadow-sm font-bold text-white", uiTheme.toggleActiveBg)
+									diTokens.toggleHoverBg,
+									state.handheldIntensity === 'medium' && cn("shadow-sm font-bold text-white", diTokens.toggleActiveBg)
 								)}
 								title="Medium Intensity"
 							>
@@ -238,8 +238,8 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 								onClick={() => dispatch({ type: 'SET_HANDHELD_INTENSITY', payload: 'high' })}
 								className={cn(
 									"h-5 w-6 rounded-full text-[9px] transition-all",
-									uiTheme.toggleHoverBg,
-									state.handheldIntensity === 'high' && cn("shadow-sm font-bold text-white", uiTheme.toggleActiveBg)
+									diTokens.toggleHoverBg,
+									state.handheldIntensity === 'high' && cn("shadow-sm font-bold text-white", diTokens.toggleActiveBg)
 								)}
 								title="High Intensity"
 							>
@@ -275,13 +275,13 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 			<div className="absolute top-20 left-4 items-start sm:top-6 sm:right-6 sm:left-auto sm:items-end flex flex-col gap-2 opacity-95 transition-opacity z-50 select-none">
 
 				{/* FX Popover Trigger */}
-				<div className={cn("backdrop-blur-sm p-1.5 rounded-full shadow-sm border", uiTheme.bgPanel, uiTheme.border)}>
+				<div className={cn("backdrop-blur-sm p-1.5 rounded-full shadow-sm border", diTokens.bgPanel, diTokens.border)}>
 					<Popover>
 						<PopoverTrigger asChild>
 							<Button
 								variant="ghost"
 								size="sm"
-								className={cn("rounded-full px-3 text-xs font-medium tracking-wide flex items-center gap-2", uiTheme.hoverAlt)}
+								className={cn("rounded-full px-3 text-xs font-medium tracking-wide flex items-center gap-2", diTokens.hoverAlt)}
 							>
 								<Wand2 className="w-3.5 h-3.5" />
 								FX MIX
@@ -301,7 +301,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												type="checkbox"
 												checked={state.postProcessingEnabled.grain}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'grain' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Grain</span>
 										</label>
@@ -317,7 +317,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'grain', value: parseFloat(e.target.value) } })}
 										className={cn(
 											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											uiTheme.sliderBg, uiTheme.sliderAccent,
+											diTokens.sliderBg, diTokens.sliderAccent,
 											!state.postProcessingEnabled.grain && "opacity-50 cursor-not-allowed"
 										)}
 									/>
@@ -331,7 +331,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												type="checkbox"
 												checked={state.postProcessingEnabled.vignette}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'vignette' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><Ban className="w-3 h-3" /> Vignette</span>
 										</label>
@@ -347,7 +347,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'vignette', value: parseFloat(e.target.value) } })}
 										className={cn(
 											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											uiTheme.sliderBg, uiTheme.sliderAccent,
+											diTokens.sliderBg, diTokens.sliderAccent,
 											!state.postProcessingEnabled.vignette && "opacity-50 cursor-not-allowed"
 										)}
 									/>
@@ -361,7 +361,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												type="checkbox"
 												checked={state.postProcessingEnabled.chromaticAberration}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'chromaticAberration' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><Layers className="w-3 h-3" /> Chromatic Ab.</span>
 										</label>
@@ -377,7 +377,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'chromaticAberration', value: parseFloat(e.target.value) } })}
 										className={cn(
 											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											uiTheme.sliderBg, uiTheme.sliderAccent,
+											diTokens.sliderBg, diTokens.sliderAccent,
 											!state.postProcessingEnabled.chromaticAberration && "opacity-50 cursor-not-allowed"
 										)}
 									/>
@@ -391,7 +391,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												type="checkbox"
 												checked={state.postProcessingEnabled.fog}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'fog' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><CloudFog className="w-3 h-3" /> Fog</span>
 										</label>
@@ -407,7 +407,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'fog', value: parseFloat(e.target.value) } })}
 										className={cn(
 											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											uiTheme.sliderBg, uiTheme.sliderAccent,
+											diTokens.sliderBg, diTokens.sliderAccent,
 											!state.postProcessingEnabled.fog && "opacity-50 cursor-not-allowed"
 										)}
 									/>
@@ -421,7 +421,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												type="checkbox"
 												checked={state.postProcessingEnabled.particles}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'particles' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-sparkles'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3Cpath d='M5 3v4'/%3E%3Cpath d='M9 5H5'/%3E%3Cpath d='M19 19v2'/%3E%3Cpath d='M21 19h-2'/%3E%3C/svg%3E" className="w-3 h-3" /> Particles</span>
 										</label>
@@ -438,7 +438,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'particles', value: parseFloat(e.target.value) } })}
 										className={cn(
 											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											uiTheme.sliderBg, uiTheme.sliderAccent,
+											diTokens.sliderBg, diTokens.sliderAccent,
 											!state.postProcessingEnabled.particles && "opacity-50 cursor-not-allowed"
 										)}
 									/>
@@ -496,7 +496,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												type="checkbox"
 												checked={state.postProcessingEnabled.pixelArt}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'pixelArt' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><ScanLine className="w-3 h-3" /> Pixel Art</span>
 										</label>
@@ -509,7 +509,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										<div className="space-y-2 pt-1 animate-in slide-in-from-top-1 fade-in duration-200">
 											{/* Pixel Size */}
 											<div className="space-y-1">
-												<div className={cn("flex justify-between text-[10px]", uiTheme.textSubtle)}>
+												<div className={cn("flex justify-between text-[10px]", diTokens.textSubtle)}>
 													<span>Size</span>
 													<span>{state.postProcessing.pixelArtSize}px</span>
 												</div>
@@ -520,13 +520,13 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 													step="1"
 													value={state.postProcessing.pixelArtSize}
 													onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtSize', value: parseInt(e.target.value) } })}
-													className={cn("w-full h-1.5 rounded-lg appearance-none cursor-pointer", uiTheme.sliderBg, uiTheme.sliderAccent)}
+													className={cn("w-full h-1.5 rounded-lg appearance-none cursor-pointer", diTokens.sliderBg, diTokens.sliderAccent)}
 												/>
 											</div>
 
 											{/* Color Depth */}
 											<div className="space-y-1">
-												<div className={cn("flex justify-between text-[10px]", uiTheme.textSubtle)}>
+												<div className={cn("flex justify-between text-[10px]", diTokens.textSubtle)}>
 													<span>Depth</span>
 													<span>
 														{state.postProcessing.pixelArtDepth <= 2 ? '1-bit' :
@@ -545,13 +545,13 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 													step="2"
 													value={state.postProcessing.pixelArtDepth}
 													onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDepth', value: parseInt(e.target.value) } })}
-													className={cn("w-full h-1.5 rounded-lg appearance-none cursor-pointer", uiTheme.sliderBg, uiTheme.sliderAccent)}
+													className={cn("w-full h-1.5 rounded-lg appearance-none cursor-pointer", diTokens.sliderBg, diTokens.sliderAccent)}
 												/>
 											</div>
 
 											{/* Dither Intensity */}
 											<div className="space-y-1">
-												<div className={cn("flex justify-between text-[10px]", uiTheme.textSubtle)}>
+												<div className={cn("flex justify-between text-[10px]", diTokens.textSubtle)}>
 													<span>Dither</span>
 													<span>{state.postProcessing.pixelArtDither ? Math.round(state.postProcessing.pixelArtDither * 100) + '%' : 'Clean'}</span>
 												</div>
@@ -562,7 +562,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 													step="0.1"
 													value={state.postProcessing.pixelArtDither ?? 0}
 													onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDither', value: parseFloat(e.target.value) } })}
-													className={cn("w-full h-1.5 rounded-lg appearance-none cursor-pointer", uiTheme.sliderBg, uiTheme.sliderAccent)}
+													className={cn("w-full h-1.5 rounded-lg appearance-none cursor-pointer", diTokens.sliderBg, diTokens.sliderAccent)}
 												/>
 											</div>
 										</div>
@@ -577,7 +577,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												type="checkbox"
 												checked={state.postProcessingEnabled.wiggle}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'wiggle' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><Waves className="w-3 h-3" /> Stop Motion</span>
 										</label>
@@ -597,7 +597,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'wiggle', value: parseFloat(e.target.value) } })}
 										className={cn(
 											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											uiTheme.sliderBg, uiTheme.sliderAccent,
+											diTokens.sliderBg, diTokens.sliderAccent,
 											!state.postProcessingEnabled.wiggle && "opacity-50 cursor-not-allowed"
 										)}
 									/>
@@ -611,7 +611,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												type="checkbox"
 												checked={state.postProcessingEnabled.grungeOverlay}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'grungeOverlay' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><Tornado className="w-3 h-3" /> Grunge Overlay</span>
 										</label>
@@ -631,7 +631,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'grungeIntensity', value: parseFloat(e.target.value) } })}
 										className={cn(
 											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											uiTheme.sliderBg, uiTheme.sliderAccent,
+											diTokens.sliderBg, diTokens.sliderAccent,
 											!state.postProcessingEnabled.grungeOverlay && "opacity-50 cursor-not-allowed"
 										)}
 									/>
@@ -645,7 +645,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												type="checkbox"
 												checked={state.postProcessingEnabled.glow}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'glow' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E" className="w-3 h-3" /> Glow</span>
 										</label>
@@ -661,7 +661,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'glow', value: parseFloat(e.target.value) } })}
 										className={cn(
 											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											uiTheme.sliderBg, uiTheme.sliderAccent,
+											diTokens.sliderBg, diTokens.sliderAccent,
 											!state.postProcessingEnabled.glow && "opacity-50 cursor-not-allowed"
 										)}
 									/>
@@ -675,7 +675,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												type="checkbox"
 												checked={state.postProcessingEnabled.riso}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'riso' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cpath d='M7 7h.01M17 7h.01M7 17h.01M17 17h.01M12 7v10M7 12h10'/%3E%3C/svg%3E" className="w-3 h-3" /> RISO</span>
 										</label>
@@ -691,7 +691,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'riso', value: parseFloat(e.target.value) } })}
 										className={cn(
 											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											uiTheme.sliderBg, uiTheme.sliderAccent,
+											diTokens.sliderBg, diTokens.sliderAccent,
 											!state.postProcessingEnabled.riso && "opacity-50 cursor-not-allowed"
 										)}
 									/>
@@ -705,7 +705,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												type="checkbox"
 												checked={state.postProcessingEnabled.distortion}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'distortion' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><Scaling className="w-3 h-3" /> Distortion</span>
 										</label>
@@ -721,21 +721,21 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'distortion', value: parseFloat(e.target.value) } })}
 										className={cn(
 											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											uiTheme.sliderBg, uiTheme.sliderAccent,
+											diTokens.sliderBg, diTokens.sliderAccent,
 											!state.postProcessingEnabled.distortion && "opacity-50 cursor-not-allowed"
 										)}
 									/>
 								</div>
 
 								{/* DoF & Focus */}
-								<div className={cn("space-y-1.5 pt-2 border-t", uiTheme.border)}>
+								<div className={cn("space-y-1.5 pt-2 border-t", diTokens.border)}>
 									<div className="flex justify-between items-center text-xs opacity-70">
 										<label className="flex items-center gap-2 cursor-pointer select-none">
 											<input
 												type="checkbox"
 												checked={state.postProcessingEnabled.dof}
 												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'dof' })}
-												className={cn("rounded-sm w-3 h-3", uiTheme.sliderAccent)}
+												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
 											/>
 											<span className="flex items-center gap-1"><Aperture className="w-3 h-3" /> Blur / DoF</span>
 										</label>
@@ -751,7 +751,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'dof', value: parseFloat(e.target.value) } })}
 										className={cn(
 											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											uiTheme.sliderBg, uiTheme.sliderAccent,
+											diTokens.sliderBg, diTokens.sliderAccent,
 											!state.postProcessingEnabled.dof && "opacity-50 cursor-not-allowed"
 										)}
 									/>
@@ -926,7 +926,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 												}}
 												className={cn(
 													"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-													uiTheme.sliderBg, uiTheme.sliderAccent,
+													diTokens.sliderBg, diTokens.sliderAccent,
 													!state.postProcessingEnabled.dof && "opacity-50 cursor-not-allowed"
 												)}
 											/>
