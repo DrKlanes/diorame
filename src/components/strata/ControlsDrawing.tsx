@@ -685,13 +685,13 @@ export const ControlsDrawing = ({
 						variant={state.isSymmetryEnabled ? "default" : "ghost"}
 						size="icon"
 						onClick={() => dispatch({ type: 'TOGGLE_SYMMETRY' })}
-						disabled={state.tool === 'move'}
+						disabled={state.tool === 'move' || state.tool === 'text'}
 						className={cn(
 							"h-8 w-8",
 							state.isSymmetryEnabled && "bg-slate-900 text-white",
-							state.tool === 'move' && "opacity-50 cursor-not-allowed"
+							(state.tool === 'move' || state.tool === 'text') && "opacity-50 cursor-not-allowed"
 						)}
-						title={state.tool === 'move' ? "Not available with Move tool" : "Vertical Symmetry"}
+						title={state.tool === 'move' ? "Not available with Move tool" : state.tool === 'text' ? "Not available with Text tool" : "Vertical Symmetry"}
 					>
 						<FlipHorizontal className="w-4 h-4" />
 					</Button>
@@ -700,15 +700,16 @@ export const ControlsDrawing = ({
 						variant={state.isDrawInside ? "default" : "ghost"}
 						size="icon"
 						onClick={() => dispatch({ type: 'TOGGLE_DRAW_INSIDE' })}
-						disabled={state.tool === 'eraser' || state.tool === 'move' || !currentLayerHasShapes}
+						disabled={state.tool === 'eraser' || state.tool === 'move' || state.tool === 'text' || !currentLayerHasShapes}
 						className={cn(
 							"h-8 w-8",
 							state.isDrawInside && "bg-slate-900 text-white",
-							(state.tool === 'eraser' || state.tool === 'move' || !currentLayerHasShapes) && "opacity-50 cursor-not-allowed"
+							(state.tool === 'eraser' || state.tool === 'move' || state.tool === 'text' || !currentLayerHasShapes) && "opacity-50 cursor-not-allowed"
 						)}
 						title={
 							state.tool === 'eraser' ? "Not available with Eraser" :
 							state.tool === 'move' ? "Not available with Move tool" :
+							state.tool === 'text' ? "Not available with Text tool" :
 							!currentLayerHasShapes ? "Empty layer - draw something first" :
 							"Draw Inside (Target Alpha)"
 						}
@@ -720,15 +721,16 @@ export const ControlsDrawing = ({
 						variant={state.isDrawBehind ? "default" : "ghost"}
 						size="icon"
 						onClick={() => dispatch({ type: 'TOGGLE_DRAW_BEHIND' })}
-						disabled={state.tool === 'eraser' || state.tool === 'move' || !currentLayerHasShapes}
+						disabled={state.tool === 'eraser' || state.tool === 'move' || state.tool === 'text' || !currentLayerHasShapes}
 						className={cn(
 							"h-8 w-8",
 							state.isDrawBehind && "bg-slate-900 text-white",
-							(state.tool === 'eraser' || state.tool === 'move' || !currentLayerHasShapes) && "opacity-50 cursor-not-allowed"
+							(state.tool === 'eraser' || state.tool === 'move' || state.tool === 'text' || !currentLayerHasShapes) && "opacity-50 cursor-not-allowed"
 						)}
 						title={
 							state.tool === 'eraser' ? "Not available with Eraser" :
 							state.tool === 'move' ? "Not available with Move tool" :
+							state.tool === 'text' ? "Not available with Text tool" :
 							!currentLayerHasShapes ? "Empty layer - draw something first" :
 							"Draw Behind (Draw Underneath)"
 						}
@@ -740,15 +742,16 @@ export const ControlsDrawing = ({
 						variant={state.isOrganicMode ? "default" : "ghost"}
 						size="icon"
 						onClick={() => dispatch({ type: 'TOGGLE_ORGANIC_MODE' })}
-						disabled={state.tool === 'move' || state.tool === 'line'}
+						disabled={state.tool === 'move' || state.tool === 'line' || state.tool === 'text'}
 						className={cn(
 							"h-8 w-8",
 							state.isOrganicMode && "bg-slate-900 text-white",
-							(state.tool === 'move' || state.tool === 'line') && "opacity-50 cursor-not-allowed"
+							(state.tool === 'move' || state.tool === 'line' || state.tool === 'text') && "opacity-50 cursor-not-allowed"
 						)}
 						title={
 							state.tool === 'move' ? "Not available with Move tool" :
 							state.tool === 'line' ? "Not available with Line tool" :
+							state.tool === 'text' ? "Not available with Text tool" :
 							"Organic Stroke (Fluid Wiggle)"
 						}
 					>
