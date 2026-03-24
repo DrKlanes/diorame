@@ -3,6 +3,7 @@ import { useStrata } from './StrataContext';
 import { Button } from '../ui/button';
 import { RotateCw, Sparkles } from 'lucide-react';
 import { cn } from '../ui/utils';
+import { DiSlider } from '../../design-system/DiSlider';
 
 export const ToolOptionsPanel = () => {
   const { state, dispatch } = useStrata();
@@ -99,36 +100,23 @@ export const ToolOptionsPanel = () => {
               </Button>
             </div>
 
-            <div className="flex justify-between items-center text-xs font-medium">
-              <span className={cn("flex items-center gap-1", uiTheme.textMuted)}>
-                <RotateCw className="w-3 h-3"/> Angle
-              </span>
-              <span className={uiTheme.textMuted}>{state.paletteGradientAngle}°</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="360"
-              step="15"
+            <DiSlider
+              label={<><RotateCw className="w-3 h-3"/> Angle</>}
+              formattedValue={`${state.paletteGradientAngle}°`}
               value={state.paletteGradientAngle}
-              onChange={(e) => dispatch({ type: 'SET_PALETTE_GRADIENT_ANGLE', payload: parseInt(e.target.value) })}
-              className={cn("w-full h-1 rounded-lg appearance-none cursor-pointer", uiTheme.sliderBg, uiTheme.sliderAccent)}
+              min={0}
+              max={360}
+              step={15}
+              onChange={(v) => dispatch({ type: 'SET_PALETTE_GRADIENT_ANGLE', payload: Math.round(v) })}
             />
-            
-            <div className="flex justify-between items-center text-xs font-medium mt-1">
-              <span className={cn("flex items-center gap-1", uiTheme.textMuted)}>
-                <Sparkles className="w-3 h-3"/> Intensity
-              </span>
-              <span className={uiTheme.textMuted}>{Math.round(state.paletteGradientIntensity * 100)}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
+            <DiSlider
+              label={<><Sparkles className="w-3 h-3"/> Intensity</>}
+              formattedValue={`${Math.round(state.paletteGradientIntensity * 100)}%`}
               value={state.paletteGradientIntensity}
-              onChange={(e) => dispatch({ type: 'SET_PALETTE_GRADIENT_INTENSITY', payload: parseFloat(e.target.value) })}
-              className={cn("w-full h-1 rounded-lg appearance-none cursor-pointer", uiTheme.sliderBg, uiTheme.sliderAccent)}
+              min={0}
+              max={1}
+              step={0.05}
+              onChange={(v) => dispatch({ type: 'SET_PALETTE_GRADIENT_INTENSITY', payload: v })}
             />
           </div>
         </div>
