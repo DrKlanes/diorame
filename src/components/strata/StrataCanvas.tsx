@@ -1872,7 +1872,7 @@ export const StrataCanvas = () => {
       // --- 3. Final Composition ---
       
       // RISO Texture
-      if (isCinematic && currentState.postProcessingEnabled.riso && !isPixelArt && currentState.postProcessing.riso > 0.01 && processedRisoRef.current) {
+      if (isCinematic && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && processedRisoRef.current) {
           applyRiso(offCtx, processedRisoRef.current, w, h, currentState.postProcessing.riso);
       }
 
@@ -1899,7 +1899,7 @@ export const StrataCanvas = () => {
           applyVignette(ctx, w, h, currentState.postProcessing.vignette);
       }
 
-      const grain = (!isPixelArt && isCinematic && currentState.postProcessingEnabled.grain) ? currentState.postProcessing.grain : 0;
+      const grain = (isCinematic && currentState.postProcessingEnabled.grain) ? currentState.postProcessing.grain : 0;
       if (grain > 0.01 && noiseCanvasRef.current) {
           applyGrain(ctx, noiseCanvasRef.current, w, h, grain);
       }
