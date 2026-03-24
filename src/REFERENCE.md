@@ -474,7 +474,13 @@ APP_VERSION = "1.11.0"          // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 -> 1.12.0)
+## Appendix C: Changelog Highlights (1.7.3 -> 1.13.0)
+
+### 1.13.x — Design System completion + RISO/Grain fix
+- **DiToggleSlider** (`src/design-system/DiToggleSlider.tsx`): new primitive for the checkbox-toggle + label + value + range input pattern; supports optional `children` for extra content below the slider
+- **DiToggleSlider adoption in ControlsCinematic**: 11 of 12 FX Mix sliders (Grain, Vignette, Chromatic Aberration, Fog, Glow, RISO, Distortion, Wiggle, Grunge, Particles, Depth of Field) replaced with DiToggleSlider; Pixel Art excluded (uses custom UI)
+- **DS-5 — Local uiTheme objects removed**: `LayersPanel.tsx` and `ToolOptionsPanel.tsx` local `uiTheme` replaced with `diTokens`; 6 new tokens added (`layerBgActive`, `layerBorderActive`, `borderSubtle`, `segmentActiveBg`, `segmentHoverBg`, `segmentHoverText`)
+- **Bugfix — RISO and Grain over Pixel Art**: removed `!isPixelArt` guard from both RISO and Grain conditions in the render pipeline; both effects now correctly apply on top of the pixel-art-processed image
 
 ### 1.12.x — Design System (DS-1 through DS-5)
 - **DS-1 — Token centralization** (`src/design-system/tokens.ts`): single `diTokens` object with 35+ keys covering surfaces, borders, text, interaction, sliders/toggles, spinners, brand and dialog colors; replaces all `uiTheme` prop drilling
