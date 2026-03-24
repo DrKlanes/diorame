@@ -18,6 +18,9 @@ import {
 } from '../ui/alert-dialog';
 import { toast } from 'sonner@2.0.3';
 import { EnhancedTooltip } from '../ui/enhanced-tooltip';
+import { DiIconButton } from '../../design-system/DiIconButton';
+import { DiDivider } from '../../design-system/DiDivider';
+import { DiBadge } from '../../design-system/DiBadge';
 import { LayersPanel } from './LayersPanel';
 import { ToolOptionsPanel } from './ToolOptionsPanel';
 
@@ -158,7 +161,7 @@ export const ControlsDrawing = ({
 					<span className={cn("text-[11px] font-bold tracking-wider uppercase", uiTheme.textMuted)}>
 						Layer {state.currentLayerIndex + 1}
 					</span>
-					<div className={cn("w-[1px] h-4", uiTheme.divider)} />
+					<DiDivider orientation="vertical" />
 					<div className="flex items-center gap-1.5">
 						{state.tool === 'brush' && <Droplet className={cn("w-4 h-4", uiTheme.iconColor)} />}
 						{state.tool === 'line' && <Paintbrush className={cn("w-4 h-4", uiTheme.iconColor)} />}
@@ -175,31 +178,19 @@ export const ControlsDrawing = ({
 						state.isSymmetryEnabled || state.isDrawInside || state.isDrawBehind || state.isOrganicMode
 					) && (
 						<>
-							<div className={cn("w-[1px] h-4", uiTheme.divider)} />
+							<DiDivider orientation="vertical" />
 							<div className="flex items-center gap-1">
 								{state.isSymmetryEnabled && (
-									<div className={cn("px-2 py-0.5 rounded-md flex items-center gap-1", uiTheme.badgeBg)}>
-										<FlipHorizontal className={cn("w-3 h-3", uiTheme.iconColor)} />
-										<span className={cn("text-[10px] font-medium", uiTheme.textMuted)}>SYM</span>
-									</div>
+									<DiBadge icon={<FlipHorizontal className="w-3 h-3" />}>SYM</DiBadge>
 								)}
 								{state.isDrawInside && (
-									<div className={cn("px-2 py-0.5 rounded-md flex items-center gap-1", uiTheme.badgeBg)}>
-										<Target className={cn("w-3 h-3", uiTheme.iconColor)} />
-										<span className={cn("text-[10px] font-medium", uiTheme.textMuted)}>IN</span>
-									</div>
+									<DiBadge icon={<Target className="w-3 h-3" />}>IN</DiBadge>
 								)}
 								{state.isDrawBehind && (
-									<div className={cn("px-2 py-0.5 rounded-md flex items-center gap-1", uiTheme.badgeBg)}>
-										<Layers className={cn("w-3 h-3", uiTheme.iconColor)} />
-										<span className={cn("text-[10px] font-medium", uiTheme.textMuted)}>BACK</span>
-									</div>
+									<DiBadge icon={<Layers className="w-3 h-3" />}>BACK</DiBadge>
 								)}
 								{state.isOrganicMode && (
-									<div className={cn("px-2 py-0.5 rounded-md flex items-center gap-1", uiTheme.badgeBg)}>
-										<Waves className={cn("w-3 h-3", uiTheme.iconColor)} />
-										<span className={cn("text-[10px] font-medium", uiTheme.textMuted)}>FLUID</span>
-									</div>
+									<DiBadge icon={<Waves className="w-3 h-3" />}>FLUID</DiBadge>
 								)}
 							</div>
 						</>
@@ -215,33 +206,21 @@ export const ControlsDrawing = ({
 					"p-1.5 rounded-full shadow-sm border flex items-center gap-2 sm:gap-1 select-none pointer-events-auto backdrop-blur-sm",
 					uiTheme.bgAlt, uiTheme.border
 				)}>
-					<EnhancedTooltip content="Save Project" shortcut="Cmd+S">
-						<RippleButton
-							variant="ghost"
-							size="icon"
-							className={cn(
-								"h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation",
-								uiTheme.hover
-							)}
-							onClick={handleSaveProject}
-						>
-							<Save className={cn("w-4 h-4", uiTheme.iconColor)} />
-						</RippleButton>
-					</EnhancedTooltip>
+					<DiIconButton
+						icon={<Save className="w-4 h-4" />}
+						label="Save Project"
+						shortcut="Cmd+S"
+						className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
+						onClick={handleSaveProject}
+					/>
 
-					<EnhancedTooltip content="Open Project" shortcut="Cmd+O">
-						<RippleButton
-							variant="ghost"
-							size="icon"
-							className={cn(
-								"h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation",
-								uiTheme.hover
-							)}
-							onClick={() => fileInputRef.current?.click()}
-						>
-							<FolderOpen className={cn("w-4 h-4", uiTheme.iconColor)} />
-						</RippleButton>
-					</EnhancedTooltip>
+					<DiIconButton
+						icon={<FolderOpen className="w-4 h-4" />}
+						label="Open Project"
+						shortcut="Cmd+O"
+						className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
+						onClick={() => fileInputRef.current?.click()}
+					/>
 					<input
 						type="file"
 						ref={fileInputRef}
@@ -296,20 +275,14 @@ export const ControlsDrawing = ({
 						</PopoverContent>
 					</Popover>
 
-					<div className={cn("w-[1px] h-4 mx-1", uiTheme.divider)} />
-					<EnhancedTooltip content="About & Help" shortcut="?">
-						<RippleButton
-							variant="ghost"
-							size="icon"
-							className={cn(
-								"h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation",
-								uiTheme.hover
-							)}
-							onClick={() => dispatch({ type: 'TOGGLE_WELCOME_MODAL' })}
-						>
-							<Info className={cn("w-4 h-4", uiTheme.iconColor)} />
-						</RippleButton>
-					</EnhancedTooltip>
+					<DiDivider orientation="vertical" />
+					<DiIconButton
+						icon={<Info className="w-4 h-4" />}
+						label="About & Help"
+						shortcut="?"
+						className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
+						onClick={() => dispatch({ type: 'TOGGLE_WELCOME_MODAL' })}
+					/>
 				</div>
 
 				{/* Project Name Editor */}
@@ -337,19 +310,13 @@ export const ControlsDrawing = ({
 					"p-1.5 rounded-full shadow-sm border select-none w-fit pointer-events-auto backdrop-blur-sm flex items-center gap-1",
 					uiTheme.bgAlt, uiTheme.border
 				)}>
-					<EnhancedTooltip content="Toggle Canvas Dark Paper" shortcut="Shift+D">
-						<RippleButton
-							variant="ghost"
-							size="icon"
-							className={cn(
-								"h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation",
-								uiTheme.hover
-							)}
-							onClick={() => dispatch({ type: 'TOGGLE_DARK_MODE' })}
-						>
-							{state.isDarkMode ? <Sun className={cn("w-4 h-4", uiTheme.iconColor)} /> : <Moon className={cn("w-4 h-4", uiTheme.iconColor)} />}
-						</RippleButton>
-					</EnhancedTooltip>
+					<DiIconButton
+						icon={state.isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+						label="Toggle Canvas Dark Paper"
+						shortcut="Shift+D"
+						className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
+						onClick={() => dispatch({ type: 'TOGGLE_DARK_MODE' })}
+					/>
 				</div>
 			</div>
 
@@ -441,7 +408,7 @@ export const ControlsDrawing = ({
 						<Trash2 className={cn("w-4 h-4 hover:text-red-500", uiTheme.iconColor)} />
 					</Button>
 
-					<div className={cn("w-[1px] h-4 mx-1", uiTheme.divider)} />
+					<DiDivider orientation="vertical" />
 
 					{/* Prev Layer */}
 					<EnhancedTooltip content="Previous Layer" shortcut="[" disabled={state.currentLayerIndex === 0}>
@@ -510,7 +477,7 @@ export const ControlsDrawing = ({
 						</Button>
 					</EnhancedTooltip>
 
-					<div className={cn("w-[1px] h-4 mx-1", uiTheme.divider)} />
+					<DiDivider orientation="vertical" />
 
 					{/* All Layers Panel */}
 					<Popover open={showLayersPanel} onOpenChange={setShowLayersPanel}>
@@ -568,7 +535,7 @@ export const ControlsDrawing = ({
 						</Button>
 					</EnhancedTooltip>
 
-					<div className={cn("h-4 w-[1px] mx-1", uiTheme.divider)} />
+					<DiDivider orientation="vertical" />
 
 					<EnhancedTooltip content="Reset View" shortcut="Space">
 						<Button
@@ -581,7 +548,7 @@ export const ControlsDrawing = ({
 						</Button>
 					</EnhancedTooltip>
 
-					<div className={cn("h-4 w-[1px] mx-1", uiTheme.divider)} />
+					<DiDivider orientation="vertical" />
 
 					<AlertDialog>
 						<AlertDialogTrigger asChild>
@@ -696,7 +663,7 @@ export const ControlsDrawing = ({
 						</Button>
 					</EnhancedTooltip>
 
-					<div className="w-full h-[1px] bg-slate-200 my-1" />
+					<DiDivider />
 
 					<EnhancedTooltip content="Move Layer" shortcut="M" disabled={state.tool === 'move'}>
 						<Button
@@ -712,7 +679,7 @@ export const ControlsDrawing = ({
 						</Button>
 					</EnhancedTooltip>
 
-					<div className="w-full h-[1px] bg-slate-200 my-1" />
+					<DiDivider />
 
 					<Button
 						variant={state.isSymmetryEnabled ? "default" : "ghost"}
