@@ -5,6 +5,10 @@ import { RippleButton } from '../ui/ripple-button';
 import { Video, Tornado, ArrowLeftRight, Layers, Eye, Wand2, Image as ImageIcon, Aperture, Scaling, Ban, Camera, Activity, RotateCw, SlidersHorizontal, ChevronLeft, ChevronRight, ScanLine, ZoomIn, Target, Waves, CloudFog, Globe, X, MoveVertical, MoveHorizontal, Hand, Info } from 'lucide-react';
 import { cn } from '../ui/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { DiIconButton } from '../../design-system/DiIconButton';
+import { DiDivider } from '../../design-system/DiDivider';
+import { DiPanel } from '../../design-system/DiPanel';
+import { DiSlider } from '../../design-system/DiSlider';
 
 const flToMm = (fl: number) => Math.round((fl / 800) * 50);
 const mmToFl = (mm: number) => (mm / 50) * 800;
@@ -23,40 +27,27 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 			{/* Export Controls (View Mode Top Left) */}
 			<div className="absolute top-6 left-4 sm:left-6 flex flex-col gap-2 z-50">
 				<div className={cn("backdrop-blur-sm p-1.5 rounded-full shadow-sm border flex items-center gap-2 sm:gap-1 select-none", uiTheme.bgPanel, uiTheme.border)}>
-					<RippleButton
-						variant="ghost"
-						size="icon"
-						className={cn("h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation", uiTheme.hoverAlt)}
+					<DiIconButton
+						icon={<Camera className="w-4 h-4" />}
+						label="Save Snapshot (PNG)"
+						className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
+						disabled={state.isExporting}
 						onClick={() => dispatch({ type: 'REQUEST_EXPORT', payload: 'png' })}
-						title="Save Snapshot (PNG)"
+					/>
+					<DiIconButton
+						icon={state.isExporting && state.exportRequest === 'mp4' ? <div className={cn("w-3 h-3 border-2 rounded-full animate-spin", uiTheme.spinnerBorder, uiTheme.spinnerTop)} /> : <Video className="w-4 h-4" />}
+						label="Save Animation Loop (MP4)"
+						className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
 						disabled={state.isExporting}
-					>
-						<Camera className={cn("w-4 h-4", uiTheme.iconColor)} />
-					</RippleButton>
-					<RippleButton
-						variant="ghost"
-						size="icon"
-						className={cn("h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation", uiTheme.hoverAlt)}
 						onClick={() => dispatch({ type: 'REQUEST_EXPORT', payload: 'mp4' })}
-						title="Save Animation Loop (MP4)"
-						disabled={state.isExporting}
-					>
-						{state.isExporting && state.exportRequest === 'mp4' ? (
-							<div className={cn("w-3 h-3 border-2 rounded-full animate-spin", uiTheme.spinnerBorder, uiTheme.spinnerTop)} />
-						) : (
-							<Video className={cn("w-4 h-4", uiTheme.iconColor)} />
-						)}
-					</RippleButton>
-					<div className={cn("w-[1px] h-4 mx-1", uiTheme.divider)} />
-					<RippleButton
-						variant="ghost"
-						size="icon"
-						className={cn("h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation", uiTheme.hoverAlt)}
+					/>
+					<DiDivider orientation="vertical" />
+					<DiIconButton
+						icon={<Info className="w-4 h-4" />}
+						label="About"
+						className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
 						onClick={() => dispatch({ type: 'TOGGLE_WELCOME_MODAL' })}
-						title="About"
-					>
-						<Info className={cn("w-4 h-4", uiTheme.iconColor)} />
-					</RippleButton>
+					/>
 				</div>
 			</div>
 
@@ -495,7 +486,7 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 									)}
 								</div>
 
-								<div className={cn("h-[1px] w-full my-2", uiTheme.divider)} />
+								<DiDivider className="my-2" />
 
 								{/* PIXELART */}
 								<div className="space-y-1.5">
@@ -948,55 +939,43 @@ export const ControlsCinematic = ({ uiTheme, uiFocusLayer, setUiFocusLayer }: Co
 				</div>
 
 				{/* Lens Slider */}
-				<div className={cn("backdrop-blur-sm p-3 rounded-2xl shadow-sm border flex flex-col gap-2 w-40 sm:w-48 mt-1", uiTheme.bgPanel, uiTheme.border)}>
-					<div className={cn("flex justify-between items-center text-xs font-medium", uiTheme.textMuted)}>
-						<span className="flex items-center gap-1"><Eye className="w-3 h-3"/> Focal Length</span>
-						<span>{flToMm(state.focalLength)}mm</span>
-					</div>
-					<input
-						type="range"
-						min="24"
-						max="300"
-						step="1"
+				<DiPanel>
+					<DiSlider
+						label={<><Eye className="w-3 h-3" /> Focal Length</>}
+						formattedValue={flToMm(state.focalLength) + 'mm'}
 						value={flToMm(state.focalLength)}
-						onChange={(e) => dispatch({ type: 'SET_FOCAL_LENGTH', payload: mmToFl(Number(e.target.value)) })}
-						className={cn("w-full h-1 rounded-lg appearance-none cursor-pointer", uiTheme.sliderBg, uiTheme.sliderAccent)}
+						min={24}
+						max={300}
+						step={1}
+						onChange={(v) => dispatch({ type: 'SET_FOCAL_LENGTH', payload: mmToFl(v) })}
 					/>
-				</div>
+				</DiPanel>
 
 				{/* Zoom Slider */}
-				<div className={cn("backdrop-blur-sm p-3 rounded-2xl shadow-sm border flex flex-col gap-2 w-40 sm:w-48 mt-1", uiTheme.bgPanel, uiTheme.border)}>
-					<div className={cn("flex justify-between items-center text-xs font-medium", uiTheme.textMuted)}>
-						<span className="flex items-center gap-1"><ZoomIn className="w-3 h-3"/> Distance</span>
-						<span>{state.viewZoomOffset > 0 ? '+' : ''}{Math.round(state.viewZoomOffset)}</span>
-					</div>
-					<input
-						type="range"
-						min="-5000"
-						max="2000"
-						step="10"
+				<DiPanel>
+					<DiSlider
+						label={<><ZoomIn className="w-3 h-3" /> Distance</>}
+						formattedValue={(state.viewZoomOffset > 0 ? '+' : '') + Math.round(state.viewZoomOffset)}
 						value={state.viewZoomOffset}
-						onChange={(e) => dispatch({ type: 'SET_VIEW_ZOOM_OFFSET', payload: parseFloat(e.target.value) })}
-						className={cn("w-full h-1 rounded-lg appearance-none cursor-pointer", uiTheme.sliderBg, uiTheme.sliderAccent)}
+						min={-5000}
+						max={2000}
+						step={10}
+						onChange={(v) => dispatch({ type: 'SET_VIEW_ZOOM_OFFSET', payload: v })}
 					/>
-				</div>
+				</DiPanel>
 
 				{/* Layer Spacing Slider */}
-				<div className={cn("backdrop-blur-sm p-3 rounded-2xl shadow-sm border flex flex-col gap-2 w-40 sm:w-48 mt-1", uiTheme.bgPanel, uiTheme.border)}>
-					<div className={cn("flex justify-between items-center text-xs font-medium", uiTheme.textMuted)}>
-						<span className="flex items-center gap-1"><MoveVertical className="w-3 h-3"/> Layer Spacing</span>
-						<span>{state.layerSpacingFactor.toFixed(2)}x</span>
-					</div>
-					<input
-						type="range"
-						min="0"
-						max="2.0"
-						step="0.05"
+				<DiPanel>
+					<DiSlider
+						label={<><MoveVertical className="w-3 h-3" /> Layer Spacing</>}
+						formattedValue={state.layerSpacingFactor.toFixed(2) + 'x'}
 						value={state.layerSpacingFactor}
-						onChange={(e) => dispatch({ type: 'SET_LAYER_SPACING_FACTOR', payload: parseFloat(e.target.value) })}
-						className={cn("w-full h-1 rounded-lg appearance-none cursor-pointer", uiTheme.sliderBg, uiTheme.sliderAccent)}
+						min={0}
+						max={2.0}
+						step={0.05}
+						onChange={(v) => dispatch({ type: 'SET_LAYER_SPACING_FACTOR', payload: v })}
 					/>
-				</div>
+				</DiPanel>
 			</div>
 		</>
 	);
