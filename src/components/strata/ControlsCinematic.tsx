@@ -9,6 +9,7 @@ import { DiIconButton } from '../../design-system/DiIconButton';
 import { DiDivider } from '../../design-system/DiDivider';
 import { DiPanel } from '../../design-system/DiPanel';
 import { DiSlider } from '../../design-system/DiSlider';
+import { DiToggleSlider } from '../../design-system/DiToggleSlider';
 import { diTokens } from '../../design-system/tokens';
 
 const flToMm = (fl: number) => Math.round((fl / 800) * 50);
@@ -294,155 +295,59 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 								</h4>
 
 								{/* Grain */}
-								<div className="space-y-1.5">
-									<div className="flex justify-between items-center text-xs opacity-70">
-										<label className="flex items-center gap-2 cursor-pointer select-none">
-											<input
-												type="checkbox"
-												checked={state.postProcessingEnabled.grain}
-												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'grain' })}
-												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
-											/>
-											<span className="flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Grain</span>
-										</label>
-										<span>{state.postProcessingEnabled.grain ? `${Math.round(state.postProcessing.grain * 100)}%` : 'Off'}</span>
-									</div>
-									<input
-										type="range"
-										min="0"
-										max="1"
-										step="0.05"
-										disabled={!state.postProcessingEnabled.grain}
-										value={state.postProcessing.grain ?? 0}
-										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'grain', value: parseFloat(e.target.value) } })}
-										className={cn(
-											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											diTokens.sliderBg, diTokens.sliderAccent,
-											!state.postProcessingEnabled.grain && "opacity-50 cursor-not-allowed"
-										)}
-									/>
-								</div>
+								<DiToggleSlider
+									label={<><ImageIcon className="w-3 h-3" /> Grain</>}
+									checked={state.postProcessingEnabled.grain}
+									formattedValue={state.postProcessingEnabled.grain ? `${Math.round(state.postProcessing.grain * 100)}%` : 'Off'}
+									value={state.postProcessing.grain ?? 0}
+									min={0} max={1} step={0.05}
+									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'grain' })}
+									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'grain', value: v } })}
+								/>
 
 								{/* Vignette */}
-								<div className="space-y-1.5">
-									<div className="flex justify-between items-center text-xs opacity-70">
-										<label className="flex items-center gap-2 cursor-pointer select-none">
-											<input
-												type="checkbox"
-												checked={state.postProcessingEnabled.vignette}
-												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'vignette' })}
-												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
-											/>
-											<span className="flex items-center gap-1"><Ban className="w-3 h-3" /> Vignette</span>
-										</label>
-										<span>{state.postProcessingEnabled.vignette ? `${Math.round(state.postProcessing.vignette * 100)}%` : 'Off'}</span>
-									</div>
-									<input
-										type="range"
-										min="0"
-										max="1"
-										step="0.05"
-										disabled={!state.postProcessingEnabled.vignette}
-										value={state.postProcessing.vignette ?? 0}
-										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'vignette', value: parseFloat(e.target.value) } })}
-										className={cn(
-											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											diTokens.sliderBg, diTokens.sliderAccent,
-											!state.postProcessingEnabled.vignette && "opacity-50 cursor-not-allowed"
-										)}
-									/>
-								</div>
+								<DiToggleSlider
+									label={<><Ban className="w-3 h-3" /> Vignette</>}
+									checked={state.postProcessingEnabled.vignette}
+									formattedValue={state.postProcessingEnabled.vignette ? `${Math.round(state.postProcessing.vignette * 100)}%` : 'Off'}
+									value={state.postProcessing.vignette ?? 0}
+									min={0} max={1} step={0.05}
+									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'vignette' })}
+									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'vignette', value: v } })}
+								/>
 
 								{/* Chromatic Aberration */}
-								<div className="space-y-1.5">
-									<div className="flex justify-between items-center text-xs opacity-70">
-										<label className="flex items-center gap-2 cursor-pointer select-none">
-											<input
-												type="checkbox"
-												checked={state.postProcessingEnabled.chromaticAberration}
-												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'chromaticAberration' })}
-												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
-											/>
-											<span className="flex items-center gap-1"><Layers className="w-3 h-3" /> Chromatic Ab.</span>
-										</label>
-										<span>{state.postProcessingEnabled.chromaticAberration ? `${Math.round(state.postProcessing.chromaticAberration * 100)}%` : 'Off'}</span>
-									</div>
-									<input
-										type="range"
-										min="0"
-										max="1"
-										step="0.05"
-										disabled={!state.postProcessingEnabled.chromaticAberration}
-										value={state.postProcessing.chromaticAberration ?? 0}
-										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'chromaticAberration', value: parseFloat(e.target.value) } })}
-										className={cn(
-											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											diTokens.sliderBg, diTokens.sliderAccent,
-											!state.postProcessingEnabled.chromaticAberration && "opacity-50 cursor-not-allowed"
-										)}
-									/>
-								</div>
+								<DiToggleSlider
+									label={<><Layers className="w-3 h-3" /> Chromatic Ab.</>}
+									checked={state.postProcessingEnabled.chromaticAberration}
+									formattedValue={state.postProcessingEnabled.chromaticAberration ? `${Math.round(state.postProcessing.chromaticAberration * 100)}%` : 'Off'}
+									value={state.postProcessing.chromaticAberration ?? 0}
+									min={0} max={1} step={0.05}
+									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'chromaticAberration' })}
+									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'chromaticAberration', value: v } })}
+								/>
 
 								{/* Fog */}
-								<div className="space-y-1.5">
-									<div className="flex justify-between items-center text-xs opacity-70">
-										<label className="flex items-center gap-2 cursor-pointer select-none">
-											<input
-												type="checkbox"
-												checked={state.postProcessingEnabled.fog}
-												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'fog' })}
-												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
-											/>
-											<span className="flex items-center gap-1"><CloudFog className="w-3 h-3" /> Fog</span>
-										</label>
-										<span>{state.postProcessingEnabled.fog ? `${Math.round(state.postProcessing.fog * 100)}%` : 'Off'}</span>
-									</div>
-									<input
-										type="range"
-										min="0"
-										max="1"
-										step="0.05"
-										disabled={!state.postProcessingEnabled.fog}
-										value={state.postProcessing.fog ?? 0}
-										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'fog', value: parseFloat(e.target.value) } })}
-										className={cn(
-											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											diTokens.sliderBg, diTokens.sliderAccent,
-											!state.postProcessingEnabled.fog && "opacity-50 cursor-not-allowed"
-										)}
-									/>
-								</div>
+								<DiToggleSlider
+									label={<><CloudFog className="w-3 h-3" /> Fog</>}
+									checked={state.postProcessingEnabled.fog}
+									formattedValue={state.postProcessingEnabled.fog ? `${Math.round(state.postProcessing.fog * 100)}%` : 'Off'}
+									value={state.postProcessing.fog ?? 0}
+									min={0} max={1} step={0.05}
+									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'fog' })}
+									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'fog', value: v } })}
+								/>
 
 								{/* Particles */}
-								<div className="space-y-1.5">
-									<div className="flex justify-between items-center text-xs opacity-70">
-										<label className="flex items-center gap-2 cursor-pointer select-none">
-											<input
-												type="checkbox"
-												checked={state.postProcessingEnabled.particles}
-												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'particles' })}
-												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
-											/>
-											<span className="flex items-center gap-1"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-sparkles'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3Cpath d='M5 3v4'/%3E%3Cpath d='M9 5H5'/%3E%3Cpath d='M19 19v2'/%3E%3Cpath d='M21 19h-2'/%3E%3C/svg%3E" className="w-3 h-3" /> Particles</span>
-										</label>
-										<span>{state.postProcessingEnabled.particles ? `${Math.round(state.postProcessing.particles * 100)}%` : 'Off'}</span>
-									</div>
-
-									<input
-										type="range"
-										min="0"
-										max="1"
-										step="0.05"
-										disabled={!state.postProcessingEnabled.particles}
-										value={state.postProcessing.particles ?? 0}
-										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'particles', value: parseFloat(e.target.value) } })}
-										className={cn(
-											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											diTokens.sliderBg, diTokens.sliderAccent,
-											!state.postProcessingEnabled.particles && "opacity-50 cursor-not-allowed"
-										)}
-									/>
-
+								<DiToggleSlider
+									label={<><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-sparkles'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3Cpath d='M5 3v4'/%3E%3Cpath d='M9 5H5'/%3E%3Cpath d='M19 19v2'/%3E%3Cpath d='M21 19h-2'/%3E%3C/svg%3E" className="w-3 h-3" /> Particles</>}
+									checked={state.postProcessingEnabled.particles}
+									formattedValue={state.postProcessingEnabled.particles ? `${Math.round(state.postProcessing.particles * 100)}%` : 'Off'}
+									value={state.postProcessing.particles ?? 0}
+									min={0} max={1} step={0.05}
+									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'particles' })}
+									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'particles', value: v } })}
+								>
 									{/* Particle Type Selector */}
 									{state.postProcessingEnabled.particles && (
 										<div className="flex items-center gap-1.5 text-xs pt-1">
@@ -484,7 +389,7 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 											</div>
 										</div>
 									)}
-								</div>
+								</DiToggleSlider>
 
 								<DiDivider className="my-2" />
 
@@ -570,191 +475,71 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 								</div>
 
 								{/* Wiggle */}
-								<div className="space-y-1.5">
-									<div className="flex justify-between items-center text-xs opacity-70">
-										<label className="flex items-center gap-2 cursor-pointer select-none">
-											<input
-												type="checkbox"
-												checked={state.postProcessingEnabled.wiggle}
-												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'wiggle' })}
-												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
-											/>
-											<span className="flex items-center gap-1"><Waves className="w-3 h-3" /> Stop Motion</span>
-										</label>
-										<span className={state.postProcessingEnabled.wiggle ? 'font-medium' : ''}>
-											{state.postProcessingEnabled.wiggle
-												? (state.postProcessing.wiggle <= 0.2 ? 'Light' : state.postProcessing.wiggle >= 0.8 ? 'Strong' : 'Medium')
-												: 'Off'}
-										</span>
-									</div>
-									<input
-										type="range"
-										min="0"
-										max="1"
-										step="0.5"
-										disabled={!state.postProcessingEnabled.wiggle}
-										value={state.postProcessing.wiggle ?? 0.5}
-										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'wiggle', value: parseFloat(e.target.value) } })}
-										className={cn(
-											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											diTokens.sliderBg, diTokens.sliderAccent,
-											!state.postProcessingEnabled.wiggle && "opacity-50 cursor-not-allowed"
-										)}
-									/>
-								</div>
+								<DiToggleSlider
+									label={<><Waves className="w-3 h-3" /> Stop Motion</>}
+									checked={state.postProcessingEnabled.wiggle}
+									formattedValue={state.postProcessingEnabled.wiggle ? (state.postProcessing.wiggle <= 0.2 ? 'Light' : state.postProcessing.wiggle >= 0.8 ? 'Strong' : 'Medium') : 'Off'}
+									value={state.postProcessing.wiggle ?? 0.5}
+									min={0} max={1} step={0.5}
+									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'wiggle' })}
+									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'wiggle', value: v } })}
+								/>
 
 								{/* Grunge Overlay */}
-								<div className="space-y-1.5">
-									<div className="flex justify-between items-center text-xs opacity-70">
-										<label className="flex items-center gap-2 cursor-pointer select-none">
-											<input
-												type="checkbox"
-												checked={state.postProcessingEnabled.grungeOverlay}
-												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'grungeOverlay' })}
-												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
-											/>
-											<span className="flex items-center gap-1"><Tornado className="w-3 h-3" /> Grunge Overlay</span>
-										</label>
-										<span className={state.postProcessingEnabled.grungeOverlay ? 'font-medium' : ''}>
-											{state.postProcessingEnabled.grungeOverlay
-												? (state.postProcessing.grungeIntensity <= 0.2 ? 'Subtle' : state.postProcessing.grungeIntensity >= 0.8 ? 'Intense' : 'Medium')
-												: 'Off'}
-										</span>
-									</div>
-									<input
-										type="range"
-										min="0"
-										max="1"
-										step="0.5"
-										disabled={!state.postProcessingEnabled.grungeOverlay}
-										value={state.postProcessing.grungeIntensity ?? 0.5}
-										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'grungeIntensity', value: parseFloat(e.target.value) } })}
-										className={cn(
-											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											diTokens.sliderBg, diTokens.sliderAccent,
-											!state.postProcessingEnabled.grungeOverlay && "opacity-50 cursor-not-allowed"
-										)}
-									/>
-								</div>
+								<DiToggleSlider
+									label={<><Tornado className="w-3 h-3" /> Grunge Overlay</>}
+									checked={state.postProcessingEnabled.grungeOverlay}
+									formattedValue={state.postProcessingEnabled.grungeOverlay ? (state.postProcessing.grungeIntensity <= 0.2 ? 'Subtle' : state.postProcessing.grungeIntensity >= 0.8 ? 'Intense' : 'Medium') : 'Off'}
+									value={state.postProcessing.grungeIntensity ?? 0.5}
+									min={0} max={1} step={0.5}
+									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'grungeOverlay' })}
+									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'grungeIntensity', value: v } })}
+								/>
 
 								{/* Glow */}
-								<div className="space-y-1.5">
-									<div className="flex justify-between items-center text-xs opacity-70">
-										<label className="flex items-center gap-2 cursor-pointer select-none">
-											<input
-												type="checkbox"
-												checked={state.postProcessingEnabled.glow}
-												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'glow' })}
-												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
-											/>
-											<span className="flex items-center gap-1"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E" className="w-3 h-3" /> Glow</span>
-										</label>
-										<span>{state.postProcessingEnabled.glow ? `${Math.round(state.postProcessing.glow * 100)}%` : 'Off'}</span>
-									</div>
-									<input
-										type="range"
-										min="0"
-										max="1"
-										step="0.05"
-										disabled={!state.postProcessingEnabled.glow}
-										value={state.postProcessing.glow ?? 0}
-										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'glow', value: parseFloat(e.target.value) } })}
-										className={cn(
-											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											diTokens.sliderBg, diTokens.sliderAccent,
-											!state.postProcessingEnabled.glow && "opacity-50 cursor-not-allowed"
-										)}
-									/>
-								</div>
+								<DiToggleSlider
+									label={<><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E" className="w-3 h-3" /> Glow</>}
+									checked={state.postProcessingEnabled.glow}
+									formattedValue={state.postProcessingEnabled.glow ? `${Math.round(state.postProcessing.glow * 100)}%` : 'Off'}
+									value={state.postProcessing.glow ?? 0}
+									min={0} max={1} step={0.05}
+									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'glow' })}
+									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'glow', value: v } })}
+								/>
 
 								{/* RISO */}
-								<div className="space-y-1.5">
-									<div className="flex justify-between items-center text-xs opacity-70">
-										<label className="flex items-center gap-2 cursor-pointer select-none">
-											<input
-												type="checkbox"
-												checked={state.postProcessingEnabled.riso}
-												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'riso' })}
-												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
-											/>
-											<span className="flex items-center gap-1"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cpath d='M7 7h.01M17 7h.01M7 17h.01M17 17h.01M12 7v10M7 12h10'/%3E%3C/svg%3E" className="w-3 h-3" /> RISO</span>
-										</label>
-										<span>{state.postProcessingEnabled.riso ? `${Math.round(state.postProcessing.riso * 100)}%` : 'Off'}</span>
-									</div>
-									<input
-										type="range"
-										min="0"
-										max="1"
-										step="0.05"
-										disabled={!state.postProcessingEnabled.riso}
-										value={state.postProcessing.riso ?? 0}
-										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'riso', value: parseFloat(e.target.value) } })}
-										className={cn(
-											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											diTokens.sliderBg, diTokens.sliderAccent,
-											!state.postProcessingEnabled.riso && "opacity-50 cursor-not-allowed"
-										)}
-									/>
-								</div>
+								<DiToggleSlider
+									label={<><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cpath d='M7 7h.01M17 7h.01M7 17h.01M17 17h.01M12 7v10M7 12h10'/%3E%3C/svg%3E" className="w-3 h-3" /> RISO</>}
+									checked={state.postProcessingEnabled.riso}
+									formattedValue={state.postProcessingEnabled.riso ? `${Math.round(state.postProcessing.riso * 100)}%` : 'Off'}
+									value={state.postProcessing.riso ?? 0}
+									min={0} max={1} step={0.05}
+									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'riso' })}
+									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'riso', value: v } })}
+								/>
 
 								{/* Distortion */}
-								<div className="space-y-1.5">
-									<div className="flex justify-between items-center text-xs opacity-70">
-										<label className="flex items-center gap-2 cursor-pointer select-none">
-											<input
-												type="checkbox"
-												checked={state.postProcessingEnabled.distortion}
-												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'distortion' })}
-												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
-											/>
-											<span className="flex items-center gap-1"><Scaling className="w-3 h-3" /> Distortion</span>
-										</label>
-										<span>{state.postProcessingEnabled.distortion ? `${Math.round(state.postProcessing.distortion * 100)}%` : 'Off'}</span>
-									</div>
-									<input
-										type="range"
-										min="-1"
-										max="1"
-										step="0.05"
-										disabled={!state.postProcessingEnabled.distortion}
-										value={state.postProcessing.distortion ?? 0}
-										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'distortion', value: parseFloat(e.target.value) } })}
-										className={cn(
-											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											diTokens.sliderBg, diTokens.sliderAccent,
-											!state.postProcessingEnabled.distortion && "opacity-50 cursor-not-allowed"
-										)}
-									/>
-								</div>
+								<DiToggleSlider
+									label={<><Scaling className="w-3 h-3" /> Distortion</>}
+									checked={state.postProcessingEnabled.distortion}
+									formattedValue={state.postProcessingEnabled.distortion ? `${Math.round(state.postProcessing.distortion * 100)}%` : 'Off'}
+									value={state.postProcessing.distortion ?? 0}
+									min={-1} max={1} step={0.05}
+									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'distortion' })}
+									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'distortion', value: v } })}
+								/>
 
 								{/* DoF & Focus */}
-								<div className={cn("space-y-1.5 pt-2 border-t", diTokens.border)}>
-									<div className="flex justify-between items-center text-xs opacity-70">
-										<label className="flex items-center gap-2 cursor-pointer select-none">
-											<input
-												type="checkbox"
-												checked={state.postProcessingEnabled.dof}
-												onChange={() => dispatch({ type: 'TOGGLE_FX', payload: 'dof' })}
-												className={cn("rounded-sm w-3 h-3", diTokens.sliderAccent)}
-											/>
-											<span className="flex items-center gap-1"><Aperture className="w-3 h-3" /> Blur / DoF</span>
-										</label>
-										<span>{state.postProcessingEnabled.dof ? `${Math.round(state.postProcessing.dof * 100)}%` : 'Off'}</span>
-									</div>
-									<input
-										type="range"
-										min="0"
-										max="1"
-										step="0.05"
-										disabled={!state.postProcessingEnabled.dof}
+								<div className={cn("pt-2 border-t", diTokens.border)}>
+									<DiToggleSlider
+										label={<><Aperture className="w-3 h-3" /> Blur / DoF</>}
+										checked={state.postProcessingEnabled.dof}
+										formattedValue={state.postProcessingEnabled.dof ? `${Math.round(state.postProcessing.dof * 100)}%` : 'Off'}
 										value={state.postProcessing.dof ?? 0}
-										onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'dof', value: parseFloat(e.target.value) } })}
-										className={cn(
-											"w-full h-1.5 rounded-lg appearance-none cursor-pointer",
-											diTokens.sliderBg, diTokens.sliderAccent,
-											!state.postProcessingEnabled.dof && "opacity-50 cursor-not-allowed"
-										)}
-									/>
+										min={0} max={1} step={0.05}
+										onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'dof' })}
+										onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'dof', value: v } })}
+									>
 
 									{/* Focus Control */}
 									<div className="flex justify-between items-end mt-2 mb-1">
@@ -932,6 +717,7 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 											/>
 										</>
 									)}
+									</DiToggleSlider>
 								</div>
 							</div>
 						</PopoverContent>
