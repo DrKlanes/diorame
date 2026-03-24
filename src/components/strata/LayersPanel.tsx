@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Eye, EyeOff, Lock, Unlock, Trash2, Copy, ChevronUp, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { cn } from '../ui/utils';
+import { diTokens } from '../../design-system/tokens';
 
 interface LayerItemProps {
   layerIndex: number;
@@ -22,7 +23,7 @@ interface LayerItemProps {
   canDuplicate: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
-  theme: any;
+  theme: typeof diTokens;
   duplicateTooltip: string;
   isTouchDevice: boolean;
   isExpanded: boolean;
@@ -72,9 +73,9 @@ const LayerItem: React.FC<LayerItemProps> = ({
         className={cn(
           "flex items-center gap-2 px-3 py-2 rounded-lg transition-all select-none",
           isTouchDevice ? "cursor-default touch-manipulation active:scale-98" : "cursor-pointer",
-          isActive ? theme.bgActive : theme.bg,
-          isActive ? theme.borderActive : "border border-transparent",
-          !isActive && !isTouchDevice && theme.hover
+          isActive ? theme.layerBgActive : theme.bgPanel,
+          isActive ? theme.layerBorderActive : "border border-transparent",
+          !isActive && !isTouchDevice && theme.hoverAlt
         )}
       >
         {/* Move Up/Down Buttons */}
@@ -146,7 +147,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
             )}
             title={duplicateTooltip}
           >
-            <Copy className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-slate-700" />
+            <Copy className={cn("w-3.5 h-3.5 sm:w-3 sm:h-3", diTokens.iconColor)} />
           </Button>
 
           {/* Visibility */}
@@ -161,9 +162,9 @@ const LayerItem: React.FC<LayerItemProps> = ({
             title={isHidden ? "Show Layer" : "Hide Layer"}
           >
             {isHidden ? (
-              <EyeOff className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-slate-400" />
+              <EyeOff className={cn("w-3.5 h-3.5 sm:w-3 sm:h-3", diTokens.textSubtle)} />
             ) : (
-              <Eye className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-slate-700" />
+              <Eye className={cn("w-3.5 h-3.5 sm:w-3 sm:h-3", diTokens.iconColor)} />
             )}
           </Button>
 
@@ -181,7 +182,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
             {isLocked ? (
               <Lock className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-amber-600" />
             ) : (
-              <Unlock className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-slate-700" />
+              <Unlock className={cn("w-3.5 h-3.5 sm:w-3 sm:h-3", diTokens.iconColor)} />
             )}
           </Button>
 
@@ -227,20 +228,6 @@ export const LayersPanel: React.FC = () => {
       setExpandedLayerIndex(state.currentLayerIndex);
     }
   }, [state.currentLayerIndex, isTouchDevice]);
-
-  // UI Theme - Light Mode (Single Source of Truth)
-  const uiTheme = {
-    bg: 'bg-white/90',
-    bgActive: 'bg-blue-50',
-    bgAlt: 'bg-slate-50/90',
-    border: 'border-slate-200',
-    borderActive: 'border-blue-400',
-    text: 'text-slate-900',
-    textMuted: 'text-slate-500',
-    hover: 'hover:bg-slate-100',
-    iconColor: 'text-slate-700',
-    divider: 'bg-slate-200'
-  };
 
   const getActiveZ = (layerIndex: number) => layerIndex * -BASE_DEPTH_STEP;
 
@@ -343,10 +330,10 @@ export const LayersPanel: React.FC = () => {
   return (
     <div className={cn(
       "w-64 max-h-[400px] overflow-y-auto overflow-x-hidden rounded-lg shadow-lg border backdrop-blur-sm p-2 space-y-1",
-      uiTheme.bg,
-      uiTheme.border
+      diTokens.bgPanel,
+      diTokens.border
     )}>
-      <div className={cn("px-2 py-1 text-[10px] uppercase font-bold tracking-wider", uiTheme.textMuted)}>
+      <div className={cn("px-2 py-1 text-[10px] uppercase font-bold tracking-wider", diTokens.textMuted)}>
         Layers ({state.totalLayers}/10)
       </div>
       
@@ -383,7 +370,7 @@ export const LayersPanel: React.FC = () => {
             canMoveUp={currentPos > 0}
             canMoveDown={currentPos < layers.length - 1}
             duplicateTooltip={duplicateTooltip}
-            theme={uiTheme}
+            theme={diTokens}
             isTouchDevice={isTouchDevice}
             isExpanded={expandedLayerIndex === layerIndex}
             onToggleExpand={() => handleToggleExpand(layerIndex)}

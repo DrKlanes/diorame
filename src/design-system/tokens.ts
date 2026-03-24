@@ -10,8 +10,9 @@ export const diTokens = {
 	bgPanelAlt: "bg-white/80",
 
 	// --- Bordes y separadores ---
-	border:  "border-slate-200",
-	divider: "bg-slate-200",
+	border:       "border-slate-200",
+	borderSubtle: "border-slate-200/50",
+	divider:      "bg-slate-200",
 
 	// --- Texto ---
 	text:       "text-slate-900",
@@ -31,6 +32,15 @@ export const diTokens = {
 	toggleHoverBg:    "hover:bg-white",
 	toggleActiveText: "text-slate-900",
 	toggleActiveBg:   "bg-slate-900",
+
+	// --- Selectores segmentados en paneles (estilo claro) ---
+	segmentActiveBg:  "bg-white",
+	segmentHoverBg:   "hover:bg-white/50",
+	segmentHoverText: "hover:text-slate-900",
+
+	// --- Capa activa (LayersPanel) ---
+	layerBgActive:     "bg-blue-50",
+	layerBorderActive: "border-blue-400",
 
 	// --- Spinners ---
 	spinnerBorder: "border-slate-400",

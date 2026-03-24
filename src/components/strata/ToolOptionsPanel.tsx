@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { RotateCw, Sparkles } from 'lucide-react';
 import { cn } from '../ui/utils';
 import { DiSlider } from '../../design-system/DiSlider';
+import { diTokens } from '../../design-system/tokens';
 
 export const ToolOptionsPanel = () => {
   const { state, dispatch } = useStrata();
@@ -16,23 +17,6 @@ export const ToolOptionsPanel = () => {
   
   if (!showPanel) return null;
   
-  // UI Theme - Light Mode (Single Source of Truth)
-  const uiTheme = {
-    bg: "bg-white/90",
-    border: "border-slate-200",
-    borderSubtle: "border-slate-200/50",
-    text: "text-slate-900",
-    textMuted: "text-slate-500",
-    sliderBg: "bg-slate-200",
-    sliderAccent: "accent-slate-900",
-    toggleBg: "bg-slate-100",
-    toggleActiveBg: "bg-white",
-    toggleActiveText: "text-slate-900",
-    toggleInactiveText: "text-slate-600",
-    toggleHoverBg: "hover:bg-white/50",
-    toggleHoverText: "hover:text-slate-900",
-  };
-  
   return (
     <div className="absolute bottom-32 sm:bottom-24 left-1/2 -translate-x-1/2 flex flex-col gap-2 z-40 pointer-events-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
       
@@ -40,11 +24,11 @@ export const ToolOptionsPanel = () => {
       {showGradOptions && (
         <div className={cn(
           "backdrop-blur-sm rounded-2xl shadow-sm border w-48",
-          uiTheme.bg, uiTheme.border
+          diTokens.bgPanel, diTokens.border
         )}>
           {/* Header */}
-          <div className={cn("px-3 pt-2 pb-1.5 border-b", uiTheme.borderSubtle)}>
-            <span className={cn("text-[10px] font-medium tracking-wider uppercase", uiTheme.textMuted)}>
+          <div className={cn("px-3 pt-2 pb-1.5 border-b", diTokens.borderSubtle)}>
+            <span className={cn("text-[10px] font-medium tracking-wider uppercase", diTokens.textMuted)}>
               Gradient
             </span>
           </div>
@@ -52,7 +36,7 @@ export const ToolOptionsPanel = () => {
           {/* Content */}
           <div className="p-3 pt-2 flex flex-col gap-2">
             {/* Gradient Type Selector */}
-            <div className={cn("flex items-center gap-1 p-0.5 rounded-lg", uiTheme.toggleBg)}>
+            <div className={cn("flex items-center gap-1 p-0.5 rounded-lg", diTokens.toggleBg)}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -60,8 +44,8 @@ export const ToolOptionsPanel = () => {
                 className={cn(
                   "flex-1 h-7 rounded-md transition-all text-[10px]",
                   state.paletteGradientType === 'solid'
-                    ? cn("shadow-sm", uiTheme.toggleActiveBg, uiTheme.toggleActiveText)
-                    : cn(uiTheme.toggleInactiveText, uiTheme.toggleHoverBg, uiTheme.toggleHoverText)
+                    ? cn("shadow-sm", diTokens.segmentActiveBg, diTokens.toggleActiveText)
+                    : cn(diTokens.textMuted, diTokens.segmentHoverBg, diTokens.segmentHoverText)
                 )}
                 title="Solid gradient (light → dark)"
               >
@@ -82,8 +66,8 @@ export const ToolOptionsPanel = () => {
                 className={cn(
                   "flex-1 h-7 rounded-md transition-all text-[10px]",
                   state.paletteGradientType === 'fade'
-                    ? cn("shadow-sm", uiTheme.toggleActiveBg, uiTheme.toggleActiveText)
-                    : cn(uiTheme.toggleInactiveText, uiTheme.toggleHoverBg, uiTheme.toggleHoverText)
+                    ? cn("shadow-sm", diTokens.segmentActiveBg, diTokens.toggleActiveText)
+                    : cn(diTokens.textMuted, diTokens.segmentHoverBg, diTokens.segmentHoverText)
                 )}
                 title="Fade gradient (solid → transparent)"
               >
@@ -126,11 +110,11 @@ export const ToolOptionsPanel = () => {
       {showBrushOptions && (
         <div className={cn(
           "backdrop-blur-sm rounded-2xl shadow-sm border w-48",
-          uiTheme.bg, uiTheme.border
+          diTokens.bgPanel, diTokens.border
         )}>
           {/* Header */}
-          <div className={cn("px-3 pt-2 pb-1.5 border-b", uiTheme.borderSubtle)}>
-            <span className={cn("text-[10px] font-medium tracking-wider uppercase", uiTheme.textMuted)}>
+          <div className={cn("px-3 pt-2 pb-1.5 border-b", diTokens.borderSubtle)}>
+            <span className={cn("text-[10px] font-medium tracking-wider uppercase", diTokens.textMuted)}>
               Brush
             </span>
           </div>
@@ -138,7 +122,7 @@ export const ToolOptionsPanel = () => {
           {/* Content */}
           <div className="p-3 pt-2 flex flex-col gap-2.5">
             {/* Line Mode Selector - Integrated like DRAW/VIEW toggle */}
-            <div className={cn("flex items-center gap-1 p-0.5 rounded-lg", uiTheme.toggleBg)}>
+            <div className={cn("flex items-center gap-1 p-0.5 rounded-lg", diTokens.toggleBg)}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -146,8 +130,8 @@ export const ToolOptionsPanel = () => {
                 className={cn(
                   "flex-1 h-7 rounded-md transition-all",
                   state.lineMode === 'tapered' 
-                    ? cn("shadow-sm", uiTheme.toggleActiveBg, uiTheme.toggleActiveText)
-                    : cn(uiTheme.toggleInactiveText, uiTheme.toggleHoverBg, uiTheme.toggleHoverText)
+                    ? cn("shadow-sm", diTokens.segmentActiveBg, diTokens.toggleActiveText)
+                    : cn(diTokens.textMuted, diTokens.segmentHoverBg, diTokens.segmentHoverText)
                 )}
                 title="Tapered"
               >
@@ -162,8 +146,8 @@ export const ToolOptionsPanel = () => {
                 className={cn(
                   "flex-1 h-7 rounded-md transition-all",
                   state.lineMode === 'uniform' 
-                    ? cn("shadow-sm", uiTheme.toggleActiveBg, uiTheme.toggleActiveText)
-                    : cn(uiTheme.toggleInactiveText, uiTheme.toggleHoverBg, uiTheme.toggleHoverText)
+                    ? cn("shadow-sm", diTokens.segmentActiveBg, diTokens.toggleActiveText)
+                    : cn(diTokens.textMuted, diTokens.segmentHoverBg, diTokens.segmentHoverText)
                 )}
                 title="Uniform"
               >
@@ -178,8 +162,8 @@ export const ToolOptionsPanel = () => {
                 className={cn(
                   "flex-1 h-7 rounded-md transition-all",
                   state.lineMode === 'ink' 
-                    ? cn("shadow-sm", uiTheme.toggleActiveBg, uiTheme.toggleActiveText)
-                    : cn(uiTheme.toggleInactiveText, uiTheme.toggleHoverBg, uiTheme.toggleHoverText)
+                    ? cn("shadow-sm", diTokens.segmentActiveBg, diTokens.toggleActiveText)
+                    : cn(diTokens.textMuted, diTokens.segmentHoverBg, diTokens.segmentHoverText)
                 )}
                 title="Ink"
               >
@@ -192,8 +176,8 @@ export const ToolOptionsPanel = () => {
             {/* Thickness Slider */}
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between items-center text-xs font-medium">
-                <span className={uiTheme.textMuted}>Thickness</span>
-                <span className={uiTheme.textMuted}>{Math.round(state.currentLineThickness)}</span>
+                <span className={diTokens.textMuted}>Thickness</span>
+                <span className={diTokens.textMuted}>{Math.round(state.currentLineThickness)}</span>
               </div>
               <input
                 type="range"
@@ -205,7 +189,7 @@ export const ToolOptionsPanel = () => {
                 onChange={(e) => dispatch({ type: 'SET_LINE_THICKNESS', payload: parseInt(e.target.value) })}
                 onMouseUp={() => dispatch({ type: 'COMMIT_LINE_THICKNESS' })}
                 onTouchEnd={() => dispatch({ type: 'COMMIT_LINE_THICKNESS' })}
-                className={cn("w-full h-1 rounded-lg appearance-none cursor-pointer", uiTheme.sliderBg, uiTheme.sliderAccent)}
+                className={cn("w-full h-1 rounded-lg appearance-none cursor-pointer", diTokens.sliderBg, diTokens.sliderAccent)}
               />
             </div>
           </div>
