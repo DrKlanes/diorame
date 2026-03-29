@@ -17,64 +17,12 @@ export const MAX_LAYERS = 10;
 export const APP_VERSION = "1.13.0"; // Release version
 export const MAX_HISTORY_STEPS = 50; // History limit
 
-export const FIXED_PALETTE = [
-    '#000000',
-    '#2f2f30',
-    '#d0ddd9',
-    '#FFFFFF',
-    '#2B5735',
-    '#3E7A66',
-    '#42AA6C',
-    '#6FD452',
-    '#8BF989',
-    '#223d57',
-    '#4261a1',
-    '#387fba',
-    '#5ba3d3',
-    '#8bcfd0',
-    '#80355b',
-    '#8569cd',
-    '#bd301e',
-    '#e73d3d',
-    '#E66FB1',
-    '#F2BDC1',
-    '#BD9357',
-    '#ed8d51',
-    '#F5DB6A',
-    '#FDEAC9',
-];
+import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS } from '../../constants/palette';
+export type { PaletteColor } from '../../constants/palette';
+export { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS };
 
-export const ALTERNATIVE_PALETTE = [
-    // Row 1
-    '#120F16', // Black
-    '#2A2F38', // Dark Grey
-    '#D0D0C8', // Light Grey
-    '#F2F0EA', // Off White
-    '#2F3D1E', // Dark Green
-    '#355A1E', // Green
-    '#6E7B3F', // Olive
-    '#9DBA7A', // Light Green
-    
-    // Row 2
-    '#c0af8a', // Beige
-    '#27454A', // Dark Teal
-    '#4E5F78', // Blue Grey
-    '#5F7FA6', // Blue
-    '#5C8F8C', // Teal
-    '#8FA9C4', // Light Blue
-    '#422c50', // Dark Purple
-    '#7476db', // Grey Blue
-    
-    // Row 3
-    '#661e40', // Dark Maroon
-    '#a53729', // Rust
-    '#C94A4A', // Red
-    '#dabec4', // Dark Brown
-    '#8A5231', // Brown
-    '#D07A2D', // Orange
-    '#C2B84D', // Yellow Green
-    '#e9dd71'  // Yellow
-];
+export const FIXED_PALETTE: string[] = PALETTE_PRIMARY.map(c => c.hex);
+export const ALTERNATIVE_PALETTE: string[] = PALETTE_ALTERNATIVE.map(c => c.hex);
 
 import {
 	generateTaperedStroke, generateUniformStroke, generateInkStroke, generateStrokeForMode,
@@ -318,7 +266,7 @@ function appReducer(state: AppState, action: Action): AppState {
           }
       };
     case 'SET_PALETTE_GRADIENT_ANGLE': {
-      const currentParams = state.layerGradParams[state.currentLayerIndex] || { angle: 90, intensity: 0.2 };
+      const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
       return { 
           ...state, 
           paletteGradientAngle: action.payload,
@@ -329,7 +277,7 @@ function appReducer(state: AppState, action: Action): AppState {
       };
     }
     case 'SET_PALETTE_GRADIENT_INTENSITY': {
-      const currentParams = state.layerGradParams[state.currentLayerIndex] || { angle: 90, intensity: 0.2 };
+      const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
       return { 
           ...state, 
           paletteGradientIntensity: action.payload,
@@ -340,7 +288,7 @@ function appReducer(state: AppState, action: Action): AppState {
       };
     }
     case 'SET_PALETTE_GRADIENT_TYPE': {
-      const currentParams = state.layerGradParams[state.currentLayerIndex] || { angle: 90, intensity: 0.2 };
+      const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
       return {
           ...state,
           paletteGradientType: action.payload,
@@ -477,7 +425,7 @@ function appReducer(state: AppState, action: Action): AppState {
           const nextIndex = state.currentLayerIndex + 1;
           const newZ = nextIndex * -BASE_DEPTH_STEP;
           const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-          const nextParams = state.layerGradParams[nextIndex] || { angle: 90, intensity: 0.2 };
+          const nextParams = state.layerGradParams[nextIndex] || GRADIENT_DEFAULTS;
           const nextBrush = state.layerBrushSettings[nextIndex] || { thickness: state.currentLineThickness, mode: state.lineMode };
           return {
               ...state,
@@ -527,7 +475,7 @@ function appReducer(state: AppState, action: Action): AppState {
             const prevIndex = state.currentLayerIndex - 1;
             const newZ = prevIndex * -BASE_DEPTH_STEP;
             const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-            const prevParams = state.layerGradParams[prevIndex] || { angle: 90, intensity: 0.2 };
+            const prevParams = state.layerGradParams[prevIndex] || GRADIENT_DEFAULTS;
             const prevBrush = state.layerBrushSettings[prevIndex] || { thickness: state.currentLineThickness, mode: state.lineMode };
             return {
                 ...state,
@@ -623,7 +571,7 @@ function appReducer(state: AppState, action: Action): AppState {
       const loadedLayerRenderModes = action.payload.layerRenderModes || {};
       const loadedLayerGradParams = action.payload.layerGradParams || {};
       const loadedLayerBrushSettings = action.payload.layerBrushSettings || {};
-      const firstLayerParams = loadedLayerGradParams[0] || { angle: 90, intensity: 0.2 };
+      const firstLayerParams = loadedLayerGradParams[0] || GRADIENT_DEFAULTS;
       
       const loadedPaletteId = action.payload.activePaletteId || 'primary';
       const loadedPalette = loadedPaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
@@ -904,7 +852,7 @@ function appReducer(state: AppState, action: Action): AppState {
         
         // Sync global settings with new current layer
         const nextBrush = newBrushSettings[newCurrentLayer] || { thickness: state.currentLineThickness, mode: state.lineMode };
-        const nextGradP = newGradParams[newCurrentLayer] || { angle: 90, intensity: 0.2 };
+        const nextGradP = newGradParams[newCurrentLayer] || GRADIENT_DEFAULTS;
         
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         
@@ -1206,7 +1154,7 @@ function appReducer(state: AppState, action: Action): AppState {
 
         // Sync global
         const nextBrush = newBrushSettings[newLayerIndex];
-        const nextGradP = newGradParams[newLayerIndex] || { angle: 90, intensity: 0.2 };
+        const nextGradP = newGradParams[newLayerIndex] || GRADIENT_DEFAULTS;
 
         const newState = {
             ...state,

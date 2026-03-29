@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStrata, BASE_DEPTH_STEP, MAX_LAYERS } from './StrataContext';
+import { DARK_COLORS } from '../../constants/palette';
 import { Button } from '../ui/button';
 import { RippleButton } from '../ui/ripple-button';
 import { Undo, Redo, Trash2, ArrowLeftRight, Layers, Eye, EyeOff, FileCode, Pen, Type, AlignLeft, AlignCenter, AlignRight, Check, X, Waves, Save, FolderOpen, Eraser, Info, Move, Lock, Unlock, Maximize, FlipHorizontal, Copy, Droplet, Paintbrush, Target, ChevronLeft, ChevronRight, Plus, Sun, Moon } from 'lucide-react';
@@ -780,7 +781,7 @@ export const ControlsDrawing = ({
 					<div className="grid grid-cols-4 md:grid-cols-8 gap-2 p-1">
 						{state.palette.map((color, index) => {
 							const isSelected = state.currentColorIndex === index;
-							const isDark = ['#000000', '#073B4C', '#2D6A4F', '#5A189A', '#6F4E37', '#C1121F'].includes(color);
+							const isDark = DARK_COLORS.has(color);
 
 							return (
 								<button
