@@ -49,6 +49,13 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 | Primitivas de Design System | `src/design-system/Di<Name>.tsx` |
 | Tipos compartidos | `src/types/strataTypes.ts` |
 
+### Convenciones generales
+
+- Toasts: usar `sonner@2.0.3`
+- Imágenes raster: importar con `figma:asset/...` (sin prefijo de ruta)
+- SVGs: van en `/imports`, usar rutas relativas
+- Arrays, paletas y matrices de datos readonly: preferir tipos `readonly` (`as const` o `Readonly<>`)
+
 ### Extracción de StrataCanvas (estrategia incremental)
 
 1. Identificar un bloque autocontenido

@@ -1,8 +1,10 @@
 # Diorame — Project Reference Document
 
-**Version**: 1.11.0
+**Version**: 1.13.0
 **Last Updated**: March 2026
-**Purpose**: Single source of truth for AI collaborators, designers, and developers.
+**Audience**: Designers, developers, and human collaborators.
+**Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
+For AI collaboration instructions (architecture rules, coding conventions, workflow), see **CLAUDE.md** in the repo root.
 
 ---
 
@@ -290,7 +292,7 @@ Performance is a first-class concern. Any change that degrades performance is re
 
 ## 10. Architecture & File Structure
 
-The codebase has been modularized through a multi-phase refactoring (v1.11.0). Code is organized into four layers: UI components, canvas pipeline modules, shared utilities, and the type system.
+The codebase has been modularized through a multi-phase refactoring (completed in v1.11.0). Code is organized into four layers: UI components, canvas pipeline modules, shared utilities, and the type system.
 
 ### Main Canvas (`src/components/strata/`)
 
@@ -353,7 +355,7 @@ The codebase has been modularized through a multi-phase refactoring (v1.11.0). C
 This section is critical. These actions are **forbidden**:
 
 ### Code Changes
-- **No New Code in StrataCanvas.tsx**: Only extract code out; never add lines (see Guidelines.md)
+- **No New Code in StrataCanvas.tsx**: Only extract code out; never add lines
 - **No Large Refactors**: Do not rewrite entire files or systems
 - **No Speculative Optimization**: Only optimize proven bottlenecks
 - **No Experimental Features**: Every feature must be justified and tested
@@ -433,7 +435,7 @@ CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
 DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
-APP_VERSION = "1.11.0"          // Current release version
+APP_VERSION = "1.13.0"          // Current release version
 ```
 
 ### Post-Processing Effects
