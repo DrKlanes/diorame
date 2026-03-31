@@ -1659,7 +1659,37 @@ export const StrataCanvas = () => {
                       if (shape.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
                       else layerCtx.globalCompositeOperation = shape.isDrawInside ? 'source-atop' : 'source-over';
                       
-                      layerCtx.strokeStyle = shape.color;
+                      const shapeLayerIndex = Math.round(Math.abs(shape.zIndex / BASE_DEPTH_STEP));
+                      const renderMode = currentState.layerRenderModes?.[shapeLayerIndex] || 'flat';
+                      if (renderMode === 'grad') {
+                          let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                          for (let k = 0; k < finalSpine.length; k++) {
+                              const px = finalSpine[k].x, py = finalSpine[k].y;
+                              if (px < minX) minX = px; if (px > maxX) maxX = px;
+                              if (py < minY) minY = py; if (py > maxY) maxY = py;
+                          }
+                          const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+                          const gradParams = currentState.layerGradParams?.[shapeLayerIndex] || { angle: 90, intensity: 0.2 };
+                          const ang = (gradParams.angle * Math.PI) / 180;
+                          const r = Math.hypot(maxX - minX, maxY - minY) / 2;
+                          const grad = layerCtx.createLinearGradient(
+                              cx - Math.cos(ang) * r, cy - Math.sin(ang) * r,
+                              cx + Math.cos(ang) * r, cy + Math.sin(ang) * r
+                          );
+                          const c = shape.color, ints = gradParams.intensity;
+                          if (gradParams.gradType === 'fade') {
+                              const endAlpha = Math.max(0, 1 - (0.2 + ints * 0.8));
+                              grad.addColorStop(0, hexToRgba(c, 1));
+                              grad.addColorStop(1, hexToRgba(c, endAlpha));
+                          } else {
+                              grad.addColorStop(0, getVibrantVariant(c, ints, 'light'));
+                              grad.addColorStop(0.5, c);
+                              grad.addColorStop(1, getVibrantVariant(c, ints, 'dark'));
+                          }
+                          layerCtx.strokeStyle = grad;
+                      } else {
+                          layerCtx.strokeStyle = shape.color;
+                      }
                       const baseThickness = (shape.lineThickness || 20) * averageScale;
                       layerCtx.lineWidth = isPixelArt ? Math.max(baseThickness, currentState.postProcessing.pixelArtSize || 4) : baseThickness;
                       layerCtx.lineCap = isPixelArt ? 'butt' : 'round';
