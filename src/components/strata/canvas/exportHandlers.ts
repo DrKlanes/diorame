@@ -40,8 +40,8 @@ export const exportAsSVG = async (
 	onFinish: () => void
 ): Promise<void> => {
 	try {
-		// Filter visible shapes (not erasers)
-		const visibleShapes = shapes.filter(shape => !shape.isEraser);
+		// All shapes including erasers (erasers become SVG mask content)
+		const visibleShapes = shapes;
 
 		if (visibleShapes.length === 0) {
 			console.warn("No visible shapes to export");
@@ -103,6 +103,7 @@ export const exportAsSVG = async (
 		const sortedZIndices = Array.from(shapesByLayer.keys()).sort((a, b) => b - a);
 
 		let clipPathCounter = 0;
+		let maskCounter = 0;
 		let processedShapeCount = 0;
 
 		// Process each layer
@@ -114,9 +115,13 @@ export const exportAsSVG = async (
 			type LayerEntry = { shape: Shape; clipId?: string; clipShapes?: Shape[] };
 			const layerEntries: LayerEntry[] = [];
 			const normalShapesSoFar: Shape[] = [];
+			const erasersSoFar: Shape[] = [];
 
 			layerShapes.forEach(shape => {
-				if (shape.isDrawBehind) {
+				if (shape.isEraser) {
+					// Collected for mask — not rendered as visible path
+					erasersSoFar.push(shape);
+				} else if (shape.isDrawBehind) {
 					// Render behind existing content: insert at front of layer
 					layerEntries.unshift({ shape });
 					normalShapesSoFar.unshift(shape);
@@ -172,6 +177,23 @@ export const exportAsSVG = async (
 				}
 			};
 
+			// If this layer has erasers, wrap all its shapes in a masked group
+			const maskId = erasersSoFar.length > 0 ? `mask-${zIndex}-${maskCounter++}` : null;
+			if (maskId) {
+				parts.push(`  <defs>\n`);
+				parts.push(`    <mask id="${maskId}">\n`);
+				parts.push(`      <rect width="${width}" height="${height}" fill="white"/>\n`);
+				erasersSoFar.forEach(eraser => {
+					if (eraser.points.length > 0) {
+						const ap = eraser.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
+						parts.push(`      <path d="${createSmoothClosedPath(ap)}" fill="black"/>\n`);
+					}
+				});
+				parts.push(`    </mask>\n`);
+				parts.push(`  </defs>\n`);
+				parts.push(`  <g mask="url(#${maskId})">\n`);
+			}
+
 			// Emit layer in draw order; clip defs precede their referencing shape
 			layerEntries.forEach(({ shape, clipId, clipShapes }) => {
 				if (clipId && clipShapes) {
@@ -194,6 +216,10 @@ export const exportAsSVG = async (
 				}
 				renderShape(shape, clipId);
 			});
+
+			if (maskId) {
+				parts.push(`  </g>\n`);
+			}
 
 			processedShapeCount += layerShapes.length;
 
