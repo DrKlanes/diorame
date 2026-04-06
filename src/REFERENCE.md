@@ -476,7 +476,51 @@ APP_VERSION = "1.13.0"          // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 -> 1.13.0)
+## Appendix C: Changelog Highlights (1.7.3 -> 1.14.x)
+
+### 1.14.x — SVG Export overhaul
+
+**Commits:** `f6c52fb`, `99e6589`, `cc67951`, `b597795`, `e45f9fa`
+**File:** `src/components/strata/canvas/exportHandlers.ts`
+**Also touched:** `src/types/strataTypes.ts`, `src/components/strata/StrataCanvas.tsx`
+
+- **Fix — fill vs. stroke differentiation** (`f6c52fb`): SVG export now
+  correctly distinguishes blob shapes (closed path + fill) from brush/line
+  shapes (open path + stroke). Previously all shapes exported as filled
+  silhouettes regardless of type. Uses `shape.type === 'stroke'` to branch;
+  blob shapes use `createSmoothClosedPath`, strokes use `createSmoothOpenPath`
+  with `stroke-width="${shape.lineThickness ?? 8}"`, `stroke-linecap="round"`,
+  `stroke-linejoin="round"`.
+
+- **Fix — drawInside draw order** (`99e6591`): `isDrawInside` shapes now emit
+  in their correct position within the layer draw sequence, not batched at the
+  end. Replaced dual-array approach (`svgStack` + `drawInsideShapes`) with a
+  single-pass `layerEntries` accumulator. Each `isDrawInside` shape captures
+  a snapshot of `normalShapesSoFar` at the exact moment it is processed, and
+  its `<clipPath>` + `<defs>` emit inline before the shape, not after the
+  full layer.
+
+- **Fix — eraser mask scope** (`cc67951`): SVG `<mask>` for eraser shapes now
+  wraps only the shapes of its own layer, not the entire document. Uses
+  `parts.splice(startIndex)` to extract the layer's emitted strings, wraps
+  them in `<g mask="url(#maskN)">`, and reinserts. Shapes from other layers
+  are never enclosed in the group.
+
+- **Infra — eraser data for SVG** (`b597795`, `e45f9fa`): `lineThickness` is
+  now stored in eraser shapes (previously `undefined` for all erasers).
+  `eraserPolygon?: Point[]` added to the `Shape` interface in `strataTypes.ts`
+  as a dedicated field for SVG export — stores the expanded polygon generated
+  by `generateStrokeForMode` at draw time, without touching `shape.points`
+  (which the Canvas render loop uses and must not change).
+
+**Known limitation — eraser polygon fidelity:** The `eraserPolygon` is
+generated via `generateStrokeForMode('tapered', finalPoints, lineThickness)`,
+which produces a tapered stroke polygon rather than the uniform blob that
+`drawSmoothLine + fill()` produces at render time. The SVG mask approximates
+the erased area but is not geometrically identical to the Canvas result.
+Planned fix: capture the eraser path directly from `drawSmoothLine` via an
+OffscreenCanvas at draw time, replacing the tapered polygon with a bitmap
+mask or an accurate point set.
 
 ### 1.13.x — Design System completion + RISO/Grain fix
 - **DiToggleSlider** (`src/design-system/DiToggleSlider.tsx`): new primitive for the checkbox-toggle + label + value + range input pattern; supports optional `children` for extra content below the slider
