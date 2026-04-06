@@ -986,7 +986,7 @@ export const StrataCanvas = () => {
                 isDrawInside: state.isDrawInside,
                 isDrawBehind: state.isDrawBehind,
                 originalPoints: isLineTool ? originalPoints : undefined,
-                lineThickness: isLineTool ? state.currentLineThickness : undefined,
+                lineThickness: (isLineTool || state.tool === 'eraser') ? state.currentLineThickness : undefined,
                 lineMode: isLineTool ? state.lineMode : undefined
             };
             const shapeOriginal: Shape = {
