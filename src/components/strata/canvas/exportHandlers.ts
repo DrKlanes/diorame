@@ -115,12 +115,12 @@ export const exportAsSVG = async (
 			type LayerEntry = { shape: Shape; clipId?: string; clipShapes?: Shape[] };
 			const layerEntries: LayerEntry[] = [];
 			const normalShapesSoFar: Shape[] = [];
-			const erasersSoFar: Shape[] = [];
+			const eraserShapes: Shape[] = [];
 
 			layerShapes.forEach(shape => {
 				if (shape.isEraser) {
-					// Collected for mask — not rendered as visible path
-					erasersSoFar.push(shape);
+					// Collected for mask — applied after layer emit via parts.splice
+					eraserShapes.push(shape);
 				} else if (shape.isDrawBehind) {
 					// Render behind existing content: insert at front of layer
 					layerEntries.unshift({ shape });
@@ -177,24 +177,8 @@ export const exportAsSVG = async (
 				}
 			};
 
-			// If this layer has erasers, wrap all its shapes in a masked group
-			const maskId = erasersSoFar.length > 0 ? `mask-${zIndex}-${maskCounter++}` : null;
-			if (maskId) {
-				parts.push(`  <defs>\n`);
-				parts.push(`    <mask id="${maskId}">\n`);
-				parts.push(`      <rect width="${width}" height="${height}" fill="white"/>\n`);
-				erasersSoFar.forEach(eraser => {
-					if (eraser.points.length > 0) {
-						const ap = eraser.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
-						parts.push(`      <path d="${createSmoothClosedPath(ap)}" fill="black"/>\n`);
-					}
-				});
-				parts.push(`    </mask>\n`);
-				parts.push(`  </defs>\n`);
-				parts.push(`  <g mask="url(#${maskId})">\n`);
-			}
-
 			// Emit layer in draw order; clip defs precede their referencing shape
+			const startIndex = parts.length;
 			layerEntries.forEach(({ shape, clipId, clipShapes }) => {
 				if (clipId && clipShapes) {
 					parts.push(`  <defs>\n`);
@@ -217,7 +201,23 @@ export const exportAsSVG = async (
 				renderShape(shape, clipId);
 			});
 
-			if (maskId) {
+			// Wrap this layer's emitted parts in a mask if erasers are present
+			if (eraserShapes.length > 0) {
+				const maskId = `mask-${zIndex}-${maskCounter++}`;
+				const layerParts = parts.splice(startIndex);
+				parts.push(`  <defs>\n`);
+				parts.push(`    <mask id="${maskId}">\n`);
+				parts.push(`      <rect width="${width}" height="${height}" fill="white"/>\n`);
+				eraserShapes.forEach(eraser => {
+					if (eraser.points.length > 0) {
+						const ap = eraser.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
+						parts.push(`      <path d="${createSmoothClosedPath(ap)}" fill="black"/>\n`);
+					}
+				});
+				parts.push(`    </mask>\n`);
+				parts.push(`  </defs>\n`);
+				parts.push(`  <g mask="url(#${maskId})">\n`);
+				parts.push(...layerParts);
 				parts.push(`  </g>\n`);
 			}
 
