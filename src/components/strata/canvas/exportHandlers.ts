@@ -72,31 +72,22 @@ export const exportAsSVG = async (
 		parts.push(`<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n`);
 		parts.push(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" version="1.1">\n`);
 
-		// Helper function to create smooth path from points
-		// Matches the drawSmoothLine function used in canvas rendering
-		const createSmoothPath = (points: Array<{x: number, y: number}>) => {
-			if (points.length < 2) {
-				return '';
-			}
-
-			if (points.length === 2) {
-				return `M${points[0].x},${points[0].y} L${points[1].x},${points[1].y} Z`;
-			}
-
-			// Use the same algorithm as drawSmoothLine: quadratic curves through midpoints
+		// Smooth path helpers — match the drawSmoothLine algorithm (quadratic curves through midpoints)
+		const createSmoothOpenPath = (points: Array<{x: number, y: number}>) => {
+			if (points.length < 2) return '';
+			if (points.length === 2) return `M${points[0].x},${points[0].y} L${points[1].x},${points[1].y}`;
 			let path = `M${points[0].x},${points[0].y}`;
-
 			for (let i = 1; i < points.length - 1; i++) {
 				const xc = (points[i].x + points[i + 1].x) / 2;
 				const yc = (points[i].y + points[i + 1].y) / 2;
 				path += ` Q${points[i].x},${points[i].y} ${xc},${yc}`;
 			}
-
-			// Final segment to last point
 			path += ` L${points[points.length - 1].x},${points[points.length - 1].y}`;
-			path += ' Z';
-
 			return path;
+		};
+		const createSmoothClosedPath = (points: Array<{x: number, y: number}>) => {
+			const open = createSmoothOpenPath(points);
+			return open ? open + ' Z' : '';
 		};
 
 		// Group shapes by zIndex
@@ -173,8 +164,14 @@ export const exportAsSVG = async (
 						y: p.y + offsetY
 					}));
 
-					const pathData = createSmoothPath(adjustedPoints);
-					parts.push(`  <path d="${pathData}" fill="${shape.color}" stroke="none"${clipAttr} />\n`);
+					if (shape.type === 'stroke') {
+						const pathData = createSmoothOpenPath(adjustedPoints);
+						const sw = shape.lineThickness ?? 8;
+						parts.push(`  <path d="${pathData}" fill="none" stroke="${shape.color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"${clipAttr} />\n`);
+					} else {
+						const pathData = createSmoothClosedPath(adjustedPoints);
+						parts.push(`  <path d="${pathData}" fill="${shape.color}" stroke="none"${clipAttr} />\n`);
+					}
 				}
 			};
 
@@ -200,7 +197,7 @@ export const exportAsSVG = async (
 								x: p.x + offsetX,
 								y: p.y + offsetY
 							}));
-							const pathData = createSmoothPath(adjustedPoints);
+							const pathData = createSmoothClosedPath(adjustedPoints);
 							parts.push(`      <path d="${pathData}" />\n`);
 						}
 					});
