@@ -110,30 +110,27 @@ export const exportAsSVG = async (
 			const zIndex = sortedZIndices[layerIdx];
 			const layerShapes = shapesByLayer.get(zIndex)!;
 
-			// Simulate canvas behavior: process shapes in order
-			// destination-over (drawBehind) puts shape at the BACK of the existing stack
-			// source-over (normal) puts shape at the FRONT
-			// source-atop (drawInside) clips to existing content
-
-			const svgStack: Shape[] = []; // Back to front order for SVG
-			const clippableShapes: Shape[] = []; // Track shapes that can be used for clipping
-			const drawInsideShapes: Array<{shape: Shape, clipShapes: Shape[]}> = [];
+			// Single-pass: process shapes in draw order, preserving isDrawInside position
+			type LayerEntry = { shape: Shape; clipId?: string; clipShapes?: Shape[] };
+			const layerEntries: LayerEntry[] = [];
+			const normalShapesSoFar: Shape[] = [];
 
 			layerShapes.forEach(shape => {
-				if (shape.isDrawInside) {
-					// This shape needs to be clipped by everything drawn so far
-					drawInsideShapes.push({
-						shape,
-						clipShapes: [...clippableShapes]
-					});
-				} else if (shape.isDrawBehind) {
-					// Insert at the BEGINNING (back of stack)
-					svgStack.unshift(shape);
-					clippableShapes.push(shape);
+				if (shape.isDrawBehind) {
+					// Render behind existing content: insert at front of layer
+					layerEntries.unshift({ shape });
+					normalShapesSoFar.unshift(shape);
+				} else if (shape.isDrawInside) {
+					// Clip to all non-drawInside shapes drawn so far
+					if (normalShapesSoFar.length > 0) {
+						const clipId = `clip-${zIndex}-${clipPathCounter++}`;
+						layerEntries.push({ shape, clipId, clipShapes: [...normalShapesSoFar] });
+					} else {
+						layerEntries.push({ shape });
+					}
 				} else {
-					// Normal: add at the END (front of stack)
-					svgStack.push(shape);
-					clippableShapes.push(shape);
+					normalShapesSoFar.push(shape);
+					layerEntries.push({ shape });
 				}
 			});
 
@@ -175,41 +172,27 @@ export const exportAsSVG = async (
 				}
 			};
 
-			// Render the stack (back to front)
-			svgStack.forEach(shape => renderShape(shape));
-
-			// Handle drawInside shapes with their respective clip paths
-			drawInsideShapes.forEach(({shape, clipShapes}) => {
-				if (clipShapes.length > 0) {
-					const clipId = `clip-${zIndex}-${clipPathCounter++}`;
+			// Emit layer in draw order; clip defs precede their referencing shape
+			layerEntries.forEach(({ shape, clipId, clipShapes }) => {
+				if (clipId && clipShapes) {
 					parts.push(`  <defs>\n`);
 					parts.push(`    <clipPath id="${clipId}">\n`);
-
-					clipShapes.forEach(clipShape => {
-						if (clipShape.type === 'text' && clipShape.text) {
-							const x = clipShape.points[0].x + offsetX;
-							const y = clipShape.points[0].y + offsetY;
-							const fontSize = clipShape.fontSize || 40;
-							const textWidth = clipShape.text.length * fontSize * 0.6;
+					clipShapes.forEach(cs => {
+						if (cs.type === 'text' && cs.text) {
+							const x = cs.points[0].x + offsetX;
+							const y = cs.points[0].y + offsetY;
+							const fontSize = cs.fontSize || 40;
+							const textWidth = cs.text.length * fontSize * 0.6;
 							parts.push(`      <rect x="${x - 10}" y="${y - fontSize}" width="${textWidth + 20}" height="${fontSize + 10}" />\n`);
-						} else if (clipShape.points.length > 0) {
-							const adjustedPoints = clipShape.points.map(p => ({
-								x: p.x + offsetX,
-								y: p.y + offsetY
-							}));
-							const pathData = createSmoothClosedPath(adjustedPoints);
-							parts.push(`      <path d="${pathData}" />\n`);
+						} else if (cs.points.length > 0) {
+							const ap = cs.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
+							parts.push(`      <path d="${createSmoothClosedPath(ap)}" />\n`);
 						}
 					});
-
 					parts.push(`    </clipPath>\n`);
 					parts.push(`  </defs>\n`);
-
-					renderShape(shape, clipId);
-				} else {
-					// No clip shapes, just render normally (though this shouldn't happen in practice)
-					renderShape(shape);
 				}
+				renderShape(shape, clipId);
 			});
 
 			processedShapeCount += layerShapes.length;
