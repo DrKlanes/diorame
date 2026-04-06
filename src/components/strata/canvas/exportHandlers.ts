@@ -212,8 +212,7 @@ export const exportAsSVG = async (
 					console.log('ERASER lineThickness:', eraser.lineThickness, 'points:', eraser.points.length);
 					if (eraser.points.length > 0) {
 						const ap = eraser.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
-						const sw = (eraser.lineThickness ?? 20) * 2;
-						parts.push(`      <path d="${createSmoothOpenPath(ap)}" fill="none" stroke="black" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>\n`);
+						parts.push(`      <path d="${createSmoothClosedPath(ap)}" fill="black"/>\n`);
 					}
 				});
 				parts.push(`    </mask>\n`);
