@@ -209,6 +209,7 @@ export const exportAsSVG = async (
 				parts.push(`    <mask id="${maskId}">\n`);
 				parts.push(`      <rect width="${width}" height="${height}" fill="white"/>\n`);
 				eraserShapes.forEach(eraser => {
+					console.log('ERASER lineThickness:', eraser.lineThickness, 'points:', eraser.points.length);
 					if (eraser.points.length > 0) {
 						const ap = eraser.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
 						const sw = (eraser.lineThickness ?? 20) * 2;
