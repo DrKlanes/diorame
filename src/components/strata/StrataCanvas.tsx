@@ -979,19 +979,23 @@ export const StrataCanvas = () => {
             }
 
             const newZ = getActiveZ(state.currentLayerIndex);
+            const isEraserTool = state.tool === 'eraser';
+            const eraserPolygon = isEraserTool
+                ? generateStrokeForMode('tapered', finalPoints, state.currentLineThickness)
+                : [];
             const shapeProps = {
                 color: state.palette[state.currentColorIndex],
                 zIndex: newZ,
-                isEraser: state.tool === 'eraser',
+                isEraser: isEraserTool,
                 isDrawInside: state.isDrawInside,
                 isDrawBehind: state.isDrawBehind,
                 originalPoints: isLineTool ? originalPoints : undefined,
-                lineThickness: (isLineTool || state.tool === 'eraser') ? state.currentLineThickness : undefined,
+                lineThickness: (isLineTool || isEraserTool) ? state.currentLineThickness : undefined,
                 lineMode: isLineTool ? state.lineMode : undefined
             };
             const shapeOriginal: Shape = {
                 id: crypto.randomUUID(),
-                points: finalPoints,
+                points: (isEraserTool && eraserPolygon.length > 0) ? eraserPolygon : finalPoints,
                 ...shapeProps
             };
 
