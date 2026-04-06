@@ -19,6 +19,7 @@ export interface Shape {
   originalPoints?: Point[]; // Store spine for re-generation
   lineThickness?: number; // Store thickness value
   lineMode?: LineMode; // Store line mode (tapered or uniform)
+  eraserPolygon?: Point[]; // Expanded polygon for SVG mask export
 }
 
 export type AppMode = 'drawing' | 'cinematic';
