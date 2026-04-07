@@ -197,10 +197,6 @@ export const exportAsSVG = async (
 				: [];
 			const shapesAfterLast = layerEntries.filter((e, i) => e.kind === 'shape' && i > lastEraserIdx) as { kind: 'shape'; shape: Shape; clipId?: string; clipShapes?: Shape[] }[];
 
-			// Helper: stable sort — isDrawBehind shapes first, rest after
-			const sortDrawBehindFirst = (arr: { kind: 'shape'; shape: Shape; clipId?: string; clipShapes?: Shape[] }[]) =>
-				[...arr.filter(e => e.shape.isDrawBehind), ...arr.filter(e => !e.shape.isDrawBehind)];
-
 			// Helper: emit clipPath defs + shape for a shape entry
 			const emitShapeEntry = (entry: { kind: 'shape'; shape: Shape; clipId?: string; clipShapes?: Shape[] }) => {
 				if (entry.clipId && entry.clipShapes) {
@@ -236,12 +232,12 @@ export const exportAsSVG = async (
 				parts.push(`    </mask>\n`);
 				parts.push(`  </defs>\n`);
 				parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
-				sortDrawBehindFirst(shapesBeforeLast).forEach(emitShapeEntry);
+				shapesBeforeLast.forEach(emitShapeEntry);
 				parts.push(`  </g>\n`);
 			} else {
-				sortDrawBehindFirst(shapesBeforeLast).forEach(emitShapeEntry);
+				shapesBeforeLast.forEach(emitShapeEntry);
 			}
-			sortDrawBehindFirst(shapesAfterLast).forEach(emitShapeEntry);
+			shapesAfterLast.forEach(emitShapeEntry);
 			// Shapes after the last eraser are emitted unmasked — correct behavior
 
 			processedShapeCount += layerShapes.length;
