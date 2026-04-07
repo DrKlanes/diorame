@@ -189,23 +189,32 @@ export const exportAsSVG = async (
 				}
 			};
 
-			// Emit in draw order; accumulated eraser paths form a clipPath applied to subsequent shapes
-			const activeEraserPaths: string[] = [];
+			// Emit in draw order; erasers mask the group of shapes drawn before them
+			let groupStart = parts.length;
+			const pendingErasers: Shape[] = [];
 			layerEntries.forEach(entry => {
 				if (entry.kind === 'eraser') {
-					const ap = entry.shape.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
-					const d = createSmoothClosedPath(ap);
-					if (d) activeEraserPaths.push(d);
+					pendingErasers.push(entry.shape);
 				} else {
-					const hasMask = activeEraserPaths.length > 0;
-					if (hasMask) {
-						const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
-						parts.push(`  <defs>\n`);
-						parts.push(`    <mask id="${eraserMaskId}">\n`);
-						parts.push(`      <path d="M0,0 H${width} V${height} H0 Z ${activeEraserPaths.join(' ')}" fill="white" fill-rule="evenodd"/>\n`);
-						parts.push(`    </mask>\n`);
-						parts.push(`  </defs>\n`);
-						parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
+					if (pendingErasers.length > 0) {
+						const groupParts = parts.splice(groupStart);
+						if (groupParts.length > 0) {
+							const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
+							const eraserPaths = pendingErasers
+								.map(e => createSmoothClosedPath(e.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }))))
+								.filter(Boolean)
+								.join(' ');
+							parts.push(`  <defs>\n`);
+							parts.push(`    <mask id="${eraserMaskId}">\n`);
+							parts.push(`      <path d="M0,0 H${width} V${height} H0 Z ${eraserPaths}" fill="white" fill-rule="evenodd"/>\n`);
+							parts.push(`    </mask>\n`);
+							parts.push(`  </defs>\n`);
+							parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
+							parts.push(...groupParts);
+							parts.push(`  </g>\n`);
+						}
+						groupStart = parts.length;
+						pendingErasers.length = 0;
 					}
 					if (entry.clipId && entry.clipShapes) {
 						parts.push(`  <defs>\n`);
@@ -226,12 +235,28 @@ export const exportAsSVG = async (
 						parts.push(`  </defs>\n`);
 					}
 					renderShape(entry.shape, entry.clipId);
-					if (hasMask) {
-						parts.push(`  </g>\n`);
-					}
 				}
 			});
-			// Shapes before any eraser are unclipped; shapes after accumulate eraser holes via evenodd
+			// Flush: si la capa termina con erasers pendientes, maskear el grupo anterior
+			if (pendingErasers.length > 0) {
+				const groupParts = parts.splice(groupStart);
+				if (groupParts.length > 0) {
+					const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
+					const eraserPaths = pendingErasers
+						.map(e => createSmoothClosedPath(e.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }))))
+						.filter(Boolean)
+						.join(' ');
+					parts.push(`  <defs>\n`);
+					parts.push(`    <mask id="${eraserMaskId}">\n`);
+					parts.push(`      <path d="M0,0 H${width} V${height} H0 Z ${eraserPaths}" fill="white" fill-rule="evenodd"/>\n`);
+					parts.push(`    </mask>\n`);
+					parts.push(`  </defs>\n`);
+					parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
+					parts.push(...groupParts);
+					parts.push(`  </g>\n`);
+				}
+			}
+			// Shapes after the last eraser remain in parts unmasked — correct behavior
 
 			processedShapeCount += layerShapes.length;
 
