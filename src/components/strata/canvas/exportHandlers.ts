@@ -124,31 +124,31 @@ export const exportAsSVG = async (
 			const zIndex = sortedZIndices[layerIdx];
 			const layerShapes = shapesByLayer.get(zIndex)!;
 
-			// Single-pass: process shapes in draw order, preserving isDrawInside position
-			type LayerEntry = { shape: Shape; clipId?: string; clipShapes?: Shape[] };
+			// Single-pass: process shapes in draw order; erasers split the sequence into masked groups
+			type LayerEntry =
+				| { kind: 'shape'; shape: Shape; clipId?: string; clipShapes?: Shape[] }
+				| { kind: 'eraser'; shape: Shape };
 			const layerEntries: LayerEntry[] = [];
 			const normalShapesSoFar: Shape[] = [];
-			const eraserShapes: Shape[] = [];
 
 			layerShapes.forEach(shape => {
 				if (shape.isEraser) {
-					// Collected for mask — applied after layer emit via parts.splice
-					eraserShapes.push(shape);
+					layerEntries.push({ kind: 'eraser', shape });
 				} else if (shape.isDrawBehind) {
 					// Render behind existing content: insert at front of layer
-					layerEntries.unshift({ shape });
+					layerEntries.unshift({ kind: 'shape', shape });
 					normalShapesSoFar.unshift(shape);
 				} else if (shape.isDrawInside) {
 					// Clip to all non-drawInside shapes drawn so far
 					if (normalShapesSoFar.length > 0) {
 						const clipId = `clip-${zIndex}-${clipPathCounter++}`;
-						layerEntries.push({ shape, clipId, clipShapes: [...normalShapesSoFar] });
+						layerEntries.push({ kind: 'shape', shape, clipId, clipShapes: [...normalShapesSoFar] });
 					} else {
-						layerEntries.push({ shape });
+						layerEntries.push({ kind: 'shape', shape });
 					}
 				} else {
 					normalShapesSoFar.push(shape);
-					layerEntries.push({ shape });
+					layerEntries.push({ kind: 'shape', shape });
 				}
 			});
 
@@ -190,49 +190,50 @@ export const exportAsSVG = async (
 				}
 			};
 
-			// Emit layer in draw order; clip defs precede their referencing shape
-			const startIndex = parts.length;
-			layerEntries.forEach(({ shape, clipId, clipShapes }) => {
-				if (clipId && clipShapes) {
-					parts.push(`  <defs>\n`);
-					parts.push(`    <clipPath id="${clipId}">\n`);
-					clipShapes.forEach(cs => {
-						if (cs.type === 'text' && cs.text) {
-							const x = cs.points[0].x + offsetX;
-							const y = cs.points[0].y + offsetY;
-							const fontSize = cs.fontSize || 40;
-							const textWidth = cs.text.length * fontSize * 0.6;
-							parts.push(`      <rect x="${x - 10}" y="${y - fontSize}" width="${textWidth + 20}" height="${fontSize + 10}" />\n`);
-						} else if (cs.points.length > 0) {
-							const ap = cs.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
-							parts.push(`      <path d="${createSmoothClosedPath(ap)}" />\n`);
+			// Emit in draw order; each eraser closes and masks its preceding group
+			let groupStart = parts.length;
+			layerEntries.forEach(entry => {
+				if (entry.kind === 'eraser') {
+					const groupParts = parts.splice(groupStart);
+					if (groupParts.length > 0) {
+						const maskId = `mask-${zIndex}-${maskCounter++}`;
+						parts.push(`  <defs>\n`);
+						parts.push(`    <mask id="${maskId}">\n`);
+						parts.push(`      <rect width="${width}" height="${height}" fill="white"/>\n`);
+						const ap = entry.shape.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
+						if (ap.length > 0) {
+							parts.push(`      <path d="${createSmoothClosedPath(ap)}" fill="black" stroke="none"/>\n`);
 						}
-					});
-					parts.push(`    </clipPath>\n`);
-					parts.push(`  </defs>\n`);
-				}
-				renderShape(shape, clipId);
-			});
-
-			// Wrap this layer's emitted parts in a mask if erasers are present
-			if (eraserShapes.length > 0) {
-				const maskId = `mask-${zIndex}-${maskCounter++}`;
-				const layerParts = parts.splice(startIndex);
-				parts.push(`  <defs>\n`);
-				parts.push(`    <mask id="${maskId}">\n`);
-				parts.push(`      <rect width="${width}" height="${height}" fill="white"/>\n`);
-				eraserShapes.forEach(eraser => {
-					if (eraser.points.length > 0) {
-						const ap = eraser.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
-						parts.push(`      <path d="${createSmoothClosedPath(ap)}" fill="black" stroke="none"/>\n`);
+						parts.push(`    </mask>\n`);
+						parts.push(`  </defs>\n`);
+						parts.push(`  <g mask="url(#${maskId})">\n`);
+						parts.push(...groupParts);
+						parts.push(`  </g>\n`);
 					}
-				});
-				parts.push(`    </mask>\n`);
-				parts.push(`  </defs>\n`);
-				parts.push(`  <g mask="url(#${maskId})">\n`);
-				parts.push(...layerParts);
-				parts.push(`  </g>\n`);
-			}
+					groupStart = parts.length;
+				} else {
+					if (entry.clipId && entry.clipShapes) {
+						parts.push(`  <defs>\n`);
+						parts.push(`    <clipPath id="${entry.clipId}">\n`);
+						entry.clipShapes.forEach(cs => {
+							if (cs.type === 'text' && cs.text) {
+								const x = cs.points[0].x + offsetX;
+								const y = cs.points[0].y + offsetY;
+								const fontSize = cs.fontSize || 40;
+								const textWidth = cs.text.length * fontSize * 0.6;
+								parts.push(`      <rect x="${x - 10}" y="${y - fontSize}" width="${textWidth + 20}" height="${fontSize + 10}" />\n`);
+							} else if (cs.points.length > 0) {
+								const ap = cs.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
+								parts.push(`      <path d="${createSmoothClosedPath(ap)}" />\n`);
+							}
+						});
+						parts.push(`    </clipPath>\n`);
+						parts.push(`  </defs>\n`);
+					}
+					renderShape(entry.shape, entry.clipId);
+				}
+			});
+			// Shapes after the last eraser remain in parts unmasked — correct behavior
 
 			processedShapeCount += layerShapes.length;
 
