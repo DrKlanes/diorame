@@ -135,9 +135,8 @@ export const exportAsSVG = async (
 				if (shape.isEraser) {
 					layerEntries.push({ kind: 'eraser', shape });
 				} else if (shape.isDrawBehind) {
-					// Render behind existing content: insert at front of layer
-					layerEntries.unshift({ kind: 'shape', shape });
-					normalShapesSoFar.unshift(shape);
+					normalShapesSoFar.push(shape);
+					layerEntries.push({ kind: 'shape', shape });
 				} else if (shape.isDrawInside) {
 					// Clip to all non-drawInside shapes drawn so far
 					if (normalShapesSoFar.length > 0) {
