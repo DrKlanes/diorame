@@ -97,6 +97,11 @@ export const exportAsSVG = async (
 			const open = createSmoothOpenPath(points);
 			return open ? open + ' Z' : '';
 		};
+		const createPolygonPath = (points: Array<{x: number, y: number}>) => {
+			if (points.length < 3) return '';
+			const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+			return d + ' Z';
+		};
 
 		// Group shapes by zIndex
 		const shapesByLayer = new Map<number, Shape[]>();
@@ -220,7 +225,7 @@ export const exportAsSVG = async (
 					if (eraser.points.length > 0) {
 						const polygon = eraser.eraserPolygon ?? eraser.points;
 						const ap = polygon.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
-						parts.push(`      <path d="${createSmoothClosedPath(ap)}" fill="black"/>\n`);
+						parts.push(`      <path d="${createPolygonPath(ap)}" fill="black"/>\n`);
 					}
 				});
 				parts.push(`    </mask>\n`);
