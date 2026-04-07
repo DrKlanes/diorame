@@ -203,10 +203,10 @@ export const exportAsSVG = async (
 						const eraserClipId = `clip-${zIndex}-${clipPathCounter++}`;
 						const chainAttr = entry.clipId ? ` clip-path="url(#${entry.clipId})"` : '';
 						parts.push(`  <defs>\n`);
-						parts.push(`    <clipPath id="${eraserClipId}" clip-rule="evenodd"${chainAttr}>\n`);
+						parts.push(`    <clipPath id="${eraserClipId}"${chainAttr}>\n`);
 						parts.push(`      <rect width="${width}" height="${height}"/>\n`);
 						activeEraserPaths.forEach(d => {
-							parts.push(`      <path d="${d}"/>\n`);
+							parts.push(`      <path d="${d}" clip-rule="evenodd"/>\n`);
 						});
 						parts.push(`    </clipPath>\n`);
 						parts.push(`  </defs>\n`);
