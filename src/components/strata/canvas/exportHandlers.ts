@@ -189,74 +189,56 @@ export const exportAsSVG = async (
 				}
 			};
 
-			// Emit in draw order; erasers mask the group of shapes drawn before them
-			let groupStart = parts.length;
-			const pendingErasers: Shape[] = [];
-			layerEntries.forEach(entry => {
-				if (entry.kind === 'eraser') {
-					pendingErasers.push(entry.shape);
-				} else {
-					if (pendingErasers.length > 0) {
-						const groupParts = parts.splice(groupStart);
-						if (groupParts.length > 0) {
-							const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
-							const eraserPaths = pendingErasers
-								.map(e => createSmoothClosedPath(e.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }))))
-								.filter(Boolean)
-								.join(' ');
-							parts.push(`  <defs>\n`);
-							parts.push(`    <mask id="${eraserMaskId}">\n`);
-							parts.push(`      <path d="M0,0 H${width} V${height} H0 Z ${eraserPaths}" fill="white" fill-rule="evenodd"/>\n`);
-							parts.push(`    </mask>\n`);
-							parts.push(`  </defs>\n`);
-							parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
-							parts.push(...groupParts);
-							parts.push(`  </g>\n`);
-						}
-						groupStart = parts.length;
-						pendingErasers.length = 0;
-					}
-					if (entry.clipId && entry.clipShapes) {
-						parts.push(`  <defs>\n`);
-						parts.push(`    <clipPath id="${entry.clipId}">\n`);
-						entry.clipShapes.forEach(cs => {
-							if (cs.type === 'text' && cs.text) {
-								const x = cs.points[0].x + offsetX;
-								const y = cs.points[0].y + offsetY;
-								const fontSize = cs.fontSize || 40;
-								const textWidth = cs.text.length * fontSize * 0.6;
-								parts.push(`      <rect x="${x - 10}" y="${y - fontSize}" width="${textWidth + 20}" height="${fontSize + 10}" />\n`);
-							} else if (cs.points.length > 0) {
-								const ap = cs.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
-								parts.push(`      <path d="${createSmoothClosedPath(ap)}" />\n`);
-							}
-						});
-						parts.push(`    </clipPath>\n`);
-						parts.push(`  </defs>\n`);
-					}
-					renderShape(entry.shape, entry.clipId);
-				}
-			});
-			// Flush: si la capa termina con erasers pendientes, maskear el grupo anterior
-			if (pendingErasers.length > 0) {
-				const groupParts = parts.splice(groupStart);
-				if (groupParts.length > 0) {
-					const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
-					const eraserPaths = pendingErasers
-						.map(e => createSmoothClosedPath(e.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }))))
-						.filter(Boolean)
-						.join(' ');
+			// Separate entries into three buckets relative to the last eraser
+			const lastEraserIdx = layerEntries.reduce((last, e, i) => e.kind === 'eraser' ? i : last, -1);
+			const allErasers = layerEntries.filter(e => e.kind === 'eraser') as { kind: 'eraser'; shape: Shape }[];
+			const shapesBeforeLast = lastEraserIdx >= 0
+				? layerEntries.filter((e, i) => e.kind === 'shape' && i < lastEraserIdx) as { kind: 'shape'; shape: Shape; clipId?: string; clipShapes?: Shape[] }[]
+				: [];
+			const shapesAfterLast = layerEntries.filter((e, i) => e.kind === 'shape' && i > lastEraserIdx) as { kind: 'shape'; shape: Shape; clipId?: string; clipShapes?: Shape[] }[];
+
+			// Helper: emit clipPath defs + shape for a shape entry
+			const emitShapeEntry = (entry: { kind: 'shape'; shape: Shape; clipId?: string; clipShapes?: Shape[] }) => {
+				if (entry.clipId && entry.clipShapes) {
 					parts.push(`  <defs>\n`);
-					parts.push(`    <mask id="${eraserMaskId}">\n`);
-					parts.push(`      <path d="M0,0 H${width} V${height} H0 Z ${eraserPaths}" fill="white" fill-rule="evenodd"/>\n`);
-					parts.push(`    </mask>\n`);
+					parts.push(`    <clipPath id="${entry.clipId}">\n`);
+					entry.clipShapes.forEach(cs => {
+						if (cs.type === 'text' && cs.text) {
+							const x = cs.points[0].x + offsetX;
+							const y = cs.points[0].y + offsetY;
+							const fontSize = cs.fontSize || 40;
+							const textWidth = cs.text.length * fontSize * 0.6;
+							parts.push(`      <rect x="${x - 10}" y="${y - fontSize}" width="${textWidth + 20}" height="${fontSize + 10}" />\n`);
+						} else if (cs.points.length > 0) {
+							const ap = cs.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
+							parts.push(`      <path d="${createSmoothClosedPath(ap)}" />\n`);
+						}
+					});
+					parts.push(`    </clipPath>\n`);
 					parts.push(`  </defs>\n`);
-					parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
-					parts.push(...groupParts);
-					parts.push(`  </g>\n`);
 				}
+				renderShape(entry.shape, entry.clipId);
+			};
+
+			if (allErasers.length > 0 && shapesBeforeLast.length > 0) {
+				const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
+				const eraserPaths = allErasers
+					.map(e => createSmoothClosedPath(e.shape.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }))))
+					.filter(Boolean)
+					.join(' ');
+				parts.push(`  <defs>\n`);
+				parts.push(`    <mask id="${eraserMaskId}">\n`);
+				parts.push(`      <path d="M0,0 H${width} V${height} H0 Z ${eraserPaths}" fill="white" fill-rule="evenodd"/>\n`);
+				parts.push(`    </mask>\n`);
+				parts.push(`  </defs>\n`);
+				parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
+				shapesBeforeLast.forEach(emitShapeEntry);
+				parts.push(`  </g>\n`);
+			} else {
+				shapesBeforeLast.forEach(emitShapeEntry);
 			}
-			// Shapes after the last eraser remain in parts unmasked — correct behavior
+			shapesAfterLast.forEach(emitShapeEntry);
+			// Shapes after the last eraser are emitted unmasked — correct behavior
 
 			processedShapeCount += layerShapes.length;
 
