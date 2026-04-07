@@ -223,9 +223,8 @@ export const exportAsSVG = async (
 				parts.push(`      <rect width="${width}" height="${height}" fill="white"/>\n`);
 				eraserShapes.forEach(eraser => {
 					if (eraser.points.length > 0) {
-						const polygon = eraser.eraserPolygon ?? eraser.points;
-						const ap = polygon.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
-						parts.push(`      <path d="${createPolygonPath(ap)}" fill="black"/>\n`);
+						const ap = eraser.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
+						parts.push(`      <path d="${createSmoothClosedPath(ap)}" fill="black" stroke="none"/>\n`);
 					}
 				});
 				parts.push(`    </mask>\n`);
