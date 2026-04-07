@@ -198,16 +198,15 @@ export const exportAsSVG = async (
 					const d = createSmoothClosedPath(ap);
 					if (d) activeEraserPaths.push(d);
 				} else {
-					let effectiveClipId = entry.clipId;
-					if (activeEraserPaths.length > 0) {
-						const eraserClipId = `clip-${zIndex}-${clipPathCounter++}`;
-						const chainAttr = entry.clipId ? ` clip-path="url(#${entry.clipId})"` : '';
+					const hasMask = activeEraserPaths.length > 0;
+					if (hasMask) {
+						const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
 						parts.push(`  <defs>\n`);
-						parts.push(`    <clipPath id="${eraserClipId}"${chainAttr}>\n`);
-						parts.push(`      <path d="M0,0 H${width} V${height} H0 Z ${activeEraserPaths.join(' ')}" fill-rule="evenodd"/>\n`);
-						parts.push(`    </clipPath>\n`);
+						parts.push(`    <mask id="${eraserMaskId}">\n`);
+						parts.push(`      <path d="M0,0 H${width} V${height} H0 Z ${activeEraserPaths.join(' ')}" fill="white" fill-rule="evenodd"/>\n`);
+						parts.push(`    </mask>\n`);
 						parts.push(`  </defs>\n`);
-						effectiveClipId = eraserClipId;
+						parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
 					}
 					if (entry.clipId && entry.clipShapes) {
 						parts.push(`  <defs>\n`);
@@ -227,7 +226,10 @@ export const exportAsSVG = async (
 						parts.push(`    </clipPath>\n`);
 						parts.push(`  </defs>\n`);
 					}
-					renderShape(entry.shape, effectiveClipId);
+					renderShape(entry.shape, entry.clipId);
+					if (hasMask) {
+						parts.push(`  </g>\n`);
+					}
 				}
 			});
 			// Shapes before any eraser are unclipped; shapes after accumulate eraser holes via evenodd
