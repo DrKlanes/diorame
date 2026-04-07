@@ -59,6 +59,14 @@ export const exportAsSVG = async (
 				maxX = Math.max(maxX, point.x);
 				maxY = Math.max(maxY, point.y);
 			});
+			if (shape.isEraser && shape.eraserPolygon) {
+				shape.eraserPolygon.forEach(point => {
+					minX = Math.min(minX, point.x);
+					minY = Math.min(minY, point.y);
+					maxX = Math.max(maxX, point.x);
+					maxY = Math.max(maxY, point.y);
+				});
+			}
 		});
 
 		const padding = 50;
