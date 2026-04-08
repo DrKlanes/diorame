@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 1.13.0
+**Version**: 1.13.1
 **Last Updated**: March 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -435,7 +435,7 @@ CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
 DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
-APP_VERSION = "1.13.0"          // Current release version
+APP_VERSION = "1.13.1"          // Current release version
 ```
 
 ### Post-Processing Effects
@@ -480,7 +480,7 @@ APP_VERSION = "1.13.0"          // Current release version
 
 ### 1.14.x — SVG Export overhaul
 
-**Commits:** `f6c52fb`, `99e6589`, `cc67951`, `b597795`, `e45f9fa`
+**Commits:** `f6c52fb`, `99e6589`, `cc67951`, `b597795`, `e45f9fa`, `666e59c`
 **File:** `src/components/strata/canvas/exportHandlers.ts`
 **Also touched:** `src/types/strataTypes.ts`, `src/components/strata/StrataCanvas.tsx`
 
@@ -500,27 +500,31 @@ APP_VERSION = "1.13.0"          // Current release version
   its `<clipPath>` + `<defs>` emit inline before the shape, not after the
   full layer.
 
-- **Fix — eraser mask scope** (`cc67951`): SVG `<mask>` for eraser shapes now
-  wraps only the shapes of its own layer, not the entire document. Uses
-  `parts.splice(startIndex)` to extract the layer's emitted strings, wraps
-  them in `<g mask="url(#maskN)">`, and reinserts. Shapes from other layers
-  are never enclosed in the group.
+- **Fix — eraser: nested group+mask replicating destination-out** (`666e59c`):
+  Replaced the single-mask-per-layer bucket approach with a nested groups
+  stack. Each eraser uses `parts.splice(layerPartsStart)` to extract ALL
+  previously emitted content for the current layer, wraps it in
+  `<g mask="url(#maskN)">` with a `fill-rule="evenodd"` combined path
+  (full-viewport white rect + eraser subpaths as holes), and reinserts.
+  `layerPartsStart` is NOT reset between groups, so each successive eraser
+  accumulates and wraps all preceding layer output — identical to Canvas
+  `destination-out` compositing.
+
+- **Fix — isDrawBehind in masked groups** (`666e59c`): `isDrawBehind` shapes
+  inside a masked group now emit BEFORE `prevParts` (the spliced prior
+  content), so they appear behind all existing layer content. This replicates
+  Canvas `destination-over`. In no-eraser groups, `sortBehind` still puts
+  behind shapes first within the group.
+
+- **Fix — eraser path algorithm** (`666e59c`): Eraser mask paths use
+  `createSmoothClosedPath(e.points)` — the same quadratic midpoint algorithm
+  as Canvas `drawSmoothLine + fill()`. The `eraserPolygon` field (tapered
+  stroke polygon) is NOT used because it is geometrically different.
 
 - **Infra — eraser data for SVG** (`b597795`, `e45f9fa`): `lineThickness` is
   now stored in eraser shapes (previously `undefined` for all erasers).
   `eraserPolygon?: Point[]` added to the `Shape` interface in `strataTypes.ts`
-  as a dedicated field for SVG export — stores the expanded polygon generated
-  by `generateStrokeForMode` at draw time, without touching `shape.points`
-  (which the Canvas render loop uses and must not change).
-
-**Known limitation — eraser polygon fidelity:** The `eraserPolygon` is
-generated via `generateStrokeForMode('tapered', finalPoints, lineThickness)`,
-which produces a tapered stroke polygon rather than the uniform blob that
-`drawSmoothLine + fill()` produces at render time. The SVG mask approximates
-the erased area but is not geometrically identical to the Canvas result.
-Planned fix: capture the eraser path directly from `drawSmoothLine` via an
-OffscreenCanvas at draw time, replacing the tapered polygon with a bitmap
-mask or an accurate point set.
+  (retained for future use; not used in current mask generation).
 
 ### 1.13.x — Design System completion + RISO/Grain fix
 - **DiToggleSlider** (`src/design-system/DiToggleSlider.tsx`): new primitive for the checkbox-toggle + label + value + range input pattern; supports optional `children` for extra content below the slider
