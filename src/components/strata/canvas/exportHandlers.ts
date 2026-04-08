@@ -219,14 +219,10 @@ export const exportAsSVG = async (
 
 			const flushGroup = () => {
 				if (currentGroup.length === 0) { pendingErasers = []; return; }
-				const sortedGroup = [...currentGroup.filter(e => e.shape.isDrawBehind), ...currentGroup.filter(e => !e.shape.isDrawBehind)];
 				if (pendingErasers.length > 0) {
 					const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
 					const eraserPaths = pendingErasers
-						.map(e => {
-							const pts = (e.eraserPolygon && e.eraserPolygon.length > 0) ? e.eraserPolygon : e.points;
-							return createSmoothClosedPath(pts.map(p => ({ x: p.x + offsetX, y: p.y + offsetY })));
-						})
+						.map(e => createSmoothClosedPath(e.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }))))
 						.filter(Boolean)
 						.join(' ');
 					parts.push(`  <defs>\n`);
@@ -235,10 +231,10 @@ export const exportAsSVG = async (
 					parts.push(`    </mask>\n`);
 					parts.push(`  </defs>\n`);
 					parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
-					sortedGroup.forEach(emitShapeEntry);
+					currentGroup.forEach(emitShapeEntry);
 					parts.push(`  </g>\n`);
 				} else {
-					sortedGroup.forEach(emitShapeEntry);
+					currentGroup.forEach(emitShapeEntry);
 				}
 				currentGroup = [];
 				pendingErasers = [];
