@@ -251,7 +251,6 @@ export const exportAsSVG = async (
 						parts.push(...prevParts);
 						sortBehind(group.shapes).forEach(emitShapeEntry);
 						parts.push(`  </g>\n`);
-						layerPartsStart = parts.length;
 					}
 				} else {
 					sortBehind(group.shapes).forEach(emitShapeEntry);
