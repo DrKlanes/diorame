@@ -219,6 +219,7 @@ export const exportAsSVG = async (
 
 			const flushGroup = () => {
 				if (currentGroup.length === 0) { pendingErasers = []; return; }
+				const sortedGroup = [...currentGroup.filter(e => e.shape.isDrawBehind), ...currentGroup.filter(e => !e.shape.isDrawBehind)];
 				if (pendingErasers.length > 0) {
 					const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
 					const eraserPaths = pendingErasers
@@ -231,21 +232,16 @@ export const exportAsSVG = async (
 					parts.push(`    </mask>\n`);
 					parts.push(`  </defs>\n`);
 					parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
-					currentGroup.forEach(emitShapeEntry);
+					sortedGroup.forEach(emitShapeEntry);
 					parts.push(`  </g>\n`);
 				} else {
-					currentGroup.forEach(emitShapeEntry);
+					sortedGroup.forEach(emitShapeEntry);
 				}
 				currentGroup = [];
 				pendingErasers = [];
 			};
 
 			layerEntries.forEach(entry => {
-				console.log(`z=${zIndex} entry:`, entry.kind,
-					entry.kind === 'shape' ?
-						(entry.shape.isDrawBehind ? '[behind]' : entry.shape.isDrawInside ? '[inside]' : '[normal]')
-						: '[eraser]'
-				);
 				if (entry.kind === 'eraser') {
 					pendingErasers.push(entry.shape);
 				} else {
