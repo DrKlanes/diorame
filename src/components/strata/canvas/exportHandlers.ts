@@ -241,6 +241,11 @@ export const exportAsSVG = async (
 			};
 
 			layerEntries.forEach(entry => {
+				console.log(`z=${zIndex} entry:`, entry.kind,
+					entry.kind === 'shape' ?
+						(entry.shape.isDrawBehind ? '[behind]' : entry.shape.isDrawInside ? '[inside]' : '[normal]')
+						: '[eraser]'
+				);
 				if (entry.kind === 'eraser') {
 					pendingErasers.push(entry.shape);
 				} else {
@@ -248,8 +253,8 @@ export const exportAsSVG = async (
 					currentGroup.push(entry as ShapeEntry);
 				}
 			});
-			// Emit remaining group unmasked (shapes after the last eraser)
-			currentGroup.forEach(emitShapeEntry);
+			// Flush final group — applies pending erasers if any, or emits unmasked
+			flushGroup();
 
 			processedShapeCount += layerShapes.length;
 
