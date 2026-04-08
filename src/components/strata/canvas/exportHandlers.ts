@@ -248,8 +248,9 @@ export const exportAsSVG = async (
 						parts.push(`    </mask>\n`);
 						parts.push(`  </defs>\n`);
 						parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
+						group.shapes.filter(e => e.shape.isDrawBehind).forEach(emitShapeEntry);
 						parts.push(...prevParts);
-						sortBehind(group.shapes).forEach(emitShapeEntry);
+						group.shapes.filter(e => !e.shape.isDrawBehind).forEach(emitShapeEntry);
 						parts.push(`  </g>\n`);
 					}
 				} else {
