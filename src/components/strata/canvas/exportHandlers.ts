@@ -229,8 +229,6 @@ export const exportAsSVG = async (
 			});
 
 			// Emit: iterate first to last; groups with erasers wrap all previous output
-			const sortBehind = (arr: ShapeEntry[]) =>
-				[...arr.filter(e => e.shape.isDrawBehind), ...arr.filter(e => !e.shape.isDrawBehind)];
 			let layerPartsStart = parts.length;
 
 			groups.forEach(group => {
@@ -254,7 +252,17 @@ export const exportAsSVG = async (
 						parts.push(`  </g>\n`);
 					}
 				} else {
-					sortBehind(group.shapes).forEach(emitShapeEntry);
+					const behind = group.shapes.filter(e => e.shape.isDrawBehind);
+					const normal = group.shapes.filter(e => !e.shape.isDrawBehind);
+					if (behind.length > 0 && layerPartsStart < parts.length) {
+						// drawBehind shapes must go before all existing layer content
+						const prevParts = parts.splice(layerPartsStart);
+						behind.forEach(emitShapeEntry);
+						parts.push(...prevParts);
+					} else {
+						behind.forEach(emitShapeEntry);
+					}
+					normal.forEach(emitShapeEntry);
 				}
 			});
 

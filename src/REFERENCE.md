@@ -480,7 +480,7 @@ APP_VERSION = "1.13.1"          // Current release version
 
 ### 1.14.x — SVG Export overhaul
 
-**Commits:** `f6c52fb`, `99e6589`, `cc67951`, `b597795`, `e45f9fa`, `666e59c`
+**Commits:** `f6c52fb`, `99e6589`, `cc67951`, `b597795`, `e45f9fa`, `666e59c`, `(pending)`
 **File:** `src/components/strata/canvas/exportHandlers.ts`
 **Also touched:** `src/types/strataTypes.ts`, `src/components/strata/StrataCanvas.tsx`
 
@@ -513,8 +513,15 @@ APP_VERSION = "1.13.1"          // Current release version
 - **Fix — isDrawBehind in masked groups** (`666e59c`): `isDrawBehind` shapes
   inside a masked group now emit BEFORE `prevParts` (the spliced prior
   content), so they appear behind all existing layer content. This replicates
-  Canvas `destination-over`. In no-eraser groups, `sortBehind` still puts
-  behind shapes first within the group.
+  Canvas `destination-over`.
+
+- **Fix — isDrawBehind in no-eraser groups** (`(pending)`): In groups without
+  erasers, `sortBehind` (which merely reordered within the group) was replaced
+  by the same splice approach: if there is already emitted layer content,
+  `parts.splice(layerPartsStart)` extracts it, behind shapes emit first, then
+  prior content is reinserted, then normal shapes. This ensures behind shapes
+  in any group appear behind ALL preceding layer output, not just their own
+  group's shapes. `sortBehind` helper removed.
 
 - **Fix — eraser path algorithm** (`666e59c`): Eraser mask paths use
   `createSmoothClosedPath(e.points)` — the same quadratic midpoint algorithm
