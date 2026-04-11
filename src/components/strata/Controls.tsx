@@ -94,6 +94,18 @@ export const Controls = () => {
 				dispatch({ type: 'TOGGLE_DARK_MODE' });
 				return;
 			}
+
+			if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+				e.preventDefault();
+				dispatch({ type: 'UNDO' });
+				return;
+			}
+
+			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') {
+				e.preventDefault();
+				dispatch({ type: 'REDO' });
+				return;
+			}
 		};
 
 		window.addEventListener('keydown', handleKeyDown);
