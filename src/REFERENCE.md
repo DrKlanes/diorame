@@ -480,7 +480,7 @@ APP_VERSION = "1.13.1"          // Current release version
 
 ### 1.14.x — SVG Export overhaul
 
-**Commits:** `f6c52fb`, `99e6589`, `cc67951`, `b597795`, `e45f9fa`, `666e59c`, `(pending)`
+**Commits:** `f6c52fb`, `99e6589`, `cc67951`, `b597795`, `e45f9fa`, `666e59c`, `0348d71`
 **File:** `src/components/strata/canvas/exportHandlers.ts`
 **Also touched:** `src/types/strataTypes.ts`, `src/components/strata/StrataCanvas.tsx`
 
@@ -515,7 +515,7 @@ APP_VERSION = "1.13.1"          // Current release version
   content), so they appear behind all existing layer content. This replicates
   Canvas `destination-over`.
 
-- **Fix — isDrawBehind in no-eraser groups** (`(pending)`): In groups without
+- **Fix — isDrawBehind in no-eraser groups** (`0348d71`): In groups without
   erasers, `sortBehind` (which merely reordered within the group) was replaced
   by the same splice approach: if there is already emitted layer content,
   `parts.splice(layerPartsStart)` extracts it, behind shapes emit first, then
