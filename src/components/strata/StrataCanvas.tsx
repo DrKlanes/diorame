@@ -412,6 +412,7 @@ export const StrataCanvas = () => {
 
   // --- Event Handlers ---
   const handleTouchStart = (e: React.TouchEvent) => {
+      if (state.textSession.isActive) return;
       // Support both drawing mode and orbit (free view) mode
       if (state.mode === 'drawing') {
           // Protect Pen Drawing: If we are already drawing with a pen, ignore touch gestures (palm rejection)
@@ -424,17 +425,33 @@ export const StrataCanvas = () => {
               const t2 = e.touches[1];
               const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
               drawingPointerTypeRef.current = null; // Clear to prevent orphan touch strokes
-               if (dist < 5) return; 
-
               const cx = (t1.clientX + t2.clientX) / 2;
               const cy = (t1.clientY + t2.clientY) / 2;
               gestureRef.current = {
                   ...gestureRef.current,
-                  isPinching: true,
                   startDist: dist,
                   startZoom: state.drawingZoom || 1,
                   startPan: { ...state.drawingPan },
-                  startCenter: { x: cx, y: cy }
+                  startCenter: { x: cx, y: cy },
+                  tapStartTime: Date.now(),
+                  tapMoved: false,
+                  tapTouchCount: 2,
+              };
+          } else if (e.touches.length === 3) {
+              isDrawingRef.current = false;
+              currentPointsRef.current = [];
+              drawingPointerTypeRef.current = null;
+              const t1 = e.touches[0];
+              const t2 = e.touches[1];
+              const t3 = e.touches[2];
+              const cx = (t1.clientX + t2.clientX + t3.clientX) / 3;
+              const cy = (t1.clientY + t2.clientY + t3.clientY) / 3;
+              gestureRef.current = {
+                  ...gestureRef.current,
+                  startCenter: { x: cx, y: cy },
+                  tapStartTime: Date.now(),
+                  tapMoved: false,
+                  tapTouchCount: 3,
               };
           }
       } else if (state.mode === 'cinematic' && state.cinematicType === 'orbit') {
@@ -477,42 +494,65 @@ export const StrataCanvas = () => {
 
   const handleTouchMove = (e: React.TouchEvent) => {
       if (state.mode === 'drawing') {
-          if (gestureRef.current.isPinching && e.touches.length === 2) {
-              e.preventDefault();
+          if (e.touches.length === 2) {
+              if (!gestureRef.current.tapMoved) {
+                  const t1 = e.touches[0];
+                  const t2 = e.touches[1];
+                  const cx = (t1.clientX + t2.clientX) / 2;
+                  const cy = (t1.clientY + t2.clientY) / 2;
+                  if (Math.hypot(cx - gestureRef.current.startCenter.x, cy - gestureRef.current.startCenter.y) > 10) {
+                      gestureRef.current.tapMoved = true;
+                      if (gestureRef.current.startDist >= 5) {
+                          gestureRef.current.isPinching = true;
+                      }
+                  }
+              }
+              if (gestureRef.current.isPinching) {
+                  e.preventDefault();
+                  const t1 = e.touches[0];
+                  const t2 = e.touches[1];
+                  const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                  const cx = (t1.clientX + t2.clientX) / 2;
+                  const cy = (t1.clientY + t2.clientY) / 2;
+                  
+                  const startDist = gestureRef.current.startDist || 1;
+                  const scaleChange = dist / startDist;
+                  if (!Number.isFinite(scaleChange)) return;
+
+                  let newZoom = Math.min(Math.max(gestureRef.current.startZoom * scaleChange, 0.5), 3.0); // Allow zoom out to 0.5x
+                  
+                  const rect = canvasRef.current?.getBoundingClientRect();
+                  if (!rect) return;
+                  const centerX = rect.width / 2;
+                  const centerY = rect.height / 2;
+                  const startScreenX = gestureRef.current.startCenter.x - rect.left - centerX;
+                  const startScreenY = gestureRef.current.startCenter.y - rect.top - centerY;
+                  const currScreenX = cx - rect.left - centerX;
+                  const currScreenY = cy - rect.top - centerY;
+                  
+                  const worldX = (startScreenX - gestureRef.current.startPan.x) / gestureRef.current.startZoom;
+                  const worldY = (startScreenY - gestureRef.current.startPan.y) / gestureRef.current.startZoom;
+                  
+                  let newPanX = currScreenX - (worldX * newZoom);
+                  let newPanY = currScreenY - (worldY * newZoom);
+                  
+                  newPanX = Math.max(-MAX_PAN, Math.min(MAX_PAN, newPanX));
+                  newPanY = Math.max(-MAX_PAN, Math.min(MAX_PAN, newPanY));
+
+                  dispatch({ 
+                      type: 'SET_DRAWING_ZOOM', 
+                      payload: { zoom: newZoom, pan: { x: newPanX, y: newPanY } } 
+                  });
+              }
+          } else if (e.touches.length === 3 && !gestureRef.current.tapMoved) {
               const t1 = e.touches[0];
               const t2 = e.touches[1];
-              const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-              const cx = (t1.clientX + t2.clientX) / 2;
-              const cy = (t1.clientY + t2.clientY) / 2;
-              
-              const startDist = gestureRef.current.startDist || 1;
-              const scaleChange = dist / startDist;
-              if (!Number.isFinite(scaleChange)) return;
-
-              let newZoom = Math.min(Math.max(gestureRef.current.startZoom * scaleChange, 0.5), 3.0); // Allow zoom out to 0.5x
-              
-              const rect = canvasRef.current?.getBoundingClientRect();
-              if (!rect) return;
-              const centerX = rect.width / 2;
-              const centerY = rect.height / 2;
-              const startScreenX = gestureRef.current.startCenter.x - rect.left - centerX;
-              const startScreenY = gestureRef.current.startCenter.y - rect.top - centerY;
-              const currScreenX = cx - rect.left - centerX;
-              const currScreenY = cy - rect.top - centerY;
-              
-              const worldX = (startScreenX - gestureRef.current.startPan.x) / gestureRef.current.startZoom;
-              const worldY = (startScreenY - gestureRef.current.startPan.y) / gestureRef.current.startZoom;
-              
-              let newPanX = currScreenX - (worldX * newZoom);
-              let newPanY = currScreenY - (worldY * newZoom);
-              
-              newPanX = Math.max(-MAX_PAN, Math.min(MAX_PAN, newPanX));
-              newPanY = Math.max(-MAX_PAN, Math.min(MAX_PAN, newPanY));
-
-              dispatch({ 
-                  type: 'SET_DRAWING_ZOOM', 
-                  payload: { zoom: newZoom, pan: { x: newPanX, y: newPanY } } 
-              });
+              const t3 = e.touches[2];
+              const cx = (t1.clientX + t2.clientX + t3.clientX) / 3;
+              const cy = (t1.clientY + t2.clientY + t3.clientY) / 3;
+              if (Math.hypot(cx - gestureRef.current.startCenter.x, cy - gestureRef.current.startCenter.y) > 10) {
+                  gestureRef.current.tapMoved = true;
+              }
           }
       } else if (state.mode === 'cinematic' && state.cinematicType === 'orbit' && gestureRef.current.isOrbitTouch) {
           e.preventDefault();
@@ -563,8 +603,34 @@ export const StrataCanvas = () => {
 
   const handleTouchEnd = (e: React.TouchEvent) => {
       if (state.mode === 'drawing') {
+          if (e.touches.length === 0) {
+              const { tapMoved, tapStartTime, tapTouchCount } = gestureRef.current;
+              if (!tapMoved && !state.textSession.isActive) {
+                  const elapsed = Date.now() - tapStartTime;
+                  if (tapTouchCount === 2 && elapsed < 300) {
+                      gestureRef.current.tapStartTime = 0;
+                      gestureRef.current.tapMoved = false;
+                      gestureRef.current.tapTouchCount = 0;
+                      gestureRef.current.isPinching = false;
+                      dispatch({ type: 'UNDO' });
+                      return;
+                  }
+                  if (tapTouchCount === 3 && elapsed < 250) {
+                      gestureRef.current.tapStartTime = 0;
+                      gestureRef.current.tapMoved = false;
+                      gestureRef.current.tapTouchCount = 0;
+                      gestureRef.current.isPinching = false;
+                      dispatch({ type: 'REDO' });
+                      return;
+                  }
+              }
+              gestureRef.current.tapStartTime = 0;
+              gestureRef.current.tapMoved = false;
+              gestureRef.current.tapTouchCount = 0;
+          }
+          // Pinch end cooldown: only fires if isPinching was activated (real movement, not a tap)
           if (gestureRef.current.isPinching && e.touches.length < 2) {
-               pinchEndTimestampRef.current = Date.now(); // cooldown to prevent ghost strokes
+              pinchEndTimestampRef.current = Date.now(); // cooldown to prevent ghost strokes
               gestureRef.current.isPinching = false;
           }
       } else if (state.mode === 'cinematic' && state.cinematicType === 'orbit') {
@@ -586,6 +652,9 @@ export const StrataCanvas = () => {
        pinchEndTimestampRef.current = Date.now(); 
       gestureRef.current.isPinching = false; 
       gestureRef.current.isOrbitTouch = false;
+      gestureRef.current.tapStartTime = 0;
+      gestureRef.current.tapMoved = false;
+      gestureRef.current.tapTouchCount = 0;
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
