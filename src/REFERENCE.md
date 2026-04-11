@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 1.13.1
+**Version**: 1.14.0
 **Last Updated**: March 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -435,7 +435,7 @@ CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
 DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
-APP_VERSION = "1.13.1"          // Current release version
+APP_VERSION = "1.14.0"          // Current release version
 ```
 
 ### Post-Processing Effects
@@ -476,13 +476,13 @@ APP_VERSION = "1.13.1"          // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 -> 1.14.x)
+## Appendix C: Changelog Highlights (1.7.3 -> 1.14.0)
 
-### 1.14.x — SVG Export overhaul
+### 1.14.0 — SVG Export overhaul + Undo/Redo shortcuts & gestures
 
-**Commits:** `f6c52fb`, `99e6589`, `cc67951`, `b597795`, `e45f9fa`, `666e59c`, `0348d71`
-**File:** `src/components/strata/canvas/exportHandlers.ts`
-**Also touched:** `src/types/strataTypes.ts`, `src/components/strata/StrataCanvas.tsx`
+**Commits:** `f6c52fb`, `99e6589`, `cc67951`, `b597795`, `e45f9fa`, `666e59c`, `0348d71`, `21d3f56`, `2cc6c72`
+**Files:** `src/components/strata/canvas/exportHandlers.ts`, `src/components/strata/Controls.tsx`, `src/components/strata/StrataCanvas.tsx`
+**Also touched:** `src/types/strataTypes.ts`
 
 - **Fix — fill vs. stroke differentiation** (`f6c52fb`): SVG export now
   correctly distinguishes blob shapes (closed path + fill) from brush/line
@@ -532,6 +532,19 @@ APP_VERSION = "1.13.1"          // Current release version
   now stored in eraser shapes (previously `undefined` for all erasers).
   `eraserPolygon?: Point[]` added to the `Shape` interface in `strataTypes.ts`
   (retained for future use; not used in current mask generation).
+
+- **feat — Undo/Redo keyboard shortcuts** (`21d3f56`): `Ctrl+Z` / `Cmd+Z` for
+  Undo, `Ctrl+Y` / `Cmd+Y` for Redo. Added to the existing global `keydown`
+  `useEffect` in `Controls.tsx`. Guard: no-op while `textSession.isActive`.
+
+- **feat — Undo/Redo touch gestures** (`2cc6c72`): 2-finger tap (< 300ms) →
+  Undo; 3-finger tap (< 250ms) → Redo. Drawing mode only. Implemented in
+  `StrataCanvas.tsx` by extending `gestureRef` with `tapStartTime`,
+  `tapMoved`, `tapTouchCount`. `isPinching` is now deferred until
+  `handleTouchMove` confirms movement > 10px, ensuring taps never trigger
+  the post-pinch cooldown. Compatible with existing pinch/zoom and palm
+  rejection. `textSession.isActive` guard applied in both `handleTouchStart`
+  and tap detection in `handleTouchEnd`.
 
 ### 1.13.x — Design System completion + RISO/Grain fix
 - **DiToggleSlider** (`src/design-system/DiToggleSlider.tsx`): new primitive for the checkbox-toggle + label + value + range input pattern; supports optional `children` for extra content below the slider
