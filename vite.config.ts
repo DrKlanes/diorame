@@ -6,7 +6,6 @@
 
   export default defineConfig({
     plugins: [react(), tailwindcss()],
-    base: '/diorame/',
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {
