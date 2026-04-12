@@ -1025,7 +1025,7 @@ export const StrataCanvas = () => {
             let finalPoints = [...currentPointsRef.current];
             const isLineTool = state.tool === 'line';
 
-            if (state.tool === 'brush' && state.blobSmoothing && finalPoints.length >= 4) {
+            if ((state.tool === 'brush' || state.tool === 'eraser') && state.blobSmoothing && finalPoints.length >= 4) {
                 const decimate = (pts: Point[], n: number): Point[] => {
                     if (pts.length <= 4) return pts;
                     const result: Point[] = [pts[0]];

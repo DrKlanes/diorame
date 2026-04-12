@@ -762,14 +762,15 @@ export const ControlsDrawing = ({
 						variant={state.blobSmoothing ? "default" : "ghost"}
 						size="icon"
 						onClick={() => dispatch({ type: 'TOGGLE_BLOB_SMOOTHING' })}
-						disabled={state.tool !== 'brush'}
+						disabled={state.tool !== 'brush' && state.tool !== 'eraser'}
 						className={cn(
 							"h-8 w-8",
 							state.blobSmoothing && "bg-slate-900 text-white",
-							state.tool !== 'brush' && "opacity-50 cursor-not-allowed"
+							(state.tool !== 'brush' && state.tool !== 'eraser') && "opacity-50 cursor-not-allowed"
 						)}
 						title={
-							state.tool !== 'brush' ? "Only available with Brush tool" :
+							(state.tool !== 'brush' && state.tool !== 'eraser') ? "Only available with Blob or Eraser tool" :
+							state.tool === 'eraser' ? "Smooth Eraser" :
 							"Smooth Blob"
 						}
 					>
