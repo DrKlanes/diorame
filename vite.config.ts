@@ -5,7 +5,6 @@
   import path from 'path';
 
   export default defineConfig({
-    base: '/diorame/',
     plugins: [react(), tailwindcss()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
