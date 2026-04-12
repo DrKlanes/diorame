@@ -1,11 +1,16 @@
+# Diorame
 
-  # Diorame
+A web-based drawing tool for creating layered 2D illustrations with depth, 
+parallax, and cinematic camera movements. Riso-inspired aesthetics. 
+Desktop and tablet only — by design.
 
-  This is a code bundle for Diorame. The original project is available at https://www.figma.com/design/lTsURbo7ILclQTNcjpLm5L/Diorame.
+**Live app → [diorame.dumaker.com](https://diorame.dumaker.com)**
 
-  ## Running the code
+## Stack
 
-  Run `npm i` to install the dependencies.
+React 18 · TypeScript · Vite · Canvas 2D API · Tailwind CSS v4
 
-  Run `npm run dev` to start the development server.
-  
+## Run locally
+
+npm i
+npm run dev
