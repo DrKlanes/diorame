@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find C:UsersUsuarioDesktopDiorame_Claude_Code -not -path */node_modules/* -type d)",
+      "Bash(python -c \":*)",
+      "Bash(npx tsc:*)",
+      "Bash(node_modules/.bin/tsc --noEmit --skipLibCheck)",
+      "Bash(npm run:*)",
+      "Bash(python fix_fx.py)",
+      "Bash(python fix_fx2.py)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git rm:*)",
+      "Bash(python:*)",
+      "Bash(git -C C:/Users/Usuario/Desktop/Diorame_Claude_Code log --oneline src/components/strata/canvas/exportHandlers.ts)",
+      "Bash(git -C C:/Users/Usuario/Desktop/Diorame_Claude_Code log --oneline --all --diff-filter=D -- \"*export*\" \"*Export*\" \"*svg*\" \"*SVG*\")",
+      "Bash(python3:*)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(dir \"%USERPROFILE%\\\\Downloads\\\\*.svg\" /od)",
+      "Bash(git revert:*)",
+      "Bash(node -e ':*)"
+    ]
+  }
+}
