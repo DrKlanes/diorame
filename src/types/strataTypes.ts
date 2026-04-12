@@ -127,6 +127,7 @@ export interface AppState {
   isDrawBehind: boolean; // New: Draw Behind mode
   isDrawInside: boolean; // New: Draw Inside (Alpha Lock) mode
   isOrganicMode: boolean; // New: Organic/Fluid line mode
+  blobSmoothing: boolean;
   currentLineThickness: number; // New: Line Thickness (continuous value)
   lineThicknessBeforePreview: Shape[] | null; // Store shapes before thickness preview
   isHandheldEnabled: boolean; // New: Handheld camera shake

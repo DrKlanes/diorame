@@ -79,6 +79,7 @@ type Action =
   | { type: 'TOGGLE_DRAW_BEHIND' }
   | { type: 'TOGGLE_DRAW_INSIDE' }
   | { type: 'TOGGLE_ORGANIC_MODE' }
+  | { type: 'TOGGLE_BLOB_SMOOTHING' }
   | { type: 'SET_LINE_THICKNESS'; payload: number }
   | { type: 'SET_LINE_THICKNESS_PREVIEW'; payload: number }
   | { type: 'COMMIT_LINE_THICKNESS' }
@@ -185,6 +186,7 @@ const initialState: AppState = {
   isDrawBehind: false,
   isDrawInside: false,
   isOrganicMode: false,
+  blobSmoothing: false,
   currentLineThickness: 25,
   lineThicknessBeforePreview: null,
   isHandheldEnabled: false,
@@ -256,6 +258,8 @@ function appReducer(state: AppState, action: Action): AppState {
       };
     case 'TOGGLE_ORGANIC_MODE':
       return { ...state, isOrganicMode: !state.isOrganicMode };
+    case 'TOGGLE_BLOB_SMOOTHING':
+      return { ...state, blobSmoothing: !state.blobSmoothing };
     case 'SET_PALETTE_MODE':
       return { 
           ...state, 

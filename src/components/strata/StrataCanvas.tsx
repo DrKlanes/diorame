@@ -1025,6 +1025,28 @@ export const StrataCanvas = () => {
             let finalPoints = [...currentPointsRef.current];
             const isLineTool = state.tool === 'line';
 
+            if (state.tool === 'brush' && state.blobSmoothing && finalPoints.length >= 4) {
+                const chaikinSmooth = (pts: Point[], iterations = 2): Point[] => {
+                    for (let iter = 0; iter < iterations; iter++) {
+                        const smoothed: Point[] = [pts[0]];
+                        for (let i = 0; i < pts.length - 1; i++) {
+                            smoothed.push({
+                                x: 0.75 * pts[i].x + 0.25 * pts[i + 1].x,
+                                y: 0.75 * pts[i].y + 0.25 * pts[i + 1].y
+                            });
+                            smoothed.push({
+                                x: 0.25 * pts[i].x + 0.75 * pts[i + 1].x,
+                                y: 0.25 * pts[i].y + 0.75 * pts[i + 1].y
+                            });
+                        }
+                        smoothed.push(pts[pts.length - 1]);
+                        pts = smoothed;
+                    }
+                    return pts;
+                };
+                finalPoints = chaikinSmooth(finalPoints);
+            }
+
             let originalPoints: Point[] = [];
 
             if (isLineTool) {
