@@ -1026,6 +1026,15 @@ export const StrataCanvas = () => {
             const isLineTool = state.tool === 'line';
 
             if (state.tool === 'brush' && state.blobSmoothing && finalPoints.length >= 4) {
+                const decimate = (pts: Point[], n: number): Point[] => {
+                    if (pts.length <= 4) return pts;
+                    const result: Point[] = [pts[0]];
+                    for (let i = n; i < pts.length - 1; i += n) {
+                        result.push(pts[i]);
+                    }
+                    result.push(pts[pts.length - 1]);
+                    return result;
+                };
                 const chaikinSmooth = (pts: Point[], iterations = 2): Point[] => {
                     for (let iter = 0; iter < iterations; iter++) {
                         const smoothed: Point[] = [pts[0]];
@@ -1044,7 +1053,7 @@ export const StrataCanvas = () => {
                     }
                     return pts;
                 };
-                finalPoints = chaikinSmooth(finalPoints);
+                finalPoints = chaikinSmooth(decimate(finalPoints, 3), 3);
             }
 
             let originalPoints: Point[] = [];
