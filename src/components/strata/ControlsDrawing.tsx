@@ -757,6 +757,24 @@ export const ControlsDrawing = ({
 					>
 						<Waves className="w-4 h-4" />
 					</Button>
+
+					<Button
+						variant={state.blobSmoothing ? "default" : "ghost"}
+						size="icon"
+						onClick={() => dispatch({ type: 'TOGGLE_BLOB_SMOOTHING' })}
+						disabled={state.tool !== 'brush'}
+						className={cn(
+							"h-8 w-8",
+							state.blobSmoothing && "bg-slate-900 text-white",
+							state.tool !== 'brush' && "opacity-50 cursor-not-allowed"
+						)}
+						title={
+							state.tool !== 'brush' ? "Only available with Brush tool" :
+							"Smooth Blob"
+						}
+					>
+						<Spline className="w-4 h-4" />
+					</Button>
 				</div>
 
 				{/* Palette */}
