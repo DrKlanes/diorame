@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 1.14.0
+**Version**: 1.14.1
 **Last Updated**: March 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -476,7 +476,18 @@ APP_VERSION = "1.14.0"          // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 -> 1.14.0)
+## Appendix C: Changelog Highlights (1.7.3 -> 1.14.1)
+
+### 1.14.1 — Smooth Blob (blobSmoothing) + mutual exclusivity with Organic
+
+**Commits:** `9ff11a4`, `fe70dd0`
+**Files:** `src/components/strata/StrataContext.tsx`, `src/components/strata/ControlsDrawing.tsx`, `src/components/strata/StrataCanvas.tsx`, `src/types/strataTypes.ts`
+
+- **feat — blobSmoothing state & toggle** (`9ff11a4`): New `blobSmoothing: boolean` field in `AppState` (default `false`). `TOGGLE_BLOB_SMOOTHING` action added to the reducer and Action union. Toggle button (Spline icon) added in `ControlsDrawing.tsx` next to the Organic Mode button; active only when tool is `brush` or `eraser`.
+
+- **feat — Chaikin subdivision pipeline** (`9ff11a4`): When `blobSmoothing` is active, raw `finalPoints` are processed in `handlePointerUp` before the shape is committed: decimate (keep every 3rd point, always preserve first/last) → 3 iterations of Chaikin corner-cutting (0.75/0.25 split). Applies to both `brush` (blob fills) and `eraser` tools.
+
+- **feat — mutual exclusivity with isOrganicMode** (`fe70dd0`): Activating `blobSmoothing` now sets `isOrganicMode: false` in the reducer, and vice versa — only one mode can be active at a time. Both buttons in `ControlsDrawing.tsx` are disabled (with tooltip "Disable Smooth first" / "Disable Organic first") when the other mode is active.
 
 ### 1.14.0 — SVG Export overhaul + Undo/Redo shortcuts & gestures
 
