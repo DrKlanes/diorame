@@ -3,7 +3,7 @@ import { useStrata, BASE_DEPTH_STEP, MAX_LAYERS } from './StrataContext';
 import { DARK_COLORS } from '../../constants/palette';
 import { Button } from '../ui/button';
 import { RippleButton } from '../ui/ripple-button';
-import { Undo, Redo, Trash2, ArrowLeftRight, Layers, Eye, EyeOff, FileCode, Pen, Type, AlignLeft, AlignCenter, AlignRight, Check, X, Waves, Save, FolderOpen, Eraser, Info, Move, Lock, Unlock, Maximize, FlipHorizontal, Copy, Droplet, Paintbrush, Target, ChevronLeft, ChevronRight, Plus, Sun, Moon } from 'lucide-react';
+import { Undo, Redo, Trash2, ArrowLeftRight, Layers, Eye, EyeOff, FileCode, Pen, Type, AlignLeft, AlignCenter, AlignRight, Check, X, Waves, Save, FolderOpen, Eraser, Info, Move, Lock, Unlock, Maximize, FlipHorizontal, Copy, Droplet, Paintbrush, Target, ChevronLeft, ChevronRight, Plus, Sun, Moon, Spline } from 'lucide-react';
 import { cn } from '../ui/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import {
