@@ -257,9 +257,17 @@ function appReducer(state: AppState, action: Action): AppState {
           isDrawBehind: willBeInside ? false : state.isDrawBehind
       };
     case 'TOGGLE_ORGANIC_MODE':
-      return { ...state, isOrganicMode: !state.isOrganicMode };
+      return {
+        ...state,
+        isOrganicMode: !state.isOrganicMode,
+        blobSmoothing: state.isOrganicMode ? state.blobSmoothing : false
+      };
     case 'TOGGLE_BLOB_SMOOTHING':
-      return { ...state, blobSmoothing: !state.blobSmoothing };
+      return {
+        ...state,
+        blobSmoothing: !state.blobSmoothing,
+        isOrganicMode: state.blobSmoothing ? state.isOrganicMode : false
+      };
     case 'SET_PALETTE_MODE':
       return { 
           ...state, 

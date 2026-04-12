@@ -742,16 +742,17 @@ export const ControlsDrawing = ({
 						variant={state.isOrganicMode ? "default" : "ghost"}
 						size="icon"
 						onClick={() => dispatch({ type: 'TOGGLE_ORGANIC_MODE' })}
-						disabled={state.tool === 'move' || state.tool === 'line' || state.tool === 'text'}
+						disabled={state.tool === 'move' || state.tool === 'line' || state.tool === 'text' || state.blobSmoothing}
 						className={cn(
 							"h-8 w-8",
 							state.isOrganicMode && "bg-slate-900 text-white",
-							(state.tool === 'move' || state.tool === 'line' || state.tool === 'text') && "opacity-50 cursor-not-allowed"
+							(state.tool === 'move' || state.tool === 'line' || state.tool === 'text' || state.blobSmoothing) && "opacity-50 cursor-not-allowed"
 						)}
 						title={
 							state.tool === 'move' ? "Not available with Move tool" :
 							state.tool === 'line' ? "Not available with Line tool" :
 							state.tool === 'text' ? "Not available with Text tool" :
+							state.blobSmoothing ? "Disable Smooth first" :
 							"Organic Stroke (Fluid Wiggle)"
 						}
 					>
@@ -762,14 +763,15 @@ export const ControlsDrawing = ({
 						variant={state.blobSmoothing ? "default" : "ghost"}
 						size="icon"
 						onClick={() => dispatch({ type: 'TOGGLE_BLOB_SMOOTHING' })}
-						disabled={state.tool !== 'brush' && state.tool !== 'eraser'}
+						disabled={(state.tool !== 'brush' && state.tool !== 'eraser') || state.isOrganicMode}
 						className={cn(
 							"h-8 w-8",
 							state.blobSmoothing && "bg-slate-900 text-white",
-							(state.tool !== 'brush' && state.tool !== 'eraser') && "opacity-50 cursor-not-allowed"
+							((state.tool !== 'brush' && state.tool !== 'eraser') || state.isOrganicMode) && "opacity-50 cursor-not-allowed"
 						)}
 						title={
 							(state.tool !== 'brush' && state.tool !== 'eraser') ? "Only available with Blob or Eraser tool" :
+							state.isOrganicMode ? "Disable Organic first" :
 							state.tool === 'eraser' ? "Smooth Eraser" :
 							"Smooth Blob"
 						}
