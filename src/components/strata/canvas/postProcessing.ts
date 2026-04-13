@@ -159,6 +159,22 @@ export const applyRisoV2 = (
 	helperCtx: CanvasRenderingContext2D
 ): void => {
 	offCtx.save();
+	// Pass 0 — Pixel displacement (irregular ink distortion)
+	const srcData = offCtx.getImageData(0, 0, w, h);
+	const dstData = offCtx.createImageData(w, h);
+	const src = srcData.data, dst = dstData.data;
+	for (let y = 0; y < h; y++) {
+		for (let x = 0; x < w; x++) {
+			const dx = Math.sin(x * 0.08 + y * 0.03 + 1.2) * 1.4 + Math.sin(x * 0.02 + y * 0.11 + 2.7) * 0.8;
+			const dy = Math.cos(x * 0.05 + y * 0.07 + 0.5) * 1.2 + Math.cos(x * 0.09 + y * 0.02 + 1.8) * 0.7;
+			const sx = Math.max(0, Math.min(w - 1, Math.round(x + dx)));
+			const sy = Math.max(0, Math.min(h - 1, Math.round(y + dy)));
+			const si = (sy * w + sx) * 4;
+			const di = (y * w + x) * 4;
+			dst[di] = src[si]; dst[di+1] = src[si+1]; dst[di+2] = src[si+2]; dst[di+3] = src[si+3];
+		}
+	}
+	offCtx.putImageData(dstData, 0, 0);
 	// Pass 1 — Paper grain
 	offCtx.globalCompositeOperation = 'destination-out';
 	offCtx.globalAlpha = intensity * 0.6;
