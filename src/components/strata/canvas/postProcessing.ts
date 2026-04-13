@@ -95,7 +95,15 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 	const densityMap = new Float32Array(cols * rows);
 	for (let cy = 0; cy < rows; cy++) {
 		for (let cx = 0; cx < cols; cx++) {
-			const macro = _h(Math.floor(cx / 40) * 7919 + Math.floor(cy / 40) * 6271 + 1) * 0.12 + 0.52;
+			const bx = cx / 40, by = cy / 40;
+			const ibx = Math.floor(bx), iby = Math.floor(by);
+			const fbx = bx - ibx, fby = by - iby;
+			const ux = fbx * fbx * (3 - 2 * fbx), uy = fby * fby * (3 - 2 * fby);
+			const m00 = _h(ibx * 7919 + iby * 6271 + 1);
+			const m10 = _h((ibx+1) * 7919 + iby * 6271 + 1);
+			const m01 = _h(ibx * 7919 + (iby+1) * 6271 + 1);
+			const m11 = _h((ibx+1) * 7919 + (iby+1) * 6271 + 1);
+			const macro = (m00 + (m10-m00)*ux + (m01-m00)*uy + (m00-m10-m01+m11)*ux*uy) * 0.12 + 0.52;
 			const micro = _h(cx * 1619 + cy * 31337 + 42) * 0.18;
 			densityMap[cy * cols + cx] = Math.min(1, macro + micro);
 		}
