@@ -103,8 +103,8 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 	const ctx = canvas.getContext('2d')!;
 	const imageData = ctx.createImageData(w, h);
 	const data = imageData.data;
-	const octaves: [number, number][] = [[8, 0.5], [16, 0.25], [32, 0.15], [64, 0.10]];
-	const maxSum = 1.35; // 0.5+0.25+0.15+0.10+0.35
+	const octaves: [number, number][] = [[120, 0.55], [240, 0.25], [480, 0.12], [960, 0.08]];
+	const maxSum = 1.20; // 0.55+0.25+0.12+0.08+0.20
 	for (let y = 0; y < h; y++) {
 		for (let x = 0; x < w; x++) {
 			let value = 0;
@@ -113,8 +113,8 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 				value += _valueNoise2D((x / w) * freq * 1.4, (y / h) * freq, 42 + o * 100) * amp;
 			}
 			// 5th octave — large-scale ink accumulation zones
-			value += _valueNoise2D((x / w) * 2 * 1.4, (y / h) * 2, 442) * 0.35;
-			const alpha = Math.pow(Math.min(1, value / maxSum), 1.8) * 255;
+			value += _valueNoise2D((x / w) * 18 * 1.4, (y / h) * 18, 442) * 0.20;
+			const alpha = Math.pow(Math.min(1, value / maxSum), 2.4) * 255;
 			const idx = (y * w + x) * 4;
 			data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = alpha;
 		}
