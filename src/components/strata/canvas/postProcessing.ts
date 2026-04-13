@@ -131,8 +131,14 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 			const pit = _h(x * 9431 + y * 6367 + 99) * 0.08;
 			const alpha = dist < (radius - pit) ? 255 : 0;
 
+			const nx = x / w, ny = y / h;
+			const organic =
+				0.85 +
+				0.08 * Math.sin(nx * 3.1 + 1.2) * Math.cos(ny * 2.7 + 0.8) +
+				0.07 * Math.sin(nx * 1.8 + ny * 2.3 + 2.1);
+
 			const idx = (y * w + x) * 4;
-			data[idx] = 0; data[idx+1] = 0; data[idx+2] = 0; data[idx+3] = alpha;
+			data[idx] = 0; data[idx+1] = 0; data[idx+2] = 0; data[idx+3] = Math.min(255, alpha * organic);
 		}
 	}
 
@@ -169,27 +175,6 @@ export const applyRisoV2 = (
 	offCtx.globalAlpha = intensity * 0.08;
 	offCtx.drawImage(helperCtx.canvas, 2, 1);
 	offCtx.drawImage(helperCtx.canvas, -1, -2);
-	// Pass 4 — Large-scale organic ink variation (white luminosity blobs)
-	const gradCanvas = document.createElement('canvas');
-	gradCanvas.width = w; gradCanvas.height = h;
-	const gCtx = gradCanvas.getContext('2d')!;
-	const gradients: [number, number, number, number][] = [
-		[w * 0.2,  h * 0.3, w * 0.6,  0.12],
-		[w * 0.7,  h * 0.2, w * 0.5,  0.09],
-		[w * 0.5,  h * 0.7, w * 0.7,  0.10],
-		[w * 0.1,  h * 0.8, w * 0.4,  0.08],
-		[w * 0.85, h * 0.6, w * 0.55, 0.09],
-	];
-	for (const [cx, cy, r, a] of gradients) {
-		const g = gCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
-		g.addColorStop(0, `rgba(255,255,255,${a})`);
-		g.addColorStop(1, 'rgba(255,255,255,0)');
-		gCtx.fillStyle = g;
-		gCtx.fillRect(0, 0, w, h);
-	}
-	offCtx.globalCompositeOperation = 'source-over';
-	offCtx.globalAlpha = 1.0;
-	offCtx.drawImage(gradCanvas, 0, 0);
 	offCtx.restore();
 };
 
