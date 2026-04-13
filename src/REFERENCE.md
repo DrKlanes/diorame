@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 1.14.1
+**Version**: 1.15.0
 **Last Updated**: March 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -476,7 +476,20 @@ APP_VERSION = "1.14.0"          // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 -> 1.14.1)
+## Appendix C: Changelog Highlights (1.7.3 -> 1.15.0)
+
+### 1.15.0 — Procedural RISO V2: halftone grain + 3-pass ink pipeline
+
+**Commits:** `908b5d3`–`b1836b0`
+**Files:** `src/components/strata/canvas/postProcessing.ts`, `src/components/strata/StrataCanvas.tsx`
+
+- **feat — `generateRisoGrain`** (`908b5d3`): Replaces PNG-based `risoTexture`. Generates a deterministic halftone grain canvas entirely in software. Architecture: (1) pre-computed density map per cell using bilinear-interpolated smooth noise across 40-cell macro blocks + per-cell micro variation; (2) per-pixel halftone dot — anisotropic distance (x × 1.6) to a jitter-displaced center, hard threshold with micropitting; (3) sinusoidal organic modulation (`organic` factor, range ~0.40–1.04) applied to alpha before write, creating broad zones of dense and sparse grain without gradients.
+
+- **feat — `applyRisoV2`** (`908b5d3`): Replaces `applyRiso`. Three-pass pipeline, no `ctx.filter` (iPad compatible): **Pass 1** — paper grain (`destination-out`, alpha = `intensity × 0.6`, draws `cachedGrainCanvas`); **Pass 2** — ink spread (`multiply`, alpha = `intensity × 0.15`, draws snapshot in `helperCtx`); **Pass 3** — misregistration ghost (`screen`, alpha = `intensity × 0.08`, two fixed offsets +2/+1 and −1/−2 to avoid per-frame flicker). `helperCtx` (existing `helperCanvasRef`) used as explicit intermediate buffer — no self-draw.
+
+- **infra — `StrataCanvas.tsx`** (`908b5d3`): Removed `risoTexture` import and `risoImgRef`/`processedRisoRef` refs. Added `risoGrainRef`. Replaced async PNG `useEffect` with synchronous `generateRisoGrain` call inside a `ResizeObserver` — grain regenerates automatically when canvas dimensions change.
+
+- **tweak — grain params** (`5c764f9`–`c4837a2`): Multiple iterations to tune `cellSize` (settled at 3px), dot `radius` (settled at `density × 0.52`), macro density range (0.52–0.64), and organic modulation coefficients (base 0.72, harmonics 0.18/0.14).
 
 ### 1.14.1 — Smooth Blob (blobSmoothing) + mutual exclusivity with Organic
 
