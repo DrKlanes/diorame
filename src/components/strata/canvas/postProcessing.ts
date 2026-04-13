@@ -133,9 +133,9 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 
 			const nx = x / w, ny = y / h;
 			const organic =
-				0.85 +
-				0.08 * Math.sin(nx * 3.1 + 1.2) * Math.cos(ny * 2.7 + 0.8) +
-				0.07 * Math.sin(nx * 1.8 + ny * 2.3 + 2.1);
+				0.72 +
+				0.18 * Math.sin(nx * 3.1 + 1.2) * Math.cos(ny * 2.7 + 0.8) +
+				0.14 * Math.sin(nx * 1.8 + ny * 2.3 + 2.1);
 
 			const idx = (y * w + x) * 4;
 			data[idx] = 0; data[idx+1] = 0; data[idx+2] = 0; data[idx+3] = Math.min(255, alpha * organic);
