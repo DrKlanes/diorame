@@ -73,52 +73,62 @@ export const applyDoFBlur = (
 
 // ─── RISO V2 — procedural (no PNG asset) ──────────────────────────────────────
 
-const _smoothstep = (t: number): number => t * t * (3 - 2 * t);
-
-const _hash2 = (ix: number, iy: number, seed: number): number => {
-	let n = (seed * 1234567) ^ (ix * 1619) ^ (iy * 31337);
+const _h = (n: number): number => {
 	n = Math.imul(n ^ (n >>> 16), 0x45d9f3b) | 0;
 	n = Math.imul(n ^ (n >>> 16), 0x45d9f3b) | 0;
 	return ((n ^ (n >>> 16)) >>> 0) / 0xffffffff;
 };
 
-const _valueNoise2D = (sx: number, sy: number, seed: number): number => {
-	const ix = Math.floor(sx), iy = Math.floor(sy);
-	const fx = sx - ix, fy = sy - iy;
-	const ux = _smoothstep(fx), uy = _smoothstep(fy);
-	const a = _hash2(ix,     iy,     seed);
-	const b = _hash2(ix + 1, iy,     seed);
-	const c = _hash2(ix,     iy + 1, seed);
-	const d = _hash2(ix + 1, iy + 1, seed);
-	return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
-};
-
-/**
- * Generates a fractal noise grain canvas for the RISO V2 effect.
- * Deterministic (seed=42). Regenerate when canvas dimensions change.
- */
 export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 	const canvas = document.createElement('canvas');
 	canvas.width = w; canvas.height = h;
 	const ctx = canvas.getContext('2d')!;
 	const imageData = ctx.createImageData(w, h);
 	const data = imageData.data;
-	const octaves: [number, number][] = [[120, 0.55], [240, 0.25], [480, 0.12], [960, 0.08]];
-	const maxSum = 1.20; // 0.55+0.25+0.12+0.08+0.20
-	for (let y = 0; y < h; y++) {
-		for (let x = 0; x < w; x++) {
-			let value = 0;
-			for (let o = 0; o < octaves.length; o++) {
-				const [freq, amp] = octaves[o];
-				value += _valueNoise2D((x / w) * freq * 1.4, (y / h) * freq, 42 + o * 100) * amp;
-			}
-			// 5th octave — large-scale ink accumulation zones
-			value += _valueNoise2D((x / w) * 18 * 1.4, (y / h) * 18, 442) * 0.20;
-			const alpha = Math.pow(Math.min(1, value / maxSum), 2.4) * 255;
-			const idx = (y * w + x) * 4;
-			data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = alpha;
+
+	// Parámetros de trama
+	const cellSize = 4;
+	const cols = Math.ceil(w / cellSize);
+	const rows = Math.ceil(h / cellSize);
+
+	// Pre-generar mapa de densidad por celda (baja frecuencia — zonas de acumulación)
+	const densityMap = new Float32Array(cols * rows);
+	for (let cy = 0; cy < rows; cy++) {
+		for (let cx = 0; cx < cols; cx++) {
+			const bx = Math.floor(cx / 12), by = Math.floor(cy / 12);
+			const macro = _h(bx * 7919 + by * 6271 + 1) * 0.4 + 0.3;
+			const micro = _h(cx * 1619 + cy * 31337 + 42) * 0.3;
+			densityMap[cy * cols + cx] = Math.min(1, macro + micro);
 		}
 	}
+
+	for (let y = 0; y < h; y++) {
+		for (let x = 0; x < w; x++) {
+			const cx = Math.floor(x / cellSize);
+			const cy = Math.floor(y / cellSize);
+			const density = densityMap[cy * cols + cx];
+
+			const lx = (x % cellSize) / cellSize;
+			const ly = (y % cellSize) / cellSize;
+
+			const jx = _h(cx * 2971 + cy * 1327 + 10) * 0.5 - 0.25;
+			const jy = _h(cx * 1327 + cy * 2971 + 20) * 0.5 - 0.25;
+			const cx2 = 0.5 + jx, cy2 = 0.5 + jy;
+
+			const dx = (lx - cx2) * 1.6;
+			const dy = ly - cy2;
+			const dist = Math.sqrt(dx * dx + dy * dy);
+
+			const radius = density * 0.52;
+
+			const pit = _h(x * 9431 + y * 6367 + 99) * 0.08;
+			const alpha = dist < (radius - pit) ? 255 : 0;
+
+			const idx = (y * w + x) * 4;
+			data[idx] = 0; data[idx+1] = 0; data[idx+2] = 0; data[idx+3] = alpha;
+		}
+	}
+
 	ctx.putImageData(imageData, 0, 0);
 	return canvas;
 };
