@@ -3,13 +3,12 @@ import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
 import { generateTaperedStroke, generateUniformStroke, generateStrokeForMode } from '../../utils/strokeGenerators';
 import { Shape, Point } from '../../types/strataTypes';
 import paperTexture from "figma:asset/dedf59e02015e1400029a84197a5242f42fdbb01.png";
-import risoTexture from "figma:asset/cb8694f26c4e972edf10545cd26da5e5d135c92e.png";
 import grungeTexture from "figma:asset/cbf89ce40bab5dc98000a75dbc50509b964706a0.png";
 import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { processPixelArt } from './canvas/PixelArtProcessor';
-import { applyFog, applyGlow, applyDoFBlur, applyRiso, applyChromaticAberration, applyVignette, applyGrain, applyGrunge } from './canvas/postProcessing';
+import { applyFog, applyGlow, applyDoFBlur, applyRisoV2, generateRisoGrain, applyChromaticAberration, applyVignette, applyGrain, applyGrunge } from './canvas/postProcessing';
 import { hexToHSL, hslToHex, getVibrantVariant, hexToRgba } from '../../utils/colorUtils';
 import { createNoise, drawSmoothLine, drawStraightLine } from '../../utils/canvasUtils';
 import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS } from '../../constants/renderConstants';
@@ -73,8 +72,7 @@ export const StrataCanvas = () => {
   const cameraRef = useRef({ x: 0, y: 0, z: 0, rotation: 0 });
 
   const paperImgRef = useRef<HTMLImageElement | null>(null);
-  const risoImgRef = useRef<HTMLImageElement | null>(null);
-  const processedRisoRef = useRef<HTMLCanvasElement | null>(null);
+  const risoGrainRef = useRef<HTMLCanvasElement | null>(null);
   const grungeImgRef = useRef<HTMLImageElement | null>(null); // New Grunge Overlay
   
   // Shared Canvas Buffers (Reused to avoid GC thrashing)
@@ -357,28 +355,15 @@ export const StrataCanvas = () => {
   }, []);
 
   useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.src = risoTexture;
-    img.onload = () => {
-        risoImgRef.current = img;
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-            ctx.drawImage(img, 0, 0);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                const brightness = data[i]; 
-                data[i] = 0; data[i+1] = 0; data[i+2] = 0;
-                data[i+3] = brightness;
-            }
-            ctx.putImageData(imageData, 0, 0);
-            processedRisoRef.current = canvas;
-        }
+    const generate = () => {
+      const w = containerRef.current?.clientWidth || window.innerWidth;
+      const h = containerRef.current?.clientHeight || window.innerHeight;
+      if (w > 0 && h > 0) risoGrainRef.current = generateRisoGrain(w, h);
     };
+    generate();
+    const observer = new ResizeObserver(generate);
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
   }, []);
 
   // Load Grunge Texture
@@ -2007,8 +1992,8 @@ export const StrataCanvas = () => {
       // --- 3. Final Composition ---
       
       // RISO Texture
-      if (isCinematic && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && processedRisoRef.current) {
-          applyRiso(offCtx, processedRisoRef.current, w, h, currentState.postProcessing.riso);
+      if (isCinematic && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && risoGrainRef.current) {
+          applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, risoGrainRef.current, helperCanvasRef.current!.getContext('2d')!);
       }
 
       // Chromatic Aberration & Transfer to Main

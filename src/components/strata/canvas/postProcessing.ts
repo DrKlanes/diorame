@@ -71,23 +71,87 @@ export const applyDoFBlur = (
 
 // ─── Final composition effects (called after the layer loop) ─────────────────
 
+// ─── RISO V2 — procedural (no PNG asset) ──────────────────────────────────────
+
+const _smoothstep = (t: number): number => t * t * (3 - 2 * t);
+
+const _hash2 = (ix: number, iy: number, seed: number): number => {
+	let n = (seed * 1234567) ^ (ix * 1619) ^ (iy * 31337);
+	n = Math.imul(n ^ (n >>> 16), 0x45d9f3b) | 0;
+	n = Math.imul(n ^ (n >>> 16), 0x45d9f3b) | 0;
+	return ((n ^ (n >>> 16)) >>> 0) / 0xffffffff;
+};
+
+const _valueNoise2D = (sx: number, sy: number, seed: number): number => {
+	const ix = Math.floor(sx), iy = Math.floor(sy);
+	const fx = sx - ix, fy = sy - iy;
+	const ux = _smoothstep(fx), uy = _smoothstep(fy);
+	const a = _hash2(ix,     iy,     seed);
+	const b = _hash2(ix + 1, iy,     seed);
+	const c = _hash2(ix,     iy + 1, seed);
+	const d = _hash2(ix + 1, iy + 1, seed);
+	return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+};
+
 /**
- * Applies RISO texture overlay using destination-out blend.
+ * Generates a fractal noise grain canvas for the RISO V2 effect.
+ * Deterministic (seed=42). Regenerate when canvas dimensions change.
  */
-export const applyRiso = (
+export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
+	const canvas = document.createElement('canvas');
+	canvas.width = w; canvas.height = h;
+	const ctx = canvas.getContext('2d')!;
+	const imageData = ctx.createImageData(w, h);
+	const data = imageData.data;
+	const octaves: [number, number][] = [[8, 0.5], [16, 0.25], [32, 0.15], [64, 0.10]];
+	const maxSum = 1.35; // 0.5+0.25+0.15+0.10+0.35
+	for (let y = 0; y < h; y++) {
+		for (let x = 0; x < w; x++) {
+			let value = 0;
+			for (let o = 0; o < octaves.length; o++) {
+				const [freq, amp] = octaves[o];
+				value += _valueNoise2D((x / w) * freq * 1.4, (y / h) * freq, 42 + o * 100) * amp;
+			}
+			// 5th octave — large-scale ink accumulation zones
+			value += _valueNoise2D((x / w) * 2 * 1.4, (y / h) * 2, 442) * 0.35;
+			const alpha = Math.pow(Math.min(1, value / maxSum), 1.8) * 255;
+			const idx = (y * w + x) * 4;
+			data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = alpha;
+		}
+	}
+	ctx.putImageData(imageData, 0, 0);
+	return canvas;
+};
+
+/**
+ * Applies procedural RISO printing effect: paper grain, ink spread, misregistration.
+ * No ctx.filter (iPad compatible).
+ */
+export const applyRisoV2 = (
 	offCtx: CanvasRenderingContext2D,
-	risoCanvas: HTMLCanvasElement,
 	w: number,
 	h: number,
-	risoInt: number
+	intensity: number,
+	cachedGrainCanvas: HTMLCanvasElement,
+	helperCtx: CanvasRenderingContext2D
 ): void => {
-	const scale = Math.max((w * 1.5) / risoCanvas.width, (h * 1.5) / risoCanvas.height);
-	const dw = risoCanvas.width * scale, dh = risoCanvas.height * scale;
 	offCtx.save();
+	// Pass 1 — Paper grain
 	offCtx.globalCompositeOperation = 'destination-out';
-	offCtx.globalAlpha = risoInt;
-	offCtx.imageSmoothingEnabled = false;
-	offCtx.drawImage(risoCanvas, (w - dw) / 2, (h - dh) / 2, dw, dh);
+	offCtx.globalAlpha = intensity * 0.6;
+	offCtx.drawImage(cachedGrainCanvas, 0, 0, w, h);
+	// Snapshot post-grain into helper for passes 2 & 3
+	helperCtx.clearRect(0, 0, w, h);
+	helperCtx.drawImage(offCtx.canvas, 0, 0);
+	// Pass 2 — Ink spread
+	offCtx.globalCompositeOperation = 'multiply';
+	offCtx.globalAlpha = intensity * 0.15;
+	offCtx.drawImage(helperCtx.canvas, 0, 0);
+	// Pass 3 — Misregistration ghost (fixed offsets, no flicker)
+	offCtx.globalCompositeOperation = 'screen';
+	offCtx.globalAlpha = intensity * 0.08;
+	offCtx.drawImage(helperCtx.canvas, 2, 1);
+	offCtx.drawImage(helperCtx.canvas, -1, -2);
 	offCtx.restore();
 };
 
