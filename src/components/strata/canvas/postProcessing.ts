@@ -87,7 +87,7 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 	const data = imageData.data;
 
 	// Parámetros de trama
-	const cellSize = 6;
+	const cellSize = 4;
 	const cols = Math.ceil(w / cellSize);
 	const rows = Math.ceil(h / cellSize);
 
@@ -95,9 +95,8 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 	const densityMap = new Float32Array(cols * rows);
 	for (let cy = 0; cy < rows; cy++) {
 		for (let cx = 0; cx < cols; cx++) {
-			const bx = Math.floor(cx / 12), by = Math.floor(cy / 12);
-			const macro = _h(bx * 7919 + by * 6271 + 1) * 0.4 + 0.3;
-			const micro = _h(cx * 1619 + cy * 31337 + 42) * 0.3;
+			const macro = _h(Math.floor(cx / 40) * 7919 + Math.floor(cy / 40) * 6271 + 1) * 0.12 + 0.52;
+			const micro = _h(cx * 1619 + cy * 31337 + 42) * 0.18;
 			densityMap[cy * cols + cx] = Math.min(1, macro + micro);
 		}
 	}
@@ -111,8 +110,8 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 			const lx = (x % cellSize) / cellSize;
 			const ly = (y % cellSize) / cellSize;
 
-			const jx = _h(cx * 2971 + cy * 1327 + 10) * 0.9 - 0.45;
-			const jy = _h(cx * 1327 + cy * 2971 + 20) * 0.9 - 0.45;
+			const jx = _h(cx * 2971 + cy * 1327 + 10) * 0.5 - 0.25;
+			const jy = _h(cx * 1327 + cy * 2971 + 20) * 0.5 - 0.25;
 			const cx2 = 0.5 + jx, cy2 = 0.5 + jy;
 
 			const dx = (lx - cx2) * 1.6;
