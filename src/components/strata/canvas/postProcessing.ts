@@ -169,25 +169,25 @@ export const applyRisoV2 = (
 	offCtx.globalAlpha = intensity * 0.08;
 	offCtx.drawImage(helperCtx.canvas, 2, 1);
 	offCtx.drawImage(helperCtx.canvas, -1, -2);
-	// Pass 4 — Large-scale organic ink variation
+	// Pass 4 — Large-scale organic ink variation (white luminosity blobs)
 	const gradCanvas = document.createElement('canvas');
 	gradCanvas.width = w; gradCanvas.height = h;
 	const gCtx = gradCanvas.getContext('2d')!;
 	const gradients: [number, number, number, number][] = [
-		[w * 0.2,  h * 0.3, w * 0.6, 0.07],
-		[w * 0.7,  h * 0.2, w * 0.5, 0.05],
-		[w * 0.5,  h * 0.7, w * 0.7, 0.06],
-		[w * 0.1,  h * 0.8, w * 0.4, 0.04],
-		[w * 0.85, h * 0.6, w * 0.55, 0.05],
+		[w * 0.2,  h * 0.3, w * 0.6,  0.12],
+		[w * 0.7,  h * 0.2, w * 0.5,  0.09],
+		[w * 0.5,  h * 0.7, w * 0.7,  0.10],
+		[w * 0.1,  h * 0.8, w * 0.4,  0.08],
+		[w * 0.85, h * 0.6, w * 0.55, 0.09],
 	];
 	for (const [cx, cy, r, a] of gradients) {
 		const g = gCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
-		g.addColorStop(0, `rgba(0,0,0,${a})`);
-		g.addColorStop(1, 'rgba(0,0,0,0)');
+		g.addColorStop(0, `rgba(255,255,255,${a})`);
+		g.addColorStop(1, 'rgba(255,255,255,0)');
 		gCtx.fillStyle = g;
 		gCtx.fillRect(0, 0, w, h);
 	}
-	offCtx.globalCompositeOperation = 'destination-out';
+	offCtx.globalCompositeOperation = 'source-over';
 	offCtx.globalAlpha = 1.0;
 	offCtx.drawImage(gradCanvas, 0, 0);
 	offCtx.restore();
