@@ -126,7 +126,7 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 			const dy = ly - cy2;
 			const dist = Math.sqrt(dx * dx + dy * dy);
 
-			const radius = density * 0.52;
+			const radius = density * 0.68;
 
 			const pit = _h(x * 9431 + y * 6367 + 99) * 0.08;
 			const alpha = dist < (radius - pit) ? 255 : 0;
