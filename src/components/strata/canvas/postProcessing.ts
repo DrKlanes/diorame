@@ -142,28 +142,6 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 		}
 	}
 
-	const cellSize2 = 9;
-	const cols2 = Math.ceil(w / cellSize2);
-	const rows2 = Math.ceil(h / cellSize2);
-	for (let cy2 = 0; cy2 < rows2; cy2++) {
-		for (let cx2 = 0; cx2 < cols2; cx2++) {
-			if (_h(cx2 * 3571 + cy2 * 7919 + 777) > 0.72) continue;
-			const jx2 = _h(cx2 * 4973 + cy2 * 2311 + 11) * 0.8 - 0.4;
-			const jy2 = _h(cx2 * 2311 + cy2 * 4973 + 22) * 0.8 - 0.4;
-			const px = Math.round((cx2 + 0.5 + jx2) * cellSize2);
-			const py = Math.round((cy2 + 0.5 + jy2) * cellSize2);
-			const r = 1 + Math.floor(_h(cx2 * 1111 + cy2 * 3333 + 55) * 2);
-			for (let dy = -r; dy <= r; dy++) {
-				for (let dx = -r; dx <= r; dx++) {
-					if (dx*dx + dy*dy > r*r) continue;
-					const px2 = px + dx, py2 = py + dy;
-					if (px2 < 0 || px2 >= w || py2 < 0 || py2 >= h) continue;
-					const idx2 = (py2 * w + px2) * 4;
-					data[idx2+3] = 255;
-				}
-			}
-		}
-	}
 	ctx.putImageData(imageData, 0, 0);
 	return canvas;
 };
