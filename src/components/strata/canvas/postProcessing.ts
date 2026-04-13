@@ -87,7 +87,7 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 	const data = imageData.data;
 
 	// Parámetros de trama
-	const cellSize = 4;
+	const cellSize = 3;
 	const cols = Math.ceil(w / cellSize);
 	const rows = Math.ceil(h / cellSize);
 
@@ -126,7 +126,7 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 			const dy = ly - cy2;
 			const dist = Math.sqrt(dx * dx + dy * dy);
 
-			const radius = density * 0.68;
+			const radius = density * 0.52;
 
 			const pit = _h(x * 9431 + y * 6367 + 99) * 0.08;
 			const alpha = dist < (radius - pit) ? 255 : 0;
