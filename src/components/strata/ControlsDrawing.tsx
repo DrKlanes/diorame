@@ -63,7 +63,13 @@ export const ControlsDrawing = ({
 				currentLineThickness: state.currentLineThickness,
 				lineMode: state.lineMode,
 				tool: state.tool,
-				activePaletteId: state.activePaletteId
+				activePaletteId: state.activePaletteId,
+				focalLength: state.focalLength,
+				viewZoomOffset: state.viewZoomOffset,
+				layerSpacingFactor: state.layerSpacingFactor,
+				cinematicSpeed: state.cinematicSpeed,
+				isHandheldEnabled: state.isHandheldEnabled,
+				handheldIntensity: state.handheldIntensity
 			};
 
 			const sanitizedName = state.projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();

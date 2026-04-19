@@ -156,8 +156,16 @@ export const Controls = () => {
 						variant={state.mode === 'cinematic' ? 'secondary' : 'ghost'}
 						size="sm"
 						onClick={() => {
+							const isFirstView = !sessionStorage.getItem('diorame-view-initialized');
 							dispatch({ type: 'SET_MODE', payload: 'cinematic' });
 							dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 500 } });
+							if (isFirstView) {
+								sessionStorage.setItem('diorame-view-initialized', 'true');
+								dispatch({ type: 'SET_FOCAL_LENGTH', payload: 3840 });
+								dispatch({ type: 'SET_VIEW_ZOOM_OFFSET', payload: -2500 });
+								dispatch({ type: 'SET_LAYER_SPACING_FACTOR', payload: 1.0 });
+								dispatch({ type: 'SET_CINEMATIC_TYPE', payload: 'forward' });
+							}
 						}}
 						className={cn(
 							"rounded-full px-4 text-xs font-medium tracking-wide transition-all duration-300",

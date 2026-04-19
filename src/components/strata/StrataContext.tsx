@@ -601,10 +601,16 @@ function appReducer(state: AppState, action: Action): AppState {
       const safeLineThickness = (typeof action.payload.currentLineThickness === 'number' && action.payload.currentLineThickness > 0)
           ? action.payload.currentLineThickness : 25;
       const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : state.isDarkMode;
-      const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['orbit', 'flythrough'].includes(action.payload.cinematicType))
-          ? action.payload.cinematicType : state.cinematicType;
+      const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom'].includes(action.payload.cinematicType))
+          ? action.payload.cinematicType as CinematicType : state.cinematicType;
       const safeProjectName = typeof action.payload.projectName === 'string'
           ? action.payload.projectName.slice(0, 100) : state.projectName;
+      const safeFocalLength = typeof action.payload.focalLength === 'number' ? action.payload.focalLength : state.focalLength;
+      const safeViewZoomOffset = typeof action.payload.viewZoomOffset === 'number' ? action.payload.viewZoomOffset : state.viewZoomOffset;
+      const safeLayerSpacingFactor = typeof action.payload.layerSpacingFactor === 'number' ? action.payload.layerSpacingFactor : state.layerSpacingFactor;
+      const safeCinematicSpeed = typeof action.payload.cinematicSpeed === 'number' ? action.payload.cinematicSpeed : state.cinematicSpeed;
+      const safeIsHandheldEnabled = typeof action.payload.isHandheldEnabled === 'boolean' ? action.payload.isHandheldEnabled : state.isHandheldEnabled;
+      const safeHandheldIntensity = (typeof action.payload.handheldIntensity === 'string' && ['low', 'medium', 'high'].includes(action.payload.handheldIntensity as string)) ? action.payload.handheldIntensity as HandheldIntensity : state.handheldIntensity;
 
       // Create initial history snapshot with loaded state
       const initialSnapshot: HistorySnapshot = {
@@ -650,6 +656,12 @@ function appReducer(state: AppState, action: Action): AppState {
           lineMode: safeLineMode,
           activePaletteId: loadedPaletteId,
           palette: loadedPalette,
+          focalLength: safeFocalLength,
+          viewZoomOffset: safeViewZoomOffset,
+          layerSpacingFactor: safeLayerSpacingFactor,
+          cinematicSpeed: safeCinematicSpeed,
+          isHandheldEnabled: safeIsHandheldEnabled,
+          handheldIntensity: safeHandheldIntensity,
           shouldFitToView: true
       };
     case 'COMPLETE_FIT_TO_VIEW':
