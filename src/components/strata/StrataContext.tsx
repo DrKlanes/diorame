@@ -567,7 +567,14 @@ function appReducer(state: AppState, action: Action): AppState {
           paletteMode: 'flat',
           paletteGradientAngle: 90,
           paletteGradientIntensity: 0.2,
-          paletteGradientType: 'solid'
+          paletteGradientType: 'solid',
+          focalLength: initialState.focalLength,
+          viewZoomOffset: initialState.viewZoomOffset,
+          layerSpacingFactor: initialState.layerSpacingFactor,
+          cinematicSpeed: initialState.cinematicSpeed,
+          isHandheldEnabled: initialState.isHandheldEnabled,
+          handheldIntensity: initialState.handheldIntensity,
+          cinematicType: initialState.cinematicType
       }
     case 'LOAD_PROJECT':
       // Ensure we merge postProcessing settings correctly to avoid undefined values

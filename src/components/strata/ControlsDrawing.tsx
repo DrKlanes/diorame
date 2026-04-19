@@ -580,6 +580,7 @@ export const ControlsDrawing = ({
 									onClick={() => {
 										dispatch({ type: 'CLEAR_CANVAS' });
 										dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 0, rotation: 0 } });
+										sessionStorage.removeItem('diorame-view-initialized');
 									}}
 									className="bg-red-500 hover:bg-red-600 text-white"
 								>
