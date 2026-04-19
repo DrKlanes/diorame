@@ -574,7 +574,9 @@ function appReducer(state: AppState, action: Action): AppState {
           cinematicSpeed: initialState.cinematicSpeed,
           isHandheldEnabled: initialState.isHandheldEnabled,
           handheldIntensity: initialState.handheldIntensity,
-          cinematicType: initialState.cinematicType
+          cinematicType: initialState.cinematicType,
+          postProcessing: initialState.postProcessing,
+          postProcessingEnabled: initialState.postProcessingEnabled
       }
     case 'LOAD_PROJECT':
       // Ensure we merge postProcessing settings correctly to avoid undefined values
