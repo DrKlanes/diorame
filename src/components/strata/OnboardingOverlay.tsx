@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStrata } from './StrataContext';
 import { Droplet, Paintbrush, Layers, Video, Wand2, Aperture } from 'lucide-react';
+import { toast } from 'sonner@2.0.3';
 
 const ONBOARDING_SEEN_KEY = 'diorame-onboarding-seen';
 
@@ -19,7 +20,28 @@ export const OnboardingOverlay = () => {
   // Only show if welcome modal is closed AND onboarding is visible AND canvas is empty AND in drawing mode
   const shouldShow = !state.isWelcomeModalOpen && state.isOnboardingVisible && state.shapes.length === 0 && state.mode === 'drawing';
 
-  const onLoadExampleScene = () => {};
+  const [isLoadingExample, setIsLoadingExample] = useState(false);
+
+  const onLoadExampleScene = async () => {
+    setIsLoadingExample(true);
+    try {
+      const res = await fetch('/examples/diorame_onboarding.dior');
+      if (!res.ok) throw new Error('Could not fetch example file');
+      const text = await res.text();
+      const json = JSON.parse(text);
+      if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('Invalid project format');
+      if (!Array.isArray(json.shapes)) throw new Error('Missing or invalid shapes data');
+      dispatch({ type: 'LOAD_PROJECT', payload: json });
+      handleDismiss();
+    } catch (err) {
+      console.error('Failed to load example scene', err);
+      toast.error('Failed to load example', {
+        description: err instanceof Error ? err.message : 'Please check your connection',
+        duration: 3000,
+      });
+      setIsLoadingExample(false);
+    }
+  };
 
   const handleDismiss = () => {
     setIsClosing(true);
@@ -151,13 +173,14 @@ export const OnboardingOverlay = () => {
         {/* CTA Button */}
         <button
           onClick={() => onLoadExampleScene()}
-          className="mb-3 px-8 py-3 rounded-full text-sm font-bold tracking-wide uppercase transition-all duration-200 hover:scale-105 active:scale-95 border border-slate-300 text-slate-500 hover:border-slate-400 hover:text-slate-700 bg-white/60"
+          disabled={isLoadingExample}
+          className="mb-3 w-[260px] py-3 rounded-full text-sm font-bold tracking-wide uppercase transition-all duration-200 hover:scale-105 active:scale-95 border border-slate-300 text-slate-500 hover:border-slate-400 hover:text-slate-700 bg-white/60 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
         >
-          Load example scene
+          {isLoadingExample ? 'Loading...' : 'Load example scene'}
         </button>
         <button
           onClick={handleDismiss}
-          className="px-8 py-3 rounded-full text-sm font-bold tracking-wide uppercase transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30"
+          className="w-[260px] py-3 rounded-full text-sm font-bold tracking-wide uppercase transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30"
           style={{ 
             backgroundColor: '#9a0ff9', 
             color: '#ffffff',
