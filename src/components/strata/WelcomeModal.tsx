@@ -2,10 +2,33 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import logoImg from "figma:asset/41cbeec613d6de6fbe96a0b93ab21aceb0db707d.png";
 import { useStrata, APP_VERSION } from './StrataContext';
+import { toast } from 'sonner@2.0.3';
 
 export const WelcomeModal = () => {
   const { state, dispatch } = useStrata();
   const [isClosing, setIsClosing] = useState(false);
+  const [isLoadingExample, setIsLoadingExample] = useState(false);
+
+  const onLoadExampleScene = async () => {
+    setIsLoadingExample(true);
+    try {
+      const res = await fetch('/examples/diorame_onboarding.dior');
+      if (!res.ok) throw new Error('Could not fetch example file');
+      const text = await res.text();
+      const json = JSON.parse(text);
+      if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('Invalid project format');
+      if (!Array.isArray(json.shapes)) throw new Error('Missing or invalid shapes data');
+      dispatch({ type: 'LOAD_PROJECT', payload: json });
+      handleClose();
+    } catch (err) {
+      console.error('Failed to load example scene', err);
+      toast.error('Failed to load example', {
+        description: err instanceof Error ? err.message : 'Please check your connection',
+        duration: 3000,
+      });
+      setIsLoadingExample(false);
+    }
+  };
 
   // Close handler
   const handleClose = (e?: React.MouseEvent) => {
@@ -102,6 +125,14 @@ export const WelcomeModal = () => {
         >
             <span>🤍</span> Support on Ko-fi
         </a>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); onLoadExampleScene(); }}
+          disabled={isLoadingExample}
+          className="mt-3 px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase transition-all duration-200 border border-slate-300 text-slate-700 bg-transparent hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed w-full"
+        >
+          {isLoadingExample ? 'Loading...' : 'Load example scene'}
+        </button>
       </div>
     </div>
   );
