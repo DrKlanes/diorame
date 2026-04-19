@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 1.15.0
+**Version**: 1.15.1
 **Last Updated**: March 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -476,7 +476,19 @@ APP_VERSION = "1.14.0"          // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 -> 1.15.0)
+## Appendix C: Changelog Highlights (1.7.3 -> 1.15.1)
+
+### 1.15.1 — .dior serialization for VIEW params, first-time VIEW reset, CLEAR_CANVAS full reset
+
+- **feat** — “Load example scene” button added to `WelcomeModal` and `OnboardingOverlay`: fetches `/examples/diorame_onboarding.dior`, dispatches `LOAD_PROJECT`, closes modal/overlay on success. Shows toast on error.
+
+- **feat** — Updated copy: `WelcomeModal` description rewritten; `OnboardingOverlay` subtitle and all feature descriptions updated to reflect current capabilities.
+
+- **feat** — Complete `.dior` serialization for VIEW parameters (`ControlsDrawing.tsx` + `LOAD_PROJECT` reducer): `focalLength`, `viewZoomOffset`, `layerSpacingFactor`, `cinematicSpeed`, `isHandheldEnabled`, `handheldIntensity` are now saved and restored. Fixed `safeCinematicType` to accept all 10 valid `CinematicType` values (previously only `'orbit'` and `'flythrough'` were accepted).
+
+- **feat** — First-time VIEW reset (`Controls.tsx`): on the first DRAW→VIEW transition per browser session, camera is preset to `focalLength=3840` (240mm), `viewZoomOffset=-2500`, `layerSpacingFactor=1.0`, `cinematicType='forward'`. Uses `sessionStorage` flag `diorame-view-initialized`; subsequent transitions leave user settings untouched.
+
+- **fix** — `CLEAR_CANVAS` now resets all VIEW camera parameters (`focalLength`, `viewZoomOffset`, `layerSpacingFactor`, `cinematicSpeed`, `isHandheldEnabled`, `handheldIntensity`, `cinematicType`), `postProcessing`, and `postProcessingEnabled` to `initialState` defaults. Also removes `diorame-view-initialized` from `sessionStorage` so the first-time VIEW preset triggers again.
 
 ### 1.15.0 — Procedural RISO V2: halftone grain + 3-pass ink pipeline
 
