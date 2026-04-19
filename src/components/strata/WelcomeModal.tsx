@@ -69,7 +69,7 @@ export const WelcomeModal = () => {
             className="text-base leading-relaxed max-w-[320px]"
             style={{ color: '#666666', fontWeight: 398 }}
         >
-            Take your 2D sketches on a cinematic 3D ride! Draw with layers that jump into 3D space, making creation stress-free and magically transforming your work into a beautiful, immersive journey
+            Draw in 2D. Explore in 3D. Layer your illustration, add cinematic depth, and watch it come alive — right in your browser, completely free.
         </p>
 
         <a 

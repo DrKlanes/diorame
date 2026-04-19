@@ -19,6 +19,8 @@ export const OnboardingOverlay = () => {
   // Only show if welcome modal is closed AND onboarding is visible AND canvas is empty AND in drawing mode
   const shouldShow = !state.isWelcomeModalOpen && state.isOnboardingVisible && state.shapes.length === 0 && state.mode === 'drawing';
 
+  const onLoadExampleScene = () => {};
+
   const handleDismiss = () => {
     setIsClosing(true);
     localStorage.setItem(ONBOARDING_SEEN_KEY, 'true');
@@ -48,7 +50,7 @@ export const OnboardingOverlay = () => {
             className="text-base leading-relaxed"
             style={{ color: '#666666', fontWeight: 398 }}
           >
-            Draw freely. Then watch your drawing come alive.
+            Draw in 2D. Watch it come alive in 3D.
           </p>
         </div>
 
@@ -68,7 +70,7 @@ export const OnboardingOverlay = () => {
               </div>
               <div>
                 <span className="block text-sm font-semibold text-slate-700">Blob</span>
-                <span className="text-xs text-slate-500">Filled shapes</span>
+                <span className="text-xs text-slate-500">Organic filled shapes</span>
               </div>
             </div>
             
@@ -78,7 +80,7 @@ export const OnboardingOverlay = () => {
               </div>
               <div>
                 <span className="block text-sm font-semibold text-slate-700">Brush</span>
-                <span className="text-xs text-slate-500">Strokes</span>
+                <span className="text-xs text-slate-500">Expressive strokes</span>
               </div>
             </div>
 
@@ -88,7 +90,7 @@ export const OnboardingOverlay = () => {
               </div>
               <div>
                 <span className="block text-sm font-semibold text-slate-700">Layers</span>
-                <span className="text-xs text-slate-500">Auto 3D depth</span>
+                <span className="text-xs text-slate-500">Automatic 3D depth</span>
               </div>
             </div>
           </div>
@@ -120,7 +122,7 @@ export const OnboardingOverlay = () => {
               </div>
               <div>
                 <span className="block text-sm font-semibold text-slate-700">Motion</span>
-                <span className="text-xs text-slate-500">Camera presets</span>
+                <span className="text-xs text-slate-500">Cinematic camera presets</span>
               </div>
             </div>
             
@@ -130,7 +132,7 @@ export const OnboardingOverlay = () => {
               </div>
               <div>
                 <span className="block text-sm font-semibold text-slate-700">Effects</span>
-                <span className="text-xs text-slate-500">Post-processing</span>
+                <span className="text-xs text-slate-500">Cinematic & creative effects</span>
               </div>
             </div>
 
@@ -140,13 +142,19 @@ export const OnboardingOverlay = () => {
               </div>
               <div>
                 <span className="block text-sm font-semibold text-slate-700">Depth</span>
-                <span className="text-xs text-slate-500">Auto parallax</span>
+                <span className="text-xs text-slate-500">Automatic parallax</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* CTA Button */}
+        <button
+          onClick={() => onLoadExampleScene()}
+          className="mb-3 px-8 py-3 rounded-full text-sm font-bold tracking-wide uppercase transition-all duration-200 hover:scale-105 active:scale-95 border border-slate-300 text-slate-500 hover:border-slate-400 hover:text-slate-700 bg-white/60"
+        >
+          Load example scene
+        </button>
         <button
           onClick={handleDismiss}
           className="px-8 py-3 rounded-full text-sm font-bold tracking-wide uppercase transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30"
