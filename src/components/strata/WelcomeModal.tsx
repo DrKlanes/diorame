@@ -120,7 +120,7 @@ export const WelcomeModal = () => {
             href="https://ko-fi.com/dumaker"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 px-4 py-2 bg-purple-600 rounded-full text-xs text-white font-medium tracking-wide uppercase hover:bg-purple-700 transition-colors cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+            className="mt-3 px-4 py-2 bg-purple-600 rounded-full text-xs text-white font-medium tracking-wide uppercase hover:bg-purple-700 transition-colors cursor-pointer flex items-center justify-center gap-1 shadow-sm w-full"
             onClick={(e) => e.stopPropagation()}
         >
             <span>🤍</span> Support on Ko-fi
