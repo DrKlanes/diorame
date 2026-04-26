@@ -182,6 +182,12 @@ export const applyRisoV2 = (
 	offCtx.globalAlpha = intensity * 0.08;
 	offCtx.drawImage(helperCtx.canvas, 2, 1);
 	offCtx.drawImage(helperCtx.canvas, -1, -2);
+	// Pass 4 — Ink blend (darkens and densifies overlapping ink areas)
+	if (inkBlend > 0.01) {
+		offCtx.globalCompositeOperation = 'multiply';
+		offCtx.globalAlpha = inkBlend * 0.5;
+		offCtx.drawImage(helperCtx.canvas, 0, 0);
+	}
 	offCtx.restore();
 };
 
