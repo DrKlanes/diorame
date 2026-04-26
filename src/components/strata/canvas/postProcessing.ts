@@ -22,22 +22,22 @@ export const applyRisoPerLayer = (
 	layerCtx.globalAlpha = inkBlend * 0.4;
 	layerCtx.drawImage(grainCanvas, 0, 0, w, h);
 	layerCtx.restore();
-	// Step 2 — Multiply pass: darken where layers overlap
-	offCtx.save();
-	if (dofBlur > 0.5) offCtx.filter = `blur(${dofBlur}px)`;
-	offCtx.globalCompositeOperation = 'multiply';
-	offCtx.globalAlpha = inkBlend;
-	offCtx.drawImage(layerCtx.canvas, 0, 0);
-	offCtx.restore();
-	offCtx.filter = 'none';
-	// Step 3 — Source-over pass: normal blend remainder
+	// Step 2 — Normal composite (source-over base)
 	offCtx.save();
 	if (dofBlur > 0.5) offCtx.filter = `blur(${dofBlur}px)`;
 	offCtx.globalCompositeOperation = 'source-over';
-	offCtx.globalAlpha = 1 - inkBlend;
+	offCtx.globalAlpha = 1;
 	offCtx.drawImage(layerCtx.canvas, 0, 0);
 	offCtx.restore();
 	offCtx.filter = 'none';
+	// Step 3 — Multiply darkening over existing composite (only where layer has content)
+	if (inkBlend > 0.01) {
+		offCtx.save();
+		offCtx.globalCompositeOperation = 'multiply';
+		offCtx.globalAlpha = inkBlend * 0.6;
+		offCtx.drawImage(layerCtx.canvas, 0, 0);
+		offCtx.restore();
+	}
 };
 
 /**
