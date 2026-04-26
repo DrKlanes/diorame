@@ -23,6 +23,11 @@ export const Controls = () => {
 		}
 	}, [state.postProcessing.focusTargetLayer]);
 
+	// Reset view initialization flag on mount
+	React.useEffect(() => {
+		sessionStorage.removeItem('diorame-view-initialized');
+	}, []);
+
 	const getActiveZ = (layerIndex: number) => layerIndex * -BASE_DEPTH_STEP;
 
 	// Calculate scene complexity
