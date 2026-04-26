@@ -1987,7 +1987,7 @@ export const StrataCanvas = () => {
 
              const risoInkBlend = currentState.postProcessing.risoInkBlend ?? 0;
              if (isCinematic && currentState.postProcessingEnabled.riso && risoInkBlend > 0.01 && risoGrainRef.current) {
-                 applyRisoPerLayer(layerCtx, offCtx, risoGrainRef.current, risoInkBlend, w, h, dofBlur);
+                 applyRisoPerLayer(helperCanvasRef.current!.getContext('2d')!, offCtx, risoGrainRef.current, risoInkBlend, w, h, dofBlur);
              } else {
                  applyDoFBlur(offCtx, helperCanvasRef.current!, dofBlur);
              }
