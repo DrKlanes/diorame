@@ -16,12 +16,6 @@ export const applyRisoPerLayer = (
 	h: number,
 	dofBlur: number
 ): void => {
-	// Step 1 — Grain perforation: punch through layer following grain pattern
-	layerCtx.save();
-	layerCtx.globalCompositeOperation = 'destination-out';
-	layerCtx.globalAlpha = inkBlend * 0.4;
-	layerCtx.drawImage(grainCanvas, 0, 0, w, h);
-	layerCtx.restore();
 	// Step 2 — Normal composite (source-over base)
 	offCtx.save();
 	if (dofBlur > 0.5) offCtx.filter = `blur(${dofBlur}px)`;
