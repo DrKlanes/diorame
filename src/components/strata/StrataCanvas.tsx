@@ -1985,12 +1985,7 @@ export const StrataCanvas = () => {
                  applyGlow(offCtx, helperCanvasRef.current!, glowInt, dofBlur, currentState.isDarkMode);
              }
 
-             const risoInkBlend = currentState.postProcessing.risoInkBlend ?? 0;
-             if (isCinematic && currentState.postProcessingEnabled.riso && risoInkBlend > 0.01 && risoGrainRef.current) {
-                 applyRisoPerLayer(helperCanvasRef.current!.getContext('2d')!, offCtx, risoGrainRef.current, risoInkBlend, w, h, dofBlur);
-             } else {
-                 applyDoFBlur(offCtx, helperCanvasRef.current!, dofBlur);
-             }
+             applyDoFBlur(offCtx, helperCanvasRef.current!, dofBlur);
           }
       }); // End Layer Loop
 

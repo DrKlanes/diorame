@@ -3,38 +3,6 @@ import { FOG_DENSITY_FACTOR } from '../../../constants/renderConstants';
 // ─── Per-layer effects (called inside the layer render loop) ─────────────────
 
 /**
- * Per-layer RISO compositing: perforates the layer with grain irregularity,
- * then blends to offscreen as a crossfade between multiply and source-over.
- * Replaces applyDoFBlur when risoInkBlend > 0.
- */
-export const applyRisoPerLayer = (
-	layerCtx: CanvasRenderingContext2D,
-	offCtx: CanvasRenderingContext2D,
-	grainCanvas: HTMLCanvasElement,
-	inkBlend: number,
-	w: number,
-	h: number,
-	dofBlur: number
-): void => {
-	// Step 2 — Normal composite (source-over base)
-	offCtx.save();
-	if (dofBlur > 0.5) offCtx.filter = `blur(${dofBlur}px)`;
-	offCtx.globalCompositeOperation = 'source-over';
-	offCtx.globalAlpha = 1;
-	offCtx.drawImage(layerCtx.canvas, 0, 0);
-	offCtx.restore();
-	offCtx.filter = 'none';
-	// Step 3 — Multiply darkening over existing composite (only where layer has content)
-	if (inkBlend > 0.01) {
-		offCtx.save();
-		offCtx.globalCompositeOperation = 'multiply';
-		offCtx.globalAlpha = inkBlend * 0.6;
-		offCtx.drawImage(layerCtx.canvas, 0, 0);
-		offCtx.restore();
-	}
-};
-
-/**
  * Applies exponential depth fog to a layer canvas.
  * @param depth  FL + layerAvgZ — pre-calculated by the caller.
  */

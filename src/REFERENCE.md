@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 1.15.3
+**Version**: 1.15.1
 **Last Updated**: March 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -477,21 +477,6 @@ APP_VERSION = "1.14.0"          // Current release version
 ---
 
 ## Appendix C: Changelog Highlights (1.7.3 -> 1.15.1)
-
-### 1.15.3 — risoInkBlend: per-layer grain compositing
-
-- **fix** (`postProcessing.ts`): eliminado código fantasma `inkBlend`/`helperCtx` en `applyGlow` que causaba `ReferenceError` en runtime cuando glow estaba activo
-- **refactor — `applyRisoPerLayer`** (`postProcessing.ts`): nueva función per-layer — grain perforation (`destination-out` @ `inkBlend * 0.4`) + crossfade `multiply`/`source-over` reemplaza `applyDoFBlur` cuando `risoInkBlend > 0`
-- **refactor — `applyRisoV2`** (`postProcessing.ts`): eliminado Pass 4 y parámetro `inkBlend`; la función queda con 3 passes
-- **refactor — render loop** (`StrataCanvas.tsx`): compositing per-layer condicionado a `risoInkBlend > 0` — cada capa toma la ruta `applyRisoPerLayer` o `applyDoFBlur`
-
-### 1.15.2 — RISO Ink Blend: 4th pass for ink-overlap darkening
-
-- **feat — `risoInkBlend`** (`postProcessing.ts`): New Pass 4 in `applyRisoV2` — `multiply` at `inkBlend * 0.5` alpha simulates CMY ink-on-ink darkening in Riso printing. Default 0 (off). iPad-compatible (no `ctx.filter`).
-
-- **feat — UI** (`ControlsCinematic.tsx`): Ink Blend sub-slider (0–1, step 0.05) inside the RISO block, visible only when RISO is active. Uses `DiToggleSlider` children pattern.
-
-- **type — `risoInkBlend: number`** (`strataTypes.ts`): New field in `PostProcessingSettings`. Serialized in `.dior` via existing `postProcessing` safe-spread in `LOAD_PROJECT`; old projects default to 0.
 
 ---
 

@@ -14,7 +14,7 @@ export type {
 // --- Constants ---
 export const BASE_DEPTH_STEP = 150;  
 export const MAX_LAYERS = 10;
-export const APP_VERSION = "1.15.3"; // Release version
+export const APP_VERSION = "1.15.1"; // Release version
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS } from '../../constants/palette';
@@ -136,7 +136,6 @@ const initialState: AppState = {
       wiggle: 0.5, // Default to Medium (Current behavior)
       glow: 0.5, // Default glow intensity
       riso: 0.5, // Default RISO texture intensity
-      risoInkBlend: 0, // Default Ink Blend (off)
       pixelArtSize: 4, // Default pixel size
       pixelArtDepth: 4, // Default color depth (4 levels = 64 colors)
       pixelArtDither: 0, // Default dither (0 = Clean/None)

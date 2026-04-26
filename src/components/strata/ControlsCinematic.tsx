@@ -516,27 +516,7 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 									min={0} max={1} step={0.05}
 									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'riso' })}
 									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'riso', value: v } })}
-								>
-									{state.postProcessingEnabled.riso && (
-										<div className="space-y-2 pt-1 animate-in slide-in-from-top-1 fade-in duration-200">
-											<div className="space-y-1">
-												<div className={cn("flex justify-between text-[10px]", diTokens.textSubtle)}>
-													<span>Ink Blend</span>
-													<span>{Math.round((state.postProcessing.risoInkBlend ?? 0) * 100)}%</span>
-												</div>
-												<input
-													type="range"
-													min="0"
-													max="1"
-													step="0.05"
-													value={state.postProcessing.risoInkBlend ?? 0}
-													onChange={(e) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'risoInkBlend', value: parseFloat(e.target.value) } })}
-													className={cn("w-full h-1.5 rounded-lg appearance-none cursor-pointer", diTokens.sliderBg, diTokens.sliderAccent)}
-												/>
-											</div>
-										</div>
-									)}
-								</DiToggleSlider>
+								/>
 
 								{/* Distortion */}
 								<DiToggleSlider
