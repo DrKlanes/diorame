@@ -50,6 +50,12 @@ export const applyGlow = (
 	offCtx.globalCompositeOperation = isDarkMode ? 'lighter' : 'source-over';
 	offCtx.globalAlpha = isDarkMode ? 1.0 : (0.3 + glowInt * 0.4);
 	offCtx.drawImage(helperCanvas, 0, 0);
+	// Pass 4 — Ink blend (darkens and densifies overlapping ink areas)
+	if (inkBlend > 0.01) {
+		offCtx.globalCompositeOperation = 'multiply';
+		offCtx.globalAlpha = inkBlend * 0.5;
+		offCtx.drawImage(helperCtx.canvas, 0, 0);
+	}
 	offCtx.restore();
 };
 
@@ -156,7 +162,8 @@ export const applyRisoV2 = (
 	h: number,
 	intensity: number,
 	cachedGrainCanvas: HTMLCanvasElement,
-	helperCtx: CanvasRenderingContext2D
+	helperCtx: CanvasRenderingContext2D,
+	inkBlend: number = 0
 ): void => {
 	offCtx.save();
 	// Pass 1 — Paper grain

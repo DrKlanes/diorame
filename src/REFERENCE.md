@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 1.15.1
+**Version**: 1.15.2
 **Last Updated**: March 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -317,7 +317,7 @@ The codebase has been modularized through a multi-phase refactoring (completed i
 | File | Lines | Purpose |
 |---|---|---|
 | `PixelArtProcessor.ts` | 173 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
-| `postProcessing.ts` | 258 | 8 post-processing functions: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRiso`, `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge` |
+| `postProcessing.ts` | 262 | 8 post-processing functions: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass: grain, ink spread, misregistration, ink blend), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge` |
 | `cinematicCamera.ts` | 150 | `computeCinematicTick`: all 10 camera modes + handheld shake, returns new camera state |
 | `exportHandlers.ts` | 323 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4`: all export logic |
 | `transformUtils.ts` | 134 | `getLayerBoundingBox`: pixel-accurate bounding box for Move tool gizmo |
@@ -447,7 +447,7 @@ APP_VERSION = "1.14.0"          // Current release version
 - **Fog**: Atmospheric depth fog (0-1)
 - **Particles**: Floating particles (circle, square, stroke types)
 - **Glow**: Soft glow around shapes (0-1)
-- **Riso**: Risograph halftone texture (0-1)
+- **Riso**: Risograph halftone texture (0-1) + **Ink Blend** sub-control (0-1, overlap darkening)
 - **Pixel Art**: Pixelation effect (size 2-16, depth 2-32 colors, dither 0-1)
 - **Grunge**: Overlay texture (subtle, medium, intense)
 - **Wiggle**: Hand-drawn line wobble (light, medium, heavy)
@@ -477,6 +477,16 @@ APP_VERSION = "1.14.0"          // Current release version
 ---
 
 ## Appendix C: Changelog Highlights (1.7.3 -> 1.15.1)
+
+### 1.15.2 — RISO Ink Blend: 4th pass for ink-overlap darkening
+
+- **feat — `risoInkBlend`** (`postProcessing.ts`): New Pass 4 in `applyRisoV2` — `multiply` at `inkBlend * 0.5` alpha simulates CMY ink-on-ink darkening in Riso printing. Default 0 (off). iPad-compatible (no `ctx.filter`).
+
+- **feat — UI** (`ControlsCinematic.tsx`): Ink Blend sub-slider (0–1, step 0.05) inside the RISO block, visible only when RISO is active. Uses `DiToggleSlider` children pattern.
+
+- **type — `risoInkBlend: number`** (`strataTypes.ts`): New field in `PostProcessingSettings`. Serialized in `.dior` via existing `postProcessing` safe-spread in `LOAD_PROJECT`; old projects default to 0.
+
+---
 
 ### 1.15.1 — .dior serialization for VIEW params, first-time VIEW reset, CLEAR_CANVAS full reset
 
