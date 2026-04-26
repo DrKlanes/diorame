@@ -12,7 +12,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 | | |
 |---|---|
-| **Versión** | 1.15.2 |
+| **Versión** | 1.15.3 |
 | **Stack** | React 18 + TypeScript + Vite 6 + Tailwind CSS 4 + Canvas 2D API |
 | **Dev** | `npm run dev` → puerto 3000 |
 | **Build** | `npm run build` — siempre verificar antes de hacer commit |
@@ -190,7 +190,7 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 ## Constantes clave
 
 ```typescript
-APP_VERSION         = "1.15.2"   // en StrataContext.tsx — bump en cualquier cambio visible
+APP_VERSION         = "1.15.3"   // en StrataContext.tsx — bump en cualquier cambio visible
 BASE_DEPTH_STEP     = 150        // Z-units por capa
 MAX_LAYERS          = 10
 MAX_HISTORY_STEPS   = 50

@@ -3,6 +3,44 @@ import { FOG_DENSITY_FACTOR } from '../../../constants/renderConstants';
 // ─── Per-layer effects (called inside the layer render loop) ─────────────────
 
 /**
+ * Per-layer RISO compositing: perforates the layer with grain irregularity,
+ * then blends to offscreen as a crossfade between multiply and source-over.
+ * Replaces applyDoFBlur when risoInkBlend > 0.
+ */
+export const applyRisoPerLayer = (
+	layerCtx: CanvasRenderingContext2D,
+	offCtx: CanvasRenderingContext2D,
+	grainCanvas: HTMLCanvasElement,
+	inkBlend: number,
+	w: number,
+	h: number,
+	dofBlur: number
+): void => {
+	// Step 1 — Grain perforation: punch through layer following grain pattern
+	layerCtx.save();
+	layerCtx.globalCompositeOperation = 'destination-out';
+	layerCtx.globalAlpha = inkBlend * 0.4;
+	layerCtx.drawImage(grainCanvas, 0, 0, w, h);
+	layerCtx.restore();
+	// Step 2 — Multiply pass: darken where layers overlap
+	offCtx.save();
+	if (dofBlur > 0.5) offCtx.filter = `blur(${dofBlur}px)`;
+	offCtx.globalCompositeOperation = 'multiply';
+	offCtx.globalAlpha = inkBlend;
+	offCtx.drawImage(layerCtx.canvas, 0, 0);
+	offCtx.restore();
+	offCtx.filter = 'none';
+	// Step 3 — Source-over pass: normal blend remainder
+	offCtx.save();
+	if (dofBlur > 0.5) offCtx.filter = `blur(${dofBlur}px)`;
+	offCtx.globalCompositeOperation = 'source-over';
+	offCtx.globalAlpha = 1 - inkBlend;
+	offCtx.drawImage(layerCtx.canvas, 0, 0);
+	offCtx.restore();
+	offCtx.filter = 'none';
+};
+
+/**
  * Applies exponential depth fog to a layer canvas.
  * @param depth  FL + layerAvgZ — pre-calculated by the caller.
  */
@@ -50,12 +88,6 @@ export const applyGlow = (
 	offCtx.globalCompositeOperation = isDarkMode ? 'lighter' : 'source-over';
 	offCtx.globalAlpha = isDarkMode ? 1.0 : (0.3 + glowInt * 0.4);
 	offCtx.drawImage(helperCanvas, 0, 0);
-	// Pass 4 — Ink blend (darkens and densifies overlapping ink areas)
-	if (inkBlend > 0.01) {
-		offCtx.globalCompositeOperation = 'multiply';
-		offCtx.globalAlpha = inkBlend * 0.5;
-		offCtx.drawImage(helperCtx.canvas, 0, 0);
-	}
 	offCtx.restore();
 };
 
@@ -162,8 +194,7 @@ export const applyRisoV2 = (
 	h: number,
 	intensity: number,
 	cachedGrainCanvas: HTMLCanvasElement,
-	helperCtx: CanvasRenderingContext2D,
-	inkBlend: number = 0
+	helperCtx: CanvasRenderingContext2D
 ): void => {
 	offCtx.save();
 	// Pass 1 — Paper grain
@@ -182,12 +213,6 @@ export const applyRisoV2 = (
 	offCtx.globalAlpha = intensity * 0.08;
 	offCtx.drawImage(helperCtx.canvas, 2, 1);
 	offCtx.drawImage(helperCtx.canvas, -1, -2);
-	// Pass 4 — Ink blend (darkens and densifies overlapping ink areas)
-	if (inkBlend > 0.01) {
-		offCtx.globalCompositeOperation = 'multiply';
-		offCtx.globalAlpha = inkBlend * 0.5;
-		offCtx.drawImage(helperCtx.canvas, 0, 0);
-	}
 	offCtx.restore();
 };
 

@@ -14,7 +14,7 @@ export type {
 // --- Constants ---
 export const BASE_DEPTH_STEP = 150;  
 export const MAX_LAYERS = 10;
-export const APP_VERSION = "1.15.2"; // Release version
+export const APP_VERSION = "1.15.3"; // Release version
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS } from '../../constants/palette';
