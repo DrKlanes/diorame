@@ -133,6 +133,16 @@ export const WelcomeModal = () => {
         >
           {isLoadingExample ? 'Loading...' : 'Load example scene'}
         </button>
+
+        <a
+          href="https://www.youtube.com/watch?v=Ieb280ncEfA"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase transition-all duration-200 border border-slate-300 text-slate-700 bg-transparent hover:bg-slate-50 hover:border-slate-400 w-full flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          Watch tutorial
+        </a>
       </div>
     </div>
   );
