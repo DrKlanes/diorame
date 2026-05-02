@@ -5,13 +5,7 @@ import logoImg from "figma:asset/41cbeec613d6de6fbe96a0b93ab21aceb0db707d.png";
 export const MobileBlockScreen = () => {
   return (
     <div className="w-full h-[100dvh] bg-slate-50 flex items-center justify-center font-manrope">
-      {/* Font Injection */}
-      <style dangerouslySetInnerHTML={{__html: `
-          @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap');
-          .font-manrope { font-family: 'Manrope', sans-serif; }
-      `}} />
-
-      <div 
+      <div
         className="relative bg-white w-[90%] max-w-[420px] p-8 flex flex-col items-center text-center shadow-2xl"
         style={{ borderRadius: '2rem' }}
       >

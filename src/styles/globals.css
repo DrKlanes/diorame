@@ -126,8 +126,17 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Manrope', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  .font-manrope {
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .font-sora {
+    font-family: 'Sora', sans-serif;
   }
 }
 

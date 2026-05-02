@@ -10,10 +10,8 @@ import { ExportProgress } from './components/strata/ExportProgress';
 function AppContent() {
   return (
     <div className="relative w-full h-[100dvh] overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]">
-      {/* Font Injection */}
+      {/* Global interaction lock */}
       <style dangerouslySetInnerHTML={{__html: `
-          @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap');
-          .font-manrope { font-family: 'Manrope', sans-serif; }
           * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
       `}} />
       
