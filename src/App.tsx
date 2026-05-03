@@ -6,6 +6,7 @@ import { WelcomeModal } from './components/strata/WelcomeModal';
 import { MobileBlockScreen, useIsMobile } from './components/strata/MobileBlockScreen';
 import { ToastProvider } from './components/ui/toast-provider';
 import { ExportProgress } from './components/strata/ExportProgress';
+import { PreviewPage } from './preview/PreviewPage';
 
 function AppContent() {
   return (
@@ -24,6 +25,11 @@ function AppContent() {
 }
 
 export default function App() {
+  // Preview mode: dev only, activated via ?preview=true
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'true') {
+    return <PreviewPage />;
+  }
+
   const isMobile = useIsMobile();
 
   // If mobile, show only the block screen (no app initialization)
