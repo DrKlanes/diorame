@@ -8,196 +8,182 @@ export const ICONS: Record<string, string> = {
 
 	// ─── Navigation & Global ────────────────────────────────────────────
 	'draw-mode':
-		`<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>`,
+		`<path d="M15.5 4.5L19.5 8.5M14 6L18 10L9 19H5V15L14 6Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 19L5.5 15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'view-mode':
-		`<path d="M5 3l14 9-14 9V3z"/>`,
+		`<rect x="2.5" y="6.5" width="19" height="13" rx="2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 10.5H21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 6.5V10.5M12 6.5V10.5M17 6.5V10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'hide-ui':
-		`<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/>`,
+		`<path d="M3 12C3 12 6 6.5 12 6.5C18 6.5 21 12 21 12C21 12 18 17.5 12 17.5C6 17.5 3 12 3 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M4 4L20 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'sun':
-		`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>`,
+		`<path d="M12 4V6M12 18V20M4 12H6M18 12H20M6.2 6.2L7.6 7.6M16.4 16.4L17.8 17.8M6.2 17.8L7.6 16.4M16.4 7.6L17.8 6.2M15.6 12C15.6 13.99 13.99 15.6 12 15.6C10.01 15.6 8.4 13.99 8.4 12C8.4 10.01 10.01 8.4 12 8.4C13.99 8.4 15.6 10.01 15.6 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'moon':
-		`<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`,
+		`<path d="M18.45 13.65C16.95 16.65 13.95 18.65 10.95 18.45C6.45 18.15 4.15 12.85 6.45 9.15C8.15 6.45 10.95 5.15 13.45 5.65C10.95 7.65 10.75 11.85 12.95 13.65C14.45 14.85 16.75 14.85 18.45 13.65Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'chevron-left':
-		`<path d="M15 18l-6-6 6-6"/>`,
+		`<path d="M14 7L9 12L14 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'chevron-right':
-		`<path d="M9 18l6-6-6-6"/>`,
+		`<path d="M10 7L15 12L10 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 
 	// ─── Export ──────────────────────────────────────────────────────────
 	'snapshot':
-		`<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>`,
+		`<path d="M9 4.5H15L16.5 6.5H19.5C20.1 6.5 20.5 6.9 20.5 7.5V17.5C20.5 18.1 20.1 18.5 19.5 18.5H4.5C3.9 18.5 3.5 18.1 3.5 17.5V7.5C3.5 6.9 3.9 6.5 4.5 6.5H7.5L9 4.5ZM12 15.5C13.93 15.5 15.5 13.93 15.5 12C15.5 10.07 13.93 8.5 12 8.5C10.07 8.5 8.5 10.07 8.5 12C8.5 13.93 10.07 15.5 12 15.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'record':
-		`<path d="M15 10l4.553-2.069A1 1 0 0 1 21 8.82v6.36a1 1 0 0 1-1.447.889L15 14v-4z"/><rect x="2" y="6" width="13" height="12" rx="2"/>`,
+		`<path d="M4.5 7.5H14.5V16.5H4.5C3.95 16.5 3.5 16.05 3.5 15.5V8.5C3.5 7.95 3.95 7.5 4.5 7.5ZM14.5 10.5L19.5 8V16L14.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 
 	// ─── FX ──────────────────────────────────────────────────────────────
 	'fx-grain':
-		`<circle cx="8"  cy="8"  r="1.2" fill="currentColor" stroke="none"/>` +
-		`<circle cx="16" cy="6"  r="1"   fill="currentColor" stroke="none"/>` +
-		`<circle cx="5"  cy="15" r="1"   fill="currentColor" stroke="none"/>` +
-		`<circle cx="13" cy="17" r="1.2" fill="currentColor" stroke="none"/>` +
-		`<circle cx="19" cy="11" r="1"   fill="currentColor" stroke="none"/>` +
-		`<circle cx="10" cy="4"  r="0.8" fill="currentColor" stroke="none"/>` +
-		`<circle cx="7"  cy="19" r="0.8" fill="currentColor" stroke="none"/>` +
-		`<circle cx="18" cy="19" r="0.8" fill="currentColor" stroke="none"/>` +
-		`<circle cx="15" cy="13" r="0.8" fill="currentColor" stroke="none"/>`,
+		`<circle cx="7" cy="8" r="1" fill="currentColor"/>` +
+		`<circle cx="13" cy="6" r="1" fill="currentColor"/>` +
+		`<circle cx="18" cy="9" r="1" fill="currentColor"/>` +
+		`<circle cx="5" cy="14" r="1" fill="currentColor"/>` +
+		`<circle cx="10" cy="12" r="1" fill="currentColor"/>` +
+		`<circle cx="16" cy="13" r="1" fill="currentColor"/>` +
+		`<circle cx="8" cy="18" r="1" fill="currentColor"/>` +
+		`<circle cx="14" cy="17" r="1" fill="currentColor"/>` +
+		`<circle cx="19" cy="16" r="1" fill="currentColor"/>` +
+		`<circle cx="11" cy="19" r="1" fill="currentColor"/>`,
 	'fx-vignette':
-		`<ellipse cx="12" cy="12" rx="10" ry="8"/><ellipse cx="12" cy="12" rx="5.5" ry="4"/>`,
+		`<path d="M12 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0" stroke="currentColor" stroke-width="0.75" stroke-linecap="round" opacity="0.45"/>`,
 	'fx-chroma':
-		`<circle cx="10" cy="10" r="5"/><circle cx="14" cy="10" r="5"/><circle cx="12" cy="15" r="5"/>`,
+		`<circle cx="10" cy="12" r="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="14" cy="12" r="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>`,
 	'fx-fog':
-		`<path d="M5 9c1.5-1.5 3.5-1.5 5 0s3.5 1.5 5 0 3.5-1.5 5 0"/><path d="M3 13c1.5-1.5 3.5-1.5 5 0s3.5 1.5 5 0 3.5-1.5 5 0"/><path d="M5 17h14"/>`,
+		`<path d="M4 10C6 9 8 11 10 10C12 9 14 11 16 10C18 9 20 11 21 10M4 14C6 13 8 15 10 14C12 13 14 15 16 14C18 13 20 15 21 14M6 18C8 17 10 19 12 18C14 17 16 19 18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'fx-glow':
-		`<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>`,
+		`<path d="M12 5V3M12 21V19M5 12H3M21 12H19M7.05 7.05L5.64 5.64M18.36 18.36L16.95 16.95M7.05 16.95L5.64 18.36M18.36 5.64L16.95 7.05M12 16C14.21 16 16 14.21 16 12C16 9.79 14.21 8 12 8C9.79 8 8 9.79 8 12C8 14.21 9.79 16 12 16Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'fx-riso':
-		`<circle cx="9"  cy="11" r="5"/><circle cx="15" cy="11" r="5"/><circle cx="12" cy="16" r="5"/>`,
+		`<circle cx="9.5" cy="13.5" r="5" stroke="currentColor" stroke-width="1.5"/><circle cx="14.5" cy="13.5" r="5" stroke="currentColor" stroke-width="1.5" opacity="0.5"/><circle cx="12" cy="9.5" r="5" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>`,
 	'fx-distortion':
-		`<path d="M3 6h18"/><path d="M3 12c3-4 6 4 9 0s6-4 9 0"/><path d="M3 18h18"/>`,
+		`<path d="M4 8C6 7 7 9.5 9 9C11 8.5 11 6 13 6.5C15 7 15 9.5 17 9C19 8.5 20 7 21 8M4 14C5.5 13 7 16 9 15C11 14 11 12 13 12.5C15 13 16 15.5 18 15C19.5 14.5 20.5 13 21 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'fx-wiggle':
-		`<path d="M2 12c2-5 4-5 6 0s4 5 6 0 4-5 6 0"/>`,
+		`<path d="M3 12C4.5 9 6 15 7.5 12C9 9 10.5 15 12 12C13.5 9 15 15 16.5 12C18 9 19.5 15 21 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'fx-grunge':
-		`<path d="M4 8l3-3 2 4 3-5 2 6 3-3 3 4"/><path d="M3 16l4-2 2 3 3-4 3 3 3-2 2 3"/>`,
+		`<path d="M5 6L7 9M9 5L8 8M12 4L11 7M15 5L14 8M18 6L16 9M6 13L4 16M8 11L6 14M11 10L10 13M14 11L13 14M17 12L15 15M19 10L17 13M7 18L9 15M12 19L13 16M16 18L17 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'fx-particles':
-		`<circle cx="6"  cy="6"  r="1.5" fill="currentColor" stroke="none"/>` +
-		`<circle cx="18" cy="5"  r="1"   fill="currentColor" stroke="none"/>` +
-		`<circle cx="4"  cy="17" r="1"   fill="currentColor" stroke="none"/>` +
-		`<circle cx="15" cy="18" r="1.5" fill="currentColor" stroke="none"/>` +
-		`<circle cx="20" cy="13" r="1"   fill="currentColor" stroke="none"/>` +
-		`<circle cx="11" cy="11" r="0.8" fill="currentColor" stroke="none"/>` +
-		`<circle cx="16" cy="11" r="0.5" fill="currentColor" stroke="none"/>`,
+		`<circle cx="6" cy="9" r="1.2" fill="currentColor"/>` +
+		`<circle cx="12" cy="5" r="0.9" fill="currentColor"/>` +
+		`<circle cx="17" cy="8" r="1.4" fill="currentColor"/>` +
+		`<circle cx="4" cy="15" r="0.8" fill="currentColor"/>` +
+		`<circle cx="9" cy="14" r="1.3" fill="currentColor"/>` +
+		`<circle cx="15" cy="13" r="0.7" fill="currentColor"/>` +
+		`<circle cx="19" cy="17" r="1.1" fill="currentColor"/>` +
+		`<circle cx="7" cy="19" r="0.9" fill="currentColor"/>` +
+		`<circle cx="13" cy="18" r="1.2" fill="currentColor"/>`,
 	'fx-dof':
-		`<ellipse cx="12" cy="12" rx="3" ry="9"/><ellipse cx="12" cy="12" rx="9" ry="3"/>`,
+		`<ellipse cx="12" cy="12" rx="8" ry="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="12" cy="12" rx="4" ry="2.5" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.5"/><line x1="4" y1="12" x2="2" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="20" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'fx-pixel':
-		`<rect x="3"  y="3"  width="5" height="5" rx="1"/>` +
-		`<rect x="10" y="3"  width="5" height="5" rx="1"/>` +
-		`<rect x="17" y="3"  width="4" height="5" rx="1"/>` +
-		`<rect x="3"  y="10" width="5" height="5" rx="1"/>` +
-		`<rect x="10" y="10" width="5" height="5" rx="1"/>` +
-		`<rect x="17" y="10" width="4" height="5" rx="1"/>` +
-		`<rect x="3"  y="17" width="5" height="4" rx="1"/>` +
-		`<rect x="10" y="17" width="5" height="4" rx="1"/>`,
+		`<rect x="4" y="4" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.5"/>` +
+		`<rect x="10" y="4" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.5"/>` +
+		`<rect x="4" y="10" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.5"/>` +
+		`<rect x="10" y="10" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.5"/>` +
+		`<rect x="16" y="4" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1" opacity="0.4"/>` +
+		`<rect x="16" y="15" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1" opacity="0.4"/>`,
 
 	// ─── Camera Presets ──────────────────────────────────────────────────
 	'cam-forward':
-		`<path d="M5 12h14"/><path d="m15 8 4 4-4 4"/>`,
+		`<path d="M12 19V8M12 5V8M12 8L8 12M12 8L16 12M5 16C5 17.1 5.9 18 7 18H17C18.1 18 19 17.1 19 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'cam-spiral':
-		`<path d="M12 12c0-1.1.9-2 2-2s2 .9 2 2a4 4 0 0 1-4 4 6 6 0 0 1-6-6 8 8 0 0 1 8-8"/>`,
+		`<path d="M12 12C12 12 14 10 14 8C14 6 12 5 10 6C8 7 7 9.5 8 12C9 14.5 12 16 14.5 15.5C17 15 18.5 12.5 18 10C17.5 7.5 15 5.5 12 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'cam-yoyo':
-		`<path d="M4 8l4 4-4 4"/><path d="M20 8l-4 4 4 4"/><path d="M4 12h16"/>`,
+		`<path d="M12 4V20M9 7L12 4L15 7M9 17L12 20L15 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'cam-pulse':
-		`<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>` +
-		`<circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="10"/>`,
+		`<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>` +
+		`<circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="1" opacity="0.5"/>` +
+		`<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="0.75" opacity="0.25"/>`,
 	'cam-twist':
-		`<path d="M4 9c0-2 3.6-4 8-4s8 2 8 4-3.6 4-8 4"/>` +
-		`<path d="M20 15c0 2-3.6 4-8 4s-8-2-8-4 3.6-4 8-4"/>`,
+		`<path d="M12 4C8.69 4 6 6.69 6 10C6 13 8 14.5 10 15.5M12 20C15.31 20 18 17.31 18 14C18 11 16 9.5 14 8.5M10 15.5C11 16 12 17 12 20M14 8.5C13 8 12 7 12 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'cam-arc':
-		`<path d="M5 19A9 9 0 0 1 5 5"/><path d="m9 9-4 4 4 4"/>`,
+		`<path d="M4 12C4 12 7 7 12 7C17 7 20 12 20 12M4 12C4 12 7 17 12 17C17 17 20 12 20 12M8 12H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'cam-crane':
-		`<path d="M12 20V4"/><path d="m8 8 4-4 4 4"/><path d="m8 16 4 4 4-4"/>`,
+		`<path d="M12 19V5M12 5L6 11M12 5L18 11M5 19H19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'cam-truck':
-		`<path d="M4 12h16"/><path d="m8 8-4 4 4 4"/><path d="m16 8 4 4-4 4"/>`,
+		`<path d="M5 12H19M5 12L9 8M5 12L9 16M19 12L15 8M19 12L15 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'cam-orbit':
-		`<ellipse cx="12" cy="12" rx="10" ry="4"/>` +
-		`<circle cx="12" cy="12" r="2"/>`,
+		`<path d="M20 12C20 16.42 16.42 20 12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4C14.1 4 16 4.78 17.46 6.07M20 4L17.46 6.07M17.46 6.07L17 9.5L20.5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'cam-zoom':
-		`<circle cx="10" cy="10" r="6"/><path d="m21 21-4.35-4.35"/><path d="M7 10h6M10 7v6"/>`,
+		`<circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M20 20L16.65 16.65M8 11H14M11 8V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 
 	// ─── Camera Controls ─────────────────────────────────────────────────
 	'ctrl-speed':
-		`<path d="M3.05 12a9 9 0 1 1 .5 3M12 12l3-5"/>` +
-		`<circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>`,
+		`<path d="M5 18C5 14.13 8.13 11 12 11C15.87 11 19 14.13 19 18M12 11V8M9 9L12 11L15 9M12 18L15.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'ctrl-handshake':
-		`<path d="M8 13V5a1 1 0 0 1 2 0v4m0 0V4a1 1 0 0 1 2 0v5m0 0a1 1 0 0 1 2 0v2m0 0a1 1 0 0 1 2 0v2a6 6 0 0 1-6 6H8a6 6 0 0 1-6-6v-2"/>`,
+		`<path d="M6 9L4 11L9 16L11 14M18 15L20 13L15 8L13 10M11 14L10 15.5M13 10L14 8.5M11 14L13 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'ctrl-handshake-off':
-		`<path opacity="0.35" d="M8 13V5a1 1 0 0 1 2 0v4m0 0V4a1 1 0 0 1 2 0v5m0 0a1 1 0 0 1 2 0v2m0 0a1 1 0 0 1 2 0v2a6 6 0 0 1-6 6H8a6 6 0 0 1-6-6v-2"/><path d="m2 2 20 20"/>`,
+		`<path d="M6 9L4 11L9 16L11 14M18 15L20 13L15 8L13 10M11 14L10 15.5M13 10L14 8.5M11 14L13 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>`,
 	'ctrl-focal':
-		`<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>`,
+		`<path d="M4 8H8L10 5H14L16 8H20M4 8V18H20V8M12 16C13.66 16 15 14.66 15 13C15 11.34 13.66 10 12 10C10.34 10 9 11.34 9 13C9 14.66 10.34 16 12 16Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'ctrl-distance':
-		`<path d="M3 12h18"/><path d="M6 8v8"/><path d="M18 8v8"/>`,
+		`<path d="M4 12H20M4 12L7 9M4 12L7 15M20 12L17 9M20 12L17 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'ctrl-spacing':
-		`<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>` +
-		`<path d="M21 3v18"/><path d="M3 3v18"/>`,
+		`<path d="M4 6H20M4 10H20M4 14H20M4 18H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"/><path d="M4 8H20M4 16H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'ctrl-dof-free':
-		`<circle cx="12" cy="12" r="5"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/>`,
+		`<path d="M3 12H7M17 12H21M7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17C9.24 17 7 14.76 7 12ZM12 10V12L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'ctrl-dof-lock':
-		`<rect x="8" y="11" width="8" height="7" rx="1.5"/>` +
-		`<path d="M10 11V7.5a2 2 0 0 1 4 0V11"/>` +
-		`<circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/>`,
+		`<path d="M12 5V8M12 16V19M5 12H8M16 12H19M8.5 8.5L10.5 10.5M13.5 13.5L15.5 15.5M15.5 8.5L13.5 10.5M10.5 13.5L8.5 15.5M10 12C10 10.9 10.9 10 12 10C13.1 10 14 10.9 14 12C14 13.1 13.1 14 12 14C10.9 14 10 13.1 10 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 
 	// ─── Drawing Tools ───────────────────────────────────────────────────
 	'brush':
-		`<path d="M9.06 11.9l8.07-8.07a2.85 2.85 0 1 1 4.03 4.03l-8.08 8.07"/>` +
-		`<path d="M7 14.94C5.34 14.94 4 16.3 4 17.97c0 1.33-2.5 1.52-2 2.02 1 1 2.48 1.01 3.5 1.01 1.66 0 3-1.35 3-3.02C8.5 16.32 8.5 14.94 7 14.94z"/>`,
+		`<path d="M9.52 13.25C7.52 15.25 3.52 18.25 4.02 19.25C5.52 21.25 9.02 16.75 11.02 14.75M16.02 13.25L10.89 8.38L9.44 9.84C8.65 10.62 8.65 11.88 9.44 12.66L11.61 14.84C12.39 15.62 13.65 15.62 14.44 14.84L16.02 13.25ZM16.02 13.25L20.02 9.25L15.02 4.25L10.52 8.75M14.52 8.25L16.52 6.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'eraser':
-		`<path d="m7 21-4-4 14.5-14.5a2 2 0 0 1 2.83 0l1.17 1.17a2 2 0 0 1 0 2.83L7 21z"/><path d="m2 13.5 5 5"/>`,
+		`<path d="M12.05 19.03L5.55 19.03M10.55 8.53L16.55 12.53M12.35 18.73L18.72 10.07C19.06 9.61 18.95 8.96 18.47 8.65L13.22 5.14C12.78 4.85 12.2 4.95 11.88 5.36L5.29 13.77C4.91 14.27 5.07 14.99 5.62 15.28L12.35 18.73Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'blob':
-		`<path d="M8 5c-2 0-4 1.5-4 4 0 1.5 1 2.5 1 3.5S4 15 4 17c0 2 2 3 4 3 1.5 0 2.5-1 3.5-1s2 1 3.5 1c2 0 4-1 4-3 0-2-1-3-1-3.5s1-2 1-3.5c0-2.5-2-4-4-4-1.5 0-2.5 1-3.5 1S9.5 5 8 5z"/>`,
+		`<path d="M16.55 12.05L13.55 15.05M14.55 11.05L10.55 15.05M12.05 11.05L9.05 13.55M9.05 9.05C7.25 6.9 9.15 3.65 12.65 4.25C16.05 4.75 18.95 7.85 19.05 12.05C19.15 15.95 18.25 18.15 14.65 19.35C10.65 20.75 4.95 19.05 4.95 14.85C5.05 11.05 10.84 11.2 9.05 9.05Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'text':
-		`<path d="M4 7V5h16v2"/><path d="M9 20h6"/><path d="M12 5v15"/>`,
+		`<path d="M4.7 6.4C6.7 6.1 10.7 6 12.7 6C14.7 6 17.9 6 19.3 6.3M11.9 6.4C11.8 9 11.7 12 11.8 17M9.9 18C10.9 17.7 12.7 17.7 13.8 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'move':
-		`<path d="M5 9l-3 3 3 3"/><path d="M19 9l3 3-3 3"/><path d="M9 5l3-3 3 3"/><path d="M9 19l3 3 3-3"/>` +
-		`<path d="M2 12h20M12 2v20"/>`,
+		`<path d="M12 4V20M4 12H20M9.6 6.6L12 4.2L14.4 6.6M9.6 17.4L12 19.8L14.4 17.4M6.6 9.6L4.2 12L6.6 14.4M17.4 9.6L19.8 12L17.4 14.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'symmetry':
-		`<path d="M12 3v18"/><path d="m5 8 4 4-4 4"/><path d="m19 8-4 4 4 4"/>`,
+		`<path d="M12 3.5V20.5M4 9C6 8.5 8 9 10 10M20 9C18 8.5 16 9 14 10M19 13.08C17 13.55 15 13.03 14.01 12.02M5 12.92C7 13.44 9 12.97 10.01 11.98M14.54 16.82C12.65 16.01 10.59 16.2 9.45 17.03" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'smooth':
-		`<path d="M3 17C5 12 7 9 10 9s5 6 9 6"/>`,
+		`<path d="M3.5 15C6.69 10.2 10.94 8.28 15.19 9.24C18.38 10.2 19.97 12.12 20.5 15M5.7 13.95C5.7 14.34 5.39 14.65 5 14.65C4.61 14.65 4.3 14.34 4.3 13.95C4.3 13.56 4.61 13.25 5 13.25C5.39 13.25 5.7 13.56 5.7 13.95ZM10.1 11.15C10.1 11.65 9.7 12.05 9.2 12.05C8.7 12.05 8.3 11.65 8.3 11.15C8.3 10.65 8.7 10.25 9.2 10.25C9.7 10.25 10.1 10.65 10.1 11.15ZM14.3 10.45C14.3 11.06 13.81 11.55 13.2 11.55C12.59 11.55 12.1 11.06 12.1 10.45C12.1 9.84 12.59 9.35 13.2 9.35C13.81 9.35 14.3 9.84 14.3 10.45ZM17.5 12.15C17.5 12.59 17.14 12.95 16.7 12.95C16.26 12.95 15.9 12.59 15.9 12.15C15.9 11.71 16.26 11.35 16.7 11.35C17.14 11.35 17.5 11.71 17.5 12.15Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'organic':
-		`<path d="M3 13c1.5-3 3-5 5-5s3 4 5 4 4-4 6-2"/>`,
+		`<path d="M4 10.5C6 6.5 8 14.5 10 10.5C12 6.5 14 14.5 16 10.5C18 6.5 19 11.5 20 10.5M4.5 14.5C6.5 12.5 9 16.5 11 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'draw-behind':
-		`<rect x="8" y="8" width="13" height="13" rx="2"/>` +
-		`<rect x="3" y="3" width="13" height="13" rx="2"/>`,
+		`<path d="M13.6 10.22C14.1 7.72 12.1 5.22 9.6 4.72C7.1 4.22 4.1 5.22 4.1 7.72C4.1 10.72 6.1 12.72 9.1 12.72M10.1 11.72C10.1 9.22 13.1 8.22 15.6 8.72C19.1 9.72 20.6 13.22 19.6 16.22C18.6 19.22 14.1 20.22 11.1 18.72C8.6 17.42 8.6 13.72 10.1 11.72Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'draw-inside':
-		`<rect x="3" y="3" width="18" height="18" rx="2"/>` +
-		`<rect x="7" y="7" width="10" height="10" rx="1"/>`,
+		`<path d="M8.37 11.05L11.37 14.05M10.37 10.05L14.37 14.05M12.87 10.05L15.87 12.55M4.87 10.05C4.87 5.05 10.87 4.05 13.87 5.05C17.87 6.05 19.87 10.05 18.87 14.05C17.87 18.05 12.87 20.05 8.87 19.05C4.87 18.05 4.87 14.05 4.87 10.05Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'rotate':
-		`<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>`,
+		`<path d="M19.2 11.85C19.1 15.65 16 19.05 12 19.15C8 19.25 4.8 16.05 4.8 12.05C4.8 8.05 8.1 4.85 12 4.85C14.8 4.85 17.2 6.35 18.6 8.55M19.2 5.05L18.8 8.85L15 8.35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 
 	// ─── File Operations ─────────────────────────────────────────────────
 	'new':
-		`<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>` +
-		`<path d="M14 2v6h6"/>`,
+		`<path d="M13.75 4.5H5.75V19.5H18.25V9M13.75 4.5L18.25 9M13.75 4.5V9H18.25M8.75 14H14.75M11.75 11V17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'open':
-		`<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>`,
+		`<path d="M3.86 6.5C3.86 5.5 4.86 5 5.86 5H9.36L11.06 6.7H18.86C19.76 6.7 20.36 7.5 20.26 8.5L19.36 17.5C19.26 18.4 18.36 19 17.36 19H5.36C4.36 19 3.56 18.2 3.76 17.2L3.86 6.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'save':
-		`<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>` +
-		`<path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>`,
+		`<path d="M8 5.25V9.75H15V5.55M8 13.75H16M8 16.25H14M5 5.25H16.5L19 7.75V18.75H5V5.25Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'export':
-		`<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>` +
-		`<path d="M17 8l-5-5-5 5"/><line x1="12" y1="3" x2="12" y2="15"/>`,
+		`<path d="M12 4.5V15M12 4.5L8.4 8M12 4.5L15.6 8M5 14.5V19.5H19V14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'undo':
-		`<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>`,
+		`<path d="M8.9 9.7L8.4 6L4.9 9.5C9.4 8 14.4 8.2 17.4 10.5C19.9 12.5 19.4 16 17.4 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'redo':
-		`<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"/>`,
+		`<path d="M15.1 9.7L15.6 6L19.1 9.5C14.6 8 9.6 8.2 6.6 10.5C4.1 12.5 4.6 16 6.6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 
 	// ─── Layer Panel ─────────────────────────────────────────────────────
 	'eye':
-		`<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>`,
+		`<path d="M3 12C5.5 7.5 9 6 12 6C15 6 18.5 7.5 21 12C18.5 16.5 15 18 12 18C9 18 5.5 16.5 3 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 14.5C13.38 14.5 14.5 13.38 14.5 12C14.5 10.62 13.38 9.5 12 9.5C10.62 9.5 9.5 10.62 9.5 12C9.5 13.38 10.62 14.5 12 14.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'eye-off':
-		`<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/>`,
+		`<path d="M4 4L20 20M3 12C5.5 7.5 9 6 12 6C15 6 18.5 7.5 21 12C18.5 16.5 15 18 12 18C9 18 5.5 16.5 3 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'duplicate':
-		`<rect width="14" height="14" x="8" y="8" rx="2"/>` +
-		`<path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`,
+		`<path d="M9 6.25H18V14.75H15M6 8.75H15V17.75H6V8.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'trash':
-		`<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>` +
-		`<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>`,
+		`<path d="M5 7.25H19M9 4.75H15M6.5 7.25L7.5 19.25H16.5L17.5 7.25M10 10.75V16.25M14 10.75V16.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'arrow-up':
-		`<path d="m18 15-6-6-6 6"/>`,
+		`<path d="M12 19V5.5M7 10L12 5L17 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'arrow-down':
-		`<path d="m6 9 6 6 6-6"/>`,
+		`<path d="M12 5V18.5M7 14L12 19L17 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'opacity':
-		`<circle cx="12" cy="12" r="9"/><path d="M12 3v18"/>`,
+		`<path d="M9 15C9 17 10.5 18.3 12 18.3M12 4C8 9 6 12 6 15C6 18 8.8 20 12 20C15.2 20 18 18 18 15C18 12 16 9 12 4Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'plus-layer':
-		`<path d="M12 8v8M8 12h8"/>` +
-		`<rect x="3" y="3" width="18" height="18" rx="2"/>`,
+		`<path d="M12 5.5V18.5M5.5 12H18.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'drag':
-		`<circle cx="9"  cy="7"  r="1.5" fill="currentColor" stroke="none"/>` +
-		`<circle cx="15" cy="7"  r="1.5" fill="currentColor" stroke="none"/>` +
-		`<circle cx="9"  cy="12" r="1.5" fill="currentColor" stroke="none"/>` +
-		`<circle cx="15" cy="12" r="1.5" fill="currentColor" stroke="none"/>` +
-		`<circle cx="9"  cy="17" r="1.5" fill="currentColor" stroke="none"/>` +
-		`<circle cx="15" cy="17" r="1.5" fill="currentColor" stroke="none"/>`,
+		`<circle cx="9"  cy="7"  r="1" fill="currentColor"/>` +
+		`<circle cx="15" cy="7"  r="1" fill="currentColor"/>` +
+		`<circle cx="9"  cy="12" r="1" fill="currentColor"/>` +
+		`<circle cx="15" cy="12" r="1" fill="currentColor"/>` +
+		`<circle cx="9"  cy="17" r="1" fill="currentColor"/>` +
+		`<circle cx="15" cy="17" r="1" fill="currentColor"/>`,
 	'blend-normal':
-		`<circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/>`,
+		`<path d="M12 18C15.31 18 18 15.31 18 12C18 8.69 15.31 6 12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 
-	// ─── Custom additions ─────────────────────────────────────────────────
+	// ─── Custom additions (not in original design set — preserved as-is) ──
 	'align-left':
 		`<line x1="21" y1="6"  x2="3" y2="6"/> <line x1="15" y1="12" x2="3" y2="12"/><line x1="17" y1="18" x2="3" y2="18"/>`,
 	'align-center':
