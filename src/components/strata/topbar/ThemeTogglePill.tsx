@@ -24,7 +24,7 @@ function ThemeBtn({ name, onClick, dark, active }: {
 }) {
 	const [hov, setHov] = useState(false);
 	const bg = active
-		? T.purple10
+		? dk(dark, T.purple10, T.purple20)
 		: hov
 			? dk(dark, 'rgba(0,0,0,0.04)', 'rgba(255,255,255,0.07)')
 			: 'transparent';

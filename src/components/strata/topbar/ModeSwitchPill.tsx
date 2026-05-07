@@ -16,6 +16,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				onClick={() => dispatch({ type: 'SET_MODE', payload: 'drawing' })}
 				dark={dark}
 				active={isDrawing}
+				activeStyle="solid"
 				tooltip="Draw mode"
 			/>
 			<IconBtn
@@ -23,6 +24,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				onClick={() => dispatch({ type: 'SET_MODE', payload: 'cinematic' })}
 				dark={dark}
 				active={isCinematic}
+				activeStyle="solid"
 				tooltip="View mode"
 			/>
 			<DiVSep dark={dark} />
@@ -31,6 +33,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				onClick={() => dispatch({ type: 'TOGGLE_UI' })}
 				dark={dark}
 				active={uiHidden}
+				activeStyle="solid"
 				tooltip="Hide UI"
 			/>
 		</DiPill>
