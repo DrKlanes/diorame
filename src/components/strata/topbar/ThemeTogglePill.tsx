@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { DiPill, Ico } from '../../../design-system';
-import { T, RADIUS, dk } from '../../../design-system/tokens';
+import React from 'react';
+import { DiPill } from '../../../design-system';
 import { useStrata } from '../StrataContext';
+import { IconBtn } from './_shared';
 
 export function ThemeTogglePill({ dark }: { dark: boolean }) {
 	const { dispatch } = useStrata();
@@ -10,45 +10,22 @@ export function ThemeTogglePill({ dark }: { dark: boolean }) {
 
 	return (
 		<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
-			<ThemeBtn name="sun"  onClick={setLight} dark={dark} active={!dark} />
-			<ThemeBtn name="moon" onClick={setDark}  dark={dark} active={dark} />
+			<IconBtn
+				name="sun"
+				onClick={setLight}
+				dark={dark}
+				active={!dark}
+				activeStyle="wash"
+				tooltip="Light mode"
+			/>
+			<IconBtn
+				name="moon"
+				onClick={setDark}
+				dark={dark}
+				active={dark}
+				activeStyle="wash"
+				tooltip="Dark mode"
+			/>
 		</DiPill>
-	);
-}
-
-function ThemeBtn({ name, onClick, dark, active }: {
-	name: string;
-	onClick: () => void;
-	dark: boolean;
-	active: boolean;
-}) {
-	const [hov, setHov] = useState(false);
-	const bg = active
-		? dk(dark, T.purple10, T.purple20)
-		: hov
-			? dk(dark, 'rgba(0,0,0,0.04)', 'rgba(255,255,255,0.07)')
-			: 'transparent';
-	const color = active ? T.purple : (dk(dark, T.dark, T.textDark) as string);
-	return (
-		<button
-			onClick={onClick}
-			onMouseEnter={() => setHov(true)}
-			onMouseLeave={() => setHov(false)}
-			style={{
-				width: 30,
-				height: 30,
-				borderRadius: RADIUS.iconBtn,
-				border: 'none',
-				background: bg,
-				cursor: active ? 'default' : 'pointer',
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'center',
-				transition: 'background 0.1s',
-				flexShrink: 0,
-			}}
-		>
-			<Ico name={name} size={18} color={color} />
-		</button>
 	);
 }
