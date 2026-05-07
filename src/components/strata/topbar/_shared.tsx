@@ -14,12 +14,17 @@ export function IconBtn({ name, onClick, dark, active = false, activeStyle = 'wa
 	const activeBg = activeStyle === 'solid'
 		? T.purple
 		: dk(dark, T.purple10, T.purple20);
-	const iconColor = active ? (activeStyle === 'solid' ? T.white : T.purple) : (dk(dark, T.dark, T.textDark) as string);
+	const iconColor = active
+		? (activeStyle === 'solid' ? T.white : dk(dark, T.purple, T.purpleLight))
+		: (dk(dark, T.dark, T.textDark) as string);
 	const bg = active
 		? activeBg
 		: hov
 			? dk(dark, 'rgba(0,0,0,0.04)', 'rgba(255,255,255,0.07)')
 			: 'transparent';
+	const boxShadow = (active && activeStyle === 'wash' && dark)
+		? 'inset 0 0 0 1px rgba(154, 15, 249, 0.35)'
+		: 'none';
 	return (
 		<button
 			onClick={onClick}
@@ -32,6 +37,7 @@ export function IconBtn({ name, onClick, dark, active = false, activeStyle = 'wa
 				borderRadius: RADIUS.iconBtn,
 				border: 'none',
 				background: bg,
+				boxShadow,
 				cursor: 'pointer',
 				display: 'flex',
 				alignItems: 'center',

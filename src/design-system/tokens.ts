@@ -6,9 +6,10 @@
 // ──────────────────────────────────────────────────────────────────
 export const T = {
 	// Brand
-	purple:   'rgb(154, 15, 249)',
-	purple10: 'rgba(154, 15, 249, 0.10)',
-	purple20: 'rgba(154, 15, 249, 0.22)',
+	purple:      'rgb(154, 15, 249)',
+	purple10:    'rgba(154, 15, 249, 0.10)',
+	purple20:    'rgba(154, 15, 249, 0.22)',
+	purpleLight: 'rgb(196, 130, 255)',
 
 	// Light mode base
 	dark:   'rgb(26, 26, 26)',
