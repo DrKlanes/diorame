@@ -725,7 +725,7 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 				</div>
 
 				{/* Lens Slider */}
-				<DiPanel>
+				<DiPanel dark={state.isDarkMode}>
 					<DiSlider
 						label={<><Eye className="w-3 h-3" /> Focal Length</>}
 						formattedValue={flToMm(state.focalLength) + 'mm'}
@@ -738,7 +738,7 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 				</DiPanel>
 
 				{/* Zoom Slider */}
-				<DiPanel>
+				<DiPanel dark={state.isDarkMode}>
 					<DiSlider
 						label={<><ZoomIn className="w-3 h-3" /> Distance</>}
 						formattedValue={(state.viewZoomOffset > 0 ? '+' : '') + Math.round(state.viewZoomOffset)}
@@ -751,7 +751,7 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 				</DiPanel>
 
 				{/* Layer Spacing Slider */}
-				<DiPanel>
+				<DiPanel dark={state.isDarkMode}>
 					<DiSlider
 						label={<><MoveVertical className="w-3 h-3" /> Layer Spacing</>}
 						formattedValue={state.layerSpacingFactor.toFixed(2) + 'x'}

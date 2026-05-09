@@ -124,13 +124,13 @@ function PreviewPageContent() {
 
 				<Subsection title="DiPanel — default vs overrides" dark={dark}>
 					<div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-						<DiPanel>
-							<span style={{ fontSize: 11 }}>Default (w-40 sm:w-48)</span>
+						<DiPanel dark={dark}>
+							<span style={{ fontSize: 11 }}>Default</span>
 						</DiPanel>
-						<DiPanel width={220} radius={20}>
+						<DiPanel dark={dark} width={220} radius={20}>
 							<span style={{ fontSize: 11 }}>width=220, radius=20</span>
 						</DiPanel>
-						<DiPanel width={300} padding="20px">
+						<DiPanel dark={dark} width={300} padding="20px">
 							<span style={{ fontSize: 11 }}>width=300, padding=20px</span>
 						</DiPanel>
 					</div>
