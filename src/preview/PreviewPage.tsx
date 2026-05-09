@@ -5,6 +5,7 @@ import { StrataProvider, useStrata } from '../components/strata/StrataContext';
 import { useTheme } from '../design-system/useTheme';
 import { TopBar } from '../components/strata/topbar/TopBar';
 import { DrawingToolbar } from '../components/strata/bottombar/DrawingToolbar';
+import { CameraPresetsZone } from '../components/strata/bottombar/CameraPresetsZone';
 
 export function PreviewPage() {
 	return (
@@ -155,6 +156,26 @@ function PreviewPageContent() {
 				}}>
 					<DrawingToolbar dark={dark} />
 				</div>
+			</Section>
+
+			{/* ── SECTION 1c: Camera Bar zones (isolated) ── */}
+			<Section title="Camera Bar zones (isolated)" dark={dark} bg={sectionBg} border={sectionBorder}>
+				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
+					Zonas de la Camera Bar. Conectadas al store global.
+				</p>
+
+				<Subsection title="Presets" dark={dark}>
+					<div style={{
+						height: 52,
+						backgroundColor: dk(dark, 'rgb(240,238,234)', '#1a1a1a'),
+						borderRadius: 12,
+						display: 'flex',
+						alignItems: 'center',
+						paddingLeft: 12,
+					}}>
+						<CameraPresetsZone dark={dark} />
+					</div>
+				</Subsection>
 			</Section>
 
 			{/* ── SECTION 1b: Top Bar ── */}
