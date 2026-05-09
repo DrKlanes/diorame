@@ -6,6 +6,7 @@ import { useTheme } from '../design-system/useTheme';
 import { TopBar } from '../components/strata/topbar/TopBar';
 import { DrawingToolbar } from '../components/strata/bottombar/DrawingToolbar';
 import { CameraPresetsZone } from '../components/strata/bottombar/CameraPresetsZone';
+import { CameraSpeedZone } from '../components/strata/bottombar/CameraSpeedZone';
 
 export function PreviewPage() {
 	return (
@@ -174,6 +175,17 @@ function PreviewPageContent() {
 						paddingLeft: 12,
 					}}>
 						<CameraPresetsZone dark={dark} />
+					</div>
+				</Subsection>
+				<Subsection title="Speed + Handshake" dark={dark}>
+					<div style={{
+						height: 52,
+						backgroundColor: dk(dark, 'rgb(240,238,234)', '#1a1a1a'),
+						borderRadius: 12,
+						display: 'flex',
+						alignItems: 'center',
+					}}>
+						<CameraSpeedZone dark={dark} />
 					</div>
 				</Subsection>
 			</Section>
