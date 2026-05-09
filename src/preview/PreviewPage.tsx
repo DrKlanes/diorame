@@ -9,6 +9,7 @@ import { CameraPresetsZone } from '../components/strata/bottombar/CameraPresetsZ
 import { CameraSpeedZone } from '../components/strata/bottombar/CameraSpeedZone';
 import { CameraSlidersZone } from '../components/strata/bottombar/CameraSlidersZone';
 import { CameraBar } from '../components/strata/bottombar/CameraBar';
+import { BottomBar } from '../components/strata/bottombar/BottomBar';
 
 export function PreviewPage() {
 	return (
@@ -218,6 +219,23 @@ function PreviewPageContent() {
 					justifyContent: 'center',
 				}}>
 					<CameraBar dark={dark} />
+				</div>
+			</Section>
+
+			{/* ── SECTION 1e: Bottom Bar (live) ── */}
+			<Section title="Bottom Bar (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
+				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
+					Cambia de modo desde la TopBar live (draw-mode / view-mode) para ver DrawingToolbar ↔ CameraBar.
+				</p>
+				<div style={{
+					position: 'relative',
+					width: '100%',
+					height: 100,
+					backgroundColor: dk(dark, 'rgb(248,247,243)', '#1a1a1a'),
+					borderRadius: 12,
+					overflow: 'hidden',
+				}}>
+					<BottomBar />
 				</div>
 			</Section>
 
