@@ -93,25 +93,22 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 					active={tool === 'move'} tooltip="Move"
 				/>
 			</div>
-			{/* Block 2: Modifier zone — always present to keep pill width stable (173px reserved) */}
-			<div style={{ display: 'flex', gap: 2, alignItems: 'center', minWidth: 173, flexShrink: 0 }}>
-				{hasModifiers && (
-					<>
-						<DiVSep dark={dark} />
-						{modifiers.map(mod => (
-							<IconBtn
-								key={mod.field}
-								name={mod.iconName}
-								onClick={() => dispatch({ type: mod.actionType } as any)}
-								dark={dark}
-								active={modifierFields[mod.field]}
-								activeStyle="wash"
-								iconWeight="secondary"
-								tooltip={mod.tooltip}
-							/>
-						))}
-					</>
-				)}
+			{/* VSep estructural: siempre visible, comunica que la zona derecha es expansible */}
+			<DiVSep dark={dark} />
+			{/* Block 2: Modifier zone — minWidth 158 = 5 mods x 30 + 4 gaps x 2 */}
+			<div style={{ display: 'flex', gap: 2, alignItems: 'center', minWidth: 158, flexShrink: 0 }}>
+				{hasModifiers && modifiers.map(mod => (
+					<IconBtn
+						key={mod.field}
+						name={mod.iconName}
+						onClick={() => dispatch({ type: mod.actionType } as any)}
+						dark={dark}
+						active={modifierFields[mod.field]}
+						activeStyle="wash"
+						iconWeight="secondary"
+						tooltip={mod.tooltip}
+					/>
+				))}
 			</div>
 		</DiPill>
 	);
