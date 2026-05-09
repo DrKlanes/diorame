@@ -8,6 +8,7 @@ import { DrawingToolbar } from '../components/strata/bottombar/DrawingToolbar';
 import { CameraPresetsZone } from '../components/strata/bottombar/CameraPresetsZone';
 import { CameraSpeedZone } from '../components/strata/bottombar/CameraSpeedZone';
 import { CameraSlidersZone } from '../components/strata/bottombar/CameraSlidersZone';
+import { CameraBar } from '../components/strata/bottombar/CameraBar';
 
 export function PreviewPage() {
 	return (
@@ -201,6 +202,23 @@ function PreviewPageContent() {
 						<CameraSpeedZone dark={dark} />
 					</div>
 				</Subsection>
+			</Section>
+
+			{/* ── SECTION 1d: Camera Bar (responsive) ── */}
+			<Section title="Camera Bar (responsive)" dark={dark} bg={sectionBg} border={sectionBorder}>
+				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
+					Wrapper completo. Desktop: pill única. Tablet (&lt;1100px): dos pills apiladas.
+				</p>
+				<div style={{
+					height: 100,
+					backgroundColor: dk(dark, 'rgb(240,238,234)', '#1a1a1a'),
+					borderRadius: 12,
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+				}}>
+					<CameraBar dark={dark} />
+				</div>
 			</Section>
 
 			{/* ── SECTION 1b: Top Bar ── */}
