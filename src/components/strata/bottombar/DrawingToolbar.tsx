@@ -67,49 +67,52 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 
 	return (
 		<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
-			{/* Tools — order: Blob, Brush, Eraser, Text, Move */}
-			<ToolBtn
-				name="blob" onClick={() => setTool('brush')} dark={dark}
-				active={tool === 'brush'} tooltip="Blob"
-				paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('brush')}
-			/>
-			<ToolBtn
-				name="brush" onClick={() => setTool('line')} dark={dark}
-				active={tool === 'line'} tooltip="Brush"
-				paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('line')}
-			/>
-			<ToolBtn
-				name="eraser" onClick={() => setTool('eraser')} dark={dark}
-				active={tool === 'eraser'} tooltip="Eraser"
-			/>
-			<ToolBtn
-				name="text" onClick={() => setTool('text')} dark={dark}
-				active={tool === 'text'} tooltip="Text"
-				paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('text')}
-			/>
-			<ToolBtn
-				name="move" onClick={() => setTool('move')} dark={dark}
-				active={tool === 'move'} tooltip="Move"
-			/>
-
-			{/* VSep + modifiers only when current tool has them */}
-			{hasModifiers && (
-				<>
-					<DiVSep dark={dark} />
-					{modifiers.map(mod => (
-						<IconBtn
-							key={mod.field}
-							name={mod.iconName}
-							onClick={() => dispatch({ type: mod.actionType } as any)}
-							dark={dark}
-							active={modifierFields[mod.field]}
-							activeStyle="wash"
-							iconWeight="secondary"
-							tooltip={mod.tooltip}
-						/>
-					))}
-				</>
-			)}
+			{/* Block 1: Tool buttons — fixed position, never shifts */}
+			<div style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
+				<ToolBtn
+					name="blob" onClick={() => setTool('brush')} dark={dark}
+					active={tool === 'brush'} tooltip="Blob"
+					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('brush')}
+				/>
+				<ToolBtn
+					name="brush" onClick={() => setTool('line')} dark={dark}
+					active={tool === 'line'} tooltip="Brush"
+					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('line')}
+				/>
+				<ToolBtn
+					name="eraser" onClick={() => setTool('eraser')} dark={dark}
+					active={tool === 'eraser'} tooltip="Eraser"
+				/>
+				<ToolBtn
+					name="text" onClick={() => setTool('text')} dark={dark}
+					active={tool === 'text'} tooltip="Text"
+					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('text')}
+				/>
+				<ToolBtn
+					name="move" onClick={() => setTool('move')} dark={dark}
+					active={tool === 'move'} tooltip="Move"
+				/>
+			</div>
+			{/* Block 2: Modifier zone — always present to keep pill width stable (173px reserved) */}
+			<div style={{ display: 'flex', gap: 2, alignItems: 'center', minWidth: 173, flexShrink: 0 }}>
+				{hasModifiers && (
+					<>
+						<DiVSep dark={dark} />
+						{modifiers.map(mod => (
+							<IconBtn
+								key={mod.field}
+								name={mod.iconName}
+								onClick={() => dispatch({ type: mod.actionType } as any)}
+								dark={dark}
+								active={modifierFields[mod.field]}
+								activeStyle="wash"
+								iconWeight="secondary"
+								tooltip={mod.tooltip}
+							/>
+						))}
+					</>
+				)}
+			</div>
 		</DiPill>
 	);
 }
