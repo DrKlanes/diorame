@@ -11,9 +11,7 @@ import { DiPanel } from '../../design-system/DiPanel';
 import { DiSlider } from '../../design-system/DiSlider';
 import { DiToggleSlider } from '../../design-system/DiToggleSlider';
 import { diTokens } from '../../design-system/tokens';
-
-const flToMm = (fl: number) => Math.round((fl / 800) * 50);
-const mmToFl = (mm: number) => (mm / 50) * 800;
+import { flToMm, mmToFl } from '../../utils/cinematic';
 
 interface ControlsCinematicProps {
 	uiFocusLayer: number;
