@@ -7,6 +7,7 @@ import { TopBar } from '../components/strata/topbar/TopBar';
 import { DrawingToolbar } from '../components/strata/bottombar/DrawingToolbar';
 import { CameraPresetsZone } from '../components/strata/bottombar/CameraPresetsZone';
 import { CameraSpeedZone } from '../components/strata/bottombar/CameraSpeedZone';
+import { CameraSlidersZone } from '../components/strata/bottombar/CameraSlidersZone';
 
 export function PreviewPage() {
 	return (
@@ -177,6 +178,18 @@ function PreviewPageContent() {
 						<CameraPresetsZone dark={dark} />
 					</div>
 				</Subsection>
+				<Subsection title="Focal + Distance + Spacing" dark={dark}>
+					<div style={{
+						height: 52,
+						backgroundColor: dk(dark, 'rgb(240,238,234)', '#1a1a1a'),
+						borderRadius: 12,
+						display: 'flex',
+						alignItems: 'center',
+					}}>
+						<CameraSlidersZone dark={dark} />
+					</div>
+				</Subsection>
+
 				<Subsection title="Speed + Handshake" dark={dark}>
 					<div style={{
 						height: 52,
