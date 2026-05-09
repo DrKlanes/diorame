@@ -2,7 +2,7 @@ import React from 'react';
 import { useStrata } from '../StrataContext';
 import { DiPill, DiVSep } from '../../../design-system';
 import { IconBtn } from '../topbar/_shared';
-import { ToolBtn } from './_shared';
+import { ToolBtn, LineModeButton } from './_shared';
 import type { ToolType } from '../StrataContext';
 
 interface DrawingToolbarProps { dark: boolean; }
@@ -109,6 +109,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 						tooltip={mod.tooltip}
 					/>
 				))}
+				{tool === 'line' && <><DiVSep dark={dark} /><LineModeButton dark={dark} /></>}
 			</div>
 		</DiPill>
 	);
