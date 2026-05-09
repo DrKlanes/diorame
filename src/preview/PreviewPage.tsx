@@ -3,6 +3,7 @@ import { Ico, DiPill, DiVSep, DiMiniSlider, DiSegmentControl, DiPanel, ICONS } f
 import { T, TYPE, dk } from '../design-system/tokens';
 import { StrataProvider } from '../components/strata/StrataContext';
 import { TopBar } from '../components/strata/topbar/TopBar';
+import { DrawingToolbar } from '../components/strata/bottombar/DrawingToolbar';
 
 export function PreviewPage() {
 	const [dark, setDark] = useState(false);
@@ -121,6 +122,27 @@ export function PreviewPage() {
 					</div>
 				</Subsection>
 
+			</Section>
+
+			{/* ── SECTION 1a: Drawing Toolbar ── */}
+			<Section title="Drawing Toolbar (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
+				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
+					Clickea cada herramienta para ver los modificadores condicionales.
+				</p>
+				<StrataProvider>
+					<div style={{
+						position: 'relative',
+						width: '100%',
+						height: 72,
+						backgroundColor: dk(dark, 'rgb(240,238,234)', '#1a1a1a'),
+						borderRadius: 12,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+					}}>
+						<DrawingToolbar dark={dark} />
+					</div>
+				</StrataProvider>
 			</Section>
 
 			{/* ── SECTION 1b: Top Bar ── */}
