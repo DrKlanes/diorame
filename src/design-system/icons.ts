@@ -118,6 +118,14 @@ export const ICONS: Record<string, string> = {
 	'ctrl-dof-lock':
 		`<path d="M12 5V8M12 16V19M5 12H8M16 12H19M8.5 8.5L10.5 10.5M13.5 13.5L15.5 15.5M15.5 8.5L13.5 10.5M10.5 13.5L8.5 15.5M10 12C10 10.9 10.9 10 12 10C13.1 10 14 10.9 14 12C14 13.1 13.1 14 12 14C10.9 14 10 13.1 10 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 
+	// ─── Brush line modes (cyclic modifier) ─────────────────────────────
+	'line-tapered':
+		`<path d="M2 12 Q6 8 12 8 Q18 8 22 12 Q18 16 12 16 Q6 16 2 12 Z" fill="currentColor" stroke="none"/>`,
+	'line-uniform':
+		`<path d="M4 12 Q8 11.7 12 12 Q16 12.3 20 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
+	'line-ink':
+		`<path d="M4 13 Q7 11 11 12 Q15 13 19 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="7" cy="13.5" r="1" fill="currentColor"/><circle cx="14" cy="11.5" r="0.8" fill="currentColor"/><circle cx="18" cy="12" r="0.6" fill="currentColor"/>`,
+
 	// ─── Drawing Tools ───────────────────────────────────────────────────
 	'brush':
 		`<path d="M9.52 13.25C7.52 15.25 3.52 18.25 4.02 19.25C5.52 21.25 9.02 16.75 11.02 14.75M16.02 13.25L10.89 8.38L9.44 9.84C8.65 10.62 8.65 11.88 9.44 12.66L11.61 14.84C12.39 15.62 13.65 15.62 14.44 14.84L16.02 13.25ZM16.02 13.25L20.02 9.25L15.02 4.25L10.52 8.75M14.52 8.25L16.52 6.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,

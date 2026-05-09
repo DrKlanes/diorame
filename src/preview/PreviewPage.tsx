@@ -280,7 +280,7 @@ function PreviewPageContent() {
 					dark={dark} />
 
 				<IconGroup title="Drawing Tools"
-					names={['brush', 'eraser', 'blob', 'text', 'move', 'symmetry', 'smooth', 'organic', 'draw-behind', 'draw-inside', 'rotate', 'pen']}
+					names={['brush', 'eraser', 'blob', 'text', 'move', 'symmetry', 'smooth', 'organic', 'draw-behind', 'draw-inside', 'rotate', 'pen', 'line-tapered', 'line-uniform', 'line-ink']}
 					dark={dark} />
 
 				<IconGroup title="File Operations"
