@@ -20,13 +20,13 @@ export function CameraBar({ dark }: CameraBarProps) {
 	if (isCompact) {
 		return (
 			<div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+				<DiPill dark={dark} height={40} padding="0 12px" gap={8}>
+					<CameraSlidersZone dark={dark} />
+				</DiPill>
 				<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
 					<CameraPresetsZone dark={dark} />
 					<DiVSep dark={dark} tall />
 					<CameraSpeedZone dark={dark} />
-				</DiPill>
-				<DiPill dark={dark} height={40} padding="0 12px" gap={8}>
-					<CameraSlidersZone dark={dark} />
 				</DiPill>
 			</div>
 		);
