@@ -28,8 +28,8 @@ export function ToolBtn({
 			{active && showDot && paletteColor && (
 				<div style={{
 					position: 'absolute',
-					top: 4,
-					right: 4,
+					top: -3,
+					right: -3,
 					width: 8,
 					height: 8,
 					borderRadius: '50%',

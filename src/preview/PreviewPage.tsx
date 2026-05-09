@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
 import { Ico, DiPill, DiVSep, DiMiniSlider, DiSegmentControl, DiPanel, ICONS } from '../design-system';
 import { T, TYPE, dk } from '../design-system/tokens';
-import { StrataProvider } from '../components/strata/StrataContext';
+import { StrataProvider, useStrata } from '../components/strata/StrataContext';
+import { useTheme } from '../design-system/useTheme';
 import { TopBar } from '../components/strata/topbar/TopBar';
 import { DrawingToolbar } from '../components/strata/bottombar/DrawingToolbar';
 
 export function PreviewPage() {
-	const [dark, setDark] = useState(false);
+	return (
+		<StrataProvider>
+			<PreviewPageContent />
+		</StrataProvider>
+	);
+}
+
+function PreviewPageContent() {
+	const { dark } = useTheme();
+	const { dispatch } = useStrata();
 	const [sliderVal, setSliderVal] = useState(50);
 	const [segValue, setSegValue] = useState('Primary');
 	const [segValueSmall, setSegValueSmall] = useState('Flat');
@@ -16,6 +26,10 @@ export function PreviewPage() {
 	const sectionBorder = dk(dark, T.border, T.borderDark);
 	const headingColor  = dk(dark, T.dark, T.textDark);
 	const subtleColor   = dk(dark, T.muted, T.textDarkMuted);
+
+	const handleThemeChange = (v: string) => {
+		if ((v === 'Dark') !== dark) dispatch({ type: 'TOGGLE_DARK_MODE' });
+	};
 
 	return (
 		<div style={{
@@ -35,7 +49,7 @@ export function PreviewPage() {
 					<DiSegmentControl
 						options={['Light', 'Dark']}
 						value={dark ? 'Dark' : 'Light'}
-						onChange={v => setDark(v === 'Dark')}
+						onChange={handleThemeChange}
 						dark={dark}
 					/>
 				</div>
@@ -129,39 +143,35 @@ export function PreviewPage() {
 				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
 					Clickea cada herramienta para ver los modificadores condicionales.
 				</p>
-				<StrataProvider>
-					<div style={{
-						position: 'relative',
-						width: '100%',
-						height: 72,
-						backgroundColor: dk(dark, 'rgb(240,238,234)', '#1a1a1a'),
-						borderRadius: 12,
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-					}}>
-						<DrawingToolbar dark={dark} />
-					</div>
-				</StrataProvider>
+				<div style={{
+					position: 'relative',
+					width: '100%',
+					height: 72,
+					backgroundColor: dk(dark, 'rgb(240,238,234)', '#1a1a1a'),
+					borderRadius: 12,
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+				}}>
+					<DrawingToolbar dark={dark} />
+				</div>
 			</Section>
 
 			{/* ── SECTION 1b: Top Bar ── */}
 			<Section title="Top Bar (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
 				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
-					Estado independiente — usa los botones de modo y tema dentro del demo.
+					Conectado al store global — el toggle de tema afecta toda la página.
 				</p>
-				<StrataProvider>
-					<div style={{
-						position: 'relative',
-						width: '100%',
-						height: 72,
-						backgroundColor: dk(dark, 'rgb(240,238,234)', '#1a1a1a'),
-						borderRadius: 12,
-						overflow: 'hidden',
-					}}>
-						<TopBar />
-					</div>
-				</StrataProvider>
+				<div style={{
+					position: 'relative',
+					width: '100%',
+					height: 72,
+					backgroundColor: dk(dark, 'rgb(240,238,234)', '#1a1a1a'),
+					borderRadius: 12,
+					overflow: 'hidden',
+				}}>
+					<TopBar />
+				</div>
 			</Section>
 
 			{/* ── SECTION 2: Icon Gallery ── */}

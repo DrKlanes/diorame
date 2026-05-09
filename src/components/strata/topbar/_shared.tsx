@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Ico } from '../../../design-system';
 import { T, RADIUS, dk } from '../../../design-system/tokens';
 
-export function IconBtn({ name, onClick, dark, active = false, activeStyle = 'wash', tooltip }: {
+export function IconBtn({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', tooltip }: {
 	name: string;
 	onClick: () => void;
 	dark: boolean;
 	active?: boolean;
 	activeStyle?: 'wash' | 'solid';
+	iconWeight?: 'normal' | 'secondary';
 	tooltip?: string;
 }) {
 	const [hov, setHov] = useState(false);
@@ -16,7 +17,10 @@ export function IconBtn({ name, onClick, dark, active = false, activeStyle = 'wa
 		: dk(dark, T.purple10, T.purple20);
 	const iconColor = active
 		? (activeStyle === 'solid' ? T.white : dk(dark, T.purple, T.purpleLight))
-		: (dk(dark, T.dark, T.textDark) as string);
+		: (iconWeight === 'secondary'
+			? (dk(dark, T.muted, T.textDarkMuted) as string)
+			: (dk(dark, T.dark, T.textDark) as string)
+		);
 	const bg = active
 		? activeBg
 		: hov

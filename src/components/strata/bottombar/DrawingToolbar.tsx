@@ -104,6 +104,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 							dark={dark}
 							active={modifierFields[mod.field]}
 							activeStyle="wash"
+							iconWeight="secondary"
 							tooltip={mod.tooltip}
 						/>
 					))}
