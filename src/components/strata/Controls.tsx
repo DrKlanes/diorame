@@ -8,6 +8,7 @@ import { ControlsDrawing } from './ControlsDrawing';
 import { ControlsCinematic } from './ControlsCinematic';
 import { ControlsExport } from './ControlsExport';
 import { diTokens } from '../../design-system/tokens';
+import { toast } from 'sonner@2.0.3';
 
 export const Controls = () => {
 	const { state, dispatch } = useStrata();
@@ -77,45 +78,115 @@ export const Controls = () => {
 		dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: activeZ, rotation: 0 } });
 	};
 
+	// Save project (for Ctrl+S shortcut)
+	const handleSaveProject = React.useCallback(() => {
+		const data = {
+			shapes: state.shapes, palette: state.palette, totalLayers: state.totalLayers,
+			isDarkMode: state.isDarkMode, postProcessing: state.postProcessing,
+			postProcessingEnabled: state.postProcessingEnabled, cinematicType: state.cinematicType,
+			hiddenLayers: state.hiddenLayers, locked3DLayers: state.locked3DLayers,
+			projectName: state.projectName, layerRenderModes: state.layerRenderModes,
+			layerGradParams: state.layerGradParams, currentLineThickness: state.currentLineThickness,
+			lineMode: state.lineMode, tool: state.tool, activePaletteId: state.activePaletteId,
+			focalLength: state.focalLength, viewZoomOffset: state.viewZoomOffset,
+			layerSpacingFactor: state.layerSpacingFactor, cinematicSpeed: state.cinematicSpeed,
+			isHandheldEnabled: state.isHandheldEnabled, handheldIntensity: state.handheldIntensity,
+		};
+		const sanitized = state.projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+		setTimeout(() => {
+			let url: string | null = null;
+			let link: HTMLAnchorElement | null = null;
+			try {
+				const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+				url = URL.createObjectURL(blob);
+				link = document.createElement('a');
+				link.href = url;
+				link.download = `${sanitized}-${Date.now()}.dior`;
+				link.style.display = 'none';
+				document.body.appendChild(link);
+				link.click();
+				toast.success('Project saved', { description: `${sanitized}.dior`, duration: 2000 });
+			} catch (err) {
+				toast.error('Failed to save', { description: 'Please try again' });
+			} finally {
+				setTimeout(() => {
+					try { if (link?.parentNode) document.body.removeChild(link!); } catch (_) { /* */ }
+					if (url) URL.revokeObjectURL(url);
+				}, 200);
+			}
+		}, 0);
+	}, [state]);
+
 	// Keyboard shortcuts
 	React.useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
+			// Guard 1: text session active
 			if (state.textSession.isActive) return;
+			// Guard 2: input/textarea focused
+			const activeEl = document.activeElement;
+			if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
 
-			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e' && !e.shiftKey) {
+			const cmd = e.metaKey || e.ctrlKey;
+			const shift = e.shiftKey;
+
+			// === EXISTING SHORTCUTS ===
+			if (cmd && e.key.toLowerCase() === 'e' && !shift) {
 				e.preventDefault();
 				handleExportRequest('svg');
 				return;
 			}
-
-			if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'e') {
+			if (cmd && shift && e.key.toLowerCase() === 'e') {
 				e.preventDefault();
 				handleExportRequest('svgz');
 				return;
 			}
-
-			if (e.shiftKey && e.key.toLowerCase() === 'd') {
+			if (shift && e.key.toLowerCase() === 'd') {
 				e.preventDefault();
 				dispatch({ type: 'TOGGLE_DARK_MODE' });
 				return;
 			}
-
-			if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+			if (cmd && !shift && e.key.toLowerCase() === 'z') {
 				e.preventDefault();
 				dispatch({ type: 'UNDO' });
 				return;
 			}
-
-			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') {
+			if (cmd && e.key.toLowerCase() === 'y') {
 				e.preventDefault();
 				dispatch({ type: 'REDO' });
 				return;
+			}
+
+			// === NEW GLOBAL SHORTCUTS ===
+			if (cmd && !shift && e.key === 's') {
+				e.preventDefault();
+				handleSaveProject();
+				return;
+			}
+			if (!cmd && shift && e.key === '?') {
+				dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
+				return;
+			}
+
+			// === DRAWING MODE ONLY (Guard 3) ===
+			if (state.mode !== 'drawing') return;
+
+			if (!cmd && !shift) {
+				switch (e.key.toLowerCase()) {
+					case 'b': dispatch({ type: 'SET_TOOL', payload: 'brush' }); return;
+					case 'l': dispatch({ type: 'SET_TOOL', payload: 'line' }); return;
+					case 'e': dispatch({ type: 'SET_TOOL', payload: 'eraser' }); return;
+					case 't': dispatch({ type: 'SET_TOOL', payload: 'text' }); return;
+					case 'm': dispatch({ type: 'SET_TOOL', payload: 'move' }); return;
+				}
+				if (e.key === '[') { dispatch({ type: 'PREV_LAYER' }); return; }
+				if (e.key === ']') { dispatch({ type: 'NEXT_LAYER' }); return; }
+				if (e.key === ' ') { e.preventDefault(); dispatch({ type: 'RESET_DRAWING_VIEW' }); return; }
 			}
 		};
 
 		window.addEventListener('keydown', handleKeyDown);
 		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, [handleExportRequest, dispatch, state.textSession.isActive]);
+	}, [handleExportRequest, handleSaveProject, dispatch, state.textSession.isActive, state.mode]);
 
 	if (state.isUIHidden) {
 		return (
@@ -140,7 +211,7 @@ export const Controls = () => {
 				"absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 p-1.5 rounded-full shadow-sm border transition-all duration-200 hover:shadow-md z-50 select-none backdrop-blur-sm",
 				diTokens.bgAlt, diTokens.border
 			)}>
-				<EnhancedTooltip content="Drawing Mode" shortcut="D" disabled={state.mode === 'drawing'}>
+				<EnhancedTooltip content="Drawing Mode" disabled={state.mode === 'drawing'}>
 					<Button
 						variant={state.mode === 'drawing' ? 'secondary' : 'ghost'}
 						size="sm"
@@ -156,7 +227,7 @@ export const Controls = () => {
 					</Button>
 				</EnhancedTooltip>
 				<div className="h-4 w-[1px] bg-slate-200" />
-				<EnhancedTooltip content="Preview Mode" shortcut="V" disabled={state.mode === 'cinematic'}>
+				<EnhancedTooltip content="Preview Mode" disabled={state.mode === 'cinematic'}>
 					<Button
 						variant={state.mode === 'cinematic' ? 'secondary' : 'ghost'}
 						size="sm"
