@@ -223,7 +223,6 @@ export const ControlsDrawing = ({
 					<DiIconButton
 						icon={<FolderOpen className="w-4 h-4" />}
 						label="Open Project"
-						shortcut="Cmd+O"
 						className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
 						onClick={() => fileInputRef.current?.click()}
 					/>
