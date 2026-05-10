@@ -1,6 +1,7 @@
 import React from 'react';
 import { IconBtn } from '../topbar/_shared';
-import { T } from '../../../design-system/tokens';
+import { Ico } from '../../../design-system';
+import { T, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 
 interface ToolBtnProps {
@@ -44,7 +45,7 @@ export function ToolBtn({
 	);
 }
 
-const LINE_MODE_CYCLE: Array<'tapered' | 'uniform' | 'ink'> = ['tapered', 'uniform', 'ink'];
+const LINE_MODE_ORDER: Array<'tapered' | 'uniform' | 'ink'> = ['tapered', 'uniform', 'ink'];
 const LINE_MODE_ICONS: Record<string, string> = {
 	tapered: 'line-tapered',
 	uniform: 'line-uniform',
@@ -55,24 +56,65 @@ const LINE_MODE_LABELS: Record<string, string> = {
 	uniform: 'Uniform',
 	ink: 'Ink',
 };
+const LINE_MODE_NEXT: Record<string, string> = {
+	tapered: 'uniform',
+	uniform: 'ink',
+	ink: 'tapered',
+};
 
 interface LineModeButtonProps { dark: boolean; }
 
 export function LineModeButton({ dark }: LineModeButtonProps) {
 	const { state, dispatch } = useStrata();
-	const current = state.lineMode ?? 'tapered';
-	const idx = LINE_MODE_CYCLE.indexOf(current as any);
-	const next = LINE_MODE_CYCLE[(idx + 1) % LINE_MODE_CYCLE.length];
+	const currentMode = state.lineMode ?? 'tapered';
+	const currentIndex = LINE_MODE_ORDER.indexOf(currentMode as any);
+
+	const handleClick = () => {
+		dispatch({ type: 'SET_LINE_MODE', payload: LINE_MODE_NEXT[currentMode] } as any);
+	};
+
+	const iconColor = dk(dark, T.purple, T.purpleLight) as string;
+	const bgColor = dk(dark, T.purple10, T.purple20);
+	const boxShadow = dark ? 'inset 0 0 0 1px rgba(154, 15, 249, 0.35)' : 'none';
+	const dotActiveColor = T.purple;
+	const dotInactiveColor = dk(dark, 'rgba(0,0,0,0.18)', 'rgba(255,255,255,0.22)');
 
 	return (
-		<IconBtn
-			name={LINE_MODE_ICONS[current]}
-			onClick={() => dispatch({ type: 'SET_LINE_MODE', payload: next } as any)}
-			dark={dark}
-			active={true}
-			activeStyle="wash"
-			iconWeight="secondary"
-			tooltip={`Line mode: ${LINE_MODE_LABELS[current]} (click to cycle)`}
-		/>
+		<button
+			onClick={handleClick}
+			title={`Line mode: ${LINE_MODE_LABELS[currentMode]} (${currentIndex + 1}/3) — click to cycle`}
+			style={{
+				width: 30,
+				height: 30,
+				padding: 0,
+				paddingTop: 5,
+				paddingBottom: 3,
+				borderRadius: RADIUS.iconBtn,
+				border: 'none',
+				background: bgColor,
+				boxShadow,
+				cursor: 'pointer',
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
+				justifyContent: 'flex-start',
+				flexShrink: 0,
+			}}
+		>
+			<Ico name={LINE_MODE_ICONS[currentMode]} size={14} color={iconColor} />
+			<div style={{ marginTop: 2, display: 'flex', gap: 1.5, alignItems: 'center' }}>
+				{[0, 1, 2].map(i => (
+					<div
+						key={i}
+						style={{
+							width: 3,
+							height: 3,
+							borderRadius: '50%',
+							backgroundColor: i === currentIndex ? dotActiveColor : dotInactiveColor,
+						}}
+					/>
+				))}
+			</div>
+		</button>
 	);
 }
