@@ -76,7 +76,7 @@ export function LineModeButton({ dark }: LineModeButtonProps) {
 	const iconColor = dk(dark, T.purple, T.purpleLight) as string;
 	const bgColor = dk(dark, T.purple10, T.purple20);
 	const boxShadow = dark ? 'inset 0 0 0 1px rgba(154, 15, 249, 0.35)' : 'none';
-	const dotActiveColor = T.purple;
+	const dotActiveColor = dk(dark, T.purple, T.purpleLight);
 	const dotInactiveColor = dk(dark, 'rgba(0,0,0,0.18)', 'rgba(255,255,255,0.22)');
 
 	return (
