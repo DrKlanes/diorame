@@ -39,6 +39,7 @@ export function SwatchGrid({ dark }: SwatchGridProps) {
 					color={color}
 					isActive={idx === state.currentColorIndex}
 					blobPath={BLOB_PATHS[idx % BLOB_PATHS.length]}
+					dark={dark}
 					onClick={() => dispatch({ type: 'SET_COLOR_INDEX', payload: idx })}
 				/>
 			))}
@@ -46,14 +47,30 @@ export function SwatchGrid({ dark }: SwatchGridProps) {
 	);
 }
 
+function isLightColor(hex: string): boolean {
+	const c = hex.replace('#', '');
+	const r = parseInt(c.substring(0, 2), 16);
+	const g = parseInt(c.substring(2, 4), 16);
+	const b = parseInt(c.substring(4, 6), 16);
+	const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+	return luminance > 0.92;
+}
+
 interface SwatchProps {
 	color: string;
 	isActive: boolean;
 	blobPath: string;
+	dark: boolean;
 	onClick: () => void;
 }
 
-function Swatch({ color, isActive, blobPath, onClick }: SwatchProps) {
+function Swatch({ color, isActive, blobPath, dark, onClick }: SwatchProps) {
+	const lightColor = isLightColor(color);
+	const strokeColor = lightColor
+		? (dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)')
+		: 'none';
+	const strokeWidth = lightColor ? 0.75 : 0;
+
 	return (
 		<button
 			onClick={onClick}
@@ -73,7 +90,7 @@ function Swatch({ color, isActive, blobPath, onClick }: SwatchProps) {
 			}}
 		>
 			<svg viewBox="0 0 24 24" width="22" height="22" style={{ display: 'block', overflow: 'visible' }}>
-				<path d={blobPath} fill={color} />
+				<path d={blobPath} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
 			</svg>
 			{isActive && (
 				<div style={{
