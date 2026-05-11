@@ -46,6 +46,7 @@ type Action =
   | { type: 'UPDATE_CAMERA'; payload: { x?: number; y?: number; z?: number; rotation?: number } }
   | { type: 'NEXT_LAYER' }
   | { type: 'PREV_LAYER' }
+  | { type: 'SET_CURRENT_LAYER'; payload: number }
   | { type: 'SET_FOCAL_LENGTH'; payload: number }
   | { type: 'SET_VIEW_ZOOM_OFFSET'; payload: number }
   | { type: 'SET_DRAWING_ZOOM'; payload: { zoom: number; pan?: { x: number; y: number } } }
@@ -504,6 +505,28 @@ function appReducer(state: AppState, action: Action): AppState {
             };
         }
         return state;
+    }
+    case 'SET_CURRENT_LAYER': {
+        const targetIndex = action.payload;
+        if (targetIndex === state.currentLayerIndex) return state;
+        if (targetIndex < 0 || targetIndex >= state.totalLayers) return state;
+        const newZ = targetIndex * -BASE_DEPTH_STEP;
+        const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
+        const targetParams = state.layerGradParams[targetIndex] || GRADIENT_DEFAULTS;
+        const targetBrush = state.layerBrushSettings[targetIndex] || { thickness: state.currentLineThickness, mode: state.lineMode };
+        return {
+            ...state,
+            currentLayerIndex: targetIndex,
+            camera: { ...state.camera, z: newZ, rotation: 0 },
+            isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
+            isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
+            paletteMode: state.layerRenderModes[targetIndex] || 'flat',
+            paletteGradientAngle: targetParams.angle,
+            paletteGradientIntensity: targetParams.intensity,
+            paletteGradientType: targetParams.gradType || 'solid',
+            currentLineThickness: targetBrush.thickness,
+            lineMode: targetBrush.mode
+        };
     }
     case 'SET_FOCAL_LENGTH':
       return { ...state, focalLength: action.payload };
