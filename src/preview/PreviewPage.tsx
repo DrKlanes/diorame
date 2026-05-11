@@ -11,6 +11,7 @@ import { CameraSlidersZone } from '../components/strata/bottombar/CameraSlidersZ
 import { CameraBar } from '../components/strata/bottombar/CameraBar';
 import { BottomBar } from '../components/strata/bottombar/BottomBar';
 import { ColorPalette } from '../components/strata/colorpalette/ColorPalette';
+import { LayersPanel } from '../components/strata/layers/LayersPanel';
 
 export function PreviewPage() {
 	return (
@@ -254,6 +255,23 @@ function PreviewPageContent() {
 					overflow: 'hidden',
 				}}>
 					<ColorPalette />
+				</div>
+			</Section>
+
+			{/* ── SECTION 1g: Layers Panel (live) ── */}
+			<Section title="Layers Panel (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
+				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
+					Visible solo en modo drawing. Collapsed (pill vertical) → expanded (panel con lista). Persiste en localStorage.
+				</p>
+				<div style={{
+					position: 'relative',
+					width: '100%',
+					height: 320,
+					backgroundColor: dk(dark, 'rgb(248,247,243)', '#1a1a1a'),
+					borderRadius: 12,
+					overflow: 'hidden',
+				}}>
+					<LayersPanel />
 				</div>
 			</Section>
 
