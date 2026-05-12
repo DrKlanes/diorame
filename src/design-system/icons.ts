@@ -190,6 +190,12 @@ export const ICONS: Record<string, string> = {
 		`<circle cx="15" cy="17" r="1" fill="currentColor"/>`,
 	'blend-normal':
 		`<path d="M12 18C15.31 18 18 15.31 18 12C18 8.69 15.31 6 12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+	'camera':
+		`<rect x="4" y="8" width="16" height="11" rx="2"/>` +
+		`<path d="M9.5 8V6.5C9.5 6.22 9.72 6 10 6H14C14.28 6 14.5 6.22 14.5 6.5V8"/>` +
+		`<circle cx="12" cy="13.5" r="2.5"/>`,
+	'depth-far':
+		`<path d="M4 7H20M7 12H17M9.5 17H14.5"/>`,
 
 	// ─── Custom additions (not in original design set — preserved as-is) ──
 	'align-left':
