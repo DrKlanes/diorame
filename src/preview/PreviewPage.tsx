@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Ico, DiPill, DiVSep, DiMiniSlider, DiSegmentControl, DiPanel, ICONS } from '../design-system';
 import { T, TYPE, dk } from '../design-system/tokens';
-import { StrataProvider, useStrata } from '../components/strata/StrataContext';
+import { StrataProvider, useStrata, AppState } from '../components/strata/StrataContext';
 import { useTheme } from '../design-system/useTheme';
 import { TopBar } from '../components/strata/topbar/TopBar';
 import { DrawingToolbar } from '../components/strata/bottombar/DrawingToolbar';
@@ -260,25 +260,7 @@ function PreviewPageContent() {
 			</Section>
 
 			{/* ── SECTION 1g: Layers Panel (live) ── */}
-			<Section title="Layers Panel (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
-				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
-					Visible solo en modo drawing. Collapsed (pill vertical) → expanded (panel con lista). Persiste en localStorage.
-				</p>
-				<div style={{
-					position: 'relative',
-					width: '100%',
-					height: 320,
-					backgroundColor: dk(dark, 'rgb(248,247,243)', '#1a1a1a'),
-					borderRadius: 12,
-					overflow: 'hidden',
-				}}>
-					<LayersPanel />
-				</div>
-				<p style={{ fontSize: 11, color: subtleColor, margin: '8px 0 0 0' }}>
-					LayerDotsRail usa <code>position: fixed</code> — aparece pegada al margen derecho del viewport global.
-				</p>
-			</Section>
-			<LayerDotsRail />
+			<LayersPreviewSection dark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
 
 			{/* ── SECTION 1b: Top Bar ── */}
 			<Section title="Top Bar (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
@@ -342,6 +324,62 @@ function PreviewPageContent() {
 				Temporary dev page · ?preview=true · Will be removed in cleanup phase
 			</p>
 		</div>
+	);
+}
+
+// ─── Layers preview seed ────────────────────────────────────────────────────
+
+const LAYER_SEED_STATE: Partial<AppState> = {
+	mode: 'drawing',
+	isUIHidden: false,
+	totalLayers: 4,
+	currentLayerIndex: 1,
+	shapes: [
+		{ id: 'seed-shape-0', points: [], color: '#e8433a', zIndex: 0 },
+		{ id: 'seed-shape-1', points: [], color: '#384fbc', zIndex: -150 },
+		{ id: 'seed-shape-2', points: [], color: '#2d9651', zIndex: -300 },
+	],
+	layerRenderModes: { 0: 'grad', 1: 'grad', 2: 'flat' },
+	layerGradParams: {
+		0: { angle: 90, intensity: 50, gradType: 'fade' },
+		1: { angle: 45, intensity: 70, gradType: 'solid' },
+	},
+};
+
+function LayersPreviewSection({ dark, subtleColor, sectionBg, sectionBorder }: {
+	dark: boolean; subtleColor: string; sectionBg: string; sectionBorder: string;
+}) {
+	return (
+		<StrataProvider initialStateOverride={LAYER_SEED_STATE}>
+			<LayersPreviewSectionContent dark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
+		</StrataProvider>
+	);
+}
+
+function LayersPreviewSectionContent({ dark, subtleColor, sectionBg, sectionBorder }: {
+	dark: boolean; subtleColor: string; sectionBg: string; sectionBorder: string;
+}) {
+	return (
+		<Section title="Layers Panel (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
+			<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
+				Visible solo en modo drawing. 4 capas ficticias: Empty / Flat / Grad / Fade.
+				Collapsed (pill vertical) → expanded (panel con lista FLIP animation). Persiste en localStorage.
+			</p>
+			<div style={{
+				position: 'relative',
+				width: '100%',
+				height: 320,
+				backgroundColor: dk(dark, 'rgb(248,247,243)', '#1a1a1a'),
+				borderRadius: 12,
+				overflow: 'hidden',
+			}}>
+				<LayersPanel />
+			</div>
+			<p style={{ fontSize: 11, color: subtleColor, margin: '8px 0 0 0' }}>
+				LayerDotsRail usa <code>position: fixed</code> — aparece pegada al margen derecho del viewport global.
+			</p>
+			<LayerDotsRail />
+		</Section>
 	);
 }
 

@@ -1280,8 +1280,9 @@ function appReducer(state: AppState, action: Action): AppState {
 
 const StrataContext = createContext<{ state: AppState; dispatch: React.Dispatch<Action> } | undefined>(undefined);
 
-export const StrataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+export const StrataProvider: React.FC<{ children: ReactNode; initialStateOverride?: Partial<AppState> }> = ({ children, initialStateOverride }) => {
+  const merged = initialStateOverride ? { ...initialState, ...initialStateOverride } : initialState;
+  const [state, dispatch] = useReducer(appReducer, merged);
 
   return (
     <StrataContext.Provider value={{ state, dispatch }}>
