@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStrata, BASE_DEPTH_STEP, MAX_LAYERS } from '../StrataContext';
-import { DiPill, DiPanel, Ico } from '../../../design-system';
+import { DiPill, DiPanel } from '../../../design-system';
 import { IconBtn } from '../topbar/_shared';
 import { LayerRow } from './LayerRow';
 import { T, TYPE, dk } from '../../../design-system/tokens';
@@ -178,9 +178,16 @@ export function LayersPanel() {
 
 				{/* Z-axis + Layer list */}
 				<div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-					<div style={{ paddingLeft: 8, marginBottom: 3 }}>
-						<Ico name="camera" size={12} color={mutedColor} />
-					</div>
+					{/* Near circle — camera end */}
+					<div style={{
+						width: 10,
+						height: 10,
+						borderRadius: '50%',
+						backgroundColor: borderColor,
+						marginLeft: -4,
+						marginBottom: 3,
+						flexShrink: 0,
+					}} />
 					<div style={{
 						display: 'flex',
 						flexDirection: 'column',
@@ -192,9 +199,16 @@ export function LayersPanel() {
 							<LayerRow key={contentKey} index={slotIndex} dark={dark} />
 						))}
 					</div>
-					<div style={{ paddingLeft: 8, marginTop: 3 }}>
-						<Ico name="depth-far" size={12} color={mutedColor} />
-					</div>
+					{/* Far circle — depth end */}
+					<div style={{
+						width: 5,
+						height: 5,
+						borderRadius: '50%',
+						backgroundColor: borderColor,
+						marginLeft: -2,
+						marginTop: 3,
+						flexShrink: 0,
+					}} />
 				</div>
 
 				{/* Bottom actions */}
