@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Ico, DiPill, DiVSep, DiMiniSlider, DiSegmentControl, DiPanel, ICONS } from '../design-system';
 import { T, TYPE, dk } from '../design-system/tokens';
 import { StrataProvider, useStrata, AppState } from '../components/strata/StrataContext';
@@ -349,18 +349,27 @@ const LAYER_SEED_STATE: Partial<AppState> = {
 function LayersPreviewSection({ dark, subtleColor, sectionBg, sectionBorder }: {
 	dark: boolean; subtleColor: string; sectionBg: string; sectionBorder: string;
 }) {
+	const seedWithDark = { ...LAYER_SEED_STATE, isDarkMode: dark };
 	return (
-		<StrataProvider initialStateOverride={LAYER_SEED_STATE}>
-			<LayersPreviewSectionContent dark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
+		<StrataProvider initialStateOverride={seedWithDark}>
+			<LayersPreviewSectionContent parentDark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
 		</StrataProvider>
 	);
 }
 
-function LayersPreviewSectionContent({ dark, subtleColor, sectionBg, sectionBorder }: {
-	dark: boolean; subtleColor: string; sectionBg: string; sectionBorder: string;
+function LayersPreviewSectionContent({ parentDark, subtleColor, sectionBg, sectionBorder }: {
+	parentDark: boolean; subtleColor: string; sectionBg: string; sectionBorder: string;
 }) {
+	const { state, dispatch } = useStrata();
+
+	useEffect(() => {
+		if (state.isDarkMode !== parentDark) {
+			dispatch({ type: 'TOGGLE_DARK_MODE' } as any);
+		}
+	}, [parentDark]);
+
 	return (
-		<Section title="Layers Panel (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
+		<Section title="Layers Panel (live)" dark={parentDark} bg={sectionBg} border={sectionBorder}>
 			<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
 				Visible solo en modo drawing. 4 capas ficticias: Empty / Flat / Grad / Fade.
 				Collapsed (pill vertical) → expanded (panel con lista FLIP animation). Persiste en localStorage.
@@ -369,7 +378,7 @@ function LayersPreviewSectionContent({ dark, subtleColor, sectionBg, sectionBord
 				position: 'relative',
 				width: '100%',
 				height: 320,
-				backgroundColor: dk(dark, 'rgb(248,247,243)', '#1a1a1a'),
+				backgroundColor: dk(parentDark, 'rgb(248,247,243)', '#1a1a1a'),
 				borderRadius: 12,
 				overflow: 'hidden',
 			}}>
