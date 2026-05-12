@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStrata, BASE_DEPTH_STEP, MAX_LAYERS } from '../StrataContext';
-import { DiPill, DiPanel } from '../../../design-system';
+import { DiPill, DiPanel, Ico } from '../../../design-system';
 import { IconBtn } from '../topbar/_shared';
 import { LayerRow } from './LayerRow';
 import { T, TYPE, dk } from '../../../design-system/tokens';
@@ -48,6 +48,9 @@ export function LayersPanel() {
 	const off = (cond: boolean): React.CSSProperties =>
 		cond ? { opacity: 0.3, pointerEvents: 'none' } : {};
 
+	const mutedColor = dk(dark, T.muted, T.textDarkMuted) as string;
+	const borderColor = dk(dark, T.border, T.borderDark) as string;
+
 	if (!isExpanded) {
 		return (
 			<div style={{ position: 'absolute', top: 12, right: 12, zIndex: 50 }}>
@@ -78,7 +81,7 @@ export function LayersPanel() {
 							fontFamily: TYPE.sora,
 							fontSize: 11,
 							fontWeight: 400,
-							color: dk(dark, T.muted, T.textDarkMuted) as string,
+							color: mutedColor,
 							letterSpacing: '0.3px',
 						}}>
 							/{totalLayers}
@@ -129,12 +132,20 @@ export function LayersPanel() {
 		);
 	}
 
-	const layers = Array.from({ length: totalLayers }, (_, i) => i).reverse();
+	// Content-keyed layer descriptors for framer-motion FLIP animation
+	const layerDescriptors = Array.from({ length: totalLayers }, (_, i) => {
+		const zIdx = i * -BASE_DEPTH_STEP;
+		const firstShape = state.shapes.find(s => s.zIndex === zIdx);
+		return {
+			slotIndex: i,
+			contentKey: firstShape ? firstShape.id : `empty-${i}`,
+		};
+	}).sort((a, b) => b.slotIndex - a.slotIndex);
 
 	return (
 		<div style={{ position: 'absolute', top: 12, right: 12, zIndex: 50 }}>
 			<DiPanel dark={dark} width={220} radius={20} padding="10px">
-				{/* Header — chevron-right arriba a la derecha */}
+				{/* Header — chevron-right always top right */}
 				<div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
 					<span style={{
 						fontFamily: TYPE.panelHeader.family,
@@ -151,7 +162,7 @@ export function LayersPanel() {
 						fontFamily: TYPE.numericValue.family,
 						fontWeight: TYPE.numericValue.weight,
 						fontSize: TYPE.numericValue.size,
-						color: dk(dark, T.muted, T.textDarkMuted),
+						color: mutedColor,
 					}}>
 						{totalLayers}/10
 					</span>
@@ -165,15 +176,33 @@ export function LayersPanel() {
 						dark={dark} tooltip="Collapse" />
 				</div>
 
-				<div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-					{layers.map(i => <LayerRow key={i} index={i} dark={dark} />)}
+				{/* Z-axis + Layer list */}
+				<div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+					<div style={{ paddingLeft: 8, marginBottom: 3 }}>
+						<Ico name="camera" size={12} color={mutedColor} />
+					</div>
+					<div style={{
+						display: 'flex',
+						flexDirection: 'column',
+						gap: 1,
+						borderLeft: `1px solid ${borderColor}`,
+						paddingLeft: 6,
+					}}>
+						{layerDescriptors.map(({ slotIndex, contentKey }) => (
+							<LayerRow key={contentKey} index={slotIndex} dark={dark} />
+						))}
+					</div>
+					<div style={{ paddingLeft: 8, marginTop: 3 }}>
+						<Ico name="depth-far" size={12} color={mutedColor} />
+					</div>
 				</div>
 
+				{/* Bottom actions */}
 				<div style={{
 					display: 'flex',
 					gap: 2,
 					justifyContent: 'flex-end',
-					borderTop: `1px solid ${dk(dark, T.border, T.borderDark)}`,
+					borderTop: `1px solid ${borderColor}`,
 					paddingTop: 6,
 				}}>
 					<div style={off(!canDuplicate)}>

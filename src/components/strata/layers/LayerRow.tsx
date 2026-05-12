@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useStrata, BASE_DEPTH_STEP } from '../StrataContext';
 import { Ico } from '../../../design-system';
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
@@ -7,6 +8,8 @@ interface LayerRowProps {
 	index: number;
 	dark: boolean;
 }
+
+const SPRING = { type: 'spring' as const, stiffness: 500, damping: 35, mass: 0.8 };
 
 export function LayerRow({ index, dark }: LayerRowProps) {
 	const { state, dispatch } = useStrata();
@@ -26,6 +29,7 @@ export function LayerRow({ index, dark }: LayerRowProps) {
 
 	const textColor = dk(dark, T.dark, T.textDark) as string;
 	const mutedColor = dk(dark, T.muted, T.textDarkMuted) as string;
+	const borderColor = dk(dark, T.border, T.borderDark) as string;
 
 	const nameColor = isActive ? T.purple : (isEmpty ? mutedColor : textColor);
 	const nameOpacity = isActive && isEmpty ? 0.6 : 1;
@@ -37,11 +41,13 @@ export function LayerRow({ index, dark }: LayerRowProps) {
 	const badgeColor = badgeIsFilled ? T.purple : mutedColor;
 
 	return (
-		<button
+		<motion.button
+			layout
+			transition={SPRING}
 			onClick={() => dispatch({ type: 'SET_CURRENT_LAYER', payload: index } as any)}
 			style={{
 				width: '100%',
-				padding: '5px 6px 5px 8px',
+				padding: '5px 6px 5px 6px',
 				background: isActive ? dk(dark, T.purple10, T.purple20) : 'transparent',
 				border: 'none',
 				borderRadius: RADIUS.iconBtn,
@@ -49,13 +55,21 @@ export function LayerRow({ index, dark }: LayerRowProps) {
 				cursor: 'pointer',
 				display: 'flex',
 				alignItems: 'center',
-				justifyContent: 'space-between',
-				gap: 4,
+				gap: 6,
 				opacity: isHidden ? 0.5 : 1,
 				boxSizing: 'border-box',
 				flexShrink: 0,
 			}}
 		>
+			{/* Z-axis position dot */}
+			<div style={{
+				width: 6,
+				height: 6,
+				borderRadius: '50%',
+				backgroundColor: isActive ? T.purple : borderColor,
+				flexShrink: 0,
+			}} />
+
 			<span style={{
 				fontFamily: TYPE.controlLabel.family,
 				fontWeight: TYPE.controlLabel.weight,
@@ -63,6 +77,8 @@ export function LayerRow({ index, dark }: LayerRowProps) {
 				color: nameColor,
 				opacity: nameOpacity,
 				flexShrink: 0,
+				flex: 1,
+				textAlign: 'left',
 			}}>
 				Layer {index + 1}
 			</span>
@@ -109,6 +125,6 @@ export function LayerRow({ index, dark }: LayerRowProps) {
 					<Ico name="lock" size={12} color={mutedColor} />
 				)}
 			</div>
-		</button>
+		</motion.button>
 	);
 }
