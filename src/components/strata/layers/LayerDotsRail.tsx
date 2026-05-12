@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStrata } from '../StrataContext';
-import { DiPill, Ico } from '../../../design-system';
+import { DiPill } from '../../../design-system';
 import { T, dk } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
 
@@ -13,7 +13,6 @@ export function LayerDotsRail() {
 
 	const { totalLayers, currentLayerIndex, hiddenLayers, locked3DLayers } = state;
 	const layers = Array.from({ length: totalLayers }, (_, i) => i).reverse();
-	const mutedColor = dk(dark, T.muted, T.textDarkMuted) as string;
 
 	return (
 		<div style={{
@@ -29,11 +28,6 @@ export function LayerDotsRail() {
 				gap={0}
 				style={{ flexDirection: 'column', width: 24, height: 'auto' } as React.CSSProperties}
 			>
-				{/* Camera icon — near end of Z axis */}
-				<div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0' }}>
-					<Ico name="camera" size={12} color={mutedColor} />
-				</div>
-
 				{layers.map(i => {
 					const isActive = i === currentLayerIndex;
 					const isHidden = hiddenLayers.includes(i);
@@ -71,11 +65,6 @@ export function LayerDotsRail() {
 						</button>
 					);
 				})}
-
-				{/* Depth-far icon — far end of Z axis */}
-				<div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0' }}>
-					<Ico name="depth-far" size={12} color={mutedColor} />
-				</div>
 			</DiPill>
 		</div>
 	);
