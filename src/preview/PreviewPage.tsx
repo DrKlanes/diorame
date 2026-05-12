@@ -12,6 +12,7 @@ import { CameraBar } from '../components/strata/bottombar/CameraBar';
 import { BottomBar } from '../components/strata/bottombar/BottomBar';
 import { ColorPalette } from '../components/strata/colorpalette/ColorPalette';
 import { LayersPanel } from '../components/strata/layers/LayersPanel';
+import { LayerDotsRail } from '../components/strata/layers/LayerDotsRail';
 
 export function PreviewPage() {
 	return (
@@ -273,7 +274,11 @@ function PreviewPageContent() {
 				}}>
 					<LayersPanel />
 				</div>
+				<p style={{ fontSize: 11, color: subtleColor, margin: '8px 0 0 0' }}>
+					LayerDotsRail usa <code>position: fixed</code> — aparece pegada al margen derecho del viewport global.
+				</p>
 			</Section>
+			<LayerDotsRail />
 
 			{/* ── SECTION 1b: Top Bar ── */}
 			<Section title="Top Bar (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
