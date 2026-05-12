@@ -57,6 +57,39 @@ export function LayersPanel() {
 					gap={2}
 					style={{ flexDirection: 'column', width: 40, height: 'auto' } as React.CSSProperties}
 				>
+					{/* Badge N/total */}
+					<div style={{
+						display: 'flex',
+						alignItems: 'baseline',
+						justifyContent: 'center',
+						padding: '4px 0',
+						flexShrink: 0,
+					}}>
+						<span style={{
+							fontFamily: TYPE.sora,
+							fontSize: 11,
+							fontWeight: 500,
+							color: T.purple,
+							letterSpacing: '0.3px',
+						}}>
+							{currentLayerIndex + 1}
+						</span>
+						<span style={{
+							fontFamily: TYPE.sora,
+							fontSize: 11,
+							fontWeight: 400,
+							color: dk(dark, T.muted, T.textDarkMuted) as string,
+							letterSpacing: '0.3px',
+						}}>
+							/{totalLayers}
+						</span>
+					</div>
+					<HSep />
+					{/* Chevron expand — top position */}
+					<IconBtn name="chevron-left"
+						onClick={() => toggle(true)}
+						dark={dark} tooltip="Expand layers panel" />
+					<HSep />
 					<IconBtn
 						name={isCurrentHidden ? 'eye-off' : 'eye'}
 						onClick={() => dispatch({ type: 'TOGGLE_LAYER_VISIBILITY', payload: currentLayerIndex } as any)}
@@ -91,10 +124,6 @@ export function LayersPanel() {
 							onClick={() => dispatch({ type: 'NEXT_LAYER' } as any)}
 							dark={dark} tooltip="Add layer" />
 					</div>
-					<HSep />
-					<IconBtn name="chevron-left"
-						onClick={() => toggle(true)}
-						dark={dark} tooltip="Expand layers panel" />
 				</DiPill>
 			</div>
 		);
@@ -105,6 +134,7 @@ export function LayersPanel() {
 	return (
 		<div style={{ position: 'absolute', top: 12, right: 12, zIndex: 50 }}>
 			<DiPanel dark={dark} width={220} radius={20} padding="10px">
+				{/* Header — chevron-right arriba a la derecha */}
 				<div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
 					<span style={{
 						fontFamily: TYPE.panelHeader.family,

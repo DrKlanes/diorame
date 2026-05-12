@@ -26,7 +26,15 @@ export function LayerRow({ index, dark }: LayerRowProps) {
 
 	const textColor = dk(dark, T.dark, T.textDark) as string;
 	const mutedColor = dk(dark, T.muted, T.textDarkMuted) as string;
-	const badgeBg = dk(dark, 'rgba(0,0,0,0.06)', 'rgba(255,255,255,0.08)') as string;
+
+	const nameColor = isActive ? T.purple : (isEmpty ? mutedColor : textColor);
+	const nameOpacity = isActive && isEmpty ? 0.6 : 1;
+
+	const badgeIsFilled = !isEmpty;
+	const badgeBg = badgeIsFilled
+		? dk(dark, T.purple10, T.purple20) as string
+		: dk(dark, 'rgba(0,0,0,0.04)', 'rgba(255,255,255,0.06)') as string;
+	const badgeColor = badgeIsFilled ? T.purple : mutedColor;
 
 	return (
 		<button
@@ -52,7 +60,8 @@ export function LayerRow({ index, dark }: LayerRowProps) {
 				fontFamily: TYPE.controlLabel.family,
 				fontWeight: TYPE.controlLabel.weight,
 				fontSize: TYPE.controlLabel.size,
-				color: isEmpty ? mutedColor : textColor,
+				color: nameColor,
+				opacity: nameOpacity,
 				flexShrink: 0,
 			}}>
 				Layer {index + 1}
@@ -60,14 +69,14 @@ export function LayerRow({ index, dark }: LayerRowProps) {
 
 			<div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
 				<span style={{
-					fontFamily: TYPE.badge.family,
-					fontWeight: TYPE.badge.weight,
-					fontSize: TYPE.badge.size,
-					color: mutedColor,
+					fontFamily: TYPE.sora,
+					fontWeight: 500,
+					fontSize: 10,
+					color: badgeColor,
 					backgroundColor: badgeBg,
-					padding: '1px 5px',
-					borderRadius: 4,
-					letterSpacing: '0.02em',
+					padding: '2px 8px',
+					borderRadius: 999,
+					letterSpacing: '0.3px',
 				}}>
 					{colorMode}
 				</span>
