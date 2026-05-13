@@ -1993,7 +1993,7 @@ export const StrataCanvas = () => {
       
       // RISO Texture
       if (isCinematic && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && risoGrainRef.current) {
-          applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, risoGrainRef.current, helperCanvasRef.current!.getContext('2d')!, currentState.postProcessing.risoInkBlend ?? 0);
+          applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, risoGrainRef.current, helperCanvasRef.current!.getContext('2d')!);
       }
 
       // Chromatic Aberration & Transfer to Main

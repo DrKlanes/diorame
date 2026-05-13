@@ -447,7 +447,7 @@ APP_VERSION = "1.14.0"          // Current release version
 - **Fog**: Atmospheric depth fog (0-1)
 - **Particles**: Floating particles (circle, square, stroke types)
 - **Glow**: Soft glow around shapes (0-1)
-- **Riso**: Risograph halftone texture (0-1) + **Ink Blend** sub-control (0-1, overlap darkening)
+- **Riso**: Risograph halftone texture (0-1)
 - **Pixel Art**: Pixelation effect (size 2-16, depth 2-32 colors, dither 0-1)
 - **Grunge**: Overlay texture (subtle, medium, intense)
 - **Wiggle**: Hand-drawn line wobble (light, medium, heavy)
