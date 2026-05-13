@@ -24,7 +24,7 @@ export function FXRow({ iconName, label, isActive, dark, onToggle }: FXRowProps)
 				width: '100%',
 				padding: '8px 10px',
 				borderRadius: RADIUS.iconBtn,
-				background: isActive ? dk(dark, T.purple10, T.purple20) : 'transparent',
+				background: isActive ? T.purple10 : 'transparent',
 				border: 'none',
 				cursor: 'pointer',
 				textAlign: 'left',
