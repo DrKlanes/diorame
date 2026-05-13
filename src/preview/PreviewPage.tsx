@@ -13,6 +13,7 @@ import { BottomBar } from '../components/strata/bottombar/BottomBar';
 import { ColorPalette } from '../components/strata/colorpalette/ColorPalette';
 import { LayersPanel } from '../components/strata/layers/LayersPanel';
 import { LayerDotsRail } from '../components/strata/layers/LayerDotsRail';
+import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 
 export function PreviewPage() {
 	return (
@@ -261,6 +262,17 @@ function PreviewPageContent() {
 
 			{/* ── SECTION 1g: Layers Panel (live) ── */}
 			<LayersPreviewSection dark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
+
+			{/* ── SECTION 1h: Reset View Pill (live) ── */}
+			<Section title="Reset View Pill (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
+				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
+					Visible solo en modo drawing. <code>position: fixed</code>, bottom-left del viewport. Resetea drawingZoom y drawingPan.
+				</p>
+				<ResetViewPill />
+				<p style={{ fontSize: 11, color: subtleColor, margin: '8px 0 0 0' }}>
+					El pill usa <code>position: fixed</code> — aparece pegado al margen bottom-left del viewport global.
+				</p>
+			</Section>
 
 			{/* ── SECTION 1b: Top Bar ── */}
 			<Section title="Top Bar (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
