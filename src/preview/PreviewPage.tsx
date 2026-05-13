@@ -14,6 +14,7 @@ import { ColorPalette } from '../components/strata/colorpalette/ColorPalette';
 import { LayersPanel } from '../components/strata/layers/LayersPanel';
 import { LayerDotsRail } from '../components/strata/layers/LayerDotsRail';
 import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
+import { FXPanel } from '../components/strata/fx/FXPanel';
 
 export function PreviewPage() {
 	return (
@@ -263,7 +264,10 @@ function PreviewPageContent() {
 			{/* ── SECTION 1g: Layers Panel (live) ── */}
 			<LayersPreviewSection dark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
 
-			{/* ── SECTION 1h: Reset View Pill (live) ── */}
+			{/* ── SECTION 1h: FX Panel (live) ── */}
+			<FXPreviewSection dark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
+
+			{/* ── SECTION 1i: Reset View Pill (live) ── */}
 			<Section title="Reset View Pill (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
 				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
 					Visible solo en modo drawing. <code>position: fixed</code>, bottom-left del viewport. Resetea drawingZoom y drawingPan.
@@ -400,6 +404,69 @@ function LayersPreviewSectionContent({ parentDark, subtleColor, sectionBg, secti
 				LayerDotsRail usa <code>position: fixed</code> — aparece pegada al margen derecho del viewport global.
 			</p>
 			<LayerDotsRail />
+		</Section>
+	);
+}
+
+// ─── FX Panel preview seed ─────────────────────────────────────────────────────
+
+const FX_SEED_STATE: Partial<AppState> = {
+	mode: 'cinematic',
+	isUIHidden: false,
+	fxMasterEnabled: true,
+	postProcessingEnabled: {
+		grain: true,
+		vignette: false,
+		distortion: false,
+		dof: false,
+		wiggle: false,
+		chromaticAberration: false,
+		fog: true,
+		particles: false,
+		glow: true,
+		riso: true,
+		pixelArt: false,
+		grunge: false,
+	},
+};
+
+function FXPreviewSection({ dark, subtleColor, sectionBg, sectionBorder }: {
+	dark: boolean; subtleColor: string; sectionBg: string; sectionBorder: string;
+}) {
+	const seedWithDark = { ...FX_SEED_STATE, isDarkMode: dark };
+	return (
+		<StrataProvider initialStateOverride={seedWithDark}>
+			<FXPreviewSectionContent parentDark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
+		</StrataProvider>
+	);
+}
+
+function FXPreviewSectionContent({ parentDark, subtleColor, sectionBg, sectionBorder }: {
+	parentDark: boolean; subtleColor: string; sectionBg: string; sectionBorder: string;
+}) {
+	const { state, dispatch } = useStrata();
+
+	useEffect(() => {
+		if (state.isDarkMode !== parentDark) {
+			dispatch({ type: 'TOGGLE_DARK_MODE' } as any);
+		}
+	}, [parentDark]);
+
+	return (
+		<Section title="FX Panel collapsed (live)" dark={parentDark} bg={sectionBg} border={sectionBorder}>
+			<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
+				Visible solo en modo cinematic. 12 iconos en 3 grupos (Texture / Lens / Atmosphere). Master toggle activa/desactiva todos los FX. Grain, Riso, Glow y Fog activos en el seed.
+			</p>
+			<div style={{
+				position: 'relative',
+				width: '100%',
+				height: 560,
+				backgroundColor: dk(parentDark, 'rgb(248,247,243)', '#1a1a1a'),
+				borderRadius: 12,
+				overflow: 'hidden',
+			}}>
+				<FXPanel />
+			</div>
 		</Section>
 	);
 }
