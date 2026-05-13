@@ -620,14 +620,21 @@ function appReducer(state: AppState, action: Action): AppState {
       }
     case 'LOAD_PROJECT':
       // Ensure we merge postProcessing settings correctly to avoid undefined values
+      // Legacy migration: drop risoInkBlend if present (was never in stable releases)
+      const incomingPostProcessing: any = action.payload.postProcessing || {};
       const mergedPostProcessing = {
           ...initialState.postProcessing,
-          ...(action.payload.postProcessing || {})
+          ...incomingPostProcessing
       };
+      delete (mergedPostProcessing as any).risoInkBlend;
+      // Legacy migration: grungeOverlay -> grunge
+      const incomingPostProcessingEnabled: any = action.payload.postProcessingEnabled || {};
       const mergedPostProcessingEnabled = {
           ...initialState.postProcessingEnabled,
-          ...(action.payload.postProcessingEnabled || {})
+          ...incomingPostProcessingEnabled,
+          grunge: incomingPostProcessingEnabled.grunge ?? incomingPostProcessingEnabled.grungeOverlay ?? false
       };
+      delete (mergedPostProcessingEnabled as any).grungeOverlay;
       
       const loadedLayerRenderModes = action.payload.layerRenderModes || {};
       const loadedLayerGradParams = action.payload.layerGradParams || {};
@@ -660,6 +667,7 @@ function appReducer(state: AppState, action: Action): AppState {
       const safeCinematicSpeed = typeof action.payload.cinematicSpeed === 'number' ? action.payload.cinematicSpeed : state.cinematicSpeed;
       const safeIsHandheldEnabled = typeof action.payload.isHandheldEnabled === 'boolean' ? action.payload.isHandheldEnabled : state.isHandheldEnabled;
       const safeHandheldIntensity = (typeof action.payload.handheldIntensity === 'string' && ['low', 'medium', 'high'].includes(action.payload.handheldIntensity as string)) ? action.payload.handheldIntensity as HandheldIntensity : state.handheldIntensity;
+      const safeFxMasterEnabled = typeof action.payload.fxMasterEnabled === 'boolean' ? action.payload.fxMasterEnabled : true;
 
       // Create initial history snapshot with loaded state
       const initialSnapshot: HistorySnapshot = {
@@ -683,6 +691,7 @@ function appReducer(state: AppState, action: Action): AppState {
           projectName: safeProjectName,
           postProcessing: mergedPostProcessing,
           postProcessingEnabled: mergedPostProcessingEnabled,
+          fxMasterEnabled: safeFxMasterEnabled,
           // Ensure critical state is reset/set correctly
           history: [initialSnapshot],
           historyIndex: 0,
