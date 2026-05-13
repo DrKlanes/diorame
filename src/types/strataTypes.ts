@@ -60,7 +60,7 @@ export type PostProcessingEnabled = {
     glow: boolean;
     riso: boolean;
     pixelArt: boolean;
-    grungeOverlay: boolean;
+    grunge: boolean;
 };
 
 export type HandheldIntensity = 'low' | 'medium' | 'high';

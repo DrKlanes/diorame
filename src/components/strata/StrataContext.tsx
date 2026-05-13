@@ -155,7 +155,7 @@ const initialState: AppState = {
       glow: false,
       riso: false,
       pixelArt: false,
-      grungeOverlay: false
+      grunge: false
   },
   history: [{
       shapes: [],

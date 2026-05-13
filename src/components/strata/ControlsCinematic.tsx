@@ -486,11 +486,11 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 								{/* Grunge Overlay */}
 								<DiToggleSlider
 									label={<><Tornado className="w-3 h-3" /> Grunge Overlay</>}
-									checked={state.postProcessingEnabled.grungeOverlay}
-									formattedValue={state.postProcessingEnabled.grungeOverlay ? (state.postProcessing.grungeIntensity <= 0.2 ? 'Subtle' : state.postProcessing.grungeIntensity >= 0.8 ? 'Intense' : 'Medium') : 'Off'}
+									checked={state.postProcessingEnabled.grunge}
+									formattedValue={state.postProcessingEnabled.grunge ? (state.postProcessing.grungeIntensity <= 0.2 ? 'Subtle' : state.postProcessing.grungeIntensity >= 0.8 ? 'Intense' : 'Medium') : 'Off'}
 									value={state.postProcessing.grungeIntensity ?? 0.5}
 									min={0} max={1} step={0.5}
-									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'grungeOverlay' })}
+									onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: 'grunge' })}
 									onSliderChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'grungeIntensity', value: v } })}
 								/>
 

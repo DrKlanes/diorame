@@ -2026,7 +2026,7 @@ export const StrataCanvas = () => {
 
 
       // --- Grunge Overlay (Animated) ---
-      if (isCinematic && currentState.postProcessingEnabled.grungeOverlay && grungeImgRef.current) {
+      if (isCinematic && currentState.postProcessingEnabled.grunge && grungeImgRef.current) {
           applyGrunge(ctx, grungeImgRef.current, w, h, currentState.postProcessing.grungeIntensity ?? 0.5);
       }
 
