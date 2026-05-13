@@ -90,6 +90,7 @@ type Action =
   | { type: 'SET_LAYER_SPACING_FACTOR'; payload: number }
   | { type: 'SET_PROJECT_NAME'; payload: string }
   | { type: 'REORDER_LAYERS'; payload: { fromIndex: number; toIndex: number } }
+  | { type: 'MOVE_LAYER_TO'; payload: { fromIndex: number; toIndex: number } }
   | { type: 'DUPLICATE_LAYER'; payload: number }
   | { type: 'DISMISS_ONBOARDING' }
   | { type: 'SET_ACTIVE_PALETTE'; payload: 'primary' | 'alternative' }
@@ -1156,7 +1157,96 @@ function appReducer(state: AppState, action: Action): AppState {
         };
         
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
-        
+
+        return {
+            ...newState,
+            history,
+            historyIndex: index
+        };
+    }
+    case 'MOVE_LAYER_TO': {
+        const { fromIndex, toIndex } = action.payload;
+
+        // Guards
+        if (fromIndex === toIndex) return state;
+        if (fromIndex < 0 || fromIndex >= state.totalLayers) return state;
+        if (toIndex < 0 || toIndex >= state.totalLayers) return state;
+
+        // Helper: given an old layer index, return its new index after the move.
+        // Case A (from < to): items in (from, to] shift down by 1; fromIndex jumps to toIndex.
+        // Case B (from > to): items in [to, from) shift up by 1; fromIndex jumps to toIndex.
+        const remap = (oldIdx: number): number => {
+            if (oldIdx === fromIndex) return toIndex;
+            if (fromIndex < toIndex) {
+                if (oldIdx > fromIndex && oldIdx <= toIndex) return oldIdx - 1;
+            } else {
+                if (oldIdx >= toIndex && oldIdx < fromIndex) return oldIdx + 1;
+            }
+            return oldIdx;
+        };
+
+        // 1. Reindex shapes via zIndex
+        const newShapes = state.shapes.map(shape => {
+            const oldLayerIdx = Math.round(shape.zIndex / -BASE_DEPTH_STEP);
+            const newLayerIdx = remap(oldLayerIdx);
+            if (newLayerIdx === oldLayerIdx) return shape;
+            return { ...shape, zIndex: newLayerIdx * -BASE_DEPTH_STEP };
+        });
+
+        // 2. Reindex index arrays
+        const newHidden = state.hiddenLayers.map(remap);
+        const newLocked = state.locked3DLayers.map(remap);
+
+        // 3. Reindex Records (Record<number, T>)
+        const remapRecord = <T,>(record: Record<number, T>): Record<number, T> => {
+            const result: Record<number, T> = {};
+            for (let i = 0; i < state.totalLayers; i++) {
+                if (record[i] !== undefined) {
+                    result[remap(i)] = record[i];
+                }
+            }
+            return result;
+        };
+
+        const newRenderModes = remapRecord(state.layerRenderModes);
+        const newGradParams = remapRecord(state.layerGradParams);
+        const newBrushSettings = remapRecord(state.layerBrushSettings);
+
+        // 4. Reindex currentLayerIndex (active layer follows its content)
+        const newCurrent = remap(state.currentLayerIndex);
+
+        // 5. Reindex focusTargetLayer (cinematic focus follows its target layer when not -1/manual)
+        const oldFocusTarget = state.postProcessing.focusTargetLayer;
+        const newFocusTarget = (typeof oldFocusTarget === 'number' && oldFocusTarget >= 0)
+            ? remap(oldFocusTarget)
+            : oldFocusTarget;
+
+        const newState = {
+            ...state,
+            shapes: newShapes,
+            hiddenLayers: newHidden,
+            locked3DLayers: newLocked,
+            layerRenderModes: newRenderModes,
+            layerGradParams: newGradParams,
+            layerBrushSettings: newBrushSettings,
+            currentLayerIndex: newCurrent,
+            camera: {
+                ...state.camera,
+                z: newCurrent * -BASE_DEPTH_STEP,
+                rotation: 0
+            },
+            postProcessing: {
+                ...state.postProcessing,
+                focusTargetLayer: newFocusTarget
+            }
+        };
+
+        const { history, index } = pushHistory(
+            state.history,
+            state.historyIndex,
+            createSnapshot(newState)
+        );
+
         return {
             ...newState,
             history,
