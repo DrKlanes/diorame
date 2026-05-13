@@ -109,27 +109,33 @@ export function FXPanel() {
 					<PanelHSep />
 					{/* Texture */}
 					<GroupLabel label="Texture" />
-					{TEXTURE_FX.map(({ fxKey, iconName, label }) => (
-						<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
-							isActive={px[fxKey]} dark={dark}
-							onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })} />
-					))}
+					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+						{TEXTURE_FX.map(({ fxKey, iconName, label }) => (
+							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
+								isActive={px[fxKey]} dark={dark}
+								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })} />
+						))}
+					</div>
 					<PanelHSep />
 					{/* Lens */}
 					<GroupLabel label="Lens" />
-					{LENS_FX.map(({ fxKey, iconName, label }) => (
-						<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
-							isActive={px[fxKey]} dark={dark}
-							onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })} />
-					))}
+					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+						{LENS_FX.map(({ fxKey, iconName, label }) => (
+							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
+								isActive={px[fxKey]} dark={dark}
+								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })} />
+						))}
+					</div>
 					<PanelHSep />
 					{/* Atmosphere */}
 					<GroupLabel label="Atmosphere" />
-					{ATMOSPHERE_FX.map(({ fxKey, iconName, label }) => (
-						<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
-							isActive={px[fxKey]} dark={dark}
-							onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })} />
-					))}
+					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+						{ATMOSPHERE_FX.map(({ fxKey, iconName, label }) => (
+							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
+								isActive={px[fxKey]} dark={dark}
+								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })} />
+						))}
+					</div>
 				</DiPanel>
 			</div>
 		);
