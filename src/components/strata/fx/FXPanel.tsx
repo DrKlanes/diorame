@@ -143,6 +143,8 @@ export function FXPanel() {
 			>
 				<IconBtn name="sparkles" onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} dark={dark} active={fxMasterEnabled} tooltip="Toggle all FX" />
 				<PillHSep />
+				<IconBtn name="chevron-left" onClick={() => toggle(true)} dark={dark} tooltip="Expand FX panel" />
+				<PillHSep />
 				<IconBtn name="fx-grain"     onClick={() => dispatch({ type: 'TOGGLE_FX', payload: 'grain'  })} dark={dark} active={px.grain}  tooltip="Grain" />
 				<IconBtn name="fx-grunge"    onClick={() => dispatch({ type: 'TOGGLE_FX', payload: 'grunge' })} dark={dark} active={px.grunge} tooltip="Grunge" />
 				<IconBtn name="fx-riso"      onClick={() => dispatch({ type: 'TOGGLE_FX', payload: 'riso'   })} dark={dark} active={px.riso}   tooltip="Riso" />
@@ -157,8 +159,6 @@ export function FXPanel() {
 				<IconBtn name="fx-particles" onClick={() => dispatch({ type: 'TOGGLE_FX', payload: 'particles' })} dark={dark} active={px.particles} tooltip="Particles" />
 				<IconBtn name="fx-wiggle"    onClick={() => dispatch({ type: 'TOGGLE_FX', payload: 'wiggle'    })} dark={dark} active={px.wiggle}    tooltip="Wiggle" />
 				<IconBtn name="fx-pixel"     onClick={() => dispatch({ type: 'TOGGLE_FX', payload: 'pixelArt'  })} dark={dark} active={px.pixelArt}  tooltip="Pixel Art" />
-				<PillHSep />
-				<IconBtn name="chevron-left" onClick={() => toggle(true)} dark={dark} tooltip="Expand FX panel" />
 			</DiPill>
 		</div>
 	);
