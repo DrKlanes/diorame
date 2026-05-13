@@ -1,4 +1,16 @@
 import React, { useState } from 'react';
+import {
+	DndContext,
+	DragEndEvent,
+	PointerSensor,
+	useSensor,
+	useSensors,
+	closestCenter,
+} from '@dnd-kit/core';
+import {
+	SortableContext,
+	verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { useStrata, BASE_DEPTH_STEP, MAX_LAYERS } from '../StrataContext';
 import { DiPill, DiPanel } from '../../../design-system';
 import { IconBtn } from '../topbar/_shared';
@@ -15,6 +27,13 @@ export function LayersPanel() {
 		try { return localStorage.getItem(STORAGE_KEY) === 'true'; }
 		catch { return false; }
 	});
+
+	// dnd-kit sensors — distance:5 avoids drag activation on short clicks
+	const sensors = useSensors(
+		useSensor(PointerSensor, {
+			activationConstraint: { distance: 5 },
+		})
+	);
 
 	if (state.mode !== 'drawing') return null;
 	if (state.isUIHidden) return null;
@@ -142,6 +161,20 @@ export function LayersPanel() {
 		};
 	}).sort((a, b) => b.slotIndex - a.slotIndex);
 
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event;
+		if (!over || active.id === over.id) return;
+
+		const fromSlot = layerDescriptors.find(d => d.contentKey === active.id);
+		const toSlot = layerDescriptors.find(d => d.contentKey === over.id);
+		if (!fromSlot || !toSlot) return;
+
+		dispatch({
+			type: 'MOVE_LAYER_TO',
+			payload: { fromIndex: fromSlot.slotIndex, toIndex: toSlot.slotIndex },
+		} as any);
+	};
+
 	return (
 		<div style={{ position: 'absolute', top: 12, right: 12, zIndex: 50 }}>
 			<DiPanel dark={dark} width={220} radius={20} padding="10px">
@@ -195,9 +228,20 @@ export function LayersPanel() {
 						borderLeft: `1px solid ${borderColor}`,
 						paddingLeft: 6,
 					}}>
-						{layerDescriptors.map(({ slotIndex, contentKey }) => (
-							<LayerRow key={contentKey} index={slotIndex} dark={dark} />
-						))}
+						<DndContext
+							sensors={sensors}
+							collisionDetection={closestCenter}
+							onDragEnd={handleDragEnd}
+						>
+							<SortableContext
+								items={layerDescriptors.map(d => d.contentKey)}
+								strategy={verticalListSortingStrategy}
+							>
+								{layerDescriptors.map(({ slotIndex, contentKey }) => (
+									<LayerRow key={contentKey} sortableId={contentKey} index={slotIndex} dark={dark} />
+								))}
+							</SortableContext>
+						</DndContext>
 					</div>
 					{/* Far circle — depth end */}
 					<div style={{

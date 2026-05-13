@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useStrata, BASE_DEPTH_STEP } from '../StrataContext';
 import { Ico } from '../../../design-system';
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
@@ -7,12 +9,24 @@ import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 interface LayerRowProps {
 	index: number;
 	dark: boolean;
+	sortableId: string;
 }
 
 const SPRING = { type: 'spring' as const, stiffness: 500, damping: 35, mass: 0.8 };
 
-export function LayerRow({ index, dark }: LayerRowProps) {
+export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 	const { state, dispatch } = useStrata();
+
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		setActivatorNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id: sortableId });
+
 	const zIndex = index * -BASE_DEPTH_STEP;
 	const isEmpty = !state.shapes.some(s => s.zIndex === zIndex);
 	const isActive = index === state.currentLayerIndex;
@@ -42,12 +56,13 @@ export function LayerRow({ index, dark }: LayerRowProps) {
 
 	return (
 		<motion.button
-			layout
+			ref={setNodeRef}
+			layout={!isDragging}
 			transition={SPRING}
-			onClick={() => dispatch({ type: 'SET_CURRENT_LAYER', payload: index } as any)}
+			onClick={!isDragging ? () => dispatch({ type: 'SET_CURRENT_LAYER', payload: index } as any) : undefined}
 			style={{
 				width: '100%',
-				padding: '5px 6px 5px 6px',
+				padding: '5px 6px 5px 4px',
 				background: isActive ? dk(dark, T.purple10, T.purple20) : 'transparent',
 				border: 'none',
 				borderRadius: RADIUS.iconBtn,
@@ -55,12 +70,35 @@ export function LayerRow({ index, dark }: LayerRowProps) {
 				cursor: 'pointer',
 				display: 'flex',
 				alignItems: 'center',
-				gap: 6,
-				opacity: isHidden ? 0.5 : 1,
+				gap: 4,
+				opacity: isDragging ? 0.5 : (isHidden ? 0.5 : 1),
 				boxSizing: 'border-box',
 				flexShrink: 0,
+				transform: CSS.Transform.toString(transform),
+				transition: isDragging ? transition : undefined,
+				zIndex: isDragging ? 10 : undefined,
+				position: isDragging ? 'relative' : undefined,
 			}}
+			{...attributes}
 		>
+			{/* Drag handle — only this element initiates drag */}
+			<span
+				ref={setActivatorNodeRef}
+				{...listeners}
+				onClick={(e) => e.stopPropagation()}
+				style={{
+					display: 'flex',
+					alignItems: 'center',
+					padding: '2px 0',
+					cursor: isDragging ? 'grabbing' : 'grab',
+					opacity: 0.4,
+					flexShrink: 0,
+					touchAction: 'none',
+				}}
+			>
+				<Ico name="drag" size={14} color={mutedColor} />
+			</span>
+
 			{/* Z-axis position dot */}
 			<div style={{
 				width: 6,
