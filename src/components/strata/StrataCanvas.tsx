@@ -1177,7 +1177,8 @@ export const StrataCanvas = () => {
       const isDrawing = isDrawingRef.current;
       const currentPoints = currentPointsRef.current;
       const isCinematic = currentState.mode === 'cinematic';
-      const isPixelArt = isCinematic && currentState.postProcessingEnabled.pixelArt;
+      const fxEnabled = isCinematic && currentState.fxMasterEnabled;
+      const isPixelArt = fxEnabled && currentState.postProcessingEnabled.pixelArt;
       
       // Throttle rendering during drawing for better performance
       const renderTime = performance.now();
@@ -1394,7 +1395,7 @@ export const StrataCanvas = () => {
       const dzCenter = isArcOrOrbit ? centerZ - effectiveCameraZ : 0;
       const arcPivotScale = isArcOrOrbit ? FL / (FL + dzCenter) : 0;
 
-      const fxDistortion = (isCinematic && currentState.postProcessingEnabled.distortion) ? currentState.postProcessing.distortion : 0;
+      const fxDistortion = (fxEnabled && currentState.postProcessingEnabled.distortion) ? currentState.postProcessing.distortion : 0;
       const distortionK = Math.abs(fxDistortion) > 0.01 ? (fxDistortion * -0.8) * (500 / FL) : 0;
 
       renderZs.forEach(z => {
@@ -1481,7 +1482,7 @@ export const StrataCanvas = () => {
           };
 
           // Draw Particles
-          if (isCinematic && currentState.postProcessingEnabled.particles && currentState.postProcessing.particles > 0.01) {
+          if (fxEnabled && currentState.postProcessingEnabled.particles && currentState.postProcessing.particles > 0.01) {
              const pIntensity = currentState.postProcessing.particles;
              const pType = currentState.postProcessing.particleType;
              particlesRef.current.forEach(p => {
@@ -1529,7 +1530,7 @@ export const StrataCanvas = () => {
           shapes.forEach(shape => {
               if (shape.points.length === 0) return;
               let wiggleX = 0, wiggleY = 0;
-              if (isCinematic && currentState.postProcessingEnabled.wiggle) {
+              if (fxEnabled && currentState.postProcessingEnabled.wiggle) {
                   const seed = shape.id.charCodeAt(0) + (shape.id.charCodeAt(1) || 0);
                   const noiseValX = Math.sin(seed + wiggleFrame * 12.9898) * 43758.5453;
                   const noiseValY = Math.cos(seed + wiggleFrame * 78.233) * 43758.5453;
@@ -1959,7 +1960,7 @@ export const StrataCanvas = () => {
              }
 
              // Fog
-             if (isCinematic && currentState.postProcessingEnabled.fog) {
+             if (fxEnabled && currentState.postProcessingEnabled.fog) {
                  applyFog(layerCtx, w, h, currentState.postProcessing.fog, currentState.isDarkMode, FL + layerAvgZ);
              }
 
@@ -1977,11 +1978,11 @@ export const StrataCanvas = () => {
              }
 
              const glowInt = currentState.postProcessing.glow;
-             const dofBlur = (isCinematic && currentState.postProcessingEnabled.dof)
+             const dofBlur = (fxEnabled && currentState.postProcessingEnabled.dof)
                  ? Math.min((Math.abs(layerAvgZ - fxFocusDist)/1000)*(FL/400)*4, 30*currentState.postProcessing.dof)
                  : 0;
 
-             if (isCinematic && currentState.postProcessingEnabled.glow && glowInt > 0.01) {
+             if (fxEnabled && currentState.postProcessingEnabled.glow && glowInt > 0.01) {
                  applyGlow(offCtx, helperCanvasRef.current!, glowInt, dofBlur, currentState.isDarkMode);
              }
 
@@ -1992,13 +1993,13 @@ export const StrataCanvas = () => {
       // --- 3. Final Composition ---
       
       // RISO Texture
-      if (isCinematic && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && risoGrainRef.current) {
+      if (fxEnabled && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && risoGrainRef.current) {
           applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, risoGrainRef.current, helperCanvasRef.current!.getContext('2d')!);
       }
 
       // Chromatic Aberration & Transfer to Main
       const caInt = currentState.postProcessing.chromaticAberration;
-      const useCA = isCinematic && currentState.postProcessingEnabled.chromaticAberration && caInt > 0.01;
+      const useCA = fxEnabled && currentState.postProcessingEnabled.chromaticAberration && caInt > 0.01;
 
       ctx.globalCompositeOperation = currentState.isDarkMode ? 'source-over' : 'multiply';
 
@@ -2015,18 +2016,18 @@ export const StrataCanvas = () => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalCompositeOperation = 'source-over';
       
-      if (isCinematic && currentState.postProcessingEnabled.vignette) {
+      if (fxEnabled && currentState.postProcessingEnabled.vignette) {
           applyVignette(ctx, w, h, currentState.postProcessing.vignette);
       }
 
-      const grain = (isCinematic && currentState.postProcessingEnabled.grain) ? currentState.postProcessing.grain : 0;
+      const grain = (fxEnabled && currentState.postProcessingEnabled.grain) ? currentState.postProcessing.grain : 0;
       if (grain > 0.01 && noiseCanvasRef.current) {
           applyGrain(ctx, noiseCanvasRef.current, w, h, grain);
       }
 
 
       // --- Grunge Overlay (Animated) ---
-      if (isCinematic && currentState.postProcessingEnabled.grunge && grungeImgRef.current) {
+      if (fxEnabled && currentState.postProcessingEnabled.grunge && grungeImgRef.current) {
           applyGrunge(ctx, grungeImgRef.current, w, h, currentState.postProcessing.grungeIntensity ?? 0.5);
       }
 

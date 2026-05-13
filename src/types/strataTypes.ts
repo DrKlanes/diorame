@@ -105,6 +105,7 @@ export interface AppState {
   layerSpacingFactor: number; // New: Z-spacing multiplier for layers in VIEW mode (0.5 to 2.0, default 1.0)
   postProcessing: PostProcessingSettings;
   postProcessingEnabled: PostProcessingEnabled;
+  fxMasterEnabled: boolean; // New: Global toggle for all post-processing FX (not undoable)
   history: HistorySnapshot[];
   historyIndex: number;
   exportRequest: ExportType;

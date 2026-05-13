@@ -54,6 +54,7 @@ type Action =
   | { type: 'SET_FX_INTENSITY'; payload: { fx: keyof PostProcessingSettings; value: number } }
   | { type: 'SET_PARTICLE_TYPE'; payload: 'circle' | 'square' | 'stroke' }
   | { type: 'TOGGLE_FX'; payload: keyof PostProcessingEnabled }
+  | { type: 'TOGGLE_FX_MASTER' }
   | { type: 'REQUEST_EXPORT'; payload: ExportType }
   | { type: 'FINISH_EXPORT' }
   | { type: 'CLEAR_CANVAS' }
@@ -158,6 +159,7 @@ const initialState: AppState = {
       pixelArt: false,
       grunge: false
   },
+  fxMasterEnabled: true, // Master toggle for all FX (defaults ON)
   history: [{
       shapes: [],
       totalLayers: 1,
@@ -565,6 +567,11 @@ function appReducer(state: AppState, action: Action): AppState {
               ...state.postProcessingEnabled,
               [action.payload]: !state.postProcessingEnabled[action.payload]
           }
+      };
+    case 'TOGGLE_FX_MASTER':
+      return {
+          ...state,
+          fxMasterEnabled: !state.fxMasterEnabled
       };
     case 'REQUEST_EXPORT':
       return { ...state, exportRequest: action.payload, isExporting: true };
