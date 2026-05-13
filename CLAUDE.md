@@ -98,13 +98,29 @@ print(repr(lines[782]))  # ver tabs exactos
 | `ControlsDrawing.tsx` | 920 | UI modo DRAW: toolbar, paleta, navegación de capas, undo/redo, save/load |
 | `ControlsCinematic.tsx` | 768 | UI modo VIEW: tipos de animación, FX Mix popover, sliders de cámara |
 | `ControlsExport.tsx` | 80 | Dialog de advertencia de complejidad para export |
-| `LayersPanel.tsx` | 381 | Panel de capas: visibilidad, lock 3D, reordenar, duplicar, eliminar |
+| `LayersPanel.tsx` | 381 | Panel de capas (legacy — activo en app real hasta Fase 8) |
 | `ToolOptionsPanel.tsx` | 199 | Opciones contextuales: modo de línea, grosor, gradiente por capa |
 | `WelcomeModal.tsx` | — | Dialog de bienvenida con versión |
 | `OnboardingOverlay.tsx` | — | Hints en canvas vacío, auto-dismiss al primer trazo |
 | `ExportProgress.tsx` | — | Overlay de progreso durante exports de video |
 | `MobileBlockScreen.tsx` | — | Bloqueo para dispositivos móviles (tablet+ requerido) |
 | `pixelArtPalettes.ts` | — | Datos readonly para el efecto Pixel Art |
+
+### Rediseño UI v2 — `src/components/strata/` (rama `feat/ui-redesign-v2`)
+
+Componentes nuevos, NO integrados en la app real hasta Fase 8. Validados en `/preview?preview=true`.
+
+| Directorio | Archivos clave |
+|---|---|
+| `topbar/` | `TopBar.tsx`, `FileControlsPill.tsx`, `SnapshotRecordPill.tsx`, `ModeSwitchPill.tsx`, `ThemeTogglePill.tsx`, `_shared.tsx` |
+| `bottombar/` | `BottomBar.tsx`, `DrawingToolbar.tsx`, `CameraBar.tsx`, `CameraPresetsZone.tsx`, `CameraSpeedZone.tsx`, `CameraSlidersZone.tsx`, `_shared.tsx` |
+| `colorpalette/` | `ColorPalette.tsx`, `PaletteHeader.tsx`, `GradientControls.tsx`, `SwatchGrid.tsx` |
+| `layers/` | `LayersPanel.tsx`, `LayerRow.tsx`, `LayerDotsRail.tsx` |
+| `viewport/` | `ResetViewPill.tsx` |
+
+Ver `src/REFERENCE.md → UI Redesign v2` para historial de fases y estado detallado.
+
+---
 
 ### Canvas pipeline — `src/components/strata/canvas/`
 

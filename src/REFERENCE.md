@@ -632,6 +632,60 @@ APP_VERSION = "1.14.0"          // Current release version
 
 ---
 
+## UI Redesign v2 — Estado actual (rama `feat/ui-redesign-v2`)
+
+Rediseño visual integral de toda la capa de UI de Diorame. Componentes legacy mantenidos en disco durante la transición. **Integración en app real pendiente para Fase 8.**
+
+### Fases completadas
+
+| Fase | Descripción | Commit |
+|---|---|---|
+| **Fase 0** | Branch setup + tipografía global (Manrope + Sora) | `944bd14` |
+| **Fase 1** | Token system v2 — `T`, `TYPE`, `RADIUS`, `dk()` | `026ff1c` |
+| **Fase 2** | Primitivos DS: `Ico`, `DiPill`, `DiVSep`, `DiMiniSlider`, `DiSegmentControl`, `DiPanel` | `f4e0650` |
+| **Fase 3** | TopBar — 4 pills: `FileControlsPill`, `SnapshotRecordPill`, `ModeSwitchPill`, `ThemeTogglePill` | `5b8f8f7` |
+| **Fase 4** | BottomBar — `DrawingToolbar`, `CameraBar`, `CameraPresetsZone`, `CameraSpeedZone`, `CameraSlidersZone` | `ffa791e` |
+| **Fase 5** | ColorPalette — `PaletteHeader`, `GradientControls`, `SwatchGrid` | `74ef20d` |
+| **Fase 6.1** | Reducer: action `SET_CURRENT_LAYER` para navegación directa de capas | `d82cf09` |
+| **Fase 6.2** | LayersPanel (collapsed pill + expanded panel) + LayerDotsRail | `061fa2c`, `17215e2` |
+| **Fase 6.2-fix** | Badge, chevron, active accent, dark mode | `d2fc404` |
+| **Fase 6.2-spatial** | Animación FLIP de reorder, eje Z visual con círculos de profundidad | `c549c74`, `d5e6d3d` |
+| **Fase 6.3a** | Reducer: action `MOVE_LAYER_TO` para desplazamiento real (drag & drop) | `441d4cf` |
+| **Fase 6.3b** | LayersPanel: drag & drop con `@dnd-kit` | `8394320` |
+| **Fase 6.4** | ResetViewPill — mini-pill bottom-left para reset de zoom/pan | `5209690` |
+
+### Nuevas actions en el reducer
+
+- `SET_CURRENT_LAYER` — navegación directa a una capa por índice
+- `MOVE_LAYER_TO` — desplazamiento real para drag & drop (mueve todas las capas intermedias entre `fromIndex` y `toIndex`)
+
+### Nuevas dependencias
+
+- `framer-motion@^12.38.0` — animación FLIP del reorder de capas en LayersPanel
+- `@dnd-kit/core@^6.3.1`, `@dnd-kit/sortable@^10.0.0`, `@dnd-kit/utilities@^3.2.2` — drag & drop en LayersPanel
+
+### Nuevos directorios y componentes (en `src/components/strata/`)
+
+| Directorio | Archivos |
+|---|---|
+| `topbar/` | `TopBar.tsx`, `FileControlsPill.tsx`, `SnapshotRecordPill.tsx`, `ModeSwitchPill.tsx`, `ThemeTogglePill.tsx`, `_shared.tsx` |
+| `bottombar/` | `BottomBar.tsx`, `DrawingToolbar.tsx`, `CameraBar.tsx`, `CameraPresetsZone.tsx`, `CameraSpeedZone.tsx`, `CameraSlidersZone.tsx`, `_shared.tsx` |
+| `colorpalette/` | `ColorPalette.tsx`, `PaletteHeader.tsx`, `GradientControls.tsx`, `SwatchGrid.tsx` |
+| `layers/` | `LayersPanel.tsx`, `LayerRow.tsx`, `LayerDotsRail.tsx` |
+| `viewport/` | `ResetViewPill.tsx` |
+
+### Galería de preview (`/preview?preview=true`)
+
+`src/preview/PreviewPage.tsx` — página de desarrollo exclusiva (`import.meta.env.DEV`). Renderiza todos los componentes del DS v2 con estado live desde `StrataProvider`. Incluye seeds ficticios para secciones que requieren estado específico (LayersPanel con 4 capas, etc.).
+
+### Pendiente
+
+- **Fase 7** — FX Panel (controles de post-processing en modo VIEW)
+- **Fase 7.5** — Modales y onboarding rediseñados
+- **Fase 8** — Integración global: conectar TopBar, BottomBar, ColorPalette, LayersPanel, LayerDotsRail y ResetViewPill en la app real; desconectar legacy
+
+---
+
 ## Final Notes
 
 This document is a living reference. It should evolve with the project, but its core principles remain fixed.
