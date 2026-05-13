@@ -352,7 +352,7 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 											<span className="opacity-60 text-[10px]">Type:</span>
 											<div className="flex gap-1 flex-1">
 												<button
-													onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'particleType', value: 'circle' as any } })}
+													onClick={() => dispatch({ type: 'SET_PARTICLE_TYPE', payload: 'circle' })}
 													className={cn(
 														"flex-1 px-2 py-1 rounded text-[10px] transition-all",
 														state.postProcessing.particleType === 'circle'
@@ -363,7 +363,7 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 													Circle
 												</button>
 												<button
-													onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'particleType', value: 'square' as any } })}
+													onClick={() => dispatch({ type: 'SET_PARTICLE_TYPE', payload: 'square' })}
 													className={cn(
 														"flex-1 px-2 py-1 rounded text-[10px] transition-all",
 														state.postProcessing.particleType === 'square'
@@ -374,7 +374,7 @@ export const ControlsCinematic = ({ uiFocusLayer, setUiFocusLayer }: ControlsCin
 													Square
 												</button>
 												<button
-													onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'particleType', value: 'stroke' as any } })}
+													onClick={() => dispatch({ type: 'SET_PARTICLE_TYPE', payload: 'stroke' })}
 													className={cn(
 														"flex-1 px-2 py-1 rounded text-[10px] transition-all",
 														state.postProcessing.particleType === 'stroke'

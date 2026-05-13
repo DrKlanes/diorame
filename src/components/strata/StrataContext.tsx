@@ -52,6 +52,7 @@ type Action =
   | { type: 'SET_DRAWING_ZOOM'; payload: { zoom: number; pan?: { x: number; y: number } } }
   | { type: 'TOGGLE_DARK_MODE' }
   | { type: 'SET_FX_INTENSITY'; payload: { fx: keyof PostProcessingSettings; value: number } }
+  | { type: 'SET_PARTICLE_TYPE'; payload: 'circle' | 'square' | 'stroke' }
   | { type: 'TOGGLE_FX'; payload: keyof PostProcessingEnabled }
   | { type: 'REQUEST_EXPORT'; payload: ExportType }
   | { type: 'FINISH_EXPORT' }
@@ -542,11 +543,19 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'TOGGLE_DARK_MODE':
       return { ...state, isDarkMode: !state.isDarkMode };
     case 'SET_FX_INTENSITY':
-      return { 
-          ...state, 
+      return {
+          ...state,
           postProcessing: {
               ...state.postProcessing,
               [action.payload.fx]: action.payload.value
+          }
+      };
+    case 'SET_PARTICLE_TYPE':
+      return {
+          ...state,
+          postProcessing: {
+              ...state.postProcessing,
+              particleType: action.payload
           }
       };
     case 'TOGGLE_FX':
