@@ -35,6 +35,13 @@ const formatDither = (v: number): string => {
 	return `${Math.round(v * 100)}%`;
 };
 
+const formatZPlane = (v: number): string => {
+	const rounded = Math.round(v);
+	if (Math.abs(rounded) < 25) return '0 px';
+	const sign = rounded > 0 ? '+' : '-';
+	return `${sign}${Math.abs(rounded)} px`;
+};
+
 // ── Sub-control block ────────────────────────────────────────────────
 type SubControlBlockProps = {
 	label: string;
@@ -78,7 +85,7 @@ interface FXRowProps {
 	isActive: boolean;
 	dark: boolean;
 	onToggle: () => void;
-	level?: 1 | 'special' | 'bipolar' | 'discrete' | 'composite' | 'pixel';
+	level?: 1 | 'special' | 'bipolar' | 'discrete' | 'composite' | 'pixel' | 'dof';
 	valueKey?: keyof PostProcessingSettings;
 	discreteOptions?: Array<{ label: string; value: number }>;
 	compositeOptions?: string[];
@@ -254,6 +261,68 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 								onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDither', value: v } })} />
 						</div>
 					</SubControlBlock>
+				</div>
+			</button>
+		);
+	}
+
+	// --- DoF: header + intensity + Free/Lock + conditional Z-Plane or Layer ---
+	if (isActive && level === 'dof') {
+		const dofIntensity = state.postProcessing.dof;
+		const focusDist = state.postProcessing.focusDist;
+		const focusTargetLayer = state.postProcessing.focusTargetLayer;
+		const isFree = focusTargetLayer === -1;
+		return (
+			<button onClick={onToggle} style={expandedBtnStyle}>
+				<div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+					<div style={headerRowStyle}>
+						<Ico name={iconName} size={16} color={T.purple} />
+						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: T.purple }}>
+							{label}
+						</span>
+						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
+							{Math.round(dofIntensity * 100)}
+						</span>
+					</div>
+					<div onPointerDown={stopProp} onClick={stopProp}>
+						<DiMiniSlider dark={dark} value={dofIntensity} min={0} max={1} step={0.01}
+							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'dof', value: v } })} />
+					</div>
+					<div style={{ height: 1, width: '100%', backgroundColor: dk(dark, T.border, T.borderDark), margin: '4px 0' }} />
+					<div onPointerDown={stopProp} onClick={stopProp} style={{ borderRadius: RADIUS.segmentSmall + 2, overflow: 'hidden', background: dk(dark, T.white, T.panelDarkOpaque) }}>
+						<DiSegmentControl
+							dark={dark}
+							small
+							options={['Free', 'Lock']}
+							value={isFree ? 'Free' : 'Lock'}
+							onChange={v => {
+								const newValue = v === 'Free' ? -1 : state.currentLayerIndex;
+								dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusTargetLayer', value: newValue } });
+							}}
+						/>
+					</div>
+					{isFree ? (
+						<SubControlBlock label="Z-Plane" value={formatZPlane(focusDist)} dark={dark}>
+							<div onPointerDown={stopProp} onClick={stopProp} style={{ position: 'relative' }}>
+								<DiMiniSlider dark={dark} value={focusDist} min={-5000} max={5000} step={50}
+									onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusDist', value: v } })} />
+								<div style={{ position: 'absolute', left: 'calc(50% - 0.5px)', top: 5, height: 4, width: 1, backgroundColor: T.purple, opacity: 0.4, pointerEvents: 'none' }} />
+							</div>
+						</SubControlBlock>
+					) : (
+						<SubControlBlock label="Layer" value="" dark={dark}>
+							<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+								onPointerDown={stopProp} onClick={stopProp}>
+								<IconBtn name="chevron-left" dark={dark}
+									onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusTargetLayer', value: Math.max(0, focusTargetLayer - 1) } })} />
+								<span style={{ flex: 1, textAlign: 'center', fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
+									Layer {focusTargetLayer + 1}
+								</span>
+								<IconBtn name="chevron-right" dark={dark}
+									onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusTargetLayer', value: Math.min(state.totalLayers - 1, focusTargetLayer + 1) } })} />
+							</div>
+						</SubControlBlock>
+					)}
 				</div>
 			</button>
 		);
