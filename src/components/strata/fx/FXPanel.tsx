@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStrata, PostProcessingEnabled } from '../StrataContext';
+import { useStrata, PostProcessingEnabled, PostProcessingSettings } from '../StrataContext';
 import { DiPill, DiPanel } from '../../../design-system';
 import { IconBtn } from '../topbar/_shared';
 import { T, TYPE, RADIUS, dk, SPACE } from '../../../design-system/tokens';
@@ -8,25 +8,27 @@ import { FXRow } from './FXRow';
 
 const STORAGE_KEY = 'diorame-fx-expanded';
 
-const TEXTURE_FX: { fxKey: keyof PostProcessingEnabled; iconName: string; label: string }[] = [
-	{ fxKey: 'grain',  iconName: 'fx-grain',  label: 'Grain' },
-	{ fxKey: 'grunge', iconName: 'fx-grunge', label: 'Grunge' },
-	{ fxKey: 'riso',   iconName: 'fx-riso',   label: 'RISO' },
+type FXEntry = { fxKey: keyof PostProcessingEnabled; iconName: string; label: string; level: 1 | 'special'; valueKey?: keyof PostProcessingSettings };
+
+const TEXTURE_FX: FXEntry[] = [
+	{ fxKey: 'grain',  iconName: 'fx-grain',  label: 'Grain',  level: 1,         valueKey: 'grain' },
+	{ fxKey: 'grunge', iconName: 'fx-grunge', label: 'Grunge', level: 'special',  valueKey: 'grungeIntensity' },
+	{ fxKey: 'riso',   iconName: 'fx-riso',   label: 'RISO',   level: 1,         valueKey: 'riso' },
 ];
 
-const LENS_FX: { fxKey: keyof PostProcessingEnabled; iconName: string; label: string }[] = [
-	{ fxKey: 'vignette',            iconName: 'fx-vignette',   label: 'Vignette' },
-	{ fxKey: 'chromaticAberration', iconName: 'fx-chroma',     label: 'Chromatic Ab.' },
-	{ fxKey: 'distortion',          iconName: 'fx-distortion', label: 'Distortion' },
-	{ fxKey: 'glow',                iconName: 'fx-glow',       label: 'Glow' },
-	{ fxKey: 'dof',                 iconName: 'fx-dof',        label: 'Blur / DoF' },
+const LENS_FX: FXEntry[] = [
+	{ fxKey: 'vignette',            iconName: 'fx-vignette',   label: 'Vignette',      level: 1,         valueKey: 'vignette' },
+	{ fxKey: 'chromaticAberration', iconName: 'fx-chroma',     label: 'Chromatic Ab.', level: 1,         valueKey: 'chromaticAberration' },
+	{ fxKey: 'distortion',          iconName: 'fx-distortion', label: 'Distortion',    level: 'special', valueKey: 'distortion' },
+	{ fxKey: 'glow',                iconName: 'fx-glow',       label: 'Glow',          level: 1,         valueKey: 'glow' },
+	{ fxKey: 'dof',                 iconName: 'fx-dof',        label: 'Blur / DoF',    level: 'special' },
 ];
 
-const ATMOSPHERE_FX: { fxKey: keyof PostProcessingEnabled; iconName: string; label: string }[] = [
-	{ fxKey: 'fog',       iconName: 'fx-fog',       label: 'Fog' },
-	{ fxKey: 'particles', iconName: 'fx-particles', label: 'Particles' },
-	{ fxKey: 'wiggle',    iconName: 'fx-wiggle',    label: 'Stop Motion' },
-	{ fxKey: 'pixelArt',  iconName: 'fx-pixel',     label: 'Pixel Art' },
+const ATMOSPHERE_FX: FXEntry[] = [
+	{ fxKey: 'fog',       iconName: 'fx-fog',       label: 'Fog',         level: 1,         valueKey: 'fog' },
+	{ fxKey: 'particles', iconName: 'fx-particles', label: 'Particles',   level: 1,         valueKey: 'particles' },
+	{ fxKey: 'wiggle',    iconName: 'fx-wiggle',    label: 'Stop Motion', level: 'special', valueKey: 'wiggle' },
+	{ fxKey: 'pixelArt',  iconName: 'fx-pixel',     label: 'Pixel Art',   level: 'special' },
 ];
 
 export function FXPanel() {
@@ -110,30 +112,33 @@ export function FXPanel() {
 					{/* Texture */}
 					<GroupLabel label="Texture" />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{TEXTURE_FX.map(({ fxKey, iconName, label }) => (
+						{TEXTURE_FX.map(({ fxKey, iconName, label, level, valueKey }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
 								isActive={px[fxKey]} dark={dark}
-								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })} />
+								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
+								level={level} valueKey={valueKey} />
 						))}
 					</div>
 					<PanelHSep />
 					{/* Lens */}
 					<GroupLabel label="Lens" />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{LENS_FX.map(({ fxKey, iconName, label }) => (
+						{LENS_FX.map(({ fxKey, iconName, label, level, valueKey }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
 								isActive={px[fxKey]} dark={dark}
-								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })} />
+								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
+								level={level} valueKey={valueKey} />
 						))}
 					</div>
 					<PanelHSep />
 					{/* Atmosphere */}
 					<GroupLabel label="Atmosphere" />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{ATMOSPHERE_FX.map(({ fxKey, iconName, label }) => (
+						{ATMOSPHERE_FX.map(({ fxKey, iconName, label, level, valueKey }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
 								isActive={px[fxKey]} dark={dark}
-								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })} />
+								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
+								level={level} valueKey={valueKey} />
 						))}
 					</div>
 				</DiPanel>
