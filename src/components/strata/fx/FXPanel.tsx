@@ -8,7 +8,7 @@ import { FXRow } from './FXRow';
 
 const STORAGE_KEY = 'diorame-fx-expanded';
 
-type FXEntry = { fxKey: keyof PostProcessingEnabled; iconName: string; label: string; level: 1 | 'special'; valueKey?: keyof PostProcessingSettings };
+type FXEntry = { fxKey: keyof PostProcessingEnabled; iconName: string; label: string; level: 1 | 'special' | 'bipolar' | 'discrete' | 'composite'; valueKey?: keyof PostProcessingSettings; discreteOptions?: Array<{ label: string; value: number }>; compositeOptions?: string[] };
 
 const TEXTURE_FX: FXEntry[] = [
 	{ fxKey: 'grain',  iconName: 'fx-grain',  label: 'Grain',  level: 1,         valueKey: 'grain' },
@@ -19,7 +19,7 @@ const TEXTURE_FX: FXEntry[] = [
 const LENS_FX: FXEntry[] = [
 	{ fxKey: 'vignette',            iconName: 'fx-vignette',   label: 'Vignette',      level: 1,         valueKey: 'vignette' },
 	{ fxKey: 'chromaticAberration', iconName: 'fx-chroma',     label: 'Chromatic Ab.', level: 1,         valueKey: 'chromaticAberration' },
-	{ fxKey: 'distortion',          iconName: 'fx-distortion', label: 'Distortion',    level: 'special', valueKey: 'distortion' },
+	{ fxKey: 'distortion',          iconName: 'fx-distortion', label: 'Distortion',    level: 'bipolar', valueKey: 'distortion' },
 	{ fxKey: 'glow',                iconName: 'fx-glow',       label: 'Glow',          level: 1,         valueKey: 'glow' },
 	{ fxKey: 'dof',                 iconName: 'fx-dof',        label: 'Blur / DoF',    level: 'special' },
 ];
@@ -112,33 +112,36 @@ export function FXPanel() {
 					{/* Texture */}
 					<GroupLabel label="Texture" />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{TEXTURE_FX.map(({ fxKey, iconName, label, level, valueKey }) => (
+						{TEXTURE_FX.map(({ fxKey, iconName, label, level, valueKey, discreteOptions, compositeOptions }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
 								isActive={px[fxKey]} dark={dark}
 								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
-								level={level} valueKey={valueKey} />
+								level={level} valueKey={valueKey}
+								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
 						))}
 					</div>
 					<PanelHSep />
 					{/* Lens */}
 					<GroupLabel label="Lens" />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{LENS_FX.map(({ fxKey, iconName, label, level, valueKey }) => (
+						{LENS_FX.map(({ fxKey, iconName, label, level, valueKey, discreteOptions, compositeOptions }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
 								isActive={px[fxKey]} dark={dark}
 								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
-								level={level} valueKey={valueKey} />
+								level={level} valueKey={valueKey}
+								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
 						))}
 					</div>
 					<PanelHSep />
 					{/* Atmosphere */}
 					<GroupLabel label="Atmosphere" />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{ATMOSPHERE_FX.map(({ fxKey, iconName, label, level, valueKey }) => (
+						{ATMOSPHERE_FX.map(({ fxKey, iconName, label, level, valueKey, discreteOptions, compositeOptions }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
 								isActive={px[fxKey]} dark={dark}
 								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
-								level={level} valueKey={valueKey} />
+								level={level} valueKey={valueKey}
+								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
 						))}
 					</div>
 				</DiPanel>

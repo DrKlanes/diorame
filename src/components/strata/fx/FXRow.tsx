@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStrata, PostProcessingSettings, PostProcessingEnabled } from '../StrataContext';
-import { Ico, DiMiniSlider } from '../../../design-system';
+import { Ico, DiMiniSlider, DiSegmentControl } from '../../../design-system';
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 
 interface FXRowProps {
@@ -10,65 +10,115 @@ interface FXRowProps {
 	isActive: boolean;
 	dark: boolean;
 	onToggle: () => void;
-	level?: 1 | 'special';
+	level?: 1 | 'special' | 'bipolar' | 'discrete' | 'composite';
 	valueKey?: keyof PostProcessingSettings;
+	discreteOptions?: Array<{ label: string; value: number }>;
+	compositeOptions?: string[];
 }
 
-export function FXRow({ iconName, label, isActive, dark, onToggle, level = 'special', valueKey }: FXRowProps) {
+const stopProp = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
+
+const findClosestLabel = (value: number, options: Array<{ label: string; value: number }>) =>
+	options.reduce((closest, opt) =>
+		Math.abs(opt.value - value) < Math.abs(closest.value - value) ? opt : closest
+	).label;
+
+const formatBipolar = (v: number) => {
+	const snapped = Math.abs(v) < 0.005 ? 0 : v;
+	if (snapped === 0) return '0.00';
+	return snapped > 0 ? `+${snapped.toFixed(2)}` : snapped.toFixed(2);
+};
+
+export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level = 'special', valueKey, discreteOptions, compositeOptions }: FXRowProps) {
 	const { state, dispatch } = useStrata();
 	const sliderValue = (level === 1 && valueKey) ? (state.postProcessing[valueKey] as number) : 0;
 	const tint = isActive ? T.purple : dk(dark, T.dark, T.textDark) as string;
 
+	const expandedBtnStyle = {
+		display: 'flex',
+		width: '100%',
+		padding: '8px 10px',
+		borderRadius: RADIUS.iconBtn,
+		background: dk(dark, T.purple10, T.purple20),
+		border: 'none',
+		cursor: 'pointer',
+		textAlign: 'left' as const,
+		boxSizing: 'border-box' as const,
+	};
+	const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10 };
+	const colStyle = { display: 'flex', flexDirection: 'column' as const, gap: 6, width: '100%' };
+
+	// --- Level 1: header + slider (0–1) ---
 	if (isActive && level === 1 && valueKey) {
 		return (
-			<button
-				onClick={onToggle}
-				style={{
-					display: 'flex',
-					width: '100%',
-					padding: '8px 10px',
-					borderRadius: RADIUS.iconBtn,
-					background: dk(dark, T.purple10, T.purple20),
-					border: 'none',
-					cursor: 'pointer',
-					textAlign: 'left',
-					boxSizing: 'border-box',
-				}}
-			>
-				<div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
-					{/* Line 1 — header */}
-					<div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+			<button onClick={onToggle} style={expandedBtnStyle}>
+				<div style={colStyle}>
+					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={T.purple} />
-						<span style={{
-							flex: 1,
-							fontFamily: TYPE.controlLabel.family,
-							fontWeight: TYPE.controlLabel.weight,
-							fontSize: TYPE.controlLabel.size,
-							color: T.purple,
-						}}>
+						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: T.purple }}>
 							{label}
 						</span>
-						<span style={{
-							fontFamily: TYPE.numericValue.family,
-							fontWeight: TYPE.numericValue.weight,
-							fontSize: TYPE.numericValue.size,
-							color: T.purple,
-						}}>
+						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
 							{Math.round(sliderValue * 100)}
 						</span>
 					</div>
-					{/* Line 2 — slider */}
-					<div
-						onPointerDown={e => e.stopPropagation()}
-						onClick={e => e.stopPropagation()}
-					>
-						<DiMiniSlider
+					<div onPointerDown={stopProp} onClick={stopProp}>
+						<DiMiniSlider dark={dark} value={sliderValue} min={0} max={1} step={0.01}
+							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
+					</div>
+				</div>
+			</button>
+		);
+	}
+
+	// --- Bipolar: header + bipolar slider (-1–1) + center tick ---
+	if (isActive && level === 'bipolar' && valueKey) {
+		const bv = state.postProcessing[valueKey] as number;
+		return (
+			<button onClick={onToggle} style={expandedBtnStyle}>
+				<div style={colStyle}>
+					<div style={headerRowStyle}>
+						<Ico name={iconName} size={16} color={T.purple} />
+						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: T.purple }}>
+							{label}
+						</span>
+						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
+							{formatBipolar(bv)}
+						</span>
+					</div>
+					<div onPointerDown={stopProp} onClick={stopProp} style={{ position: 'relative' }}>
+						<DiMiniSlider dark={dark} value={bv} min={-1} max={1} step={0.01}
+							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
+						<div style={{ position: 'absolute', left: 'calc(50% - 0.5px)', top: 5, height: 4, width: 1, backgroundColor: T.purple, opacity: 0.4, pointerEvents: 'none' }} />
+					</div>
+				</div>
+			</button>
+		);
+	}
+
+	// --- Discrete: header + SegmentControl (no slider) ---
+	if (isActive && level === 'discrete' && valueKey && discreteOptions) {
+		const dv = state.postProcessing[valueKey] as number;
+		const currentLabel = findClosestLabel(dv, discreteOptions);
+		return (
+			<button onClick={onToggle} style={expandedBtnStyle}>
+				<div style={colStyle}>
+					<div style={headerRowStyle}>
+						<Ico name={iconName} size={16} color={T.purple} />
+						<span style={{ fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: T.purple }}>
+							{label}
+						</span>
+					</div>
+					<div onPointerDown={stopProp} onClick={stopProp}>
+						<DiSegmentControl
 							dark={dark}
-							value={sliderValue}
-							min={0}
-							max={1}
-							step={0.01}
-							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })}
+							options={discreteOptions.map(o => o.label)}
+							value={currentLabel}
+							onChange={newLabel => {
+								const opt = discreteOptions.find(o => o.label === newLabel);
+								if (opt) dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: opt.value } });
+							}}
+							small
 						/>
 					</div>
 				</div>
@@ -76,7 +126,42 @@ export function FXRow({ iconName, label, isActive, dark, onToggle, level = 'spec
 		);
 	}
 
-	// Flat row — inactive or special
+	// --- Composite: header + slider (0–1) + SegmentControl for type ---
+	if (isActive && level === 'composite' && valueKey && compositeOptions) {
+		const cv = state.postProcessing[valueKey] as number;
+		const pType = state.postProcessing.particleType;
+		const pTypeLabel = pType.charAt(0).toUpperCase() + pType.slice(1);
+		return (
+			<button onClick={onToggle} style={expandedBtnStyle}>
+				<div style={colStyle}>
+					<div style={headerRowStyle}>
+						<Ico name={iconName} size={16} color={T.purple} />
+						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: T.purple }}>
+							{label}
+						</span>
+						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
+							{Math.round(cv * 100)}
+						</span>
+					</div>
+					<div onPointerDown={stopProp} onClick={stopProp}>
+						<DiMiniSlider dark={dark} value={cv} min={0} max={1} step={0.01}
+							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
+					</div>
+					<div onPointerDown={stopProp} onClick={stopProp}>
+						<DiSegmentControl
+							dark={dark}
+							options={compositeOptions}
+							value={pTypeLabel}
+							onChange={v => dispatch({ type: 'SET_PARTICLE_TYPE', payload: v.toLowerCase() as 'circle' | 'square' | 'stroke' })}
+							small
+						/>
+					</div>
+				</div>
+			</button>
+		);
+	}
+
+	// --- Flat row: inactive or special (placeholder) ---
 	return (
 		<button
 			onClick={onToggle}
