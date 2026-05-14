@@ -2,7 +2,7 @@
 // Import from here rather than individual files.
 
 // Tokens & helpers
-export { T, TYPE, SPACE, RADIUS, dk, diTokens } from './tokens';
+export { T, TYPE, SPACE, RADIUS, SHADOW, Z_INDEX, dk, diTokens } from './tokens';
 export type { DiTokens } from './tokens';
 export { useTheme } from './useTheme';
 

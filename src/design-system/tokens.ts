@@ -39,6 +39,12 @@ export const T = {
 	shadow:       '0 2px 16px rgba(0,0,0,0.09), 0 1px 3px rgba(0,0,0,0.06)',
 	shadowStrong: '0 8px 28px rgba(0,0,0,0.14)',
 	blur:         'blur(12px)',
+
+	// Danger / Destructive
+	danger:          'rgb(220, 38, 38)',
+	dangerDark:      'rgb(248, 113, 113)',
+	dangerHover:     'rgb(185, 28, 28)',
+	dangerHoverDark: 'rgb(252, 165, 165)',
 } as const;
 
 // ──────────────────────────────────────────────────────────────────
@@ -83,7 +89,25 @@ export const RADIUS = {
 	segmentItemSmall:     4,
 	layerThumb:           7,
 	fxRow:               10,
-	modal:               14,
+	modal:               24,
+} as const;
+
+// ──────────────────────────────────────────────────────────────────
+// Layer 5: Box shadows
+// ──────────────────────────────────────────────────────────────────
+export const SHADOW = {
+	modal:     '0 24px 64px -16px rgba(0,0,0,0.24), 0 8px 24px -8px rgba(0,0,0,0.16)',
+	modalDark: '0 24px 64px -16px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)',
+} as const;
+
+// ──────────────────────────────────────────────────────────────────
+// Layer 6: Z-index scale
+// ──────────────────────────────────────────────────────────────────
+export const Z_INDEX = {
+	onboarding:    800,
+	toast:         900,
+	modalBackdrop: 999,
+	modal:        1000,
 } as const;
 
 // ──────────────────────────────────────────────────────────────────
