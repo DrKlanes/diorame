@@ -236,7 +236,7 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 								onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtSize', value: v } })} />
 						</div>
 					</SubControlBlock>
-					<SubControlBlock label="Depth" value={DEPTH_LABEL_MAP[dp] ?? '?'} dark={dark}>
+					<SubControlBlock label="Depth" value="" dark={dark}>
 						<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}
 							onPointerDown={stopProp} onClick={stopProp}>
 							<IconBtn name="chevron-left" dark={dark}
