@@ -26,7 +26,7 @@ const LENS_FX: FXEntry[] = [
 
 const ATMOSPHERE_FX: FXEntry[] = [
 	{ fxKey: 'fog',       iconName: 'fx-fog',       label: 'Fog',         level: 1,         valueKey: 'fog' },
-	{ fxKey: 'particles', iconName: 'fx-particles', label: 'Particles',   level: 1,         valueKey: 'particles' },
+	{ fxKey: 'particles', iconName: 'fx-particles', label: 'Particles',   level: 'composite', valueKey: 'particles', compositeOptions: ['Circle', 'Square', 'Stroke'] },
 	{ fxKey: 'wiggle',    iconName: 'fx-wiggle',    label: 'Stop Motion', level: 'discrete', valueKey: 'wiggle', discreteOptions: [{ label: 'Light', value: 0 }, { label: 'Medium', value: 0.5 }, { label: 'Heavy', value: 1 }] },
 	{ fxKey: 'pixelArt',  iconName: 'fx-pixel',     label: 'Pixel Art',   level: 'special' },
 ];
