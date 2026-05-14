@@ -12,7 +12,7 @@ type FXEntry = { fxKey: keyof PostProcessingEnabled; iconName: string; label: st
 
 const TEXTURE_FX: FXEntry[] = [
 	{ fxKey: 'grain',  iconName: 'fx-grain',  label: 'Grain',  level: 1,         valueKey: 'grain' },
-	{ fxKey: 'grunge', iconName: 'fx-grunge', label: 'Grunge', level: 'special',  valueKey: 'grungeIntensity' },
+	{ fxKey: 'grunge', iconName: 'fx-grunge', label: 'Grunge', level: 'discrete', valueKey: 'grungeIntensity', discreteOptions: [{ label: 'Subtle', value: 0 }, { label: 'Medium', value: 0.5 }, { label: 'Intense', value: 1 }] },
 	{ fxKey: 'riso',   iconName: 'fx-riso',   label: 'RISO',   level: 1,         valueKey: 'riso' },
 ];
 
@@ -27,7 +27,7 @@ const LENS_FX: FXEntry[] = [
 const ATMOSPHERE_FX: FXEntry[] = [
 	{ fxKey: 'fog',       iconName: 'fx-fog',       label: 'Fog',         level: 1,         valueKey: 'fog' },
 	{ fxKey: 'particles', iconName: 'fx-particles', label: 'Particles',   level: 1,         valueKey: 'particles' },
-	{ fxKey: 'wiggle',    iconName: 'fx-wiggle',    label: 'Stop Motion', level: 'special', valueKey: 'wiggle' },
+	{ fxKey: 'wiggle',    iconName: 'fx-wiggle',    label: 'Stop Motion', level: 'discrete', valueKey: 'wiggle', discreteOptions: [{ label: 'Light', value: 0 }, { label: 'Medium', value: 0.5 }, { label: 'Heavy', value: 1 }] },
 	{ fxKey: 'pixelArt',  iconName: 'fx-pixel',     label: 'Pixel Art',   level: 'special' },
 ];
 
