@@ -109,7 +109,7 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 							{label}
 						</span>
 					</div>
-					<div onPointerDown={stopProp} onClick={stopProp}>
+					<div onPointerDown={stopProp} onClick={stopProp} style={{ borderRadius: RADIUS.segmentSmall + 2, overflow: 'hidden', background: dk(dark, T.white, T.panelDarkOpaque) }}>
 						<DiSegmentControl
 							dark={dark}
 							options={discreteOptions.map(o => o.label)}
@@ -147,7 +147,7 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 						<DiMiniSlider dark={dark} value={cv} min={0} max={1} step={0.01}
 							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
 					</div>
-					<div onPointerDown={stopProp} onClick={stopProp}>
+					<div onPointerDown={stopProp} onClick={stopProp} style={{ borderRadius: RADIUS.segmentSmall + 2, overflow: 'hidden', background: dk(dark, T.white, T.panelDarkOpaque) }}>
 						<DiSegmentControl
 							dark={dark}
 							options={compositeOptions}
