@@ -460,7 +460,7 @@ function FXPreviewSectionContent({ parentDark, subtleColor, sectionBg, sectionBo
 			<div style={{
 				position: 'relative',
 				width: '100%',
-				height: 560,
+				height: 700,
 				backgroundColor: dk(parentDark, 'rgb(248,247,243)', '#1a1a1a'),
 				borderRadius: 12,
 				overflow: 'hidden',
