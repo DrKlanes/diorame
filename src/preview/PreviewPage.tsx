@@ -417,16 +417,35 @@ const FX_SEED_STATE: Partial<AppState> = {
 	postProcessingEnabled: {
 		grain: true,
 		vignette: false,
-		distortion: false,
-		dof: false,
-		wiggle: false,
+		distortion: true,
+		dof: true,
+		wiggle: true,
 		chromaticAberration: false,
-		fog: true,
-		particles: false,
-		glow: true,
-		riso: true,
-		pixelArt: false,
-		grunge: false,
+		fog: false,
+		particles: true,
+		glow: false,
+		riso: false,
+		pixelArt: true,
+		grunge: true,
+	},
+	postProcessing: {
+		grain: 0.75,
+		vignette: 0.5,
+		distortion: -0.3,
+		dof: 0.6,
+		focusDist: 1500,
+		focusTargetLayer: -1,
+		chromaticAberration: 0.5,
+		fog: 0.5,
+		particles: 0.5,
+		particleType: 'square',
+		wiggle: 0.5,
+		glow: 0.5,
+		riso: 0.5,
+		pixelArtSize: 6,
+		pixelArtDepth: 8,
+		pixelArtDither: 0.3,
+		grungeIntensity: 1,
 	},
 };
 
@@ -455,7 +474,7 @@ function FXPreviewSectionContent({ parentDark, subtleColor, sectionBg, sectionBo
 	return (
 		<Section title="FX Panel collapsed (live)" dark={parentDark} bg={sectionBg} border={sectionBorder}>
 			<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
-				Visible solo en modo cinematic. 12 iconos en 3 grupos (Texture / Lens / Atmosphere). Master toggle activa/desactiva todos los FX. Grain, Riso, Glow y Fog activos en el seed.
+				Visible solo en modo cinematic. 7 efectos activos cubriendo todas las variantes de tarjeta: Grain (nivel 1), Distortion (bipolar), Particles (composite), Wiggle y Grunge (discrete), Pixel Art (pixel), DoF (dof).
 			</p>
 			<div style={{
 				position: 'relative',
