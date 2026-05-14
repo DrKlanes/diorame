@@ -8,7 +8,7 @@ import { FXRow } from './FXRow';
 
 const STORAGE_KEY = 'diorame-fx-expanded';
 
-type FXEntry = { fxKey: keyof PostProcessingEnabled; iconName: string; label: string; level: 1 | 'special' | 'bipolar' | 'discrete' | 'composite'; valueKey?: keyof PostProcessingSettings; discreteOptions?: Array<{ label: string; value: number }>; compositeOptions?: string[] };
+type FXEntry = { fxKey: keyof PostProcessingEnabled; iconName: string; label: string; level: 1 | 'special' | 'bipolar' | 'discrete' | 'composite' | 'pixel'; valueKey?: keyof PostProcessingSettings; discreteOptions?: Array<{ label: string; value: number }>; compositeOptions?: string[] };
 
 const TEXTURE_FX: FXEntry[] = [
 	{ fxKey: 'grain',  iconName: 'fx-grain',  label: 'Grain',  level: 1,         valueKey: 'grain' },
@@ -28,7 +28,7 @@ const ATMOSPHERE_FX: FXEntry[] = [
 	{ fxKey: 'fog',       iconName: 'fx-fog',       label: 'Fog',         level: 1,         valueKey: 'fog' },
 	{ fxKey: 'particles', iconName: 'fx-particles', label: 'Particles',   level: 'composite', valueKey: 'particles', compositeOptions: ['Circle', 'Square', 'Stroke'] },
 	{ fxKey: 'wiggle',    iconName: 'fx-wiggle',    label: 'Stop Motion', level: 'discrete', valueKey: 'wiggle', discreteOptions: [{ label: 'Light', value: 0 }, { label: 'Medium', value: 0.5 }, { label: 'Heavy', value: 1 }] },
-	{ fxKey: 'pixelArt',  iconName: 'fx-pixel',     label: 'Pixel Art',   level: 'special' },
+	{ fxKey: 'pixelArt',  iconName: 'fx-pixel',     label: 'Pixel Art',   level: 'pixel' },
 ];
 
 export function FXPanel() {
