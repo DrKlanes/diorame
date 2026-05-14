@@ -15,6 +15,7 @@ import { LayersPanel } from '../components/strata/layers/LayersPanel';
 import { LayerDotsRail } from '../components/strata/layers/LayerDotsRail';
 import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 import { FXPanel } from '../components/strata/fx/FXPanel';
+import { DiModal } from '../components/strata/modals';
 
 export function PreviewPage() {
 	return (
@@ -30,6 +31,9 @@ function PreviewPageContent() {
 	const [sliderVal, setSliderVal] = useState(50);
 	const [segValue, setSegValue] = useState('Primary');
 	const [segValueSmall, setSegValueSmall] = useState('Flat');
+	const [dialogOpen, setDialogOpen] = useState(false);
+	const [alertOpen, setAlertOpen] = useState(false);
+	const [bannerOpen, setBannerOpen] = useState(false);
 
 	const bg            = dark ? '#0e0e0e' : '#e8e8e8';
 	const sectionBg     = dk(dark, 'rgba(0,0,0,0.03)', 'rgba(255,255,255,0.04)');
@@ -266,6 +270,60 @@ function PreviewPageContent() {
 
 			{/* ── SECTION 1h: FX Panel (live) ── */}
 			<FXPreviewSection dark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
+
+			{/* ── SECTION 1j: DiModal ── */}
+			<Section title="DiModal — compound component" dark={dark} bg={sectionBg} border={sectionBorder}>
+				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 16px 0' }}>
+					3 variantes: <strong>dialog</strong> (dismiss con Esc/backdrop), <strong>alert</strong> (solo botones, sin Esc), <strong>banner</strong> (top-center, dismiss con Esc).
+				</p>
+				<div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+					<button onClick={() => setDialogOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Open Dialog
+					</button>
+					<button onClick={() => setAlertOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Open Alert
+					</button>
+					<button onClick={() => setBannerOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Open Banner
+					</button>
+				</div>
+
+				{/* Dialog variant */}
+				<DiModal open={dialogOpen} onClose={() => setDialogOpen(false)} dark={dark} variant="dialog" size="md">
+					<DiModal.Header title="Guardar cambios" />
+					<DiModal.Body>
+						¿Deseas guardar los cambios antes de salir? Los cambios no guardados se perderán.
+					</DiModal.Body>
+					<DiModal.Footer>
+						<DiModal.TertiaryAction onClick={() => setDialogOpen(false)}>No guardar</DiModal.TertiaryAction>
+						<DiModal.SecondaryAction onClick={() => setDialogOpen(false)}>Cancelar</DiModal.SecondaryAction>
+						<DiModal.PrimaryAction onClick={() => setDialogOpen(false)}>Guardar</DiModal.PrimaryAction>
+					</DiModal.Footer>
+				</DiModal>
+
+				{/* Alert variant */}
+				<DiModal open={alertOpen} onClose={() => setAlertOpen(false)} dark={dark} variant="alert" size="sm">
+					<DiModal.Header title="Borrar capa" showClose={false} />
+					<DiModal.Body>
+						Esta acción eliminará permanentemente la capa y todo su contenido. No se puede deshacer.
+					</DiModal.Body>
+					<DiModal.Footer>
+						<DiModal.SecondaryAction onClick={() => setAlertOpen(false)}>Cancelar</DiModal.SecondaryAction>
+						<DiModal.DestructiveAction onClick={() => setAlertOpen(false)}>Borrar capa</DiModal.DestructiveAction>
+					</DiModal.Footer>
+				</DiModal>
+
+				{/* Banner variant */}
+				<DiModal open={bannerOpen} onClose={() => setBannerOpen(false)} dark={dark} variant="banner" size="md">
+					<DiModal.Header title="Exportación completada" />
+					<DiModal.Body>
+						El archivo se exportó como PNG en alta resolución (3840 × 2160 px).
+					</DiModal.Body>
+					<DiModal.Footer>
+						<DiModal.TertiaryAction onClick={() => setBannerOpen(false)}>Cerrar</DiModal.TertiaryAction>
+					</DiModal.Footer>
+				</DiModal>
+			</Section>
 
 			{/* ── SECTION 1i: Reset View Pill (live) ── */}
 			<Section title="Reset View Pill (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
