@@ -6,17 +6,6 @@ import { getWelcomeIllustration } from './welcomeIllustrations';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
-function HSep({ dark, margin }: { dark: boolean; margin: string }) {
-	return (
-		<div style={{
-			height: 1,
-			background: dk(dark, T.border, T.borderDark) as string,
-			flexShrink: 0,
-			margin,
-		}} />
-	);
-}
-
 function ResourceLink({ href, children }: { href: string; children: React.ReactNode }) {
 	const [hovered, setHovered] = useState(false);
 	return (
@@ -88,7 +77,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 					</div>
 
 					{/* Zona 1 — Identidad */}
-					<div>
+					<div style={{ marginBottom: 28 }}>
 						<div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
 							<span style={{
 								fontFamily: TYPE.panelHeader.family,
@@ -121,19 +110,15 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 						</p>
 					</div>
 
-					<HSep dark={dark} margin="20px 0" />
-
-					{/* Zona 2 — Acciones (columna full-width) */}
-					<div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
+					{/* Zona 2 — Acciones (PrimaryActionLg arriba, Secondary abajo) */}
+					<div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch', marginBottom: 28 }}>
+						<DiModal.PrimaryActionLg onClick={onClose}>
+							Start drawing
+						</DiModal.PrimaryActionLg>
 						<DiModal.SecondaryAction onClick={handleLoadExample} disabled={isLoadingExample}>
 							{isLoadingExample ? 'Loading…' : 'Load example scene'}
 						</DiModal.SecondaryAction>
-						<DiModal.PrimaryAction onClick={onClose}>
-							Start drawing
-						</DiModal.PrimaryAction>
 					</div>
-
-					<HSep dark={dark} margin="16px 0" />
 
 					{/* Zona 3 — Recursos */}
 					<div style={{
@@ -161,10 +146,10 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 						color: muted,
 					}}>
 						<div>
-							Inspired by <ResourceLink href="https://apps.apple.com/es/app/graintouch-by-iorama-studio/id1502908005">Graintouch</ResourceLink>
+							by <ResourceLink href="https://www.instagram.com/dumaker/">@dumaker</ResourceLink>
 						</div>
 						<div>
-							by <ResourceLink href="https://www.instagram.com/dumaker/">@dumaker</ResourceLink>
+							Inspired by <ResourceLink href="https://apps.apple.com/pa/app/graintouch/id6740813845">Graintouch</ResourceLink>
 						</div>
 					</div>
 
