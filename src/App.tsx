@@ -2,14 +2,19 @@ import React from 'react';
 import { StrataProvider, useStrata } from './components/strata/StrataContext';
 import { StrataCanvas } from './components/strata/StrataCanvas';
 import { Controls } from './components/strata/Controls';
-import { WelcomeModal } from './components/strata/WelcomeModal';
 import { useIsMobile } from './hooks/useIsMobile';
-import { MobileBlockScreenV2, ExportProgressV2 } from './components/strata/modals';
+import { useLoadExampleScene } from './hooks/useLoadExampleScene';
+import { MobileBlockScreenV2, ExportProgressV2, WelcomeModalV2 } from './components/strata/modals';
 import { ToastProvider } from './components/ui/toast-provider';
 import { PreviewPage } from './preview/PreviewPage';
 
 function AppContent() {
-  const { state } = useStrata();
+  const { state, dispatch } = useStrata();
+  const loadExampleScene = useLoadExampleScene();
+  const handleLoadExample = async () => {
+    await loadExampleScene();
+    dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
+  };
   return (
     <div className="relative w-full h-[100dvh] overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]">
       {/* Global interaction lock */}
@@ -19,7 +24,12 @@ function AppContent() {
 
       <StrataCanvas />
       <Controls />
-      <WelcomeModal />
+      <WelcomeModalV2
+        open={state.isWelcomeModalOpen}
+        onClose={() => dispatch({ type: 'TOGGLE_WELCOME_MODAL' })}
+        onLoadExample={handleLoadExample}
+        dark={state.isDarkMode}
+      />
       <ExportProgressV2
         open={state.isExporting}
         exportType={state.exportRequest === 'none' || state.exportRequest === 'webm' ? 'png' : state.exportRequest}
