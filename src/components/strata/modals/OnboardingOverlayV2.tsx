@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { T, TYPE, RADIUS, Z_INDEX, dk } from '../../../design-system/tokens';
 import { Ico } from '../../../design-system';
 import { DiModalContext } from './DiModalContext';
-import { PrimaryActionLg, SecondaryAction } from './DiModalActions';
+import { PrimaryActionLg, SecondaryActionLg } from './DiModalActions';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -27,7 +27,7 @@ const DRAW_CARDS: CardData[] = [
 
 // 'video' icon not in ICONS — Motion fallback: 'cam-orbit' (circular camera path)
 const VIEW_CARDS: CardData[] = [
-	{ icon: 'cam-orbit', title: 'Motion',  description: 'Camera presets and movements' },
+	{ icon: 'camera',    title: 'Motion',  description: 'Camera presets and movements' },
 	{ icon: 'sparkles',  title: 'Effects', description: 'Grain, glow, fog and more'    },
 	{ icon: 'depth-far', title: 'Depth',   description: 'Layer spacing and parallax'   },
 ];
@@ -44,7 +44,6 @@ const overlayVariants = {
 function OnboardingCard({ icon, title, description, dark }: CardData & { dark: boolean }) {
 	return (
 		<div style={{
-			background:    dk(dark, T.white, T.panelDarkOpaque) as string,
 			border:        `1px solid ${dk(dark, T.border, T.borderDark) as string}`,
 			borderRadius:  RADIUS.iconBtn,
 			padding:       16,
@@ -55,8 +54,8 @@ function OnboardingCard({ icon, title, description, dark }: CardData & { dark: b
 			<Ico name={icon} size={32} color={T.purple} />
 			<span style={{
 				fontFamily: TYPE.controlLabel.family,
-				fontWeight: 600,
-				fontSize:   TYPE.controlLabel.size,
+				fontWeight: 700,
+				fontSize:   16,
 				color:      dk(dark, T.dark, T.textDark) as string,
 			}}>
 				{title}
@@ -179,9 +178,9 @@ export function OnboardingOverlayV2({ open, onClose, onLoadExample, dark }: Onbo
 								gap:            12,
 								marginTop:      32,
 							}}>
-								<SecondaryAction onClick={handleLoadExample} disabled={isLoadingExample}>
+								<SecondaryActionLg onClick={handleLoadExample} disabled={isLoadingExample}>
 									{isLoadingExample ? 'Loading…' : 'Load example scene'}
-								</SecondaryAction>
+								</SecondaryActionLg>
 								<PrimaryActionLg onClick={onClose}>
 									Start drawing
 								</PrimaryActionLg>
