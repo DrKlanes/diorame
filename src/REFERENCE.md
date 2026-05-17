@@ -926,6 +926,381 @@ All located in `src/components/strata/modals/`.
 | **7.5.7** | `MobileBlockScreenV2` + preview trigger with escape button | `c8e15fa`, `2e5c19a` |
 
 
+---
+
+## Phase 8 — Cutover Plan
+
+### Overview
+
+Phase 8 replaces all legacy modal/UI components with their V2 counterparts in the production app. The V2 system built in Phase 7.5 has been validated in `/preview?preview=true`; Phase 8 integrates it into the real render tree.
+
+Key principles:
+- **Ordering: low → high risk** — sub-phases 8.1 (terminal screen) → 8.7 (popover) proceed from simplest to most complex. Each validates before the next begins.
+- **Atomic cutover**: each sub-phase deletes the legacy component AND integrates V2 in the **same commit**. No moment where legacy and V2 coexist in the live render tree (avoids z-index inversion: V2 uses `Z_INDEX.*` 800–1000 while legacy uses Tailwind `z-[60]`/`z-[100]`).
+- **Branch**: all work in `feat/ui-redesign-v2`. Push to `main` only after 8.8 validation completes.
+- **Rollback**: any sub-phase failure → revert commit or reset to `pre-phase-8` tag (created in 8.0.3) before attempting again.
+
+---
+
+### Pre-cutover (Sub-phase 8.0)
+
+Complete before beginning any sub-phase cutover.
+
+**8.0.1 — Resolve missing icons (BACKLOG Item 2)**
+
+Extract SVG paths from the Diorame icon source file and add to `src/design-system/icons.ts`:
+- `video` — replaces fallback `record` in `ExportProgressV2.tsx` (`EXPORT_CONFIG.mp4`)
+- `code` — replaces fallback `export` in `ExportProgressV2.tsx` (`EXPORT_CONFIG.svg/svgz`)
+- `layers` — replaces fallback `duplicate` in `OnboardingOverlayV2.tsx` (`DRAW_CARDS[2]`)
+
+After adding icons: update `ExportProgressV2.tsx` and `OnboardingOverlayV2.tsx` to use the canonical names. Low-risk, self-contained.
+
+**8.0.2 — Confirm atomic cutover rule**
+
+Review every sub-phase below and confirm that legacy deletion + V2 integration happen in the same commit. Document explicitly if any sub-phase requires a two-commit approach (and justify why).
+
+**8.0.3 — Tag current branch state**
+
+```bash
+git tag pre-phase-8
+```
+
+This tag is the safe rollback point if a sub-phase introduces a critical regression.
+
+---
+
+### Cutover Sequence (Sub-phases 8.1 → 8.7)
+
+---
+
+#### Sub-phase 8.1 — MobileBlockScreen
+
+- **Risk**: low
+- **Legacy to delete**: `src/components/strata/MobileBlockScreen.tsx`
+- **V2 to integrate**: `src/components/strata/modals/MobileBlockScreenV2.tsx`
+- **Parent file**: `src/App.tsx`
+- **Pre-delete task**: `useIsMobile()` hook is exported from `MobileBlockScreen.tsx` and used in `App.tsx`. Extract it to a standalone file **before** deleting the legacy:
+  - Create `src/hooks/useIsMobile.ts` with the hook implementation
+  - Update `App.tsx` import: `useIsMobile` from `../hooks/useIsMobile`
+  - Then delete `MobileBlockScreen.tsx`
+- **Swap in `App.tsx`**:
+  - Replace `import { MobileBlockScreen, useIsMobile } from './components/strata/MobileBlockScreen'` with imports from V2 and new hook
+  - Replace `<MobileBlockScreen />` with `<MobileBlockScreenV2 />`
+  - `MobileBlockScreenV2` accepts no props ✅
+- **Verification**:
+  - Chrome DevTools → viewport < 768px → `MobileBlockScreenV2` appears
+  - OS dark mode toggle → background and text update via `prefers-color-scheme`
+  - Viewport ≥ 768px → app renders normally (overlay not present)
+- **Risks**: none critical. Terminal component with no interactive state.
+
+---
+
+#### Sub-phase 8.2 — ExportProgress
+
+- **Risk**: low
+- **Legacy to delete**: `src/components/strata/ExportProgress.tsx`
+- **V2 to integrate**: `src/components/strata/modals/ExportProgressV2.tsx`
+- **Current parent**: `src/App.tsx` (inside `AppContent` function)
+- **State consumed by legacy** (via internal `useStrata()`): `state.isExporting`, `state.exportRequest`
+- **Move render to `Controls.tsx`**: `ExportProgressV2` requires `dark` prop (from `useTheme()`). `Controls.tsx` already consumes `useStrata()` and can add `useTheme()`. Moving the render avoids adding new hooks to `AppContent`.
+- **Props to pass from `Controls.tsx`**:
+  ```tsx
+  <ExportProgressV2
+    open={state.isExporting}
+    exportType={state.exportRequest ?? 'png'}
+    dark={dark}
+  />
+  ```
+  Note: `state.exportRequest` type is `'svg' | 'svgz' | 'mp4' | 'png' | null` — the `?? 'png'` fallback handles `null`.
+- **Verification**:
+  - Trigger PNG export → banner slides in from top, icon pulses, bar advances, banner disappears on completion
+  - Trigger MP4 → same flow with `video` icon (post-8.0.1) and longer duration
+  - Trigger SVG/SVGZ → `code` icon (post-8.0.1)
+  - Banner does NOT block canvas interaction (pointer-events on banner only, not full viewport)
+- **Risks**: low. Banner is display-only; no dispatch needed.
+
+---
+
+#### Sub-phase 8.3 — WelcomeModal
+
+- **Risk**: medium-low
+- **Legacy to delete**: `src/components/strata/WelcomeModal.tsx`
+- **V2 to integrate**: `src/components/strata/modals/WelcomeModalV2.tsx`
+- **Current parent**: `src/App.tsx` (inside `AppContent`, no props — reads state internally via `useStrata()`)
+- **State consumed by legacy**: `state.isWelcomeModalOpen`, dispatches `TOGGLE_WELCOME_MODAL` and `LOAD_PROJECT`
+- **Move render to `Controls.tsx`**: V2 requires `open`, `onClose`, `onLoadExample`, `dark` — all derivable in `Controls.tsx`.
+- **Handler to extract**: the `onLoadExample` logic (fetch + `LOAD_PROJECT` dispatch + close) currently lives inside `WelcomeModal.tsx`. Extract to `src/hooks/useLoadExampleScene.ts` — this hook will be shared with `OnboardingOverlayV2` (sub-phase 8.6).
+- **Props to pass from `Controls.tsx`**:
+  ```tsx
+  <WelcomeModalV2
+    open={state.isWelcomeModalOpen}
+    onClose={() => dispatch({ type: 'TOGGLE_WELCOME_MODAL' })}
+    onLoadExample={handleLoadExampleScene}   // from extracted hook
+    dark={dark}
+  />
+  ```
+- **Verification**:
+  - Fresh load → `WelcomeModalV2` appears with `v1-15.png` illustration
+  - Click "Start drawing" → closes; canvas ready
+  - Click "Load example scene" → loads `.dior` example, closes modal
+  - Press `Shift + ?` → reopens `WelcomeModalV2`
+  - Dark mode → modal renders correctly in dark variant
+- **Risks**: medium-low. First modal with real dispatch. Verify `TOGGLE_WELCOME_MODAL` action exists in reducer.
+
+---
+
+#### Sub-phase 8.4 — ClearCanvasAlertDialog
+
+- **Risk**: medium-low
+- **Legacy to delete**: Radix `<AlertDialog>` inline in `src/components/strata/ControlsDrawing.tsx` (lines ~558–590)
+- **V2 to integrate**: `src/components/strata/modals/ClearCanvasAlertV2.tsx`
+- **Parent file**: `src/components/strata/ControlsDrawing.tsx`
+- **Current trigger**: Trash2 icon button at line ~559–567, currently uses Radix `<AlertDialogTrigger asChild>`. After swap: button becomes a regular `onClick={() => setClearCanvasOpen(true)}`.
+- **Add local state** in `ControlsDrawing.tsx`:
+  ```tsx
+  const [clearCanvasOpen, setClearCanvasOpen] = useState(false);
+  ```
+- **The `onConfirm` handler must dispatch three things** (currently at lines ~579–583):
+  ```tsx
+  const handleClearCanvas = () => {
+    dispatch({ type: 'CLEAR_CANVAS' });
+    dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 0, rotation: 0 } });
+    sessionStorage.removeItem('diorame-view-initialized');
+    setClearCanvasOpen(false);
+  };
+  ```
+- **Props to pass**:
+  ```tsx
+  <ClearCanvasAlertV2
+    open={clearCanvasOpen}
+    onClose={() => setClearCanvasOpen(false)}
+    onConfirm={handleClearCanvas}
+    dark={dark}
+  />
+  ```
+- **Remove Radix imports**: after swap, remove `AlertDialog`, `AlertDialogAction`, `AlertDialogCancel`, `AlertDialogContent`, `AlertDialogDescription`, `AlertDialogFooter`, `AlertDialogHeader`, `AlertDialogTitle`, `AlertDialogTrigger` from imports (lines ~10–18) if no longer used elsewhere in the file.
+- **Verification**:
+  - Draw something → click Trash2 button → `ClearCanvasAlertV2` appears
+  - Click "Clear canvas" → all three dispatches fire, canvas is empty, modal closes
+  - Click "Cancel" → no dispatch, modal closes
+  - Press ESC → no dispatch (alert variant: ESC disabled in V2 — confirm this is the desired UX, else add ESC handler)
+  - Click backdrop → no dismiss (alert variant: backdrop click disabled)
+- **Risks**: medium-low. Destructive action — verify all three dispatches in `onConfirm`.
+
+---
+
+#### Sub-phase 8.5 — ComplexSceneModal (ControlsExport)
+
+- **Risk**: medium
+- **Legacy to delete**: `src/components/strata/ControlsExport.tsx`
+- **V2 to integrate**: `src/components/strata/modals/ComplexSceneModalV2.tsx`
+- **Parent file**: `src/components/strata/Controls.tsx` (renders `<ControlsExport>` at the bottom of JSX)
+- **Existing state in `Controls.tsx`** (already present — no new state needed):
+  - `showComplexityWarning` / `setShowComplexityWarning`
+  - `pendingExportFormat` / `setPendingExportFormat`
+  - `handleProceedWithExport` — dispatches `REQUEST_EXPORT` with `pendingExportFormat`
+  - `handleCancelExport` — clears warning state
+- **New handler needed**:
+  ```tsx
+  const handleUseCompressedExport = useCallback(() => {
+    dispatch({ type: 'REQUEST_EXPORT', payload: 'svgz' });
+    setShowComplexityWarning(false);
+    setPendingExportFormat(null);
+  }, [dispatch]);
+  ```
+- **Props to pass**:
+  ```tsx
+  <ComplexSceneModalV2
+    open={showComplexityWarning}
+    onClose={handleCancelExport}
+    onContinue={handleProceedWithExport}
+    onUseCompressed={handleUseCompressedExport}
+    shapeCount={getSceneComplexity().totalShapes}
+    dark={dark}
+  />
+  ```
+- **Remove `ControlsExport` import** from `Controls.tsx` after swap.
+- **Verification**:
+  - Create scene with >800 visible shapes, trigger SVG export → `ComplexSceneModalV2` appears
+  - Shape count displays with US formatting ("1,243" not "1243")
+  - Purple-wash recommendation box visible
+  - "Continue" → exports SVG with original format
+  - "Use Compressed instead" → exports SVGZ
+  - "Cancel" / ESC / backdrop click → cancels without exporting
+- **Risks**: medium. Three exit paths; verify each dispatches correctly and state clears cleanly.
+
+---
+
+#### Sub-phase 8.6 — OnboardingOverlay
+
+- **Risk**: medium-high
+- **Legacy to delete**: `src/components/strata/OnboardingOverlay.tsx`
+- **V2 to integrate**: `src/components/strata/modals/OnboardingOverlayV2.tsx`
+- **Current parent**: `src/components/strata/StrataCanvas.tsx` (line 2254) — rendered as `<OnboardingOverlay />` with no props; reads all state internally
+- **StrataCanvas is frozen** — only line-count-neutral swaps allowed. Strategy:
+  - Create `src/components/strata/OnboardingOverlayConnected.tsx` — a thin adapter that reads state via `useStrata()` internally, derives all props, and renders `<OnboardingOverlayV2 .../>`. Takes no props (drop-in replacement for `<OnboardingOverlay />`).
+  - In `StrataCanvas.tsx`: swap import only (`OnboardingOverlay` → `OnboardingOverlayConnected`), JSX tag unchanged. Net change: 0 lines added/removed in StrataCanvas.
+- **`OnboardingOverlayConnected` logic**:
+  ```tsx
+  // Derives shouldShow from 4 conditions (matches legacy OnboardingOverlay.tsx):
+  const shouldShow = !state.isWelcomeModalOpen
+    && state.isOnboardingVisible
+    && state.shapes.length === 0
+    && state.mode === 'drawing';
+
+  // Respects localStorage persistence on mount (from legacy):
+  useEffect(() => {
+    const seen = localStorage.getItem('diorame-onboarding-seen');
+    if (seen === 'true' && state.isOnboardingVisible) {
+      dispatch({ type: 'DISMISS_ONBOARDING' });
+    }
+  }, []);
+  ```
+- **Dismiss handler** (combines persistence + dispatch):
+  ```tsx
+  const handleDismiss = () => {
+    localStorage.setItem('diorame-onboarding-seen', 'true');
+    dispatch({ type: 'DISMISS_ONBOARDING' });
+  };
+  ```
+- **`onLoadExample`**: reuse `handleLoadExampleScene` extracted in 8.3 (import from `src/hooks/useLoadExampleScene.ts`).
+- **Auto-dismiss on drawing** (`StrataCanvas.tsx` lines 789–793): already dispatches `DISMISS_ONBOARDING` and sets localStorage on `handlePointerDown`. No change needed — this logic depends on `state.isOnboardingVisible`, not on the component itself.
+- **Verification**:
+  - Clear `localStorage.removeItem('diorame-onboarding-seen')`, reload
+  - Dismiss WelcomeModal → OnboardingOverlayV2 appears (canvas empty, drawing mode)
+  - All 6 cards visible with correct icons (including `layers` icon from 8.0.1)
+  - Click "Start drawing" → overlay closes, `localStorage` set
+  - Click "Load example scene" → loads `.dior`, overlay closes
+  - Make first stroke on canvas → overlay dismisses immediately (via StrataCanvas pointerdown)
+  - Reload → overlay does NOT appear (localStorage persists)
+- **Risks**: medium-high. Most conditions of any single cutover. The connected-adapter pattern protects StrataCanvas from modifications beyond a 1-line import swap.
+
+---
+
+#### Sub-phase 8.7 — SVG Export Popover
+
+- **Risk**: medium
+- **Legacy to delete**: Radix `<Popover>` inline in `src/components/strata/ControlsDrawing.tsx` (lines ~237–281)
+- **V2 to integrate**: `src/components/strata/popovers/DiSelectorPopover.tsx` + `DiSelectorOption.tsx`
+- **Parent file**: `src/components/strata/ControlsDrawing.tsx`
+- **`svgExportOpen` / `setSvgExportOpen`** already received as props from `Controls.tsx` ✅ — no state changes
+- **Add `anchorRef`**: create a `useRef` for the SVG export trigger button in `ControlsDrawing.tsx`:
+  ```tsx
+  const svgButtonRef = useRef<HTMLButtonElement>(null);
+  ```
+  Attach to the trigger button: `ref={svgButtonRef}`
+- **Swap**:
+  ```tsx
+  <DiSelectorPopover
+    anchorRef={svgButtonRef}
+    open={svgExportOpen}
+    onClose={() => setSvgExportOpen(false)}
+    dark={dark}
+    placement="auto"
+    align="center"
+  >
+    <DiSelectorOption
+      title="SVG"
+      description="Standard vector — full fidelity"
+      onSelect={() => handleExportRequest('svg')}
+    />
+    <DiSelectorOption
+      title="SVG (Compressed)"
+      description="Smaller file, same quality"
+      onSelect={() => handleExportRequest('svgz')}
+    />
+  </DiSelectorPopover>
+  ```
+- **Remove Radix imports**: remove `Popover`, `PopoverContent`, `PopoverTrigger` from imports if no longer used elsewhere in `ControlsDrawing.tsx`. (A second `<Popover>` exists at line ~488 for LayersPanel — do not remove Radix import if that Popover is still present.)
+- **Verification**:
+  - Click SVG export button in drawing toolbar → `DiSelectorPopover` appears anchored
+  - Two options with title + muted description visible
+  - Click "SVG" → `handleExportRequest('svg')` fires, popover closes
+  - Click "SVG (Compressed)" → `handleExportRequest('svgz')` fires, popover closes
+  - Click outside → closes without export
+  - Press ESC → closes without export
+  - Arrow keys / Tab → navigate options
+  - Dark mode → popover renders in dark variant
+- **Risks**: medium. Popover uses `anchorRef` for positioning — ensure the ref is attached before the popover opens.
+
+---
+
+### Post-cutover (Sub-phase 8.8)
+
+Complete after all 7 sub-phases pass verification.
+
+**8.8.1 — Audit dead imports**
+
+```bash
+grep -r "WelcomeModal" src/ --include="*.tsx" --include="*.ts" | grep -v "WelcomeModalV2"
+grep -r "ExportProgress" src/ --include="*.tsx" --include="*.ts" | grep -v "ExportProgressV2"
+grep -r "OnboardingOverlay" src/ --include="*.tsx" | grep -v "OnboardingOverlayV2\|OnboardingOverlayConnected"
+grep -r "MobileBlockScreen" src/ --include="*.tsx" | grep -v "MobileBlockScreenV2"
+grep -r "ControlsExport" src/ --include="*.tsx"
+```
+
+Any residual imports from files other than the deleted legacy files → remove.
+
+**8.8.2 — Bump version**
+
+- `src/constants/version.ts`: `APP_VERSION = "1.16.0"` (minor bump — significant visual redesign)
+- `package.json`: `"version": "1.16.0"`
+- `CLAUDE.md`: update version in header table
+
+**8.8.3 — Update REFERENCE.md**
+
+- Add note at the top of the "Phase 7.5 — Modal System (V2)" section: `> ✅ Cutover complete (Fase 8, v1.16.0, commit <hash>).`
+- In "Phase 8 — Cutover Plan", mark each sub-phase as complete.
+- Update "UI Redesign v2 — Estado actual" → move sub-phases 8.1–8.7 from "Pendiente" to "Completado".
+
+**8.8.4 — Update BACKLOG.md**
+
+- Move BACKLOG Item 1 (z-index cohabitation) and Item 2 (missing icons) to a `✅ Resuelto` section with commit hashes.
+- Reassess Item 4 (ToolType rename) urgency — now that codebase is stable post-cutover, it may be promoted from Fase 9 to active work.
+
+**8.8.5 — Merge and push**
+
+```bash
+git checkout main
+git merge feat/ui-redesign-v2
+git push origin main
+```
+
+**8.8.6 — Production validation**
+
+- Load `diorame.dumaker.com` in a fresh browser session
+- Verify: MobileBlockScreen on mobile viewport, WelcomeModal on first load, ExportProgress banner on export, ClearCanvasAlert, ComplexSceneModal (>800 shapes), OnboardingOverlay (after clearing localStorage), SVG export popover
+- Check `v1-15.png` illustration loads from GitHub Pages CDN
+- Check `prefers-color-scheme` dark mode in MobileBlockScreen
+- No console errors
+
+---
+
+### Risk Management
+
+| # | Risk | Mitigation |
+|---|---|---|
+| 1 | Z-index inversion if legacy + V2 coexist momentarily | Atomic commits: delete legacy + integrate V2 in same commit |
+| 2 | Legacy logic not fully captured before deletion | Read the full legacy file before each sub-phase; extract shared logic to hooks (8.1: `useIsMobile`, 8.3: `useLoadExampleScene`) |
+| 3 | StrataCanvas modification breaks render loop | Use `OnboardingOverlayConnected` adapter — StrataCanvas import swap only, zero additional lines |
+| 4 | `DISMISS_ONBOARDING` / localStorage drift | Verify localStorage key (`diorame-onboarding-seen`) matches between legacy and connected adapter |
+| 5 | `onConfirm` in ClearCanvas missing a dispatch | Confirm all 3 dispatches: `CLEAR_CANVAS` + `UPDATE_CAMERA` reset + `sessionStorage.removeItem` |
+| 6 | `anchorRef` for SVG popover not attached at open time | Ensure `useRef` created before the popover open state can be true |
+| 7 | Radix import removal breaks other Radix consumers | Check for secondary `<Popover>` (LayersPanel, ~line 488) before removing Radix imports from `ControlsDrawing.tsx` |
+
+---
+
+### Rollback Strategy
+
+If a sub-phase introduces a regression that cannot be fixed quickly:
+
+1. **Revert specific commit**: `git revert <sub-phase-commit-hash>` — undoes only that sub-phase, leaving earlier completed sub-phases intact.
+2. **Hard reset to tag**: `git reset --hard pre-phase-8` — restores the full pre-cutover state. Use only if multiple sub-phases are broken simultaneously.
+3. **Root-cause before retry**: do not begin a new cutover attempt until the regression is understood and a fix is ready.
+
+Never attempt the next sub-phase while the current one has an unresolved regression.
+
+
 ## Final Notes
 
 This document is a living reference. It should evolve with the project, but its core principles remain fixed.
