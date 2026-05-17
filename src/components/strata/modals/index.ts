@@ -16,6 +16,7 @@ export { ClearCanvasAlertV2 } from './ClearCanvasAlertV2';
 export { ComplexSceneModalV2 } from './ComplexSceneModalV2';
 export { ExportProgressV2 } from './ExportProgressV2';
 export type { ExportType } from './ExportProgressV2';
+export { OnboardingOverlayV2 } from './OnboardingOverlayV2';
 
 import { DiModalRoot } from './DiModal';
 import { DiModalHeader } from './DiModalHeader';
