@@ -6,17 +6,7 @@ import { RippleButton } from '../ui/ripple-button';
 import { Undo, Redo, Trash2, ArrowLeftRight, Layers, Eye, EyeOff, FileCode, Pen, Type, AlignLeft, AlignCenter, AlignRight, Check, X, Waves, Save, FolderOpen, Eraser, Info, Move, Lock, Unlock, Maximize, FlipHorizontal, Copy, Droplet, Paintbrush, Target, ChevronLeft, ChevronRight, Plus, Sun, Moon, Spline } from 'lucide-react';
 import { cn } from '../ui/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	AlertDialogTrigger,
-} from '../ui/alert-dialog';
+import { ClearCanvasAlertV2 } from './modals/ClearCanvasAlertV2';
 import { toast } from 'sonner@2.0.3';
 import { EnhancedTooltip } from '../ui/enhanced-tooltip';
 import { DiIconButton } from '../../design-system/DiIconButton';
@@ -40,6 +30,7 @@ export const ControlsDrawing = ({
 	const { state, dispatch } = useStrata();
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 	const [showLayersPanel, setShowLayersPanel] = React.useState(false);
+	const [clearCanvasOpen, setClearCanvasOpen] = React.useState(false);
 
 	const getActiveZ = (layerIndex: number) => layerIndex * -BASE_DEPTH_STEP;
 	const currentLayerZ = getActiveZ(state.currentLayerIndex);
@@ -555,39 +546,26 @@ export const ControlsDrawing = ({
 
 					<DiDivider orientation="vertical" />
 
-					<AlertDialog>
-						<AlertDialogTrigger asChild>
-							<Button
-								variant="ghost"
-								size="icon"
-								className={cn("h-8 w-8 text-red-500 hover:text-red-600", diTokens.hover)}
-								title="Clear Canvas"
-							>
-								<Trash2 className="w-4 h-4" />
-							</Button>
-						</AlertDialogTrigger>
-						<AlertDialogContent>
-							<AlertDialogHeader>
-								<AlertDialogTitle>Are you sure?</AlertDialogTitle>
-								<AlertDialogDescription>
-									This will delete your entire drawing and cannot be undone.
-								</AlertDialogDescription>
-							</AlertDialogHeader>
-							<AlertDialogFooter>
-								<AlertDialogCancel>Cancel</AlertDialogCancel>
-								<AlertDialogAction
-									onClick={() => {
-										dispatch({ type: 'CLEAR_CANVAS' });
-										dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 0, rotation: 0 } });
-										sessionStorage.removeItem('diorame-view-initialized');
-									}}
-									className="bg-red-500 hover:bg-red-600 text-white"
-								>
-									Delete Everything
-								</AlertDialogAction>
-							</AlertDialogFooter>
-						</AlertDialogContent>
-					</AlertDialog>
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={() => setClearCanvasOpen(true)}
+						className={cn("h-8 w-8 text-red-500 hover:text-red-600", diTokens.hover)}
+						title="Clear Canvas"
+					>
+						<Trash2 className="w-4 h-4" />
+					</Button>
+					<ClearCanvasAlertV2
+						open={clearCanvasOpen}
+						onClose={() => setClearCanvasOpen(false)}
+						onConfirm={() => {
+							dispatch({ type: 'CLEAR_CANVAS' });
+							dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 0, rotation: 0 } });
+							sessionStorage.removeItem('diorame-view-initialized');
+							setClearCanvasOpen(false);
+						}}
+						dark={state.isDarkMode}
+					/>
 				</div>
 			</div>
 
