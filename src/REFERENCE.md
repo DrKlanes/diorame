@@ -686,6 +686,246 @@ Rediseño visual integral de toda la capa de UI de Diorame. Componentes legacy m
 
 ---
 
+---
+
+## Phase 7.5 — Modal System (V2)
+
+### Overview
+
+Phase 7.5 of the UI Redesign v2 builds the complete modal and onboarding system for Diorame's new design language. This includes a reusable `DiModal` compound component primitive, the `DiSelectorPopover` utility popover, and six standalone V2 components: `WelcomeModalV2`, `ClearCanvasAlertV2`, `ComplexSceneModalV2`, `ExportProgressV2`, `OnboardingOverlayV2`, and `MobileBlockScreenV2`.
+
+All components live in parallel with their legacy counterparts until Fase 8 cutover. Nothing in this phase modifies production behavior.
+
+- **Branch**: `feat/ui-redesign-v2`
+- **Validation**: `/preview?preview=true` — all components rendered with live state from `StrataProvider`
+- **Status**: Implementation complete. Pending Fase 8 (global cutover to V2 components).
+- **Commits**: 29 commits — range `fae7754` → `2e5c19a`
+
+---
+
+### New Tokens (added in 7.5.0)
+
+Tokens added to `src/design-system/tokens.ts`. All existing `T.*` values are unchanged.
+
+| Token | Value | Use |
+|---|---|---|
+| `RADIUS.modal` | `24` | Border-radius for DiModal panels. Popovers and banners continue using `RADIUS.panel = 20` to differentiate anchored vs. floating surfaces. |
+| `SHADOW.modal` | `0 24px 64px -16px rgba(0,0,0,0.24), 0 8px 24px -8px rgba(0,0,0,0.16)` | Modal box-shadow (light mode) |
+| `SHADOW.modalDark` | `0 24px 64px -16px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)` | Modal box-shadow (dark mode). Inner 1px ring replaces border. |
+| `Z_INDEX.onboarding` | `800` | `OnboardingOverlayV2` — below banners |
+| `Z_INDEX.toast` | `900` | Banner variant (`ExportProgressV2`) — above onboarding, below popovers |
+| `Z_INDEX.popover` | `950` | `DiSelectorPopover` — above banners |
+| `Z_INDEX.modalBackdrop` | `999` | Backdrop behind modal panels |
+| `Z_INDEX.modal` | `1000` | Modal panel container |
+| `T.danger` | `rgb(220, 38, 38)` | Destructive action background (light mode) |
+| `T.dangerDark` | `rgb(248, 113, 113)` | Destructive action background (dark mode) |
+| `T.dangerHover` | `rgb(185, 28, 28)` | Destructive hover state (light mode) |
+| `T.dangerHoverDark` | `rgb(252, 165, 165)` | Destructive hover state (dark mode) |
+
+> **Note:** `T.shadow` and `T.shadowStrong` remain on `T` (used by `DiPill`, `DiPanel`). If more components need shadows, extend the `SHADOW` namespace rather than hanging more values from `T`. Minor technical debt.
+
+---
+
+### Core Primitives
+
+#### DiModal — Compound Component
+
+**Location:** `src/components/strata/modals/`
+
+| File | Purpose |
+|---|---|
+| `DiModal.tsx` | Root — portal to `document.body`, backdrop, `AnimatePresence`, context provider |
+| `DiModalContext.ts` | Internal context: `{ onClose, dark, variant }` — read by all sub-components |
+| `useModalBehavior.ts` | Behavior hook: focus trap, ESC handler, scroll lock, initial focus, ARIA roles |
+| `DiModalBackdrop.tsx` | Backdrop overlay — `blur(8px)` + asymmetric dim |
+| `DiModalHeader.tsx` | Title + optional subtitle + optional close slot |
+| `DiModalBody.tsx` | Padded scrollable content area |
+| `DiModalFooter.tsx` | Action row — `justify-content: flex-end`, `gap: 8` |
+| `DiModalCloseButton.tsx` | Standalone X button (used standalone in `WelcomeModalV2`) |
+| `DiModalActions.tsx` | 6 action button variants (see table below) |
+| `index.ts` | Barrel — `Object.assign` compound export + all V2 component named exports |
+
+**API:**
+
+```jsx
+<DiModal open={...} onClose={...} variant="dialog|alert|banner" size="sm|md|lg" dark={dark}>
+  <DiModal.Header title="..." subtitle="..." />
+  <DiModal.Body>...</DiModal.Body>
+  <DiModal.Footer>
+    <DiModal.SecondaryAction onClick={onClose}>Cancel</DiModal.SecondaryAction>
+    <DiModal.PrimaryAction onClick={onConfirm}>OK</DiModal.PrimaryAction>
+  </DiModal.Footer>
+</DiModal>
+```
+
+**Variants:**
+
+| Variant | Backdrop | Scroll lock | ESC closes | Enter | Exit |
+|---|---|---|---|---|---|
+| `dialog` | ✅ blur+dim | ✅ | ✅ | 220ms fade+scale | 180ms fade+scale |
+| `alert` | ✅ blur+dim | ✅ | ❌ (initial focus: Cancel) | 160ms fade+scale | 140ms fade+scale |
+| `banner` | ❌ | ❌ | ❌ | 180ms slide-down | 150ms slide-up |
+
+**Sizes:** `sm` = 340px · `md` = 440px (default) · `lg` = 680px
+
+**Action sub-components:**
+
+| Component | Height | Style | Notes |
+|---|---|---|---|
+| `PrimaryAction` | 36px | Purple fill, white text | Default CTA |
+| `SecondaryAction` | 36px | Transparent + border | Cancel / secondary |
+| `DestructiveAction` | 36px | Danger fill, white text | Irreversible actions |
+| `TertiaryAction` | 36px | Transparent, no border | Ghost / low-emphasis |
+| `PrimaryActionLg` | 44px | Purple fill — larger touch target | Dominant CTAs (Welcome, Onboarding) |
+| `SecondaryActionLg` | 44px | Transparent + border — larger touch target | Symmetrical partner to `PrimaryActionLg` |
+
+All actions read `dark` from `DiModalContext`. To use Actions outside a `DiModal` (e.g. `OnboardingOverlayV2`), wrap in `<DiModalContext.Provider value={{ onClose, dark, variant: 'dialog' }}>`.
+
+---
+
+#### DiSelectorPopover — Utility Popover
+
+**Location:** `src/components/strata/popovers/`
+
+| File | Purpose |
+|---|---|
+| `DiSelectorPopover.tsx` | Main popover — portal, auto-placement, keyboard nav |
+| `DiSelectorOption.tsx` | Option row sub-component |
+| `usePopoverPosition.ts` | Auto-placement hook: measures available space above/below anchor, flips as needed |
+| `index.ts` | Barrel export |
+
+**API:**
+
+```jsx
+<DiSelectorPopover
+  anchorRef={btnRef}
+  open={...}
+  onClose={...}
+  dark={dark}
+  placement="auto"
+  align="center"
+>
+  <DiSelectorOption title="..." description="..." onSelect={...} />
+</DiSelectorPopover>
+```
+
+Not a modal — anchored to a trigger element. `Z_INDEX.popover = 950`. No backdrop, no focus trap. Keyboard: `Esc` closes, arrow keys + `Tab` navigate options.
+
+---
+
+### V2 Modal Components
+
+All located in `src/components/strata/modals/`.
+
+#### WelcomeModalV2 _(7.5.3 + 7.5.3.1)_
+
+- **Primitive:** `DiModal` — `variant="dialog"`, `size="md"`
+- **Props:** `open`, `onClose`, `onLoadExample` (async), `dark`
+- Split layout: 160px illustration column + 280px content column
+- No `DiModal.Header` — title inline; `DiModal.CloseButton` rendered standalone top-right
+- Illustration system: `welcomeIllustrations.ts` maps version string → asset path; assets served from `public/welcome-illustrations/`
+- No persistence — opens every page load (intentional design: returning users get a fresh illustration)
+- Footer: `PrimaryActionLg` "Start drawing" + `SecondaryAction` "Load example scene" (stacked)
+- `APP_VERSION` sourced from `src/constants/version.ts` (refactored out of `StrataContext.tsx` in 7.5.3)
+
+#### ClearCanvasAlertV2 _(7.5.4)_
+
+- **Primitive:** `DiModal` — `variant="alert"`, `size="sm"`
+- **Props:** `open`, `onClose`, `onConfirm`, `dark`
+- `alert` variant: ESC disabled, initial focus on Cancel (`data-di-cancel="true"`)
+- Footer: `SecondaryAction` "Cancel" + `DestructiveAction` "Clear canvas"
+
+#### ComplexSceneModalV2 _(7.5.4)_
+
+- **Primitive:** `DiModal` — `variant="dialog"`, `size="md"`
+- **Props:** `open`, `onClose`, `onContinue`, `onUseCompressed`, `shapeCount`, `dark`
+- Body: shape count formatted via `Intl.NumberFormat('en-US')` + purple-wash recommendation box (`T.purple10` / `T.purple20` bg)
+- Footer (3 buttons): `TertiaryAction` "Use Compressed instead" (left) · `<div style={{ flex: 1 }} />` spacer · `SecondaryAction` "Cancel" · `PrimaryAction` "Continue" (right)
+
+#### ExportProgressV2 _(7.5.5)_
+
+- **Primitive:** `DiModal` — `variant="banner"` (no backdrop, no scroll lock, no ESC)
+- **Props:** `open`, `exportType` (`'png' | 'mp4' | 'svg' | 'svgz'`), `dark`
+- No `onClose` — parent controls lifecycle by toggling `open`
+- Layout: single-line — pulsing icon (16px) · label · `flex: 1` spacer · 80×4px progress bar · percentage
+- Icon mapping: `camera` (png) · `record` (mp4) · `export` (svg/svgz) — all exist in `ICONS`
+- Progress: asymptotic simulation `p += (100 − p) × 0.02` at 50ms intervals; resets when `open` → false
+- `ico-pulse` keyframe defined in `src/styles/globals.css`
+
+#### OnboardingOverlayV2 _(7.5.6 + 7.5.6.1)_
+
+- **Primitive:** None — standalone component
+- **Props:** `open`, `onClose`, `onLoadExample` (async), `dark`
+- `position: fixed; inset: 0` · `pointer-events: none` wrapper · `auto` on content · `Z_INDEX.onboarding = 800`
+- Animation: opacity fade only (no scale) — enter 250ms, exit 200ms via framer-motion
+- Layout: centered container max-width 640px, 6 cards in 2 sections:
+  - **DRAW**: Blob (`blob`) / Brush (`brush`) / Layers (`duplicate`)
+  - **VIEW**: Motion (`camera`) / Effects (`sparkles`) / Depth (`depth-far`)
+- Cards: transparent background + `RADIUS.iconBtn` border — glass-like effect on the canvas
+- Card title: Manrope 700 16px · description: `TYPE.numericValue` muted
+- CTAs: `SecondaryActionLg` "Load example scene" + `PrimaryActionLg` "Start drawing" (both 44px)
+- Actions used outside `DiModal` — wrapped in `<DiModalContext.Provider value={{ onClose, dark, variant: 'dialog' }}>`
+
+#### MobileBlockScreenV2 _(7.5.7)_
+
+- **Primitive:** None — standalone terminal component
+- **Props:** None
+- `position: fixed; inset: 0` · `z-index: 9999` hardcoded (independent of design system — renders before `ThemeProvider`)
+- Theming: CSS custom properties + `@media (prefers-color-scheme: dark)` injected via `<style dangerouslySetInnerHTML>`:
+
+| CSS variable | Light value | Dark value | Token reference |
+|---|---|---|---|
+| `--mbs-bg` | `rgb(255, 255, 255)` | `rgb(26, 26, 26)` | `T.white` / `T.dark` |
+| `--mbs-text` | `rgb(26, 26, 26)` | `rgba(255, 255, 255, 0.85)` | `T.dark` / `T.textDark` |
+| `--mbs-muted` | `rgb(140, 140, 140)` | `rgba(255, 255, 255, 0.40)` | `T.muted` / `T.textDarkMuted` |
+
+- Layout: vertically centered — logo (120px) → wordmark text → `tablet` + `monitor` icons (52px, `T.purple`, gap 16px) → primary message (Manrope 600 16px) → secondary message (Manrope 400 14px, max-width 320px)
+- No animations · No CTAs · No interactive elements
+- **Fase 8 integration:** In `App.tsx`, use `useIsMobile()` hook (already in legacy `MobileBlockScreen.tsx`):
+  ```tsx
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileBlockScreenV2 />;
+  ```
+
+---
+
+### Design Decisions
+
+| # | Decision | Resolution |
+|---|---|---|
+| 1 | Modal system | Compound component (`DiModal`) with `Object.assign` sub-component API. No Radix UI — full control over animation, theming, and behavior with no external dependency. |
+| 2 | Backdrop | `blur(8px)` + asymmetric dim: `rgba(0,0,0,0.32)` light / `rgba(0,0,0,0.55)` dark. Semi-transparent to preserve spatial context. |
+| 3 | Surface treatment | Flat solid background + deep `SHADOW.modal` + 1px border (dark only — replaces border with inner ring in `SHADOW.modalDark`). |
+| 4 | Animation | Fade + scale `0.96 → 1`. No spring/bounce. Per-variant timing. Banner uses translate-Y instead of scale. |
+| 5 | WelcomeModal persistence | No localStorage — opens every load. Intentional: users can reload for a fresh illustration without added UI complexity. |
+| 6 | Modal sizes | `sm` 340px · `md` 440px · `lg` 680px. Three breakpoints cover all current use cases without a fluid system. |
+| 7 | Footer layout | `justify-content: flex-end`. Multi-button layouts use `<div style={{ flex: 1 }} />` to anchor left-side buttons. All footer buttons use pre-styled Action sub-components — no raw `<button>` in modal footers. |
+| 8 | Border radius | `RADIUS.modal = 24` for floating dialogs vs. `RADIUS.panel = 20` for anchored panels. 4px delta provides perceptible visual hierarchy. |
+| 9 | Banner variant | No backdrop, no scroll lock, no ESC handler. Architectural fix applied in 7.5.5.1 — initial implementation incorrectly shared all behaviors with `dialog`. |
+| 10 | MobileBlockScreen theming | CSS custom properties via injected `<style>` tag — required because component renders before `ThemeProvider` and cannot use `dk()` or `T` tokens at runtime. Hex values are hardcoded with inline token reference comments. |
+
+---
+
+### Changelog — Sub-phase History
+
+29 commits on `feat/ui-redesign-v2` (range `fae7754` → `2e5c19a`).
+
+| Sub-fase | Description | Commits |
+|---|---|---|
+| **7.5.0** | New modal design tokens: `RADIUS.modal`, `SHADOW.modal/Dark`, full `Z_INDEX` scale, `T.danger*` | `fae7754` |
+| **7.5.1** | `DiModal` compound: context + behavior hook · sub-components · root + barrel · preview | `4b87580`, `2b4a966`, `c25bfed`, `29629ab` |
+| **7.5.2** | `DiSelectorPopover`: `Z_INDEX.popover` token · position hook · option · popover · preview | `e979b1b`, `1327b61`, `b0b4648`, `c2bc873`, `8f21a53` |
+| **7.5.3** | `WelcomeModalV2`: APP_VERSION refactor · illustration map · component · preview | `068b386`, `bfb3906`, `a51b553`, `17f22df` |
+| **7.5.3.1** | `DiModal.PrimaryActionLg` variant + WelcomeModal CTA reorder | `247b60c`, `8054046` |
+| **7.5.3.1.1** | Fix: `PrimaryActionLg` border-radius → `RADIUS.pill` | `ffbe476` |
+| **7.5.4** | `ClearCanvasAlertV2` + `ComplexSceneModalV2` + preview triggers | `a00f538`, `47e6355`, `07773d6` |
+| **7.5.5** | `ExportProgressV2` banner + preview triggers for all 4 export types | `81c100d`, `4341da1` |
+| **7.5.5.1** | Architectural fix: `banner` → no backdrop, `Z_INDEX.toast`, no scroll lock, no ESC | `2ea7069` |
+| **7.5.6** | `OnboardingOverlayV2` with 6-card grid + preview trigger | `a413883`, `0c168c7` |
+| **7.5.6.1** | `DiModal.SecondaryActionLg` + OnboardingOverlay visual polish | `22d5b95`, `8f966b0` |
+| **7.5.7** | `MobileBlockScreenV2` + preview trigger with escape button | `c8e15fa`, `2e5c19a` |
+
+
 ## Final Notes
 
 This document is a living reference. It should evolve with the project, but its core principles remain fixed.
