@@ -10,6 +10,8 @@
 
 export type { DiModalVariant } from './DiModalContext';
 export { useModalBehavior } from './useModalBehavior';
+export { WelcomeModalV2 } from './WelcomeModalV2';
+export { getWelcomeIllustration } from './welcomeIllustrations';
 
 import { DiModalRoot } from './DiModal';
 import { DiModalHeader } from './DiModalHeader';

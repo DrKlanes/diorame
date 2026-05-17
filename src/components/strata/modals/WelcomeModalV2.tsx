@@ -1,0 +1,175 @@
+import React, { useState } from 'react';
+import { DiModal } from './index';
+import { T, TYPE, dk } from '../../../design-system/tokens';
+import { APP_VERSION } from '../../../constants/version';
+import { getWelcomeIllustration } from './welcomeIllustrations';
+
+// ── Internal helpers ──────────────────────────────────────────────────────────
+
+function HSep({ dark, margin }: { dark: boolean; margin: string }) {
+	return (
+		<div style={{
+			height: 1,
+			background: dk(dark, T.border, T.borderDark) as string,
+			flexShrink: 0,
+			margin,
+		}} />
+	);
+}
+
+function ResourceLink({ href, children }: { href: string; children: React.ReactNode }) {
+	const [hovered, setHovered] = useState(false);
+	return (
+		<a
+			href={href}
+			target="_blank"
+			rel="noopener noreferrer"
+			onMouseEnter={() => setHovered(true)}
+			onMouseLeave={() => setHovered(false)}
+			style={{ color: T.purple, textDecoration: hovered ? 'underline' : 'none' }}
+		>
+			{children}
+		</a>
+	);
+}
+
+// ── WelcomeModalV2 ────────────────────────────────────────────────────────────
+
+interface WelcomeModalV2Props {
+	open:          boolean;
+	onClose:       () => void;
+	onLoadExample: () => Promise<void>;
+	dark:          boolean;
+}
+
+export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeModalV2Props) {
+	const [isLoadingExample, setIsLoadingExample] = useState(false);
+
+	const handleLoadExample = async () => {
+		setIsLoadingExample(true);
+		try { await onLoadExample(); }
+		finally { setIsLoadingExample(false); }
+	};
+
+	const muted = dk(dark, T.muted, T.textDarkMuted) as string;
+
+	return (
+		<DiModal open={open} onClose={onClose} dark={dark} variant="dialog" size="md">
+			<div style={{ display: 'flex', minHeight: 280 }}>
+
+				{/* ── Left: full-bleed illustration ────────────────────────── */}
+				<div style={{ width: 160, flexShrink: 0, position: 'relative' }}>
+					<img
+						src={getWelcomeIllustration(APP_VERSION)}
+						alt=""
+						loading="eager"
+						style={{
+							position: 'absolute',
+							inset: 0,
+							width: '100%',
+							height: '100%',
+							objectFit: 'cover',
+							display: 'block',
+						}}
+					/>
+				</div>
+
+				{/* ── Right: content ───────────────────────────────────────── */}
+				<div style={{
+					flex: 1,
+					position: 'relative',
+					padding: '28px 24px 24px',
+					display: 'flex',
+					flexDirection: 'column',
+				}}>
+					{/* Close button — absolute positioned top-right of content zone */}
+					<div style={{ position: 'absolute', top: 12, right: 12, zIndex: 1 }}>
+						<DiModal.CloseButton />
+					</div>
+
+					{/* Zona 1 — Identidad */}
+					<div>
+						<div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+							<span style={{
+								fontFamily: TYPE.panelHeader.family,
+								fontWeight: 700,
+								fontSize: 20,
+								letterSpacing: '-0.01em',
+								color: dk(dark, T.dark, T.textDark) as string,
+							}}>
+								diorame<span style={{ fontSize: '0.6em' }}>™</span>
+							</span>
+							<span style={{
+								fontFamily: TYPE.numericValue.family,
+								fontWeight: TYPE.numericValue.weight,
+								fontSize: TYPE.numericValue.size,
+								letterSpacing: '0.03em',
+								color: muted,
+							}}>
+								v{APP_VERSION}
+							</span>
+						</div>
+						<p style={{
+							margin: '6px 0 0',
+							fontFamily: TYPE.controlLabel.family,
+							fontWeight: TYPE.controlLabel.weight,
+							fontSize: 12,
+							lineHeight: 1.4,
+							color: muted,
+						}}>
+							Draw in 2D. Watch it come alive in 3D.
+						</p>
+					</div>
+
+					<HSep dark={dark} margin="20px 0" />
+
+					{/* Zona 2 — Acciones (columna full-width) */}
+					<div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
+						<DiModal.SecondaryAction onClick={handleLoadExample} disabled={isLoadingExample}>
+							{isLoadingExample ? 'Loading…' : 'Load example scene'}
+						</DiModal.SecondaryAction>
+						<DiModal.PrimaryAction onClick={onClose}>
+							Start drawing
+						</DiModal.PrimaryAction>
+					</div>
+
+					<HSep dark={dark} margin="16px 0" />
+
+					{/* Zona 3 — Recursos */}
+					<div style={{
+						textAlign: 'center',
+						fontFamily: TYPE.controlLabel.family,
+						fontWeight: TYPE.controlLabel.weight,
+						fontSize: TYPE.controlLabel.size,
+						lineHeight: 1.5,
+					}}>
+						<ResourceLink href="https://www.youtube.com/watch?v=Ieb280ncEfA">Watch tutorial</ResourceLink>
+						<span style={{ color: muted, margin: '0 6px' }}>·</span>
+						<ResourceLink href="https://ko-fi.com/dumaker">Support on Ko-fi 🤍</ResourceLink>
+					</div>
+
+					{/* Zona 4 — Créditos */}
+					<div style={{
+						marginTop: 12,
+						display: 'flex',
+						flexDirection: 'column',
+						gap: 4,
+						textAlign: 'center',
+						fontFamily: TYPE.numericValue.family,
+						fontWeight: TYPE.numericValue.weight,
+						fontSize: TYPE.numericValue.size,
+						color: muted,
+					}}>
+						<div>
+							Inspired by <ResourceLink href="https://apps.apple.com/es/app/graintouch-by-iorama-studio/id1502908005">Graintouch</ResourceLink>
+						</div>
+						<div>
+							by <ResourceLink href="https://www.instagram.com/dumaker/">@dumaker</ResourceLink>
+						</div>
+					</div>
+
+				</div>
+			</div>
+		</DiModal>
+	);
+}
