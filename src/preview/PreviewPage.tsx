@@ -15,7 +15,7 @@ import { LayersPanel } from '../components/strata/layers/LayersPanel';
 import { LayerDotsRail } from '../components/strata/layers/LayerDotsRail';
 import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 import { FXPanel } from '../components/strata/fx/FXPanel';
-import { DiModal, WelcomeModalV2, ClearCanvasAlertV2, ComplexSceneModalV2, ExportProgressV2 } from '../components/strata/modals';
+import { DiModal, WelcomeModalV2, ClearCanvasAlertV2, ComplexSceneModalV2, ExportProgressV2, OnboardingOverlayV2 } from '../components/strata/modals';
 import type { ExportType } from '../components/strata/modals';
 import { DiSelectorPopover, DiSelectorOption } from '../components/strata/popovers';
 
@@ -42,6 +42,7 @@ function PreviewPageContent() {
 	const [clearCanvasOpen, setClearCanvasOpen] = useState(false);
 	const [complexSceneOpen, setComplexSceneOpen] = useState(false);
 	const [exportProgressType, setExportProgressType] = useState<ExportType | null>(null);
+	const [onboardingOpen, setOnboardingOpen] = useState(false);
 
 	const handleLoadExample = async () => {
 		await new Promise<void>(resolve => setTimeout(resolve, 800));
@@ -67,6 +68,12 @@ function PreviewPageContent() {
 	const triggerExport = (type: ExportType, durationMs: number) => {
 		setExportProgressType(type);
 		setTimeout(() => setExportProgressType(null), durationMs);
+	};
+
+	const handleOnboardingLoadExample = async () => {
+		await new Promise<void>(resolve => setTimeout(resolve, 800));
+		console.log('Load example from onboarding');
+		setOnboardingOpen(false);
 	};
 
 	const bg            = dark ? '#0e0e0e' : '#e8e8e8';
@@ -341,6 +348,9 @@ function PreviewPageContent() {
 					<button onClick={() => triggerExport('svgz', 4000)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
 						Trigger SVGZ export
 					</button>
+					<button onClick={() => setOnboardingOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Open Onboarding
+					</button>
 				</div>
 
 				{/* Dialog variant */}
@@ -409,6 +419,14 @@ function PreviewPageContent() {
 				<ExportProgressV2
 					open={exportProgressType !== null}
 					exportType={exportProgressType ?? 'png'}
+					dark={dark}
+				/>
+
+				{/* OnboardingOverlay v2 */}
+				<OnboardingOverlayV2
+					open={onboardingOpen}
+					onClose={() => setOnboardingOpen(false)}
+					onLoadExample={handleOnboardingLoadExample}
 					dark={dark}
 				/>
 			</Section>
