@@ -7,7 +7,7 @@ export type { DiTokens } from './tokens';
 export { useTheme } from './useTheme';
 
 // Icons
-export { ICONS } from './icons';
+export { ICONS, ICON_SECTIONS } from './icons';
 export { Ico } from './Ico';
 
 // v2 Primitives

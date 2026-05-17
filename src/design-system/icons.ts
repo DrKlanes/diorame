@@ -279,3 +279,25 @@ export const ICONS: Record<string, string> = {
 		`<circle cx="9" cy="9" r="2"/>` +
 		`<path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>`,
 };
+
+/**
+ * Section metadata for the icon gallery.
+ * Maps each section title to its ordered list of icon names.
+ * Used by PreviewPage to render the Icon Gallery sections.
+ *
+ * When adding new icons:
+ * 1. Add the icon path to ICONS above (in its appropriate section comment)
+ * 2. Add the icon name to the corresponding array here
+ * Both steps are needed for the icon to appear in the preview gallery.
+ */
+export const ICON_SECTIONS: Record<string, string[]> = {
+	'Navigation & Global': ['draw-mode', 'view-mode', 'hide-ui', 'sun', 'moon', 'chevron-left', 'chevron-right'],
+	'Export':              ['snapshot', 'record'],
+	'FX':                  ['fx-grain', 'fx-vignette', 'fx-chroma', 'fx-fog', 'fx-glow', 'fx-riso', 'fx-distortion', 'fx-wiggle', 'fx-grunge', 'fx-particles', 'fx-dof', 'fx-pixel'],
+	'Camera Presets':      ['cam-forward', 'cam-spiral', 'cam-yoyo', 'cam-pulse', 'cam-twist', 'cam-arc', 'cam-crane', 'cam-truck', 'cam-orbit', 'cam-zoom'],
+	'Camera Controls':     ['ctrl-speed', 'ctrl-handshake', 'ctrl-handshake-off', 'ctrl-focal', 'ctrl-distance', 'ctrl-spacing', 'ctrl-dof-free', 'ctrl-dof-lock'],
+	'Drawing Tools':       ['brush', 'eraser', 'blob', 'text', 'move', 'symmetry', 'smooth', 'organic', 'draw-behind', 'draw-inside', 'rotate', 'pen', 'line-tapered', 'line-uniform', 'line-ink'],
+	'File Operations':     ['new', 'open', 'save', 'export', 'undo', 'redo'],
+	'Layer Panel':         ['eye', 'eye-off', 'layers', 'duplicate', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal'],
+	'Custom Additions':    ['align-left', 'align-center', 'align-right', 'lock', 'unlock', 'flip-horizontal', 'maximize', 'minimize', 'cloud-fog', 'globe', 'scan-line', 'zoom-in', 'target', 'loader', 'monitor', 'tablet', 'sparkles', 'info', 'check', 'x', 'plus', 'hand', 'move-vertical', 'move-horizontal', 'aperture', 'wand', 'tornado', 'image'],
+};

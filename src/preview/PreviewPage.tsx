@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Ico, DiPill, DiVSep, DiMiniSlider, DiSegmentControl, DiPanel, ICONS } from '../design-system';
+import { Ico, DiPill, DiVSep, DiMiniSlider, DiSegmentControl, DiPanel, ICONS, ICON_SECTIONS } from '../design-system';
 import { T, TYPE, dk } from '../design-system/tokens';
 import { StrataProvider, useStrata, AppState } from '../components/strata/StrataContext';
 import { useTheme } from '../design-system/useTheme';
@@ -534,41 +534,9 @@ function PreviewPageContent() {
 			{/* ── SECTION 2: Icon Gallery ── */}
 			<Section title={`Icons (${Object.keys(ICONS).length} total)`} dark={dark} bg={sectionBg} border={sectionBorder}>
 
-				<IconGroup title="Navigation & Global"
-					names={['draw-mode', 'view-mode', 'hide-ui', 'sun', 'moon', 'chevron-left', 'chevron-right']}
-					dark={dark} />
-
-				<IconGroup title="Export"
-					names={['snapshot', 'record']}
-					dark={dark} />
-
-				<IconGroup title="FX"
-					names={Object.keys(ICONS).filter(k => k.startsWith('fx-'))}
-					dark={dark} />
-
-				<IconGroup title="Camera Presets"
-					names={Object.keys(ICONS).filter(k => k.startsWith('cam-'))}
-					dark={dark} />
-
-				<IconGroup title="Camera Controls"
-					names={Object.keys(ICONS).filter(k => k.startsWith('ctrl-'))}
-					dark={dark} />
-
-				<IconGroup title="Drawing Tools"
-					names={['brush', 'eraser', 'blob', 'text', 'move', 'symmetry', 'smooth', 'organic', 'draw-behind', 'draw-inside', 'rotate', 'pen', 'line-tapered', 'line-uniform', 'line-ink']}
-					dark={dark} />
-
-				<IconGroup title="File Operations"
-					names={['new', 'open', 'save', 'export', 'undo', 'redo']}
-					dark={dark} />
-
-				<IconGroup title="Layer Panel"
-					names={['eye', 'eye-off', 'layers', 'duplicate', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal']}
-					dark={dark} />
-
-				<IconGroup title="Custom Additions"
-					names={['align-left', 'align-center', 'align-right', 'lock', 'unlock', 'flip-horizontal', 'maximize', 'minimize', 'cloud-fog', 'globe', 'scan-line', 'zoom-in', 'target', 'loader', 'monitor', 'tablet', 'sparkles', 'info', 'check', 'x', 'plus', 'hand', 'move-vertical', 'move-horizontal', 'aperture', 'wand', 'tornado', 'image']}
-					dark={dark} />
+				{Object.entries(ICON_SECTIONS).map(([title, names]) => (
+					<IconGroup key={title} title={title} names={names} dark={dark} />
+				))}
 
 			</Section>
 
