@@ -28,7 +28,7 @@ const ACTION_BASE_LG: React.CSSProperties = {
 	paddingLeft: 18,
 	paddingRight: 18,
 	fontSize: 12,
-	borderRadius: RADIUS.iconBtn,
+	borderRadius: RADIUS.pill,
 };
 
 type ActionProps = {
