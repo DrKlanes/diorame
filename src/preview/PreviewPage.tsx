@@ -15,7 +15,7 @@ import { LayersPanel } from '../components/strata/layers/LayersPanel';
 import { LayerDotsRail } from '../components/strata/layers/LayerDotsRail';
 import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 import { FXPanel } from '../components/strata/fx/FXPanel';
-import { DiModal, WelcomeModalV2, ClearCanvasAlertV2, ComplexSceneModalV2, ExportProgressV2, OnboardingOverlayV2 } from '../components/strata/modals';
+import { DiModal, WelcomeModalV2, ClearCanvasAlertV2, ComplexSceneModalV2, ExportProgressV2, OnboardingOverlayV2, MobileBlockScreenV2 } from '../components/strata/modals';
 import type { ExportType } from '../components/strata/modals';
 import { DiSelectorPopover, DiSelectorOption } from '../components/strata/popovers';
 
@@ -43,6 +43,7 @@ function PreviewPageContent() {
 	const [complexSceneOpen, setComplexSceneOpen] = useState(false);
 	const [exportProgressType, setExportProgressType] = useState<ExportType | null>(null);
 	const [onboardingOpen, setOnboardingOpen] = useState(false);
+	const [mobileBlockOpen, setMobileBlockOpen] = useState(false);
 
 	const handleLoadExample = async () => {
 		await new Promise<void>(resolve => setTimeout(resolve, 800));
@@ -351,6 +352,9 @@ function PreviewPageContent() {
 					<button onClick={() => setOnboardingOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
 						Open Onboarding
 					</button>
+					<button onClick={() => setMobileBlockOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Open MobileBlockScreen
+					</button>
 				</div>
 
 				{/* Dialog variant */}
@@ -429,6 +433,31 @@ function PreviewPageContent() {
 					onLoadExample={handleOnboardingLoadExample}
 					dark={dark}
 				/>
+
+				{/* MobileBlockScreen v2 — preview-only escape button overlaid at z=10000 */}
+				{mobileBlockOpen && <MobileBlockScreenV2 />}
+				{mobileBlockOpen && (
+					<button
+						onClick={() => setMobileBlockOpen(false)}
+						style={{
+							position:  'fixed',
+							top:       16,
+							right:     16,
+							zIndex:    10000,
+							padding:   '6px 14px',
+							borderRadius: 20,
+							border:    'none',
+							background: 'rgba(0,0,0,0.55)',
+							color:     '#fff',
+							cursor:    'pointer',
+							fontSize:  11,
+							fontWeight: 600,
+							fontFamily: TYPE.manrope,
+						}}
+					>
+						× Close preview
+					</button>
+				)}
 			</Section>
 
 			{/* ── SECTION 1k: DiSelectorPopover ── */}
