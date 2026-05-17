@@ -27,17 +27,17 @@ export function useModalBehavior({
 	initialFocusRef,
 	closeOnEsc = true,
 }: UseModalBehaviorOptions): void {
-	// Scroll lock
+	// Scroll lock — banner is non-blocking, never locks scroll
 	useEffect(() => {
-		if (!isOpen) return;
+		if (!isOpen || variant === 'banner') return;
 		const prev = document.body.style.overflow;
 		document.body.style.overflow = 'hidden';
 		return () => { document.body.style.overflow = prev; };
-	}, [isOpen]);
+	}, [isOpen, variant]);
 
-	// Esc key — alert variant cannot be dismissed with Esc
+	// Esc key — alert and banner variants cannot be dismissed with Esc
 	useEffect(() => {
-		if (!isOpen || !closeOnEsc || variant === 'alert') return;
+		if (!isOpen || !closeOnEsc || variant === 'alert' || variant === 'banner') return;
 		const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
 		document.addEventListener('keydown', handler);
 		return () => document.removeEventListener('keydown', handler);

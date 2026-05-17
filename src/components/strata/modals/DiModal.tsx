@@ -57,7 +57,7 @@ function DiModalRoot({ open, onClose, variant = 'dialog', size = 'md', dark, chi
 			position: 'fixed',
 			top: 80,
 			left: '50%',
-			zIndex: Z_INDEX.modal,
+			zIndex: Z_INDEX.toast,
 			width,
 			background: bg,
 			borderRadius: RADIUS.modal,
@@ -81,7 +81,7 @@ function DiModalRoot({ open, onClose, variant = 'dialog', size = 'md', dark, chi
 	return createPortal(
 		<DiModalContext.Provider value={{ onClose, dark, variant }}>
 			<AnimatePresence>
-				{open && (
+				{open && variant !== 'banner' && (
 					<DiModalBackdrop
 						dark={dark}
 						onClick={variant !== 'alert' ? onClose : undefined}
