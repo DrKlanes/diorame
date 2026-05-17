@@ -563,7 +563,7 @@ function PreviewPageContent() {
 					dark={dark} />
 
 				<IconGroup title="Layer Panel"
-					names={['eye', 'eye-off', 'duplicate', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal']}
+					names={['eye', 'eye-off', 'layers', 'duplicate', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal']}
 					dark={dark} />
 
 				<IconGroup title="Custom Additions"
