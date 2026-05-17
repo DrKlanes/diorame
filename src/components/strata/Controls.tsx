@@ -6,7 +6,7 @@ import { cn } from '../ui/utils';
 import { EnhancedTooltip } from '../ui/enhanced-tooltip';
 import { ControlsDrawing } from './ControlsDrawing';
 import { ControlsCinematic } from './ControlsCinematic';
-import { ControlsExport } from './ControlsExport';
+import { ComplexSceneModalV2 } from './modals/ComplexSceneModalV2';
 import { diTokens } from '../../design-system/tokens';
 import { toast } from 'sonner@2.0.3';
 
@@ -71,6 +71,12 @@ export const Controls = () => {
 		setShowComplexityWarning(false);
 		setPendingExportFormat(null);
 	}, []);
+
+	const handleUseCompressedExport = React.useCallback(() => {
+		dispatch({ type: 'REQUEST_EXPORT', payload: 'svgz' });
+		setShowComplexityWarning(false);
+		setPendingExportFormat(null);
+	}, [dispatch]);
 
 	const handleReturnToDraw = () => {
 		dispatch({ type: 'SET_MODE', payload: 'drawing' });
@@ -288,11 +294,13 @@ export const Controls = () => {
 			)}
 
 			{/* Export Warning Dialog */}
-			<ControlsExport
-				showComplexityWarning={showComplexityWarning}
-				totalShapes={getSceneComplexity().totalShapes}
-				onCancel={handleCancelExport}
-				onProceed={handleProceedWithExport}
+			<ComplexSceneModalV2
+				open={showComplexityWarning}
+				onClose={handleCancelExport}
+				onContinue={handleProceedWithExport}
+				onUseCompressed={handleUseCompressedExport}
+				shapeCount={getSceneComplexity().totalShapes}
+				dark={state.isDarkMode}
 			/>
 		</>
 	);
