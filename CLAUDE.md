@@ -12,7 +12,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 | | |
 |---|---|
-| **Versión** | 1.15.1 |
+| **Versión** | 1.16.0 |
 | **Stack** | React 18 + TypeScript + Vite 6 + Tailwind CSS 4 + Canvas 2D API |
 | **Dev** | `npm run dev` → puerto 3000 |
 | **Build** | `npm run build` — siempre verificar antes de hacer commit |
@@ -83,6 +83,37 @@ Para inspeccionar indentación exacta antes de escribir strings de reemplazo:
 lines = open('archivo.tsx', encoding='utf-8').readlines()
 print(repr(lines[782]))  # ver tabs exactos
 ```
+
+### Tablet como consideración sistemática
+
+Diorame soporta desktop y tablet. Cualquier cambio que toque interacción debe contemplar input táctil sin teclado físico:
+
+- **Eventos de input**: usar `pointerdown`/`pointerup` (unifica mouse + touch + pen). NO `mousedown`/`mouseup` (desktop-only).
+- **Atajos de teclado**: siempre tener alternativa táctil. Si la funcionalidad solo es accesible por shortcut, está rota en tablet.
+- **Focus management**: return-focus al anchor solo cuando el cierre fue iniciado por teclado (ESC). En cierre por pointer (click/tap), el foco queda donde el usuario lo puso.
+- **Tooltips con shortcuts**: en tablet, los shortcuts (`Cmd+E`, etc.) son ruido irrelevante. Tooltip ideal en táctil: o se suprime, o muestra solo la descripción sin el atajo.
+- **Modales**: cierre por gesto táctil debe estar contemplado (click outside, X visible, ESC opcional pero no único).
+- **Hover states**: nunca depender solo de hover para revelar UI crítica (no hay hover persistente en touch).
+
+Esto NO es preocupación añadida — es parte del filtro de decisión de cualquier prompt que toque UX.
+
+### Cambios mínimos en StrataCanvas.tsx — precedente operativo
+
+`StrataCanvas.tsx` es monolito de alto riesgo (render loop, gestos, proyección 3D). Regla por defecto: **no se toca**.
+
+Excepción documentada (precedente sub-fase 8.6): **swap de import con alias** es aceptable.
+
+```typescript
+// Cambio de 1 línea con alias, JSX intacto, lógica intacta — OK
+import { ComponentConnected as Component } from './ComponentConnected';
+```
+
+Cualquier otra modificación (añadir import nuevo, cambiar JSX, tocar listeners, modificar lógica de render) requiere:
+- Modelo Opus (no Sonnet)
+- Análisis previo explícito de impacto
+- Validación visual exhaustiva post-cambio
+
+Si dudas si tu cambio es "swap de import" o algo más, asume que es más y escala a Opus.
 
 ---
 

@@ -1,50 +1,91 @@
-# BACKLOG — Diorame
+# Diorame — Backlog técnico
 
-> Deuda técnica consolidada. Items organizados por urgencia.
-> **Actualizado:** 2026-05-17 — Post Fase 7.5 (Modal System V2).
-> Para contexto de Fase 7.5, ver `src/REFERENCE.md → Phase 7.5 — Modal System (V2)`.
+**Actualizado:** 2026-05-17 — Post Fase 8 (cutover UI redesign V2 completo)
 
 ---
 
-## 🚨 Pre-Fase 8 (Bloqueante)
+## ✅ Resuelto en Fase 8
 
-Items que deben resolverse ANTES del cutover de integración (Fase 8). Si quedan sin hacer, la sustitución legacy → V2 puede producir stacking, comportamiento o tipado incorrecto.
-
----
-
-### [Item 1] Z-index cohabitación durante cutover
-
-- **Descripción**: Durante Fase 8, si algún componente legacy queda visible mientras el V2 ya está integrado, el stacking será incorrecto: los V2 tienen `z-index` 800–1000 (tokens `Z_INDEX.*`) mientras los legacy usan Tailwind `z-[100]` o `z-[60]`. El cutover debe ser **atómico por componente** — sustitución completa de cada modal antes de pasar al siguiente. No activar V2 y dejar legacy activo simultáneamente.
-- **Archivos afectados**:
-  - `src/components/strata/WelcomeModal.tsx` (legacy) — `z-[100]`
-  - `src/components/strata/ControlsExport.tsx` (legacy) — `z-[100]`
-  - `src/components/strata/ExportProgress.tsx` (legacy) — `z-[60]`
-  - `src/components/strata/OnboardingOverlay.tsx` (legacy)
-  - `src/components/strata/MobileBlockScreen.tsx` (legacy)
-- **Riesgo**: medium
-- **Origen**: Sub-fase 7.5.0 (descubierto al introducir la escala `Z_INDEX`)
-
----
-
-### [Item 2] Añadir iconos faltantes a ICONS
-
-- **Descripción**: Tres iconos semánticamente correctos para componentes V2 **no existen** en `src/design-system/icons.ts`. Se usaron fallbacks funcionales: `record` (mp4 en lugar de `video`), `export` (svg en lugar de `code`), `duplicate` (capas en lugar de `layers`). Para Fase 8, extraer los SVG paths originales del archivo fuente de iconos y añadir las entradas `video`, `code` y `layers`. **No inventar paths** — extraer del SVG fuente o de la misma fuente de diseño donde viven el resto de iconos.
-- **Archivos afectados**:
-  - `src/design-system/icons.ts` — añadir entradas `video`, `code`, `layers`
-  - `src/components/strata/modals/ExportProgressV2.tsx` — actualizar `EXPORT_CONFIG` (`record` → `video`, `export` → `code`)
-  - `src/components/strata/modals/OnboardingOverlayV2.tsx` — actualizar `VIEW_CARDS[0]` y `DRAW_CARDS[2]` con el icono correcto si corresponde
-- **Riesgo**: low
-- **Origen**: Sub-fases 7.5.5 (iconos de export) y 7.5.6 (icono Layers en onboarding)
+| Item | Resolución |
+|---|---|
+| Z-index cohabitación durante cutover | Resuelto por atomicidad: cada sub-fase eliminó el legacy y activó el V2 en el mismo commit. Cero coexistencia. |
+| Icono `layers` faltante | Resuelto en commit `bd6bbf7`: nuevo path SVG isométrico añadido a `icons.ts`, integrado en OnboardingOverlayV2 reemplazando fallback `duplicate`. |
+| Iconos `video` y `code` faltantes | Cerrado por decisión de diseño (sub-fase 8.0): los fallbacks `record` (para vídeo MP4) y `export` (para SVG) son semánticamente mejores que los originales propuestos. Mantenidos como permanentes — NO son deuda. |
 
 ---
 
 ## 🧹 Fase 9 (Cleanup post-merge)
 
-Items que pueden esperar al post-merge de Fase 8. No bloquean el cutover pero mejoran mantenibilidad, consistencia o corrigen deuda acumulada.
+### Item 1 — Array hardcodeado del Layer Panel en PreviewPage
+
+**Categoría:** mejora de DX
+**Riesgo:** low
+**Origen:** descubierto durante integración del icono `layers` (sub-fase 8.0)
+
+**Problema:** `src/preview/PreviewPage.tsx` (~línea 565) usa filtrado dinámico vía `Object.keys(ICONS).filter(...)` para las secciones FX, Camera Presets, Camera Controls. La sección Layer Panel usa un array hardcodeado porque esos iconos no comparten prefijo:
+
+```jsx
+names={['eye', 'eye-off', 'layers', 'duplicate', 'trash', 'arrow-up', 'arrow-down',
+       'opacity', 'plus-layer', 'drag', 'blend-normal']}
+```
+
+Cada icono nuevo sin prefijo requiere actualizar manualmente este array — fácil de olvidar.
+
+**Solución propuesta:** introducir estructura de metadata de secciones en `icons.ts` (ej. `ICON_SECTIONS: Record<string, string[]>`) que agrupe iconos por categoría. Refactorizar `PreviewPage.tsx` para iterar sobre la metadata.
+
+**Path:** `src/preview/PreviewPage.tsx` (~línea 565), `src/design-system/icons.ts`
 
 ---
 
-### [Item 3] Migrar `T.shadow` y `T.shadowStrong` al objeto `SHADOW`
+### Item 2 — Duplicación del hook `useIsMobile`
+
+**Categoría:** cleanup
+**Riesgo:** low
+**Origen:** descubierto durante cutover 8.1 (commit `59467ff`)
+
+**Problema:** dos hooks con funcionalidad idéntica:
+- `src/hooks/useIsMobile.ts` (creado en 8.1, usado por `App.tsx`, usa `matchMedia`)
+- `src/components/ui/use-mobile.ts` (preexistente, usado por `sidebar.tsx`, usa `matchMedia`)
+
+**Solución propuesta:** canonicalizar en `src/hooks/useIsMobile.ts` (convención React moderna). Actualizar import en `sidebar.tsx`. Borrar `src/components/ui/use-mobile.ts`.
+
+**Path:** los 3 archivos arriba.
+
+---
+
+### Item 3 — Union type de `state.exportRequest` admite valores muertos
+
+**Categoría:** type cleanup
+**Riesgo:** low
+**Origen:** descubierto durante cutover 8.2 (commit `ecc9134`)
+
+**Problema:** `state.exportRequest` admite `'none'` y `'webm'` que nunca se despachan. `'none'` es valor default cuando `isExporting === false`, pero el tipo no comunica esa correlación. `'webm'` es residuo histórico desde antes del reemplazo por `'mp4'`. Forzó expresión de estrechamiento en App.tsx:
+
+```typescript
+exportType={state.exportRequest === 'none' || state.exportRequest === 'webm' ? 'png' : state.exportRequest}
+```
+
+**Solución propuesta:** restringir union type a `'png' | 'mp4' | 'svg' | 'svgz'`. Modelar el estado `none` con un guard separado o con `null`/`undefined`. Eliminar la expresión de estrechamiento en App.tsx.
+
+**Path:** `src/types/strataTypes.ts`, `src/components/strata/StrataContext.tsx`, `src/App.tsx`
+
+---
+
+### Item 4 — `EnhancedTooltip` no respeta input touch
+
+**Categoría:** UX tablet
+**Riesgo:** low
+**Origen:** descubierto durante validación 8.7 (commit `16330de`)
+
+**Problema:** `EnhancedTooltip` envuelve Radix Tooltip en modo uncontrolled. En tablet, taps largos o pausados sobre un trigger pueden hacer aparecer el tooltip mostrando shortcuts como `"Cmd+E"` que son irrelevantes en táctil. Mala UX.
+
+**Solución propuesta:** añadir prop `disableOnTouch` al wrapper, o detectar `pointerType === 'touch'` en eventos del Trigger y suprimir el tooltip. Alternativa: filtrar el render del shortcut cuando el dispositivo es táctil.
+
+**Path:** `src/components/ui/enhanced-tooltip.tsx` (o donde resida el wrapper)
+
+---
+
+### Item 5 — Migrar `T.shadow` y `T.shadowStrong` al objeto `SHADOW`
 
 - **Descripción**: Los tokens `T.shadow` y `T.shadowStrong` permanecen en el objeto `T` como strings de shadow light-mode sin variante dark. En 7.5.0 se creó el objeto `SHADOW` para shadows con variantes `modal` / `modalDark`. Por coherencia: mover `T.shadow` → `SHADOW.pill` y `T.shadowStrong` → `SHADOW.panel` (cada uno con su variante `*Dark`), y refactorizar `DiPill.tsx` y `DiPanel.tsx` para consumir `SHADOW.*`. Esto también resuelve la ausencia de dark mode en las shadows de estos componentes.
 - **Archivos afectados**:
@@ -56,22 +97,16 @@ Items que pueden esperar al post-merge de Fase 8. No bloquean el cutover pero me
 
 ---
 
-### [Item 4] Rename interno de `ToolType`: `'brush'` → `'blob'`, `'line'` → `'brush'`
+### Item 6 — ToolType rename
 
-- **Descripción**: El tipo interno `ToolType = 'brush' | 'eraser' | 'text' | 'move' | 'line'` tiene nomenclatura invertida respecto a la UI: el valor `'brush'` corresponde al tool **Blob** (UI), y el valor `'line'` corresponde al tool **Brush** (UI). Rename global: `'brush'` → `'blob'`, `'line'` → `'brush'`. Requiere actualización en todos los sitios que comparan o asignan `tool`. **Cuidado con la persistencia**: los proyectos `.dior` guardados serializan el tool activo — añadir un paso de migración en `LOAD_PROJECT` que traduzca los valores antiguos.
-- **Archivos afectados**:
-  - `src/types/strataTypes.ts` — `ToolType`
-  - `src/components/strata/StrataContext.tsx` — reducer, estado inicial
-  - `src/components/strata/StrataCanvas.tsx` — handlers de tool (muchos sitios)
-  - `src/components/strata/bottombar/DrawingToolbar.tsx`
-  - `src/components/strata/ControlsDrawing.tsx`
-  - Cualquier componente que compare `state.tool`
-- **Riesgo**: high
-- **Origen**: Backlog heredado (pre-Fase 7.5)
+**Categoría:** refactor
+**Riesgo:** high
+
+`state.tool === 'brush'` representa Blob (UI). `state.tool === 'line'` representa Brush (UI). Pendiente: renombrar `'brush'` → `'blob'` y `'line'` → `'brush'` en todo el codebase. Riesgo high por dispersión.
 
 ---
 
-### [Item 5] Hex hardcodeados en `MobileBlockScreenV2`
+### Item 7 — Hex hardcodeados en `MobileBlockScreenV2`
 
 - **Descripción**: `MobileBlockScreenV2` inyecta un bloque `<style>` con 6 hex literals para temas light/dark via `@media (prefers-color-scheme: dark)`. Esto es necesario hoy porque el componente se renderiza ANTES del `ThemeProvider` y no puede consumir `T` dinámicamente. Si en el futuro se introduce un sistema de CSS variables globales definidas en `:root` desde `tokens.ts` (e.g. al arrancar la app), migrar los 6 literals a esas variables. La migración es un cambio de 6 líneas en el `THEME_CSS` del componente.
 - **Archivos afectados**:
@@ -82,7 +117,7 @@ Items que pueden esperar al post-merge de Fase 8. No bloquean el cutover pero me
 
 ---
 
-### [Item 6] Focus trap activo en variant `banner` de `DiModal`
+### Item 8 — Focus trap activo en variant `banner` de `DiModal`
 
 - **Descripción**: `useModalBehavior.ts` aplica focus trap (Tab cycling) para todas las variants, incluyendo `banner`. La corrección de 7.5.5.1 añadió `|| variant === 'banner'` a los guards de scroll lock y ESC, pero **no al focus trap** (líneas 65–86). No produce efecto observable hoy porque `ExportProgressV2` no tiene elementos focusables. Si en el futuro un banner incluye elementos interactivos (botón de cancel, link), el focus trap se activará inesperadamente. Resolución: añadir `|| variant === 'banner'` al guard del focus trap en `useModalBehavior.ts`.
 - **Archivos afectados**:
@@ -92,7 +127,7 @@ Items que pueden esperar al post-merge de Fase 8. No bloquean el cutover pero me
 
 ---
 
-### [Item 7] Primitivo `DiActionButton` para micro-botones del LayersPanel
+### Item 9 — Primitivo `DiActionButton` para micro-botones del LayersPanel
 
 - **Descripción**: Los botones de acción del LayersPanel v2 (añadir capa, duplicar, eliminar, mover) son botones inline sin primitivo compartido. Estandarizar con un primitivo `DiActionButton` mejoraría consistencia visual y facilitaría theming. Item opcional — la UX actual funciona correctamente.
 - **Archivos afectados**:
@@ -104,80 +139,22 @@ Items que pueden esperar al post-merge de Fase 8. No bloquean el cutover pero me
 
 ---
 
-### [Item 8] Extracción del render loop y gestos de `StrataCanvas.tsx`
+### Item 10 — Refactor `StrataCanvas.tsx`
 
-- **Descripción**: `StrataCanvas.tsx` (~2143 líneas) es un archivo monolítico que contiene: render loop, gestión de eventos de puntero/touch, proyección 3D, y lógica de herramientas. Candidates de extracción: render loop → `useRenderLoop.ts`, gestures/touch → `useCanvasGestures.ts`, proyección 3D → `projection3d.ts`. Cada extracción debe seguir el patrón documentado en CLAUDE.md (identificar bloque autocontenido → nuevo archivo → importar → verificar comportamiento idéntico → comentario de una línea). **Riesgo HIGH**: cualquier error introduce regresiones en el flujo de dibujo principal.
-- **Archivos afectados**:
-  - `src/components/strata/StrataCanvas.tsx` — extracción incremental
-  - Nuevos archivos en `src/components/strata/hooks/` o `src/components/strata/canvas/`
-- **Riesgo**: high
-- **Origen**: Backlog heredado (pre-Fase 7.5)
+**Categoría:** refactor
+**Riesgo:** high
+**Origen:** deuda preexistente, agendada post-rediseño UI
 
----
-
-## 📦 Out of scope (Anotado, sin fecha)
-
-Items identificados y conscientemente diferidos. Pueden no abordarse en el ciclo actual o esperar a una versión muy posterior. Se registran para no perder el contexto.
+Monolito de alto riesgo. Render loop, gestos, proyección 3D. Refactor diferido hasta post-Fase 8 (ya completado) porque la nueva UI informaría la refactorización necesaria. Ahora que la UI V2 está en producción, el refactor puede planificarse con contexto real.
 
 ---
 
-### [Item 9] Unificar tipo `Layer` en `src/types/strataTypes.ts`
+## 📦 Out of scope (anotado, sin agendar)
 
-- **Descripción**: El tipo `Layer` tiene variantes locales en distintos componentes. Unificar en una sola estructura coherente en `strataTypes.ts`, eliminando las definiciones locales redundantes. Medium risk por la cantidad de sitios afectados.
-- **Archivos afectados**:
-  - `src/types/strataTypes.ts`
-  - `src/components/strata/StrataContext.tsx`
-  - Componentes con definiciones locales de Layer
-- **Riesgo**: medium
-- **Origen**: Backlog heredado (pre-Fase 7.5, Phase 4.3 del handoff original)
-
----
-
-### [Item 10] Lanzamiento en redes sociales (Instagram / X)
-
-- **Descripción**: No es deuda técnica — es deuda de producto/marketing. Lanzar perfiles con 3–5 piezas showcase de Diorame: timelapses de dibujo, parallax loops, narrativas de proceso. Bloqueado hasta tener material visual suficiente. No bloquea ningún desarrollo.
-- **Archivos afectados**: ninguno (decisión de producto)
-- **Riesgo**: n/a
-- **Origen**: Backlog heredado (pre-Fase 7.5)
-
----
-
-### [Item 11] Progreso real en `ExportProgressV2` (reemplazar simulación asymptótica)
-
-- **Descripción**: `ExportProgressV2` usa progreso simulado (`p += (100 − p) × 0.02` cada 50ms). Conectar con progreso real requiere instrumentar `exportHandlers.ts` con emisión de eventos durante el render (MP4: por frame capturado; SVG: por capa procesada). Refactor mayor en la capa de export. La UX actual con simulación es aceptable para la mayoría de casos de uso.
-- **Archivos afectados**:
-  - `src/components/strata/canvas/exportHandlers.ts`
-  - `src/components/strata/modals/ExportProgressV2.tsx`
-- **Riesgo**: medium
-- **Origen**: Sub-fase 7.5.5
-
----
-
-### [Item 12] Cancelación de export en curso (MP4)
-
-- **Descripción**: No existe forma de cancelar un export en curso. Para MP4, implementar cancel implica abortar `MediaRecorder` y limpiar el estado de grabación. Para PNG/SVG el tiempo es suficientemente corto como para que no sea necesario. Decisión cerrada en 7.5.5: out of scope. Anotado por si el comportamiento cambia con escenas más complejas.
-- **Archivos afectados**:
-  - `src/components/strata/canvas/exportHandlers.ts`
-  - `src/components/strata/modals/ExportProgressV2.tsx`
-- **Riesgo**: medium
-- **Origen**: Sub-fase 7.5.5
-
----
-
-### [Item 13] Proceso de versionado de ilustración del WelcomeModal
-
-- **Descripción**: `WelcomeModalV2` usa `welcomeIllustrations.ts` que mapea versión → asset (`"1.15" → "v1-15.png"`). Para `v1.16+`, el proceso es: (1) crear ilustración 320×600px, (2) colocarla en `public/welcome-illustrations/v1-16.png`, (3) añadir entrada al mapeo, (4) bump `APP_VERSION` en `src/constants/version.ts`. Anotado para que no se omita el paso de ilustración en futuros bumps de versión.
-- **Archivos afectados**:
-  - `public/welcome-illustrations/` — nuevo asset
-  - `src/components/strata/modals/welcomeIllustrations.ts` — nueva entrada en el mapeo
-  - `src/constants/version.ts` — bump de versión
-- **Riesgo**: low
-- **Origen**: Sub-fase 7.5.3
-
----
-
-## Notas
-
-- Los items **Pre-Fase 8** son el input directo del checklist de Fase 8. Resolverlos en orden (Item 1 → Item 2) antes del primer cutover modal.
-- Los items de **Riesgo: high** (Item 4, Item 8) requieren sesión propia con análisis exhaustivo antes de ejecutar. No combinar con otros cambios.
-- Este archivo debe actualizarse al cierre de cada fase. Cuando un item se resuelve, moverlo a una sección `✅ Resuelto` con el hash del commit, o eliminarlo si el contexto ya no es relevante.
+| Item | Notas |
+|---|---|
+| Tipo `Layer` unificado | Medium risk. Sin agenda. |
+| Lanzamiento Instagram/X | No técnico. Cuando haya 3-5 piezas de muestra. |
+| Progreso real del export | Instrumentar `exportHandlers` para reportar % real en lugar del easing asintótico actual del ExportProgressV2. |
+| Cancel del export en curso | Funcionalidad ausente. |
+| Versionado de ilustración Welcome | Procedimiento ya instaurado (mapeo versión→asset en `welcomeIllustrations.ts`). Solo recordatorio. |

@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 1.15.1
+**Version**: 1.16.0
 **Last Updated**: March 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -480,6 +480,33 @@ APP_VERSION = "1.14.0"          // Current release version
 
 ---
 
+### 1.16.0 — 2026-05-17
+
+**Fase 8 completa — cutover UI redesign V2 a producción.**
+
+7 cutovers atómicos en `feat/ui-redesign-v2` reemplazando todos los componentes legacy por sus equivalentes V2 construidos en Fase 7.5. Sin coexistencia, sin regresiones funcionales, validados visualmente uno por uno en navegador.
+
+**Sub-fases:**
+- **8.0** Pre-cutover: integración del nuevo icono `layers` (isométrico, 3 planos apilados), array del Layer Panel en PreviewPage sincronizado, tag `pre-phase-8` como rollback.
+- **8.1** Cutover MobileBlockScreen + extracción del hook `useIsMobile`.
+- **8.2** Cutover ExportProgress (banner variant, sin backdrop, sin scroll lock). Pulse animation (`ico-pulse`) preservada.
+- **8.3** Cutover WelcomeModal + extracción del hook `useLoadExampleScene` (reutilizado en 8.6).
+- **8.4** Cutover ClearCanvasAlertDialog (alert variant). Tres dispatches del `onConfirm` preservados exactamente: `CLEAR_CANVAS` + `UPDATE_CAMERA` reset + `sessionStorage.removeItem('diorame-view-initialized')`.
+- **8.5** Cutover ControlsExport → `ComplexSceneModalV2`. Nuevo callback `onUseCompressed` añade tercera vía al usuario (export SVGZ comprimido) cuando la escena supera el threshold de complejidad (800 shapes).
+- **8.6** Cutover OnboardingOverlay (medium-high risk). Introducción del patrón adapter (`OnboardingOverlayConnected`) que aísla la conexión al state global. Toque mínimo en `StrataCanvas.tsx`: 1 línea (swap de import con alias).
+- **8.7** Cutover SVG Export Popover → `DiSelectorPopover` (primitivo de 7.5.2). Dos fixes posteriores al primitivo descubiertos en validación:
+  - `mousedown` → `pointerdown` en click-outside listener (W3C spec: `preventDefault()` en `pointerdown` del canvas suprimía `mousedown` compatibility events).
+  - Return-focus condicional al anchor: solo cuando el cierre fue por teclado (ESC, Enter en opción). Evita tooltip fantasma al cerrar por pointer.
+- **8.8** Housekeeping: actualización de REFERENCE.md, BACKLOG.md, CLAUDE.md. Bump a 1.16.0. Push de la rama. Merge a `main` queda pendiente de decisión post-validación en uso real.
+
+**Reglas operativas consolidadas:**
+- Tablet como consideración sistemática en todo prompt que toque UX (documentado en CLAUDE.md).
+- Swap de import con alias en `StrataCanvas.tsx` como excepción documentada al "no tocar StrataCanvas" (documentado en CLAUDE.md).
+
+**Deuda técnica abierta para Fase 9:** ver `BACKLOG.md`.
+
+---
+
 ### 1.15.1 — .dior serialization for VIEW params, first-time VIEW reset, CLEAR_CANVAS full reset
 
 - **feat** — “Load example scene” button added to `WelcomeModal` and `OnboardingOverlay`: fetches `/examples/diorame_onboarding.dior`, dispatches `LOAD_PROJECT`, closes modal/overlay on success. Shows toast on error.
@@ -632,59 +659,33 @@ APP_VERSION = "1.14.0"          // Current release version
 
 ---
 
-## UI Redesign v2 — Estado actual (rama `feat/ui-redesign-v2`)
+## UI Redesign v2 — Estado actual
 
-Rediseño visual integral de toda la capa de UI de Diorame. Componentes legacy mantenidos en disco durante la transición. **Integración en app real pendiente para Fase 8.**
+**Producción.** El rediseño UI v2 está integrado en `feat/ui-redesign-v2` y consolidado en versión 1.16.0. Tras 7 sub-fases de cutover atómico (Fase 8.1 a 8.7), todos los componentes legacy fueron reemplazados por sus equivalentes V2 en commits singulares (sin coexistencia, sin stacking inverso de z-index).
 
-### Fases completadas
+### Inventario producción
 
-| Fase | Descripción | Commit |
-|---|---|---|
-| **Fase 0** | Branch setup + tipografía global (Manrope + Sora) | `944bd14` |
-| **Fase 1** | Token system v2 — `T`, `TYPE`, `RADIUS`, `dk()` | `026ff1c` |
-| **Fase 2** | Primitivos DS: `Ico`, `DiPill`, `DiVSep`, `DiMiniSlider`, `DiSegmentControl`, `DiPanel` | `f4e0650` |
-| **Fase 3** | TopBar — 4 pills: `FileControlsPill`, `SnapshotRecordPill`, `ModeSwitchPill`, `ThemeTogglePill` | `5b8f8f7` |
-| **Fase 4** | BottomBar — `DrawingToolbar`, `CameraBar`, `CameraPresetsZone`, `CameraSpeedZone`, `CameraSlidersZone` | `ffa791e` |
-| **Fase 5** | ColorPalette — `PaletteHeader`, `GradientControls`, `SwatchGrid` | `74ef20d` |
-| **Fase 6.1** | Reducer: action `SET_CURRENT_LAYER` para navegación directa de capas | `d82cf09` |
-| **Fase 6.2** | LayersPanel (collapsed pill + expanded panel) + LayerDotsRail | `061fa2c`, `17215e2` |
-| **Fase 6.2-fix** | Badge, chevron, active accent, dark mode | `d2fc404` |
-| **Fase 6.2-spatial** | Animación FLIP de reorder, eje Z visual con círculos de profundidad | `c549c74`, `d5e6d3d` |
-| **Fase 6.3a** | Reducer: action `MOVE_LAYER_TO` para desplazamiento real (drag & drop) | `441d4cf` |
-| **Fase 6.3b** | LayersPanel: drag & drop con `@dnd-kit` | `8394320` |
-| **Fase 6.4** | ResetViewPill — mini-pill bottom-left para reset de zoom/pan | `5209690` |
+**Modales** (vía primitivo compound `DiModal` salvo donde se indique):
+- `WelcomeModalV2` — dialog, sin persistencia (opens on every load por diseño)
+- `ClearCanvasAlertV2` — alert variant (ESC y backdrop deshabilitados)
+- `ComplexSceneModalV2` — dialog con tercera vía "Use Compressed" (SVGZ)
+- `ExportProgressV2` — banner variant (sin backdrop, sin scroll lock)
+- `OnboardingOverlayV2` — componente propio (no usa primitivo), conectado al state global vía adapter
+- `MobileBlockScreenV2` — componente propio, `prefers-color-scheme` autónomo
 
-### Nuevas actions en el reducer
+**Popovers** (vía primitivo `DiSelectorPopover`):
+- SVG Export options en `ControlsDrawing.tsx` (SVG / SVG Compressed)
 
-- `SET_CURRENT_LAYER` — navegación directa a una capa por índice
-- `MOVE_LAYER_TO` — desplazamiento real para drag & drop (mueve todas las capas intermedias entre `fromIndex` y `toIndex`)
+**Patrón adapter (introducido en 8.6):**
+`OnboardingOverlayConnected.tsx` aísla la conexión al state global (`useStrata`, `useLoadExampleScene`, 4 condiciones de visibilidad, localStorage persistence) del componente puro V2. Permite mantener `StrataCanvas.tsx` con un cambio de 1 línea (swap de import con alias) y deja el componente V2 testable con props puras. Patrón aplicable a futuros V2 que necesiten lectura compleja de state global.
 
-### Nuevas dependencias
+**Hooks reutilizables introducidos:**
+- `src/hooks/useIsMobile.ts` (8.1) — viewport detection vía `matchMedia`
+- `src/hooks/useLoadExampleScene.ts` (8.3) — fetch + parse + dispatch de escena de ejemplo, agnóstico al cierre del modal consumidor
 
-- `framer-motion@^12.38.0` — animación FLIP del reorder de capas en LayersPanel
-- `@dnd-kit/core@^6.3.1`, `@dnd-kit/sortable@^10.0.0`, `@dnd-kit/utilities@^3.2.2` — drag & drop en LayersPanel
+### Tokens y design system
 
-### Nuevos directorios y componentes (en `src/components/strata/`)
-
-| Directorio | Archivos |
-|---|---|
-| `topbar/` | `TopBar.tsx`, `FileControlsPill.tsx`, `SnapshotRecordPill.tsx`, `ModeSwitchPill.tsx`, `ThemeTogglePill.tsx`, `_shared.tsx` |
-| `bottombar/` | `BottomBar.tsx`, `DrawingToolbar.tsx`, `CameraBar.tsx`, `CameraPresetsZone.tsx`, `CameraSpeedZone.tsx`, `CameraSlidersZone.tsx`, `_shared.tsx` |
-| `colorpalette/` | `ColorPalette.tsx`, `PaletteHeader.tsx`, `GradientControls.tsx`, `SwatchGrid.tsx` |
-| `layers/` | `LayersPanel.tsx`, `LayerRow.tsx`, `LayerDotsRail.tsx` |
-| `viewport/` | `ResetViewPill.tsx` |
-
-### Galería de preview (`/preview?preview=true`)
-
-`src/preview/PreviewPage.tsx` — página de desarrollo exclusiva (`import.meta.env.DEV`). Renderiza todos los componentes del DS v2 con estado live desde `StrataProvider`. Incluye seeds ficticios para secciones que requieren estado específico (LayersPanel con 4 capas, etc.).
-
-### Pendiente
-
-- **Fase 7** — FX Panel (controles de post-processing en modo VIEW)
-- **Fase 7.5** — Modales y onboarding rediseñados
-- **Fase 8** — Integración global: conectar TopBar, BottomBar, ColorPalette, LayersPanel, LayerDotsRail y ResetViewPill en la app real; desconectar legacy
-
----
+Sin cambios respecto a 7.5. La sección "Phase 7.5 — Modal System (V2)" de este documento sigue siendo la fuente de verdad para tokens, primitives `Di*`, y convenciones visuales.
 
 ---
 
@@ -926,9 +927,13 @@ All located in `src/components/strata/modals/`.
 | **7.5.7** | `MobileBlockScreenV2` + preview trigger with escape button | `c8e15fa`, `2e5c19a` |
 
 
+> **Estado tras Fase 8:** todos los componentes V2 descritos en esta sección están en producción (versión 1.16.0). Esta sección queda como referencia histórica del diseño y decisiones tomadas durante la construcción del sistema en paralelo.
+
 ---
 
 ## Phase 8 — Cutover Plan
+
+> **Estado:** COMPLETADA en versión 1.16.0. Todas las sub-fases (8.0 a 8.8) cerradas. El plan que sigue queda como referencia histórica del orden de ejecución y las decisiones tomadas.
 
 ### Overview
 
