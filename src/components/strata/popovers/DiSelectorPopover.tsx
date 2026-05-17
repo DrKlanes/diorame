@@ -45,12 +45,15 @@ export function DiSelectorPopover({
 
 	const variants = resolvedPlacement === 'top' ? topVariants : bottomVariants;
 
+	const closedByKeyboardRef = useRef(false);
+
 	// ── Keyboard: Esc + arrow navigation ─────────────────────────────────────
 	useEffect(() => {
 		if (!open) return;
 		const handler = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') {
 				e.preventDefault();
+				closedByKeyboardRef.current = true;
 				onClose();
 				return;
 			}
@@ -68,6 +71,8 @@ export function DiSelectorPopover({
 			} else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
 				e.preventDefault();
 				options[(idx - 1 + options.length) % options.length]?.focus();
+			} else if (e.key === 'Enter' || e.key === ' ') {
+				closedByKeyboardRef.current = true;
 			}
 		};
 		document.addEventListener('keydown', handler);
@@ -98,7 +103,10 @@ export function DiSelectorPopover({
 				first?.focus();
 			});
 		} else if (wasOpenRef.current) {
-			anchorRef.current?.focus();
+			if (closedByKeyboardRef.current) {
+				anchorRef.current?.focus();
+			}
+			closedByKeyboardRef.current = false;
 		}
 		wasOpenRef.current = open;
 	}, [open, anchorRef]);
