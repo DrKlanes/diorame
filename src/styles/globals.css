@@ -219,6 +219,11 @@ html {
   }
 }
 
+@keyframes ico-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1;   }
+}
+
 @keyframes slide-up-fade {
   from {
     opacity: 0;
