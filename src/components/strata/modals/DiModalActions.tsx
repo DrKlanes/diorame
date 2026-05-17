@@ -147,3 +147,25 @@ export function PrimaryActionLg({ children, onClick, disabled }: ActionProps) {
 		</button>
 	);
 }
+
+export function SecondaryActionLg({ children, onClick, disabled }: ActionProps) {
+	const { dark } = useDiModalContext();
+	const [hovered, setHovered] = useState(false);
+	return (
+		<button
+			onClick={onClick}
+			disabled={disabled}
+			onMouseEnter={() => setHovered(true)}
+			onMouseLeave={() => setHovered(false)}
+			style={{
+				...ACTION_BASE_LG,
+				background: hovered ? dk(dark, T.light, T.hoverDark) : 'transparent',
+				color: dk(dark, T.dark, T.textDark),
+				border: `1px solid ${dk(dark, T.border, T.borderDark)}`,
+				opacity: disabled ? 0.45 : 1,
+			}}
+		>
+			{children}
+		</button>
+	);
+}

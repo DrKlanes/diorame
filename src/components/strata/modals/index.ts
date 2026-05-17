@@ -27,6 +27,7 @@ import {
 	PrimaryAction,
 	PrimaryActionLg,
 	SecondaryAction,
+	SecondaryActionLg,
 	DestructiveAction,
 	TertiaryAction,
 } from './DiModalActions';
@@ -39,6 +40,7 @@ export const DiModal = Object.assign(DiModalRoot, {
 	PrimaryAction,
 	PrimaryActionLg,
 	SecondaryAction,
+	SecondaryActionLg,
 	DestructiveAction,
 	TertiaryAction,
 });
