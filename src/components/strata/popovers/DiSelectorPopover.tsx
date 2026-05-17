@@ -77,14 +77,14 @@ export function DiSelectorPopover({
 	// ── Click-outside detection ───────────────────────────────────────────────
 	useEffect(() => {
 		if (!open) return;
-		const handler = (e: MouseEvent) => {
+		const handler = (e: PointerEvent) => {
 			const target = e.target as Node;
 			const inside = popoverRef.current?.contains(target);
 			const onAnchor = anchorRef.current?.contains(target);
 			if (!inside && !onAnchor) onClose();
 		};
-		document.addEventListener('mousedown', handler);
-		return () => document.removeEventListener('mousedown', handler);
+		document.addEventListener('pointerdown', handler);
+		return () => document.removeEventListener('pointerdown', handler);
 	}, [open, onClose, anchorRef]);
 
 	// ── Focus management ──────────────────────────────────────────────────────
