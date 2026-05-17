@@ -15,7 +15,7 @@ import { LayersPanel } from '../components/strata/layers/LayersPanel';
 import { LayerDotsRail } from '../components/strata/layers/LayerDotsRail';
 import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 import { FXPanel } from '../components/strata/fx/FXPanel';
-import { DiModal } from '../components/strata/modals';
+import { DiModal, WelcomeModalV2 } from '../components/strata/modals';
 import { DiSelectorPopover, DiSelectorOption } from '../components/strata/popovers';
 
 export function PreviewPage() {
@@ -37,6 +37,13 @@ function PreviewPageContent() {
 	const [bannerOpen, setBannerOpen] = useState(false);
 	const [popoverOpen, setPopoverOpen] = useState(false);
 	const anchorRef = useRef<HTMLButtonElement>(null);
+	const [welcomeOpen, setWelcomeOpen] = useState(false);
+
+	const handleLoadExample = async () => {
+		await new Promise<void>(resolve => setTimeout(resolve, 800));
+		console.log('Load example scene clicked');
+		setWelcomeOpen(false);
+	};
 
 	const bg            = dark ? '#0e0e0e' : '#e8e8e8';
 	const sectionBg     = dk(dark, 'rgba(0,0,0,0.03)', 'rgba(255,255,255,0.04)');
@@ -289,6 +296,9 @@ function PreviewPageContent() {
 					<button onClick={() => setBannerOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
 						Open Banner
 					</button>
+					<button onClick={() => setWelcomeOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Open WelcomeModal
+					</button>
 				</div>
 
 				{/* Dialog variant */}
@@ -326,6 +336,14 @@ function PreviewPageContent() {
 						<DiModal.TertiaryAction onClick={() => setBannerOpen(false)}>Cerrar</DiModal.TertiaryAction>
 					</DiModal.Footer>
 				</DiModal>
+
+				{/* WelcomeModal v2 */}
+				<WelcomeModalV2
+					open={welcomeOpen}
+					onClose={() => setWelcomeOpen(false)}
+					onLoadExample={handleLoadExample}
+					dark={dark}
+				/>
 			</Section>
 
 			{/* ── SECTION 1k: DiSelectorPopover ── */}
