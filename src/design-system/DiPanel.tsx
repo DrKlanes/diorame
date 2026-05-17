@@ -1,5 +1,5 @@
 import React from 'react';
-import { T, RADIUS, dk } from './tokens';
+import { T, RADIUS, SHADOW, dk } from './tokens';
 
 interface DiPanelProps {
 	dark: boolean;
@@ -29,7 +29,7 @@ export function DiPanel({
 				backgroundColor: dk(dark, T.white, T.panelDark),
 				border: `1px solid ${dk(dark, T.border, T.borderDark)}`,
 				borderRadius: radius,
-				boxShadow: T.shadow,
+				boxShadow: SHADOW.surface,
 				backdropFilter: T.blur,
 				WebkitBackdropFilter: T.blur,
 				display: 'flex',

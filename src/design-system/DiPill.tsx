@@ -1,5 +1,5 @@
 import React from 'react';
-import { T, RADIUS, dk } from './tokens';
+import { T, RADIUS, SHADOW, dk } from './tokens';
 
 interface DiPillProps {
 	dark: boolean;
@@ -28,7 +28,7 @@ export function DiPill({
 			backgroundColor: dk(dark, T.white, T.panelDark),
 			border: `1px solid ${dk(dark, T.border, T.borderDark)}`,
 			borderRadius: RADIUS.pill,
-			boxShadow: T.shadow,
+			boxShadow: SHADOW.surface,
 			backdropFilter: T.blur,
 			WebkitBackdropFilter: T.blur,
 			...style,

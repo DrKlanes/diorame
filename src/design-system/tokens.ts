@@ -35,10 +35,8 @@ export const T = {
 	// Stage (outside canvas) — always this regardless of dark mode
 	stage: '#0e0e0e',
 
-	// Shadows & blur
-	shadow:       '0 2px 16px rgba(0,0,0,0.09), 0 1px 3px rgba(0,0,0,0.06)',
-	shadowStrong: '0 8px 28px rgba(0,0,0,0.14)',
-	blur:         'blur(12px)',
+	// Backdrop blur
+	blur: 'blur(12px)',
 
 	// Danger / Destructive
 	danger:          'rgb(220, 38, 38)',
@@ -96,6 +94,7 @@ export const RADIUS = {
 // Layer 5: Box shadows
 // ──────────────────────────────────────────────────────────────────
 export const SHADOW = {
+	surface:   '0 2px 16px rgba(0,0,0,0.09), 0 1px 3px rgba(0,0,0,0.06)',
 	modal:     '0 24px 64px -16px rgba(0,0,0,0.24), 0 8px 24px -8px rgba(0,0,0,0.16)',
 	modalDark: '0 24px 64px -16px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)',
 } as const;
