@@ -18,11 +18,10 @@ type CardData = { icon: string; title: string; description: string };
 
 // ── Card data ─────────────────────────────────────────────────────────────────
 
-// 'layers' icon not in ICONS — fallback: 'duplicate' (two stacked rectangles)
 const DRAW_CARDS: CardData[] = [
-	{ icon: 'blob',      title: 'Blob',   description: 'Spray-like organic shapes'       },
-	{ icon: 'brush',     title: 'Brush',  description: 'Tapered, calligraphic strokes'   },
-	{ icon: 'duplicate', title: 'Layers', description: 'Build depth with stacked planes' },
+	{ icon: 'blob',   title: 'Blob',   description: 'Spray-like organic shapes'       },
+	{ icon: 'brush',  title: 'Brush',  description: 'Tapered, calligraphic strokes'   },
+	{ icon: 'layers', title: 'Layers', description: 'Build depth with stacked planes' },
 ];
 
 // 'video' icon not in ICONS — Motion fallback: 'cam-orbit' (circular camera path)

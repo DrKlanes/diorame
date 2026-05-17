@@ -169,6 +169,8 @@ export const ICONS: Record<string, string> = {
 		`<path d="M3 12C5.5 7.5 9 6 12 6C15 6 18.5 7.5 21 12C18.5 16.5 15 18 12 18C9 18 5.5 16.5 3 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 14.5C13.38 14.5 14.5 13.38 14.5 12C14.5 10.62 13.38 9.5 12 9.5C10.62 9.5 9.5 10.62 9.5 12C9.5 13.38 10.62 14.5 12 14.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'eye-off':
 		`<path d="M4 4L20 20M3 12C5.5 7.5 9 6 12 6C15 6 18.5 7.5 21 12C18.5 16.5 15 18 12 18C9 18 5.5 16.5 3 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+	'layers':
+		`<path d="M12 3.5L18.5 7L12 10.5L5.5 7L12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 11.5L12 15L18.5 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 16L12 19.5L18.5 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'duplicate':
 		`<path d="M9 6.25H18V14.75H15M6 8.75H15V17.75H6V8.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'trash':
