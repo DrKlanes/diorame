@@ -15,6 +15,7 @@ import { DiBadge } from '../../design-system/DiBadge';
 import { diTokens } from '../../design-system/tokens';
 import { LayersPanel } from './LayersPanel';
 import { ToolOptionsPanel } from './ToolOptionsPanel';
+import { DiSelectorPopover, DiSelectorOption } from './popovers';
 
 interface ControlsDrawingProps {
 	svgExportOpen: boolean;
@@ -29,6 +30,7 @@ export const ControlsDrawing = ({
 }: ControlsDrawingProps) => {
 	const { state, dispatch } = useStrata();
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
+	const svgExportRef = React.useRef<HTMLButtonElement>(null);
 	const [showLayersPanel, setShowLayersPanel] = React.useState(false);
 	const [clearCanvasOpen, setClearCanvasOpen] = React.useState(false);
 
@@ -225,51 +227,38 @@ export const ControlsDrawing = ({
 						accept=".dior,.json"
 					/>
 
-					<Popover open={svgExportOpen} onOpenChange={setSvgExportOpen}>
-						<EnhancedTooltip content="Export SVG" shortcut="Cmd+E">
-							<PopoverTrigger asChild>
-								<RippleButton
-									variant="ghost"
-									size="icon"
-									className={cn(
-										"h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation",
-										diTokens.hover
-									)}
-									disabled={state.isExporting}
-								>
-									<FileCode className={cn("w-4 h-4", diTokens.iconColor)} />
-								</RippleButton>
-							</PopoverTrigger>
-						</EnhancedTooltip>
-						<PopoverContent
-							className={cn("w-auto p-2", diTokens.bg, diTokens.border)}
-							align="start"
-							sideOffset={8}
+					<EnhancedTooltip content="Export SVG" shortcut="Cmd+E">
+						<RippleButton
+							ref={svgExportRef}
+							variant="ghost"
+							size="icon"
+							className={cn(
+								"h-10 w-10 sm:h-8 sm:w-8 rounded-full active:scale-95 transition-transform touch-manipulation",
+								diTokens.hover
+							)}
+							disabled={state.isExporting}
+							onClick={() => setSvgExportOpen(!svgExportOpen)}
 						>
-							<div className="flex flex-col gap-1">
-								<button
-									onClick={() => handleExportRequest('svg')}
-									className={cn(
-										"px-3 py-2 text-sm rounded-md text-left transition-colors",
-										diTokens.hover,
-										diTokens.text
-									)}
-								>
-									SVG
-								</button>
-								<button
-									onClick={() => handleExportRequest('svgz')}
-									className={cn(
-										"px-3 py-2 text-sm rounded-md text-left transition-colors",
-										diTokens.hover,
-										diTokens.text
-									)}
-								>
-									SVG (Compressed)
-								</button>
-							</div>
-						</PopoverContent>
-					</Popover>
+							<FileCode className={cn("w-4 h-4", diTokens.iconColor)} />
+						</RippleButton>
+					</EnhancedTooltip>
+					<DiSelectorPopover
+						anchorRef={svgExportRef}
+						open={svgExportOpen}
+						onClose={() => setSvgExportOpen(false)}
+						dark={state.isDarkMode}
+						placement="auto"
+						align="start"
+					>
+						<DiSelectorOption
+							title="SVG"
+							onSelect={() => handleExportRequest('svg')}
+						/>
+						<DiSelectorOption
+							title="SVG (Compressed)"
+							onSelect={() => handleExportRequest('svgz')}
+						/>
+					</DiSelectorPopover>
 
 					<DiDivider orientation="vertical" />
 					<DiIconButton
