@@ -1,6 +1,7 @@
 import React from 'react';
 import logoImg from 'figma:asset/41cbeec613d6de6fbe96a0b93ab21aceb0db707d.png';
 import { Ico } from '../../../design-system';
+import { T } from '../../../design-system/tokens';
 
 // ── Theme CSS — prefers-color-scheme ─────────────────────────────────────────
 // Values are hardcoded because this component renders before ThemeProvider.
@@ -77,8 +78,8 @@ export function MobileBlockScreenV2() {
 
 				{/* Device icons — tablet + monitor, T.purple = rgb(154, 15, 249) */}
 				<div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-					<Ico name="tablet"  size={52} color="rgb(154, 15, 249)" />
-					<Ico name="monitor" size={52} color="rgb(154, 15, 249)" />
+					<Ico name="tablet"  size={52} color={T.purple} />
+					<Ico name="monitor" size={52} color={T.purple} />
 				</div>
 
 				{/* Primary message */}
