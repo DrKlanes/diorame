@@ -15,7 +15,7 @@ import { LayersPanel } from '../components/strata/layers/LayersPanel';
 import { LayerDotsRail } from '../components/strata/layers/LayerDotsRail';
 import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 import { FXPanel } from '../components/strata/fx/FXPanel';
-import { DiModal, WelcomeModalV2 } from '../components/strata/modals';
+import { DiModal, WelcomeModalV2, ClearCanvasAlertV2, ComplexSceneModalV2 } from '../components/strata/modals';
 import { DiSelectorPopover, DiSelectorOption } from '../components/strata/popovers';
 
 export function PreviewPage() {
@@ -38,11 +38,28 @@ function PreviewPageContent() {
 	const [popoverOpen, setPopoverOpen] = useState(false);
 	const anchorRef = useRef<HTMLButtonElement>(null);
 	const [welcomeOpen, setWelcomeOpen] = useState(false);
+	const [clearCanvasOpen, setClearCanvasOpen] = useState(false);
+	const [complexSceneOpen, setComplexSceneOpen] = useState(false);
 
 	const handleLoadExample = async () => {
 		await new Promise<void>(resolve => setTimeout(resolve, 800));
 		console.log('Load example scene clicked');
 		setWelcomeOpen(false);
+	};
+
+	const handleClearConfirm = () => {
+		console.log('Clear canvas confirmed');
+		setClearCanvasOpen(false);
+	};
+
+	const handleContinue = () => {
+		console.log('Complex scene: continue with SVG');
+		setComplexSceneOpen(false);
+	};
+
+	const handleUseCompressed = () => {
+		console.log('Complex scene: use SVG Compressed');
+		setComplexSceneOpen(false);
 	};
 
 	const bg            = dark ? '#0e0e0e' : '#e8e8e8';
@@ -299,6 +316,12 @@ function PreviewPageContent() {
 					<button onClick={() => setWelcomeOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
 						Open WelcomeModal
 					</button>
+					<button onClick={() => setClearCanvasOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Open Clear Canvas alert
+					</button>
+					<button onClick={() => setComplexSceneOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Open Complex Scene dialog
+					</button>
 				</div>
 
 				{/* Dialog variant */}
@@ -342,6 +365,24 @@ function PreviewPageContent() {
 					open={welcomeOpen}
 					onClose={() => setWelcomeOpen(false)}
 					onLoadExample={handleLoadExample}
+					dark={dark}
+				/>
+
+				{/* ClearCanvasAlert v2 */}
+				<ClearCanvasAlertV2
+					open={clearCanvasOpen}
+					onClose={() => setClearCanvasOpen(false)}
+					onConfirm={handleClearConfirm}
+					dark={dark}
+				/>
+
+				{/* ComplexScene dialog v2 */}
+				<ComplexSceneModalV2
+					open={complexSceneOpen}
+					onClose={() => setComplexSceneOpen(false)}
+					onContinue={handleContinue}
+					onUseCompressed={handleUseCompressed}
+					shapeCount={1243}
 					dark={dark}
 				/>
 			</Section>
