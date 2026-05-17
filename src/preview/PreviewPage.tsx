@@ -15,7 +15,8 @@ import { LayersPanel } from '../components/strata/layers/LayersPanel';
 import { LayerDotsRail } from '../components/strata/layers/LayerDotsRail';
 import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 import { FXPanel } from '../components/strata/fx/FXPanel';
-import { DiModal, WelcomeModalV2, ClearCanvasAlertV2, ComplexSceneModalV2 } from '../components/strata/modals';
+import { DiModal, WelcomeModalV2, ClearCanvasAlertV2, ComplexSceneModalV2, ExportProgressV2 } from '../components/strata/modals';
+import type { ExportType } from '../components/strata/modals';
 import { DiSelectorPopover, DiSelectorOption } from '../components/strata/popovers';
 
 export function PreviewPage() {
@@ -40,6 +41,7 @@ function PreviewPageContent() {
 	const [welcomeOpen, setWelcomeOpen] = useState(false);
 	const [clearCanvasOpen, setClearCanvasOpen] = useState(false);
 	const [complexSceneOpen, setComplexSceneOpen] = useState(false);
+	const [exportProgressType, setExportProgressType] = useState<ExportType | null>(null);
 
 	const handleLoadExample = async () => {
 		await new Promise<void>(resolve => setTimeout(resolve, 800));
@@ -60,6 +62,11 @@ function PreviewPageContent() {
 	const handleUseCompressed = () => {
 		console.log('Complex scene: use SVG Compressed');
 		setComplexSceneOpen(false);
+	};
+
+	const triggerExport = (type: ExportType, durationMs: number) => {
+		setExportProgressType(type);
+		setTimeout(() => setExportProgressType(null), durationMs);
 	};
 
 	const bg            = dark ? '#0e0e0e' : '#e8e8e8';
@@ -322,6 +329,18 @@ function PreviewPageContent() {
 					<button onClick={() => setComplexSceneOpen(true)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
 						Open Complex Scene dialog
 					</button>
+					<button onClick={() => triggerExport('png', 3000)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Trigger PNG export
+					</button>
+					<button onClick={() => triggerExport('mp4', 6000)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Trigger MP4 export
+					</button>
+					<button onClick={() => triggerExport('svg', 4000)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Trigger SVG export
+					</button>
+					<button onClick={() => triggerExport('svgz', 4000)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${sectionBorder}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: headingColor, fontFamily: TYPE.manrope }}>
+						Trigger SVGZ export
+					</button>
 				</div>
 
 				{/* Dialog variant */}
@@ -383,6 +402,13 @@ function PreviewPageContent() {
 					onContinue={handleContinue}
 					onUseCompressed={handleUseCompressed}
 					shapeCount={1243}
+					dark={dark}
+				/>
+
+				{/* ExportProgress banner v2 */}
+				<ExportProgressV2
+					open={exportProgressType !== null}
+					exportType={exportProgressType ?? 'png'}
 					dark={dark}
 				/>
 			</Section>
