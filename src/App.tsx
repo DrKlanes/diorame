@@ -3,7 +3,8 @@ import { StrataProvider } from './components/strata/StrataContext';
 import { StrataCanvas } from './components/strata/StrataCanvas';
 import { Controls } from './components/strata/Controls';
 import { WelcomeModal } from './components/strata/WelcomeModal';
-import { MobileBlockScreen, useIsMobile } from './components/strata/MobileBlockScreen';
+import { useIsMobile } from './hooks/useIsMobile';
+import { MobileBlockScreenV2 } from './components/strata/modals';
 import { ToastProvider } from './components/ui/toast-provider';
 import { ExportProgress } from './components/strata/ExportProgress';
 import { PreviewPage } from './preview/PreviewPage';
@@ -34,7 +35,7 @@ export default function App() {
 
   // If mobile, show only the block screen (no app initialization)
   if (isMobile) {
-    return <MobileBlockScreen />;
+    return <MobileBlockScreenV2 />;
   }
 
   // If tablet/desktop, render the full app
