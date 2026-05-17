@@ -6,7 +6,7 @@ import paperTexture from "figma:asset/dedf59e02015e1400029a84197a5242f42fdbb01.p
 import grungeTexture from "figma:asset/cbf89ce40bab5dc98000a75dbc50509b964706a0.png";
 import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
-import { OnboardingOverlay } from './OnboardingOverlay';
+import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOverlayConnected';
 import { processPixelArt } from './canvas/PixelArtProcessor';
 import { applyFog, applyGlow, applyDoFBlur, applyRisoV2, generateRisoGrain, applyChromaticAberration, applyVignette, applyGrain, applyGrunge } from './canvas/postProcessing';
 import { hexToHSL, hslToHex, getVibrantVariant, hexToRgba } from '../../utils/colorUtils';
