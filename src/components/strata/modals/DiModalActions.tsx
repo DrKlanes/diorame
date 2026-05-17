@@ -21,6 +21,16 @@ const ACTION_BASE: React.CSSProperties = {
 	whiteSpace: 'nowrap' as const,
 };
 
+// Larger variant — same visual style as PrimaryAction, bigger touch target
+const ACTION_BASE_LG: React.CSSProperties = {
+	...ACTION_BASE,
+	height: 44,
+	paddingLeft: 18,
+	paddingRight: 18,
+	fontSize: 12,
+	borderRadius: RADIUS.iconBtn,
+};
+
 type ActionProps = {
 	children: React.ReactNode;
 	onClick?: () => void;
@@ -110,6 +120,27 @@ export function TertiaryAction({ children, onClick, disabled }: ActionProps) {
 					? dk(dark, T.dark, T.textDark)
 					: dk(dark, T.muted, T.textDarkMuted),
 				opacity: disabled ? 0.45 : 1,
+			}}
+		>
+			{children}
+		</button>
+	);
+}
+
+export function PrimaryActionLg({ children, onClick, disabled }: ActionProps) {
+	const { dark } = useDiModalContext();
+	const [hovered, setHovered] = useState(false);
+	return (
+		<button
+			onClick={onClick}
+			disabled={disabled}
+			onMouseEnter={() => setHovered(true)}
+			onMouseLeave={() => setHovered(false)}
+			style={{
+				...ACTION_BASE_LG,
+				background: T.purple,
+				color: '#fff',
+				opacity: disabled ? 0.45 : hovered ? 0.87 : 1,
 			}}
 		>
 			{children}

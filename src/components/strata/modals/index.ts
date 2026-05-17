@@ -20,6 +20,7 @@ import { DiModalFooter } from './DiModalFooter';
 import { DiModalCloseButton } from './DiModalCloseButton';
 import {
 	PrimaryAction,
+	PrimaryActionLg,
 	SecondaryAction,
 	DestructiveAction,
 	TertiaryAction,
@@ -31,6 +32,7 @@ export const DiModal = Object.assign(DiModalRoot, {
 	Footer:            DiModalFooter,
 	CloseButton:       DiModalCloseButton,
 	PrimaryAction,
+	PrimaryActionLg,
 	SecondaryAction,
 	DestructiveAction,
 	TertiaryAction,
