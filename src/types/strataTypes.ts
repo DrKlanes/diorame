@@ -25,7 +25,7 @@ export interface Shape {
 export type AppMode = 'drawing' | 'cinematic';
 export type ToolType = 'brush' | 'eraser' | 'text' | 'move' | 'line';
 export type CinematicType = 'forward' | 'spiral' | 'yoyo' | 'pulse' | 'twist' | 'arc' | 'crane' | 'truck' | 'orbit' | 'zoom';
-export type ExportType = 'none' | 'png' | 'webm' | 'mp4' | 'svg' | 'svgz';
+export type ExportType = 'png' | 'mp4' | 'svg' | 'svgz';
 export type LineMode = 'tapered' | 'uniform' | 'ink';
 
 export type PostProcessingSettings = {
@@ -108,7 +108,7 @@ export interface AppState {
   fxMasterEnabled: boolean; // New: Global toggle for all post-processing FX (not undoable)
   history: HistorySnapshot[];
   historyIndex: number;
-  exportRequest: ExportType;
+  exportRequest: ExportType | null;
   isExporting: boolean;
   hiddenLayers: number[]; // Indices of hidden layers
   locked3DLayers: number[]; // Indices of layers with 3D Lock (fixed in VIEW mode)

@@ -15,7 +15,7 @@ export { getWelcomeIllustration } from './welcomeIllustrations';
 export { ClearCanvasAlertV2 } from './ClearCanvasAlertV2';
 export { ComplexSceneModalV2 } from './ComplexSceneModalV2';
 export { ExportProgressV2 } from './ExportProgressV2';
-export type { ExportType } from './ExportProgressV2';
+export type { ExportType } from '../../../types/strataTypes';
 export { OnboardingOverlayV2 } from './OnboardingOverlayV2';
 export { MobileBlockScreenV2 } from './MobileBlockScreenV2';
 

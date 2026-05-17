@@ -171,7 +171,7 @@ const initialState: AppState = {
       layerBrushSettings: {}
   }],
   historyIndex: 0,
-  exportRequest: 'none',
+  exportRequest: null,
   isExporting: false,
   hiddenLayers: [],
   locked3DLayers: [],
@@ -576,7 +576,7 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'REQUEST_EXPORT':
       return { ...state, exportRequest: action.payload, isExporting: true };
     case 'FINISH_EXPORT':
-      return { ...state, exportRequest: 'none', isExporting: false };
+      return { ...state, exportRequest: null, isExporting: false };
     case 'CLEAR_CANVAS':
       return {
           ...state,
@@ -595,7 +595,7 @@ function appReducer(state: AppState, action: Action): AppState {
           currentLayerIndex: 0,
           totalLayers: 1,
           camera: { x: 0, y: 0, z: 0, rotation: 0 },
-          exportRequest: 'none',
+          exportRequest: null,
           isExporting: false,
           hiddenLayers: [],
           locked3DLayers: [],

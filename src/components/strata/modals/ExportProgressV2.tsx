@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DiModal } from './index';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { Ico } from '../../../design-system';
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-export type ExportType = 'png' | 'mp4' | 'svg' | 'svgz';
+import type { ExportType } from '../../../types/strataTypes';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 

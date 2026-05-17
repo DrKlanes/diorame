@@ -379,7 +379,7 @@ export const StrataCanvas = () => {
 
   // --- Export Handling ---
   useEffect(() => {
-      if (state.exportRequest === 'none') return;
+      if (!state.exportRequest) return;
       const canvas = canvasRef.current;
       if (!canvas) { dispatch({ type: 'FINISH_EXPORT' }); return; }
       const onFinish = () => dispatch({ type: 'FINISH_EXPORT' });

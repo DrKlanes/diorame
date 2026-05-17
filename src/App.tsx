@@ -32,7 +32,7 @@ function AppContent() {
       />
       <ExportProgressV2
         open={state.isExporting}
-        exportType={state.exportRequest === 'none' || state.exportRequest === 'webm' ? 'png' : state.exportRequest}
+        exportType={state.exportRequest ?? 'png'}
         dark={state.isDarkMode}
       />
     </div>
