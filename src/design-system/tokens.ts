@@ -106,6 +106,7 @@ export const SHADOW = {
 export const Z_INDEX = {
 	onboarding:    800,
 	toast:         900,
+	popover:       950,
 	modalBackdrop: 999,
 	modal:        1000,
 } as const;
