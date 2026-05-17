@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Ico, DiPill, DiVSep, DiMiniSlider, DiSegmentControl, DiPanel, ICONS } from '../design-system';
 import { T, TYPE, dk } from '../design-system/tokens';
 import { StrataProvider, useStrata, AppState } from '../components/strata/StrataContext';
@@ -16,6 +16,7 @@ import { LayerDotsRail } from '../components/strata/layers/LayerDotsRail';
 import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 import { FXPanel } from '../components/strata/fx/FXPanel';
 import { DiModal } from '../components/strata/modals';
+import { DiSelectorPopover, DiSelectorOption } from '../components/strata/popovers';
 
 export function PreviewPage() {
 	return (
@@ -34,6 +35,8 @@ function PreviewPageContent() {
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [alertOpen, setAlertOpen] = useState(false);
 	const [bannerOpen, setBannerOpen] = useState(false);
+	const [popoverOpen, setPopoverOpen] = useState(false);
+	const anchorRef = useRef<HTMLButtonElement>(null);
 
 	const bg            = dark ? '#0e0e0e' : '#e8e8e8';
 	const sectionBg     = dk(dark, 'rgba(0,0,0,0.03)', 'rgba(255,255,255,0.04)');
@@ -323,6 +326,49 @@ function PreviewPageContent() {
 						<DiModal.TertiaryAction onClick={() => setBannerOpen(false)}>Cerrar</DiModal.TertiaryAction>
 					</DiModal.Footer>
 				</DiModal>
+			</Section>
+
+			{/* ── SECTION 1k: DiSelectorPopover ── */}
+			<Section title="DiSelectorPopover" dark={dark} bg={sectionBg} border={sectionBorder}>
+				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 16px 0' }}>
+					Popover anclado al trigger. Placement auto (detecta espacio arriba/abajo). Cierra con Esc, click-outside, o al seleccionar. Flechas + Tab navegan opciones.
+				</p>
+				<button
+					ref={anchorRef}
+					onClick={() => setPopoverOpen(v => !v)}
+					style={{
+						padding: '8px 16px',
+						borderRadius: 20,
+						border: `1px solid ${sectionBorder}`,
+						background: popoverOpen ? dk(dark, T.light, T.hoverDark) : 'transparent',
+						cursor: 'pointer',
+						fontSize: 12,
+						fontWeight: 600,
+						color: headingColor,
+						fontFamily: TYPE.manrope,
+					}}
+				>
+					Export as…
+				</button>
+				<DiSelectorPopover
+					anchorRef={anchorRef}
+					open={popoverOpen}
+					onClose={() => setPopoverOpen(false)}
+					dark={dark}
+					placement="auto"
+					align="center"
+				>
+					<DiSelectorOption
+						title="SVG"
+						description="Vector format · standard size"
+						onSelect={() => console.log('export svg')}
+					/>
+					<DiSelectorOption
+						title="SVG (Compressed)"
+						description="Vector format · smaller files"
+						onSelect={() => console.log('export svgz')}
+					/>
+				</DiSelectorPopover>
 			</Section>
 
 			{/* ── SECTION 1i: Reset View Pill (live) ── */}
