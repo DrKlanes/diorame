@@ -64,7 +64,7 @@ export function useModalBehavior({
 
 	// Focus trap
 	useEffect(() => {
-		if (!isOpen) return;
+		if (!isOpen || variant === 'banner') return;
 		const modal = modalRef.current;
 		if (!modal) return;
 		const handler = (e: KeyboardEvent) => {
