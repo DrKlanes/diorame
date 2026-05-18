@@ -14,88 +14,22 @@
 
 ---
 
+## ✅ Resuelto en Fase 9
+
+| Item | Sub-fase | Resolución |
+|---|---|---|
+| Item 1 — Array hardcodeado Layer Panel en PreviewPage | 9.3 | `ICON_SECTIONS` metadata uniforme en `icons.ts`. PreviewPage itera dinámicamente sobre las 9 secciones. Commit `4c7d9a9`. |
+| Item 2 — Duplicación del hook `useIsMobile` | 9.2 | Canonicalizado en `src/hooks/useIsMobile.ts` (convención React moderna). `src/components/ui/use-mobile.ts` eliminado. Commit `a656827`. |
+| Item 3 — Union type `state.exportRequest` admite valores muertos | 9.5 | `ExportType` restringido a `'png' \| 'mp4' \| 'svg' \| 'svgz'`. `null` reemplaza `'none'`. Narrowing residual eliminado de App.tsx. `ExportType` duplicado consolidado en `strataTypes.ts` como fuente única. Commit `10a9ec5`. |
+| Item 4 — `EnhancedTooltip` no respeta input touch | 9.6 | Estado controlado + `pointerTypeRef`. Tooltip suprimido entero en touch (no solo el shortcut). API pública sin cambios. Commit `2a8accf`. |
+| Item 5 — `T.shadow`/`T.shadowStrong` migrar a SHADOW | 9.4 | `T.shadow` → `SHADOW.surface`. `T.shadowStrong` eliminado por ser dead code (0 consumidores). Coherencia: sombras en SHADOW, colores en T. Commit `6bafcd3`. |
+| Item 7 — Hex hardcodeados en MobileBlockScreenV2 | 9.1 | Dos `rgb(154,15,249)` → `T.purple` en iconos tablet/monitor. Los hex dentro de THEME_CSS permanecen documentados como restricción arquitectural (CSS inyectada, no tokenizable sin sistema de CSS variables). Commit `61a934d`. |
+| Item 8 — Focus trap para variant banner | 9.7 | El primitivo ya tenía focus trap completo (Tab cycling + initial focus). Solo faltaba excluir variant `banner` por coherencia con scroll lock y ESC handler. Fix de 1 línea. Commit `1ede6b7`. |
+| Item 9 — Primitivo DiActionButton para LayersPanel | 9.8 | `IconBtn` promovido a `DiActionButton` en design-system. Añadidas props `disabled` (interna, elimina 10 wrappers `<div style={off(...)}>`) y `danger` (variante semántica usada por trash). Hover migrado a pointer events. 11 consumidores migrados. `topbar/_shared.tsx` eliminado. Commit `bada128`. |
+
+---
+
 ## 🧹 Fase 9 (Cleanup post-merge)
-
-### Item 1 — Array hardcodeado del Layer Panel en PreviewPage
-
-**Categoría:** mejora de DX
-**Riesgo:** low
-**Origen:** descubierto durante integración del icono `layers` (sub-fase 8.0)
-
-**Problema:** `src/preview/PreviewPage.tsx` (~línea 565) usa filtrado dinámico vía `Object.keys(ICONS).filter(...)` para las secciones FX, Camera Presets, Camera Controls. La sección Layer Panel usa un array hardcodeado porque esos iconos no comparten prefijo:
-
-```jsx
-names={['eye', 'eye-off', 'layers', 'duplicate', 'trash', 'arrow-up', 'arrow-down',
-       'opacity', 'plus-layer', 'drag', 'blend-normal']}
-```
-
-Cada icono nuevo sin prefijo requiere actualizar manualmente este array — fácil de olvidar.
-
-**Solución propuesta:** introducir estructura de metadata de secciones en `icons.ts` (ej. `ICON_SECTIONS: Record<string, string[]>`) que agrupe iconos por categoría. Refactorizar `PreviewPage.tsx` para iterar sobre la metadata.
-
-**Path:** `src/preview/PreviewPage.tsx` (~línea 565), `src/design-system/icons.ts`
-
----
-
-### Item 2 — Duplicación del hook `useIsMobile`
-
-**Categoría:** cleanup
-**Riesgo:** low
-**Origen:** descubierto durante cutover 8.1 (commit `59467ff`)
-
-**Problema:** dos hooks con funcionalidad idéntica:
-- `src/hooks/useIsMobile.ts` (creado en 8.1, usado por `App.tsx`, usa `matchMedia`)
-- `src/components/ui/use-mobile.ts` (preexistente, usado por `sidebar.tsx`, usa `matchMedia`)
-
-**Solución propuesta:** canonicalizar en `src/hooks/useIsMobile.ts` (convención React moderna). Actualizar import en `sidebar.tsx`. Borrar `src/components/ui/use-mobile.ts`.
-
-**Path:** los 3 archivos arriba.
-
----
-
-### Item 3 — Union type de `state.exportRequest` admite valores muertos
-
-**Categoría:** type cleanup
-**Riesgo:** low
-**Origen:** descubierto durante cutover 8.2 (commit `ecc9134`)
-
-**Problema:** `state.exportRequest` admite `'none'` y `'webm'` que nunca se despachan. `'none'` es valor default cuando `isExporting === false`, pero el tipo no comunica esa correlación. `'webm'` es residuo histórico desde antes del reemplazo por `'mp4'`. Forzó expresión de estrechamiento en App.tsx:
-
-```typescript
-exportType={state.exportRequest === 'none' || state.exportRequest === 'webm' ? 'png' : state.exportRequest}
-```
-
-**Solución propuesta:** restringir union type a `'png' | 'mp4' | 'svg' | 'svgz'`. Modelar el estado `none` con un guard separado o con `null`/`undefined`. Eliminar la expresión de estrechamiento en App.tsx.
-
-**Path:** `src/types/strataTypes.ts`, `src/components/strata/StrataContext.tsx`, `src/App.tsx`
-
----
-
-### Item 4 — `EnhancedTooltip` no respeta input touch
-
-**Categoría:** UX tablet
-**Riesgo:** low
-**Origen:** descubierto durante validación 8.7 (commit `16330de`)
-
-**Problema:** `EnhancedTooltip` envuelve Radix Tooltip en modo uncontrolled. En tablet, taps largos o pausados sobre un trigger pueden hacer aparecer el tooltip mostrando shortcuts como `"Cmd+E"` que son irrelevantes en táctil. Mala UX.
-
-**Solución propuesta:** añadir prop `disableOnTouch` al wrapper, o detectar `pointerType === 'touch'` en eventos del Trigger y suprimir el tooltip. Alternativa: filtrar el render del shortcut cuando el dispositivo es táctil.
-
-**Path:** `src/components/ui/enhanced-tooltip.tsx` (o donde resida el wrapper)
-
----
-
-### Item 5 — Migrar `T.shadow` y `T.shadowStrong` al objeto `SHADOW`
-
-- **Descripción**: Los tokens `T.shadow` y `T.shadowStrong` permanecen en el objeto `T` como strings de shadow light-mode sin variante dark. En 7.5.0 se creó el objeto `SHADOW` para shadows con variantes `modal` / `modalDark`. Por coherencia: mover `T.shadow` → `SHADOW.pill` y `T.shadowStrong` → `SHADOW.panel` (cada uno con su variante `*Dark`), y refactorizar `DiPill.tsx` y `DiPanel.tsx` para consumir `SHADOW.*`. Esto también resuelve la ausencia de dark mode en las shadows de estos componentes.
-- **Archivos afectados**:
-  - `src/design-system/tokens.ts` — añadir `SHADOW.pill`, `SHADOW.pillDark`, `SHADOW.panel`, `SHADOW.panelDark`; deprecar `T.shadow`, `T.shadowStrong`
-  - `src/design-system/DiPill.tsx` — consumir `SHADOW.pill`
-  - `src/design-system/DiPanel.tsx` — consumir `SHADOW.panel`
-- **Riesgo**: low
-- **Origen**: Sub-fase 7.5.0 (identificado al crear `SHADOW.modal`)
-
----
 
 ### Item 6 — ToolType rename
 
@@ -106,39 +40,6 @@ exportType={state.exportRequest === 'none' || state.exportRequest === 'webm' ? '
 
 ---
 
-### Item 7 — Hex hardcodeados en `MobileBlockScreenV2`
-
-- **Descripción**: `MobileBlockScreenV2` inyecta un bloque `<style>` con 6 hex literals para temas light/dark via `@media (prefers-color-scheme: dark)`. Esto es necesario hoy porque el componente se renderiza ANTES del `ThemeProvider` y no puede consumir `T` dinámicamente. Si en el futuro se introduce un sistema de CSS variables globales definidas en `:root` desde `tokens.ts` (e.g. al arrancar la app), migrar los 6 literals a esas variables. La migración es un cambio de 6 líneas en el `THEME_CSS` del componente.
-- **Archivos afectados**:
-  - `src/components/strata/modals/MobileBlockScreenV2.tsx` — bloque `THEME_CSS`
-  - `src/design-system/tokens.ts` — si se introduce el sistema de CSS vars globales
-- **Riesgo**: low
-- **Origen**: Sub-fase 7.5.7
-
----
-
-### Item 8 — Focus trap activo en variant `banner` de `DiModal`
-
-- **Descripción**: `useModalBehavior.ts` aplica focus trap (Tab cycling) para todas las variants, incluyendo `banner`. La corrección de 7.5.5.1 añadió `|| variant === 'banner'` a los guards de scroll lock y ESC, pero **no al focus trap** (líneas 65–86). No produce efecto observable hoy porque `ExportProgressV2` no tiene elementos focusables. Si en el futuro un banner incluye elementos interactivos (botón de cancel, link), el focus trap se activará inesperadamente. Resolución: añadir `|| variant === 'banner'` al guard del focus trap en `useModalBehavior.ts`.
-- **Archivos afectados**:
-  - `src/components/strata/modals/useModalBehavior.ts` — líneas 65–66
-- **Riesgo**: low
-- **Origen**: Sub-fase 7.5.5.1
-
----
-
-### Item 9 — Primitivo `DiActionButton` para micro-botones del LayersPanel
-
-- **Descripción**: Los botones de acción del LayersPanel v2 (añadir capa, duplicar, eliminar, mover) son botones inline sin primitivo compartido. Estandarizar con un primitivo `DiActionButton` mejoraría consistencia visual y facilitaría theming. Item opcional — la UX actual funciona correctamente.
-- **Archivos afectados**:
-  - `src/components/strata/layers/LayersPanel.tsx`
-  - `src/components/strata/layers/LayerRow.tsx`
-  - Nuevo archivo: `src/design-system/DiActionButton.tsx` (a crear)
-- **Riesgo**: low
-- **Origen**: Backlog heredado (pre-Fase 7.5)
-
----
-
 ### Item 10 — Refactor `StrataCanvas.tsx`
 
 **Categoría:** refactor
@@ -146,6 +47,59 @@ exportType={state.exportRequest === 'none' || state.exportRequest === 'webm' ? '
 **Origen:** deuda preexistente, agendada post-rediseño UI
 
 Monolito de alto riesgo. Render loop, gestos, proyección 3D. Refactor diferido hasta post-Fase 8 (ya completado) porque la nueva UI informaría la refactorización necesaria. Ahora que la UI V2 está en producción, el refactor puede planificarse con contexto real.
+
+---
+
+### Item 11 — Warning `ref is not a prop` en framer-motion + React 19
+
+**Categoría:** library compatibility
+**Riesgo:** low (cosmético, no afecta funcionalidad)
+**Origen:** detectado durante validación de Fase 9
+
+**Problema:** Consola del navegador muestra warning de React 19:
+> `ref` is not a prop. Trying to access it will result in `undefined` being returned.
+
+Aparece en la cadena `AnimatePresence → PresenceChild → PopChild → DiModalRoot`. Es bug conocido de `framer-motion` con React 19 — la librería accede a `ref` como prop interna y React 19 cambió la semántica.
+
+**Solución propuesta:** actualizar `framer-motion` a versión que ya haya parcheado el issue (verificar changelog del package), o cambiar el patrón de uso de `AnimatePresence` en `DiModal.Root` si no hay versión arreglada disponible.
+
+**Path:** `src/components/strata/modals/DiModal.tsx` líneas 45 aprox.
+
+---
+
+### Item 12 — Integrar EnhancedTooltip en DiActionButton
+
+**Categoría:** consistencia UX
+**Riesgo:** medium (cambia el patrón de tooltip de 11 consumidores)
+**Origen:** decisión diferida en 9.8
+
+DiActionButton actualmente usa `title` attr nativo para tooltips. EnhancedTooltip (corregido en 9.6 con supresión touch) ofrece mejor UX en tablet. Integración pospuesta porque añade dependencia `RippleButton` chain al primitivo y los 11 consumidores requerirían validación visual.
+
+**Path:** `src/design-system/DiActionButton.tsx`
+
+---
+
+### Item 13 — Discrepancia `pen` en ICON_SECTIONS
+
+**Categoría:** documentación interna
+**Riesgo:** trivial
+**Origen:** descubierto en 9.3
+
+`pen` aparece en comentarios divisores de `icons.ts` como "Custom Additions" pero `PreviewPage.tsx` lo agrupaba en "Drawing Tools". `ICON_SECTIONS` siguió PreviewPage para no introducir cambio visual en 9.3. Decidir qué agrupación es la correcta y unificar.
+
+**Path:** `src/design-system/icons.ts` (comentario divisor), `ICON_SECTIONS`
+
+---
+
+### Item 14 — Agrupar tokens de blur en objeto BLUR propio
+
+**Categoría:** coherencia de tokens
+**Riesgo:** trivial
+**Origen:** observación en 9.4
+
+`T.blur` quedó en el objeto `T` cuando los demás `T.*` son colores. Análogo a `SHADOW` (introducido en 7.5.0) o `RADIUS`. Si en el futuro se añaden más valores de blur (`blurStrong`, `blurSubtle`), tiene sentido agruparlos en `BLUR` propio.
+
+**Path:** `src/design-system/tokens.ts`
 
 ---
 

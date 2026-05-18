@@ -505,6 +505,21 @@ APP_VERSION = "1.14.0"          // Current release version
 
 **Deuda técnica abierta para Fase 9:** ver `BACKLOG.md`.
 
+**Fase 9 — Housekeeping interno (post Fase 8):**
+
+8 sub-fases de limpieza técnica sobre la misma rama `feat/ui-redesign-v2`, sin push a main. No introducen cambios visibles para el usuario; reducen deuda acumulada y preparan el código para las fases siguientes del rediseño UI.
+
+- **9.1** Hex hardcodeados `rgb(154,15,249)` en MobileBlockScreenV2 reemplazados por `T.purple`. Commit `61a934d`.
+- **9.2** Hook `useIsMobile` consolidado: dos implementaciones idénticas (en `src/hooks/` y `src/components/ui/`) unificadas en la convención moderna `src/hooks/`. Commit `a656827`.
+- **9.3** Array hardcodeado del Layer Panel en PreviewPage refactorizado a metadata uniforme `ICON_SECTIONS` en `icons.ts`. PreviewPage itera dinámicamente sobre las 9 secciones. Commit `4c7d9a9`.
+- **9.4** Tokens de sombra migrados a objeto `SHADOW`: `T.shadow` → `SHADOW.surface`. `T.shadowStrong` eliminado como dead code (0 consumidores). Commit `6bafcd3`.
+- **9.5** Union type `state.exportRequest` restringido: eliminados `'none'` y `'webm'` (valores muertos), modelado de "no export" via `null`. Narrowing residual eliminado de App.tsx. `ExportType` duplicado entre `strataTypes` y `ExportProgressV2` consolidado en fuente única. Commit `10a9ec5`.
+- **9.6** `EnhancedTooltip` ya no muestra tooltips en input touch. Estado controlado + `pointerTypeRef` detectan `pointerType === 'touch'` y suprimen el tooltip entero. Mejora crítica de UX en tablet. Commit `2a8accf`.
+- **9.7** Focus trap del primitivo `DiModal` excluye variant `banner` para coherencia con scroll lock y ESC handler. Fix de 1 línea. Commit `1ede6b7`.
+- **9.8** `IconBtn` promovido a `DiActionButton` como primitivo oficial del design system. Añadidas props `disabled` (interna, elimina 10 wrappers ad-hoc) y `danger` (variante semántica para acciones destructivas como trash). Hover migrado a pointer events. 11 consumidores migrados. `topbar/_shared.tsx` eliminado. Commit `bada128`.
+
+**Deuda técnica abierta tras Fase 9:** ver `BACKLOG.md` (items 6, 10-14). Las nuevas entradas (11-14) son deuda detectada durante esta misma fase: warning de framer-motion con React 19, integración pendiente de EnhancedTooltip en DiActionButton, discrepancias menores en agrupación de iconos, y agrupación pendiente de tokens de blur.
+
 ---
 
 ### 1.15.1 — .dior serialization for VIEW params, first-time VIEW reset, CLEAR_CANVAS full reset
@@ -687,6 +702,8 @@ APP_VERSION = "1.14.0"          // Current release version
 
 Sin cambios respecto a 7.5. La sección "Phase 7.5 — Modal System (V2)" de este documento sigue siendo la fuente de verdad para tokens, primitives `Di*`, y convenciones visuales.
 
+**Fase 9 — cleanup interno completado.** Tras los 7 cutovers de Fase 8, una segunda pasada de housekeeping resolvió 8 items de deuda técnica acumulada: consolidación de hooks duplicados, restricción de tipos contaminados, promoción de primitivos al design system, fixes de UX en tablet, y migración de tokens. Sin cambios funcionales visibles para el usuario; mejora interna que reduce fricción para futuras fases del rediseño.
+
 ---
 
 ## Phase 7.5 — Modal System (V2)
@@ -723,7 +740,7 @@ Tokens added to `src/design-system/tokens.ts`. All existing `T.*` values are unc
 | `T.dangerHover` | `rgb(185, 28, 28)` | Destructive hover state (light mode) |
 | `T.dangerHoverDark` | `rgb(252, 165, 165)` | Destructive hover state (dark mode) |
 
-> **Note:** `T.shadow` and `T.shadowStrong` remain on `T` (used by `DiPill`, `DiPanel`). If more components need shadows, extend the `SHADOW` namespace rather than hanging more values from `T`. Minor technical debt.
+> **Nota:** la migración de tokens de sombra a `SHADOW` se completó en Sub-fase 9.4 (`T.shadow` → `SHADOW.surface`, `T.shadowStrong` eliminado como dead code).
 
 ---
 
