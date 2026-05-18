@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconBtn } from '../topbar/_shared';
+import { DiActionButton } from '../../../design-system';
 import { Ico } from '../../../design-system';
 import { T, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
@@ -19,7 +19,7 @@ export function ToolBtn({
 }: ToolBtnProps) {
 	return (
 		<div style={{ position: 'relative', display: 'inline-block' }}>
-			<IconBtn
+			<DiActionButton
 				name={name}
 				onClick={onClick}
 				dark={dark}

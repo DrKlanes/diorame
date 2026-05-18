@@ -3,7 +3,7 @@ import { toast } from 'sonner@2.0.3';
 import { DiPill, DiVSep } from '../../../design-system';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
-import { IconBtn } from './_shared';
+import { DiActionButton } from '../../../design-system';
 
 interface FileControlsPillProps { dark: boolean; }
 
@@ -113,15 +113,15 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 				onChange={handleLoad}
 			/>
 			<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
-				<IconBtn name="new"    onClick={handleNew}    dark={dark} tooltip="Nuevo" />
-				<IconBtn name="open"   onClick={handleOpen}   dark={dark} tooltip="Abrir" />
-				<IconBtn name="save"   onClick={handleSave}   dark={dark} tooltip="Guardar" />
-				<IconBtn name="export" onClick={handleExport} dark={dark} tooltip="Exportar SVG" />
+				<DiActionButton name="new"    onClick={handleNew}    dark={dark} tooltip="Nuevo" />
+				<DiActionButton name="open"   onClick={handleOpen}   dark={dark} tooltip="Abrir" />
+				<DiActionButton name="save"   onClick={handleSave}   dark={dark} tooltip="Guardar" />
+				<DiActionButton name="export" onClick={handleExport} dark={dark} tooltip="Exportar SVG" />
 
 				<DiVSep dark={dark} />
 
-				<IconBtn name="undo" onClick={handleUndo} dark={dark} tooltip="Deshacer (Ctrl+Z)" />
-				<IconBtn name="redo" onClick={handleRedo} dark={dark} tooltip="Rehacer (Ctrl+Y)" />
+				<DiActionButton name="undo" onClick={handleUndo} dark={dark} tooltip="Deshacer (Ctrl+Z)" />
+				<DiActionButton name="redo" onClick={handleRedo} dark={dark} tooltip="Rehacer (Ctrl+Y)" />
 
 				<DiVSep dark={dark} />
 

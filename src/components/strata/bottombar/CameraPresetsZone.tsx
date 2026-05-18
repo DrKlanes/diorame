@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStrata } from '../StrataContext';
-import { IconBtn } from '../topbar/_shared';
+import { DiActionButton } from '../../../design-system';
 
 const PRESETS = [
 	{ type: 'forward', icon: 'cam-forward', tooltip: 'Forward' },
@@ -24,7 +24,7 @@ export function CameraPresetsZone({ dark }: CameraPresetsZoneProps) {
 	return (
 		<div style={{ display: 'flex', gap: 2, flexShrink: 0, alignItems: 'center' }}>
 			{PRESETS.map(p => (
-				<IconBtn
+				<DiActionButton
 					key={p.type}
 					name={p.icon}
 					onClick={() => dispatch({ type: 'SET_CINEMATIC_TYPE', payload: p.type } as any)}

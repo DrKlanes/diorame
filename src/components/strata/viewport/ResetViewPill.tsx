@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStrata } from '../StrataContext';
 import { DiPill } from '../../../design-system';
-import { IconBtn } from '../topbar/_shared';
+import { DiActionButton } from '../../../design-system';
 import { useTheme } from '../../../design-system/useTheme';
 
 export function ResetViewPill() {
@@ -19,7 +19,7 @@ export function ResetViewPill() {
 			zIndex: 50,
 		}}>
 			<DiPill dark={dark} padding="5px">
-				<IconBtn
+				<DiActionButton
 					name="target"
 					onClick={() => dispatch({ type: 'RESET_DRAWING_VIEW' } as any)}
 					dark={dark}

@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import { useStrata, PostProcessingSettings, PostProcessingEnabled } from '../StrataContext';
 import { Ico, DiMiniSlider, DiSegmentControl } from '../../../design-system';
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
-import { IconBtn } from '../topbar/_shared';
+import { DiActionButton } from '../../../design-system';
 
 // ── Pixel Art depth mapping ──────────────────────────────────────────
 const DEPTH_LABEL_MAP: Record<number, string> = {
@@ -246,12 +246,12 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 					<SubControlBlock label="Depth" value="" dark={dark}>
 						<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}
 							onPointerDown={stopProp} onClick={stopProp}>
-							<IconBtn name="chevron-left" dark={dark}
+							<DiActionButton name="chevron-left" dark={dark}
 								onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDepth', value: Math.max(2, dp - 2) } })} />
 							<span style={{ flex: 1, textAlign: 'center', fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
 								{DEPTH_LABEL_MAP[dp] ?? '?'}
 							</span>
-							<IconBtn name="chevron-right" dark={dark}
+							<DiActionButton name="chevron-right" dark={dark}
 								onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDepth', value: Math.min(16, dp + 2) } })} />
 						</div>
 					</SubControlBlock>
@@ -313,12 +313,12 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 						<SubControlBlock label="Layer" value="" dark={dark}>
 							<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}
 								onPointerDown={stopProp} onClick={stopProp}>
-								<IconBtn name="chevron-left" dark={dark}
+								<DiActionButton name="chevron-left" dark={dark}
 									onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusTargetLayer', value: Math.max(0, focusTargetLayer - 1) } })} />
 								<span style={{ flex: 1, textAlign: 'center', fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
 									Layer {focusTargetLayer + 1}
 								</span>
-								<IconBtn name="chevron-right" dark={dark}
+								<DiActionButton name="chevron-right" dark={dark}
 									onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusTargetLayer', value: Math.min(state.totalLayers - 1, focusTargetLayer + 1) } })} />
 							</div>
 						</SubControlBlock>

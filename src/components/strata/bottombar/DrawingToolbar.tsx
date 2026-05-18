@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStrata } from '../StrataContext';
 import { DiPill, DiVSep } from '../../../design-system';
-import { IconBtn } from '../topbar/_shared';
+import { DiActionButton } from '../../../design-system';
 import { ToolBtn, LineModeButton } from './_shared';
 import type { ToolType } from '../StrataContext';
 
@@ -98,7 +98,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 			{/* Block 2: Modifier zone — minWidth 158 = 5 mods x 30 + 4 gaps x 2 */}
 			<div style={{ display: 'flex', gap: 2, alignItems: 'center', minWidth: 158, flexShrink: 0 }}>
 				{hasModifiers && modifiers.map(mod => (
-					<IconBtn
+					<DiActionButton
 						key={mod.field}
 						name={mod.iconName}
 						onClick={() => dispatch({ type: mod.actionType } as any)}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { DiPill } from '../../../design-system';
 import { useStrata } from '../StrataContext';
-import { IconBtn } from './_shared';
+import { DiActionButton } from '../../../design-system';
 
 export function ThemeTogglePill({ dark }: { dark: boolean }) {
 	const { dispatch } = useStrata();
@@ -10,7 +10,7 @@ export function ThemeTogglePill({ dark }: { dark: boolean }) {
 
 	return (
 		<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
-			<IconBtn
+			<DiActionButton
 				name="sun"
 				onClick={setLight}
 				dark={dark}
@@ -18,7 +18,7 @@ export function ThemeTogglePill({ dark }: { dark: boolean }) {
 				activeStyle="wash"
 				tooltip="Light mode"
 			/>
-			<IconBtn
+			<DiActionButton
 				name="moon"
 				onClick={setDark}
 				dark={dark}

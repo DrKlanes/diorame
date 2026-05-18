@@ -12,8 +12,7 @@ import {
 	verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useStrata, BASE_DEPTH_STEP, MAX_LAYERS } from '../StrataContext';
-import { DiPill, DiPanel } from '../../../design-system';
-import { IconBtn } from '../topbar/_shared';
+import { DiPill, DiPanel, DiActionButton } from '../../../design-system';
 import { LayerRow } from './LayerRow';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
@@ -64,9 +63,6 @@ export function LayersPanel() {
 		}} />
 	);
 
-	const off = (cond: boolean): React.CSSProperties =>
-		cond ? { opacity: 0.3, pointerEvents: 'none' } : {};
-
 	const mutedColor = dk(dark, T.muted, T.textDarkMuted) as string;
 	const borderColor = dk(dark, T.border, T.borderDark) as string;
 
@@ -108,44 +104,34 @@ export function LayersPanel() {
 					</div>
 					<HSep />
 					{/* Chevron expand — top position */}
-					<IconBtn name="chevron-left"
+					<DiActionButton name="chevron-left"
 						onClick={() => toggle(true)}
 						dark={dark} tooltip="Expand layers panel" />
 					<HSep />
-					<IconBtn
+					<DiActionButton
 						name={isCurrentHidden ? 'eye-off' : 'eye'}
 						onClick={() => dispatch({ type: 'TOGGLE_LAYER_VISIBILITY', payload: currentLayerIndex } as any)}
 						dark={dark}
 						active={isCurrentHidden}
 						tooltip={isCurrentHidden ? 'Show layer' : 'Hide layer'}
 					/>
-					<div style={off(!canDuplicate)}>
-						<IconBtn name="duplicate"
-							onClick={() => dispatch({ type: 'DUPLICATE_LAYER', payload: currentLayerIndex } as any)}
-							dark={dark} tooltip="Duplicate layer" />
-					</div>
-					<div style={off(!canDelete)}>
-						<IconBtn name="trash"
-							onClick={() => dispatch({ type: 'DELETE_CURRENT_LAYER' } as any)}
-							dark={dark} tooltip="Delete layer" />
-					</div>
+					<DiActionButton name="duplicate"
+						onClick={() => dispatch({ type: 'DUPLICATE_LAYER', payload: currentLayerIndex } as any)}
+						dark={dark} tooltip="Duplicate layer" disabled={!canDuplicate} />
+					<DiActionButton name="trash"
+						onClick={() => dispatch({ type: 'DELETE_CURRENT_LAYER' } as any)}
+						dark={dark} tooltip="Delete layer" disabled={!canDelete} danger={true} />
 					<HSep />
-					<div style={off(isAtTop)}>
-						<IconBtn name="arrow-up"
-							onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex + 1 } } as any)}
-							dark={dark} tooltip="Move layer up" />
-					</div>
-					<div style={off(isAtBottom)}>
-						<IconBtn name="arrow-down"
-							onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex - 1 } } as any)}
-							dark={dark} tooltip="Move layer down" />
-					</div>
+					<DiActionButton name="arrow-up"
+						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex + 1 } } as any)}
+						dark={dark} tooltip="Move layer up" disabled={isAtTop} />
+					<DiActionButton name="arrow-down"
+						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex - 1 } } as any)}
+						dark={dark} tooltip="Move layer down" disabled={isAtBottom} />
 					<HSep />
-					<div style={off(!canAdd)}>
-						<IconBtn name="plus"
-							onClick={() => dispatch({ type: 'NEXT_LAYER' } as any)}
-							dark={dark} tooltip="Add layer" />
-					</div>
+					<DiActionButton name="plus"
+						onClick={() => dispatch({ type: 'NEXT_LAYER' } as any)}
+						dark={dark} tooltip="Add layer" disabled={!canAdd} />
 				</DiPill>
 			</div>
 		);
@@ -199,12 +185,10 @@ export function LayersPanel() {
 					}}>
 						{totalLayers}/10
 					</span>
-					<div style={off(!canAdd)}>
-						<IconBtn name="plus"
-							onClick={() => dispatch({ type: 'NEXT_LAYER' } as any)}
-							dark={dark} tooltip="Add layer" />
-					</div>
-					<IconBtn name="chevron-right"
+					<DiActionButton name="plus"
+						onClick={() => dispatch({ type: 'NEXT_LAYER' } as any)}
+						dark={dark} tooltip="Add layer" disabled={!canAdd} />
+					<DiActionButton name="chevron-right"
 						onClick={() => toggle(false)}
 						dark={dark} tooltip="Collapse" />
 				</div>
@@ -263,26 +247,18 @@ export function LayersPanel() {
 					borderTop: `1px solid ${borderColor}`,
 					paddingTop: 6,
 				}}>
-					<div style={off(!canDuplicate)}>
-						<IconBtn name="duplicate"
-							onClick={() => dispatch({ type: 'DUPLICATE_LAYER', payload: currentLayerIndex } as any)}
-							dark={dark} tooltip="Duplicate layer" />
-					</div>
-					<div style={off(isAtTop)}>
-						<IconBtn name="arrow-up"
-							onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex + 1 } } as any)}
-							dark={dark} tooltip="Move layer up" />
-					</div>
-					<div style={off(isAtBottom)}>
-						<IconBtn name="arrow-down"
-							onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex - 1 } } as any)}
-							dark={dark} tooltip="Move layer down" />
-					</div>
-					<div style={off(!canDelete)}>
-						<IconBtn name="trash"
-							onClick={() => dispatch({ type: 'DELETE_CURRENT_LAYER' } as any)}
-							dark={dark} tooltip="Delete layer" />
-					</div>
+					<DiActionButton name="duplicate"
+						onClick={() => dispatch({ type: 'DUPLICATE_LAYER', payload: currentLayerIndex } as any)}
+						dark={dark} tooltip="Duplicate layer" disabled={!canDuplicate} />
+					<DiActionButton name="arrow-up"
+						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex + 1 } } as any)}
+						dark={dark} tooltip="Move layer up" disabled={isAtTop} />
+					<DiActionButton name="arrow-down"
+						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex - 1 } } as any)}
+						dark={dark} tooltip="Move layer down" disabled={isAtBottom} />
+					<DiActionButton name="trash"
+						onClick={() => dispatch({ type: 'DELETE_CURRENT_LAYER' } as any)}
+						dark={dark} tooltip="Delete layer" disabled={!canDelete} danger={true} />
 				</div>
 			</DiPanel>
 		</div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { DiPill, DiVSep } from '../../../design-system';
 import { useStrata } from '../StrataContext';
-import { IconBtn } from './_shared';
+import { DiActionButton } from '../../../design-system';
 
 export function ModeSwitchPill({ dark }: { dark: boolean }) {
 	const { state, dispatch } = useStrata();
@@ -11,7 +11,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 
 	return (
 		<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
-			<IconBtn
+			<DiActionButton
 				name="draw-mode"
 				onClick={() => dispatch({ type: 'SET_MODE', payload: 'drawing' })}
 				dark={dark}
@@ -19,7 +19,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				activeStyle="solid"
 				tooltip="Draw mode"
 			/>
-			<IconBtn
+			<DiActionButton
 				name="view-mode"
 				onClick={() => dispatch({ type: 'SET_MODE', payload: 'cinematic' })}
 				dark={dark}
@@ -28,7 +28,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				tooltip="View mode"
 			/>
 			<DiVSep dark={dark} />
-			<IconBtn
+			<DiActionButton
 				name="hide-ui"
 				onClick={() => dispatch({ type: 'TOGGLE_UI' })}
 				dark={dark}
