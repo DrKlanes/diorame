@@ -182,7 +182,7 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 					fontFamily: TYPE.numericValue.family,
 					fontSize: TYPE.numericValue.size,
 					fontWeight: TYPE.numericValue.weight,
-					color: mutedColor,
+					color: session.content.length > 130 ? '#F59E0B' : mutedColor,
 				}}>
 					{session.content.length}/{MAX_CHARS}
 				</span>
