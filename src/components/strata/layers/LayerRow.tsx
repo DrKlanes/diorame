@@ -158,10 +158,28 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 					/>
 				</button>
 
-				{/* TODO: replace with anchor/pin icon */}
-				{isLocked3D && (
-					<Ico name="lock" size={12} color={mutedColor} />
-				)}
+				<button
+					onClick={e => { e.stopPropagation(); dispatch({ type: 'TOGGLE_3D_LOCK', payload: index } as any); }}
+					style={{
+						width: 20,
+						height: 20,
+						border: 'none',
+						background: 'transparent',
+						cursor: 'pointer',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						padding: 0,
+						borderRadius: 4,
+						flexShrink: 0,
+					}}
+				>
+					<Ico
+						name={isLocked3D ? 'lock' : 'unlock'}
+						size={13}
+						color={isLocked3D ? T.purple : mutedColor}
+					/>
+				</button>
 			</div>
 		</motion.button>
 	);
