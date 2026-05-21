@@ -15,6 +15,7 @@ import { LayersPanel } from '../components/strata/layers/LayersPanel';
 import { LayerDotsRail } from '../components/strata/layers/LayerDotsRail';
 import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 import { FXPanel } from '../components/strata/fx/FXPanel';
+import { UndoRedoBar } from '../components/strata/bottombar/UndoRedoBar';
 import { DiModal, WelcomeModalV2, ClearCanvasAlertV2, ComplexSceneModalV2, ExportProgressV2, OnboardingOverlayV2, MobileBlockScreenV2 } from '../components/strata/modals';
 import type { ExportType } from '../components/strata/modals';
 import { DiSelectorPopover, DiSelectorOption } from '../components/strata/popovers';
@@ -287,6 +288,23 @@ function PreviewPageContent() {
 					overflow: 'hidden',
 				}}>
 					<BottomBar />
+				</div>
+			</Section>
+
+			{/* ── SECTION 1e2: UndoRedo Bar (live) ── */}
+			<Section title="UndoRedo Bar (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
+				<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
+					Undo/Redo con disabled states, Reset View, Clear Canvas (abre alert). Conectado al store global.
+				</p>
+				<div style={{
+					height: 64,
+					backgroundColor: dk(dark, 'rgb(240,238,234)', '#1a1a1a'),
+					borderRadius: 12,
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+				}}>
+					<UndoRedoBar dark={dark} />
 				</div>
 			</Section>
 
