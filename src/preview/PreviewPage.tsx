@@ -17,6 +17,7 @@ import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 import { FXPanel } from '../components/strata/fx/FXPanel';
 import { UndoRedoBar } from '../components/strata/bottombar/UndoRedoBar';
 import { ToolOptionsPanel } from '../components/strata/drawing/ToolOptionsPanel';
+import { TextSessionPanel } from '../components/strata/text/TextSessionPanel';
 import { DiModal, WelcomeModalV2, ClearCanvasAlertV2, ComplexSceneModalV2, ExportProgressV2, OnboardingOverlayV2, MobileBlockScreenV2 } from '../components/strata/modals';
 import type { ExportType } from '../components/strata/modals';
 import { DiSelectorPopover, DiSelectorOption } from '../components/strata/popovers';
@@ -325,6 +326,9 @@ function PreviewPageContent() {
 					<ToolOptionsPanel dark={dark} />
 				</div>
 			</Section>
+
+			{/* ── SECTION 1e4: Text Session Panel (live) ── */}
+			<TextSessionPreviewSection dark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
 
 			{/* ── SECTION 1f: Color Palette (live) ── */}
 			<Section title="Color Palette (live)" dark={dark} bg={sectionBg} border={sectionBorder}>
@@ -725,6 +729,65 @@ function FXPreviewSectionContent({ parentDark, subtleColor, sectionBg, sectionBo
 				overflow: 'hidden',
 			}}>
 				<FXPanel />
+			</div>
+		</Section>
+	);
+}
+
+// ─── Text Session preview seed ─────────────────────────────────────────────────────
+
+const TEXT_SEED_STATE: Partial<AppState> = {
+	mode: 'drawing',
+	tool: 'text',
+	textSession: {
+		isActive: true,
+		x: 0,
+		y: 0,
+		content: 'Diorame',
+		font: 'noir',
+		align: 'left',
+	},
+};
+
+function TextSessionPreviewSection({ dark, subtleColor, sectionBg, sectionBorder }: {
+	dark: boolean; subtleColor: string; sectionBg: string; sectionBorder: string;
+}) {
+	const seedWithDark = { ...TEXT_SEED_STATE, isDarkMode: dark };
+	return (
+		<StrataProvider initialStateOverride={seedWithDark}>
+			<TextSessionPreviewSectionContent parentDark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
+		</StrataProvider>
+	);
+}
+
+function TextSessionPreviewSectionContent({ parentDark, subtleColor, sectionBg, sectionBorder }: {
+	parentDark: boolean; subtleColor: string; sectionBg: string; sectionBorder: string;
+}) {
+	const { state, dispatch } = useStrata();
+
+	useEffect(() => {
+		if (state.isDarkMode !== parentDark) {
+			dispatch({ type: 'TOGGLE_DARK_MODE' } as any);
+		}
+	}, [parentDark]);
+
+	return (
+		<Section title="Text Session Panel (live)" dark={parentDark} bg={sectionBg} border={sectionBorder}>
+			<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
+				Visible solo cuando textSession.isActive = true. 5 fuentes, 3 alineaciones, textarea con contador, Cancel + Done.
+			</p>
+			<div style={{
+				width: '100%',
+				minHeight: 220,
+				backgroundColor: dk(parentDark, 'rgb(248,247,243)', '#1a1a1a'),
+				borderRadius: 12,
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+				padding: 24,
+				boxSizing: 'border-box',
+			}}>
+				<TextSessionPanel dark={parentDark} />
 			</div>
 		</Section>
 	);
