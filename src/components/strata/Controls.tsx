@@ -8,10 +8,11 @@ import { ControlsDrawing } from './ControlsDrawing';
 import { ControlsCinematic } from './ControlsCinematic';
 import { ComplexSceneModalV2 } from './modals/ComplexSceneModalV2';
 import { diTokens } from '../../design-system/tokens';
-import { toast } from 'sonner@2.0.3';
+import { useSaveLoad } from '../../hooks/useSaveLoad';
 
 export const Controls = () => {
 	const { state, dispatch } = useStrata();
+	const { handleSaveProject } = useSaveLoad();
 	const [uiFocusLayer, setUiFocusLayer] = React.useState(0);
 	const [svgExportOpen, setSvgExportOpen] = React.useState(false);
 	const [showComplexityWarning, setShowComplexityWarning] = React.useState(false);
@@ -84,44 +85,6 @@ export const Controls = () => {
 		dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: activeZ, rotation: 0 } });
 	};
 
-	// Save project (for Ctrl+S shortcut)
-	const handleSaveProject = React.useCallback(() => {
-		const data = {
-			shapes: state.shapes, palette: state.palette, totalLayers: state.totalLayers,
-			isDarkMode: state.isDarkMode, postProcessing: state.postProcessing,
-			postProcessingEnabled: state.postProcessingEnabled, cinematicType: state.cinematicType,
-			hiddenLayers: state.hiddenLayers, locked3DLayers: state.locked3DLayers,
-			projectName: state.projectName, layerRenderModes: state.layerRenderModes,
-			layerGradParams: state.layerGradParams, currentLineThickness: state.currentLineThickness,
-			lineMode: state.lineMode, tool: state.tool, activePaletteId: state.activePaletteId,
-			focalLength: state.focalLength, viewZoomOffset: state.viewZoomOffset,
-			layerSpacingFactor: state.layerSpacingFactor, cinematicSpeed: state.cinematicSpeed,
-			isHandheldEnabled: state.isHandheldEnabled, handheldIntensity: state.handheldIntensity,
-		};
-		const sanitized = state.projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-		setTimeout(() => {
-			let url: string | null = null;
-			let link: HTMLAnchorElement | null = null;
-			try {
-				const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-				url = URL.createObjectURL(blob);
-				link = document.createElement('a');
-				link.href = url;
-				link.download = `${sanitized}-${Date.now()}.dior`;
-				link.style.display = 'none';
-				document.body.appendChild(link);
-				link.click();
-				toast.success('Project saved', { description: `${sanitized}.dior`, duration: 2000 });
-			} catch (err) {
-				toast.error('Failed to save', { description: 'Please try again' });
-			} finally {
-				setTimeout(() => {
-					try { if (link?.parentNode) document.body.removeChild(link!); } catch (_) { /* */ }
-					if (url) URL.revokeObjectURL(url);
-				}, 200);
-			}
-		}, 0);
-	}, [state]);
 
 	// Keyboard shortcuts
 	React.useEffect(() => {
