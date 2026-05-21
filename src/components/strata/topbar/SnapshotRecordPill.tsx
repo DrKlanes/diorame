@@ -30,8 +30,8 @@ function RecordBtn({ recording, onClick, dark }: {
 	return (
 		<button
 			onClick={onClick}
-			onMouseEnter={() => setHov(true)}
-			onMouseLeave={() => setHov(false)}
+			onPointerEnter={() => setHov(true)}
+			onPointerLeave={() => setHov(false)}
 			title={recording ? 'Stop recording' : 'Record MP4'}
 			style={{
 				height: 30,
