@@ -776,6 +776,25 @@ function TextSessionPreviewSectionContent({ parentDark, subtleColor, sectionBg, 
 			<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
 				Visible solo cuando textSession.isActive = true. 5 fuentes, 3 alineaciones, textarea con contador, Cancel + Done.
 			</p>
+			{!state.textSession.isActive && (
+				<button
+					onClick={() => dispatch({ type: 'UPDATE_TEXT_SESSION', payload: { isActive: true, content: 'Diorame', font: 'noir', align: 'left' } } as any)}
+					style={{
+						marginBottom: 12,
+						padding: '6px 16px',
+						borderRadius: 20,
+						border: `1px solid ${dk(parentDark, T.border, T.borderDark)}`,
+						background: 'transparent',
+						cursor: 'pointer',
+						fontSize: 12,
+						fontWeight: 600,
+						color: dk(parentDark, T.dark, T.textDark),
+						fontFamily: TYPE.manrope,
+					}}
+				>
+					Activate text session
+				</button>
+			)}
 			<div style={{
 				width: '100%',
 				minHeight: 220,
