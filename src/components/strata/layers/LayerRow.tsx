@@ -175,7 +175,7 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 					}}
 				>
 					<Ico
-						name={isLocked3D ? 'lock' : 'unlock'}
+						name={isLocked3D ? 'pin' : 'pin-off'}
 						size={13}
 						color={isLocked3D ? T.purple : mutedColor}
 					/>
