@@ -1,18 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { DiPill, DiVSep } from '../../../design-system';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { DiActionButton } from '../../../design-system';
 import { useSaveLoad } from '../../../hooks/useSaveLoad';
+import { useExportFlow } from '../../../hooks/useExportFlow';
+import { DiSelectorPopover, DiSelectorOption } from '../popovers';
+import { ComplexSceneModalV2 } from '../modals/ComplexSceneModalV2';
 
 interface FileControlsPillProps { dark: boolean; }
 
 export function FileControlsPill({ dark }: FileControlsPillProps) {
 	const { state, dispatch } = useStrata();
 	const { handleSaveProject, handleLoadProject, triggerFileSelect, fileInputRef } = useSaveLoad();
+	const { handleExportRequest, handleProceedWithExport, handleCancelExport, handleUseCompressedExport, showComplexityWarning, shapeCount } = useExportFlow();
 	const filename = state.projectName;
 	const [editing, setEditing] = useState(false);
 	const [draft, setDraft] = useState(filename);
+	const [exportOpen, setExportOpen] = useState(false);
+	const exportBtnRef = useRef<HTMLDivElement>(null);
 
 	const iconColor = dk(dark, T.dark, T.textDark) as string;
 
@@ -22,9 +28,8 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 		dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 0, rotation: 0 } });
 	};
 
-	const handleExport = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'svg' });
-	const handleUndo   = () => dispatch({ type: 'UNDO' });
-	const handleRedo   = () => dispatch({ type: 'REDO' });
+	const handleUndo = () => dispatch({ type: 'UNDO' });
+	const handleRedo = () => dispatch({ type: 'REDO' });
 
 	const commitFilename = () => {
 		setEditing(false);
@@ -46,10 +51,12 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 				onChange={e => { const f = e.target.files?.[0]; if (f) handleLoadProject(f); }}
 			/>
 			<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
-				<DiActionButton name="new"    onClick={handleNew}         dark={dark} tooltip="Nuevo" />
-				<DiActionButton name="open"   onClick={triggerFileSelect} dark={dark} tooltip="Abrir" />
-				<DiActionButton name="save"   onClick={handleSaveProject} dark={dark} tooltip="Guardar" />
-				<DiActionButton name="export" onClick={handleExport}      dark={dark} tooltip="Exportar SVG" />
+				<DiActionButton name="new"  onClick={handleNew}         dark={dark} tooltip="Nuevo" />
+				<DiActionButton name="open" onClick={triggerFileSelect} dark={dark} tooltip="Abrir" />
+				<DiActionButton name="save" onClick={handleSaveProject} dark={dark} tooltip="Guardar" />
+				<div ref={exportBtnRef}>
+					<DiActionButton name="export" onClick={() => setExportOpen(v => !v)} dark={dark} tooltip="Exportar SVG" />
+				</div>
 
 				<DiVSep dark={dark} />
 
@@ -102,6 +109,31 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 					</button>
 				)}
 			</DiPill>
+			<DiSelectorPopover
+				anchorRef={exportBtnRef}
+				open={exportOpen}
+				onClose={() => setExportOpen(false)}
+				dark={dark}
+				placement="auto"
+				align="start"
+			>
+				<DiSelectorOption
+					title="SVG"
+					onSelect={() => { handleExportRequest('svg'); setExportOpen(false); }}
+				/>
+				<DiSelectorOption
+					title="SVG (Compressed)"
+					onSelect={() => { handleExportRequest('svgz'); setExportOpen(false); }}
+				/>
+			</DiSelectorPopover>
+			<ComplexSceneModalV2
+				open={showComplexityWarning}
+				onClose={handleCancelExport}
+				onContinue={handleProceedWithExport}
+				onUseCompressed={handleUseCompressedExport}
+				shapeCount={shapeCount}
+				dark={state.isDarkMode}
+			/>
 		</>
 	);
 }

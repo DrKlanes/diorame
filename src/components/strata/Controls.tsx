@@ -9,14 +9,13 @@ import { ControlsCinematic } from './ControlsCinematic';
 import { ComplexSceneModalV2 } from './modals/ComplexSceneModalV2';
 import { diTokens } from '../../design-system/tokens';
 import { useSaveLoad } from '../../hooks/useSaveLoad';
+import { useExportFlow } from '../../hooks/useExportFlow';
 
 export const Controls = () => {
 	const { state, dispatch } = useStrata();
 	const { handleSaveProject } = useSaveLoad();
 	const [uiFocusLayer, setUiFocusLayer] = React.useState(0);
 	const [svgExportOpen, setSvgExportOpen] = React.useState(false);
-	const [showComplexityWarning, setShowComplexityWarning] = React.useState(false);
-	const [pendingExportFormat, setPendingExportFormat] = React.useState<'svg' | 'svgz' | null>(null);
 
 	// Sync uiFocusLayer with state when locked
 	React.useEffect(() => {
@@ -30,54 +29,14 @@ export const Controls = () => {
 		sessionStorage.removeItem('diorame-view-initialized');
 	}, []);
 
-	const getActiveZ = (layerIndex: number) => layerIndex * -BASE_DEPTH_STEP;
-
-	// Calculate scene complexity
-	const getSceneComplexity = React.useCallback(() => {
-		let totalShapes = 0;
-
-		if (state.shapes) {
-			totalShapes = state.shapes.filter(shape => {
-				return !state.hiddenLayers.includes(shape.zIndex);
-			}).length;
-		}
-
-		return { totalShapes };
-	}, [state.shapes, state.hiddenLayers]);
-
-	const COMPLEXITY_THRESHOLD = 800;
+	const { handleExportRequest: requestExport, handleProceedWithExport, handleCancelExport, handleUseCompressedExport, showComplexityWarning, shapeCount } = useExportFlow();
 
 	const handleExportRequest = React.useCallback((format: 'svg' | 'svgz') => {
-		const { totalShapes } = getSceneComplexity();
+		setSvgExportOpen(false);
+		requestExport(format);
+	}, [requestExport]);
 
-		if (totalShapes > COMPLEXITY_THRESHOLD) {
-			setPendingExportFormat(format);
-			setShowComplexityWarning(true);
-			setSvgExportOpen(false);
-		} else {
-			dispatch({ type: 'REQUEST_EXPORT', payload: format });
-			setSvgExportOpen(false);
-		}
-	}, [getSceneComplexity, dispatch]);
-
-	const handleProceedWithExport = React.useCallback(() => {
-		if (pendingExportFormat) {
-			dispatch({ type: 'REQUEST_EXPORT', payload: pendingExportFormat });
-		}
-		setShowComplexityWarning(false);
-		setPendingExportFormat(null);
-	}, [pendingExportFormat, dispatch]);
-
-	const handleCancelExport = React.useCallback(() => {
-		setShowComplexityWarning(false);
-		setPendingExportFormat(null);
-	}, []);
-
-	const handleUseCompressedExport = React.useCallback(() => {
-		dispatch({ type: 'REQUEST_EXPORT', payload: 'svgz' });
-		setShowComplexityWarning(false);
-		setPendingExportFormat(null);
-	}, [dispatch]);
+	const getActiveZ = (layerIndex: number) => layerIndex * -BASE_DEPTH_STEP;
 
 	const handleReturnToDraw = () => {
 		dispatch({ type: 'SET_MODE', payload: 'drawing' });
@@ -262,7 +221,7 @@ export const Controls = () => {
 				onClose={handleCancelExport}
 				onContinue={handleProceedWithExport}
 				onUseCompressed={handleUseCompressedExport}
-				shapeCount={getSceneComplexity().totalShapes}
+				shapeCount={shapeCount}
 				dark={state.isDarkMode}
 			/>
 		</>
