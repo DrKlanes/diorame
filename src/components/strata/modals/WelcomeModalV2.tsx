@@ -42,7 +42,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 	};
 
 	const handleBugReport = () => {
-		const parts = ['moises', 'dumaker.com'];
+		const parts = ['dumaker', 'gmail.com'];
 		const addr = parts.join('@');
 		const subject = encodeURIComponent('Diorame bug report — v' + APP_VERSION);
 		const body = encodeURIComponent([
@@ -59,7 +59,9 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 			'Browser:',
 			'OS:',
 		].join('\n'));
-		window.location.href = 'mailto:' + addr + '?subject=' + subject + '&body=' + body;
+		const mailtoUrl = 'mailto:' + addr + '?subject=' + subject + '&body=' + body;
+		console.log('Bug report clicked', mailtoUrl);
+		window.location.href = mailtoUrl;
 	};
 
 	const muted = dk(dark, T.muted, T.textDarkMuted) as string;
@@ -187,7 +189,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 								cursor: 'pointer',
 								fontFamily: TYPE.numericValue.family,
 								fontWeight: TYPE.numericValue.weight,
-								fontSize: 12,
+								fontSize: TYPE.numericValue.size,
 								color: muted,
 								textDecoration: isBugHovered ? 'underline' : 'none',
 								padding: 0,
