@@ -8,6 +8,7 @@ import { LayersPanel } from './layers/LayersPanel';
 import { ColorPalette } from './colorpalette/ColorPalette';
 import { LayerDotsRail } from './layers/LayerDotsRail';
 import { ResetViewPill } from './viewport/ResetViewPill';
+import { FXPanel } from './fx/FXPanel';
 import { ToolOptionsPanel } from './drawing/ToolOptionsPanel';
 import { TextSessionPanel } from './text/TextSessionPanel';
 
@@ -50,6 +51,9 @@ export function ControlsV2() {
 
 					{/* ResetViewPill — fixed left-8 bottom-8, drawing mode only */}
 					<ResetViewPill />
+
+					{/* FXPanel — absolute top-50% right-12, cinematic mode only */}
+					<FXPanel />
 
 					{/* ToolOptionsPanel — no built-in position; floated above DrawingToolbar (tool=line only) */}
 					<div style={{
