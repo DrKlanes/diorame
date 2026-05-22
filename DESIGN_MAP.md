@@ -3,7 +3,7 @@
 **Estado:** documento canónico de referencia para Fase 10.  
 Si código o decisión contradice este mapa, gana el mapa. Ediciones requieren acuerdo explícito.
 
-**Última actualización:** 2026-05-22 (post-10.4-fix-2)
+**Última actualización:** 2026-05-22 (post-10.4-fix-4)
 
 ---
 
@@ -80,7 +80,7 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 ### 2.5 LayersPanel
 
 **Componente:** `LayersPanel` (`layers/LayersPanel.tsx`)  
-**Posición:** `absolute top-50% right-12 translateY(-50%) z-50`  
+**Posición:** `absolute top-72 right-12 z-50` (bajo TopBar, deja espacio para ColorPalette debajo)  
 **Visibilidad:** `mode === 'drawing'` && `!isUIHidden`  
 **Estado collapsed/expanded:** persiste en `localStorage` key `'diorame-layers-expanded'`
 
@@ -105,7 +105,7 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 - `DragEndEvent` → `MOVE_LAYER_TO { fromIndex, toIndex }`
 - FLIP animation via Framer Motion `layout`
 
-**Responsive height**: `max-height: calc(100vh - 328px)` en modo expanded para evitar colisión con ColorPalette en viewports pequeños (≤900px). Scroll interno solo en la lista de LayerRows (`overflowY:auto, flex:1 1 0, minHeight:0`); header y Z-axis visualization (near/far dots) siempre visibles con `flexShrink:0`. Scrollbar: clase `.di-panel-scroll` (`globals.css`) — 4px, gray neutral, compatible light+dark.
+**Responsive height**: Panel anclado a `top:72` (bajo TopBar). `max-height: calc(100vh - 372px)` en modo expanded; rows list interna con `max-height: calc(100vh - 496px)` y `overflowY:auto`. Fórmula: `100vh − 72 (top offset) − 12 (bottom margin) − 280 (ColorPalette grad worst-case) − 8 (gap) = 100vh − 372`. Header y Z-axis visualization siempre visibles con `flexShrink:0`. Scrollbar: clase `.di-panel-scroll` (`globals.css`) — 4px, gray neutral, compatible light+dark.
 
 **LayerRow** (`layers/LayerRow.tsx`) — por capa:
 - Handle drag (useSortable, `touchAction: 'none'`)
@@ -299,7 +299,7 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 | TopBar centro (abs top-12 center) | `ModeSwitchPill`: draw·view + hide-ui | `ModeSwitchPill`: draw·view + hide-ui (idéntico) |
 | TopBar derecha (abs top-12 right-12) | `ThemeTogglePill`: sun·moon | `ThemeTogglePill`: sun·moon (idéntico) |
 | Bottom-center (abs bottom-12 center) | `DrawingToolbar`: 5 tools + modifiers por tool | `CameraBar`: 10 presets + speed/handheld + 3 sliders |
-| Right-center (abs top-50% right-12) | `LayersPanel`: expanded/collapsed, drag-reorder | (no existe) |
+| Top-right under TopBar (abs top-72 right-12) | `LayersPanel`: expanded/collapsed, drag-reorder | (no existe) |
 | Bottom-right (abs bottom-12 right-12) | `ColorPalette`: palette selector + grad controls + swatches | (no existe) |
 | Right-center (abs top-50% right-12) | (no existe) | `FXPanel`: 12 efectos en 3 grupos |
 | Right edge center (fixed right-8 center) | `LayerDotsRail`: dots de navegación rápida | (no existe) |
