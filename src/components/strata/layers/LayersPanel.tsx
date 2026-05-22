@@ -194,7 +194,7 @@ export function LayersPanel() {
 				</div>
 
 				{/* Z-axis + Layer list */}
-				<div style={{ display: 'flex', flexDirection: 'column', gap: 0, flex: '1 1 0', minHeight: 0 }}>
+				<div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 					{/* Near circle — camera end */}
 					<div style={{
 						width: 10,
@@ -213,8 +213,7 @@ export function LayersPanel() {
 							gap: 1,
 							borderLeft: `1px solid ${borderColor}`,
 							paddingLeft: 6,
-							flex: '1 1 0',
-							minHeight: 0,
+							maxHeight: 'calc(100vh - 460px)',
 							overflowY: 'auto',
 						}}>
 						<DndContext
