@@ -106,6 +106,7 @@ export interface AppState {
   postProcessing: PostProcessingSettings;
   postProcessingEnabled: PostProcessingEnabled;
   fxMasterEnabled: boolean; // New: Global toggle for all post-processing FX (not undoable)
+  postProcessingSnapshot: PostProcessingEnabled | null; // Transient: snapshot for master toggle restore
   history: HistorySnapshot[];
   historyIndex: number;
   exportRequest: ExportType | null;

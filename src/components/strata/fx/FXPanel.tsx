@@ -104,7 +104,7 @@ export function FXPanel() {
 							FX
 						</span>
 						<div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-							<DiActionButton name="sparkles" onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} dark={dark} active={fxMasterEnabled} tooltip="Toggle all FX" />
+							<DiActionButton name="sparkles" onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} tooltip="Toggle all FX" />
 							<DiActionButton name="chevron-right" onClick={() => toggle(false)} dark={dark} tooltip="Collapse" />
 						</div>
 					</div>
@@ -155,7 +155,7 @@ export function FXPanel() {
 			<DiPill dark={dark} padding="8px 0" gap={2}
 				style={{ flexDirection: 'column', width: 40, height: 'auto' } as React.CSSProperties}
 			>
-				<DiActionButton name="sparkles" onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} dark={dark} active={fxMasterEnabled} tooltip="Toggle all FX" />
+				<DiActionButton name="sparkles" onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} tooltip="Toggle all FX" />
 				<PillHSep />
 				<DiActionButton name="chevron-left" onClick={() => toggle(true)} dark={dark} tooltip="Expand FX panel" />
 				<PillHSep />

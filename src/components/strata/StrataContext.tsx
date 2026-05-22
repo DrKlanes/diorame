@@ -160,6 +160,7 @@ const initialState: AppState = {
       grunge: false
   },
   fxMasterEnabled: true, // Master toggle for all FX (defaults ON)
+  postProcessingSnapshot: null,
   history: [{
       shapes: [],
       totalLayers: 1,
@@ -566,13 +567,34 @@ function appReducer(state: AppState, action: Action): AppState {
           postProcessingEnabled: {
               ...state.postProcessingEnabled,
               [action.payload]: !state.postProcessingEnabled[action.payload]
-          }
+          },
+          postProcessingSnapshot: null,
+          fxMasterEnabled: true,
       };
-    case 'TOGGLE_FX_MASTER':
-      return {
-          ...state,
-          fxMasterEnabled: !state.fxMasterEnabled
-      };
+    case 'TOGGLE_FX_MASTER': {
+      const px = state.postProcessingEnabled;
+      const hasActiveEffects = Object.values(px).some(v => v);
+      if (hasActiveEffects && state.postProcessingSnapshot === null) {
+          const allOff = Object.fromEntries(
+              Object.keys(px).map(k => [k, false])
+          ) as PostProcessingEnabled;
+          return {
+              ...state,
+              postProcessingSnapshot: { ...px } as PostProcessingEnabled,
+              postProcessingEnabled: allOff,
+              fxMasterEnabled: false,
+          };
+      } else if (state.postProcessingSnapshot !== null) {
+          return {
+              ...state,
+              postProcessingEnabled: state.postProcessingSnapshot,
+              postProcessingSnapshot: null,
+              fxMasterEnabled: Object.values(state.postProcessingSnapshot).some(v => v),
+          };
+      } else {
+          return state;
+      }
+    }
     case 'REQUEST_EXPORT':
       return { ...state, exportRequest: action.payload, isExporting: true };
     case 'FINISH_EXPORT':
@@ -617,7 +639,8 @@ function appReducer(state: AppState, action: Action): AppState {
           cinematicType: initialState.cinematicType,
           postProcessing: initialState.postProcessing,
           postProcessingEnabled: initialState.postProcessingEnabled,
-          fxMasterEnabled: initialState.fxMasterEnabled
+          fxMasterEnabled: initialState.fxMasterEnabled,
+          postProcessingSnapshot: null,
       }
     case 'LOAD_PROJECT':
       // Ensure we merge postProcessing settings correctly to avoid undefined values
