@@ -14,6 +14,7 @@ import {
 import { useStrata, BASE_DEPTH_STEP, MAX_LAYERS } from '../StrataContext';
 import { DiPill, DiPanel, DiActionButton } from '../../../design-system';
 import { LayerRow } from './LayerRow';
+import { LayerDotsRail } from './LayerDotsRail';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
 
