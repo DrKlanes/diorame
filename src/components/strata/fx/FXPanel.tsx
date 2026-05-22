@@ -177,7 +177,7 @@ export function FXPanel() {
 				<DiActionButton name="sparkles" onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} tooltip="Toggle all FX" />
 				<PillHSep />
 				<DiActionButton name="chevron-left" onClick={() => toggle(true)} dark={dark} tooltip="Expand FX panel" />
-				<div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: 40, opacity: hasSnapshot ? 0.5 : 1 }}>
+				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: 40, opacity: hasSnapshot ? 0.5 : 1 }}>
 				<PillHSep />
 				<DiActionButton name="fx-grain"     onClick={fxClick('grain')} dark={dark} active={snap ? snap.grain : px.grain}  tooltip="Grain" />
 				<DiActionButton name="fx-grunge"    onClick={fxClick('grunge')} dark={dark} active={snap ? snap.grunge : px.grunge} tooltip="Grunge" />
