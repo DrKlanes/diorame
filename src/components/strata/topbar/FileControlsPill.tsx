@@ -7,6 +7,7 @@ import { useSaveLoad } from '../../../hooks/useSaveLoad';
 import { useExportFlow } from '../../../hooks/useExportFlow';
 import { DiSelectorPopover, DiSelectorOption } from '../popovers';
 import { ComplexSceneModalV2 } from '../modals/ComplexSceneModalV2';
+import { ClearCanvasAlertV2 } from '../modals/ClearCanvasAlertV2';
 
 interface FileControlsPillProps { dark: boolean; }
 
@@ -18,14 +19,17 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 	const [editing, setEditing] = useState(false);
 	const [draft, setDraft] = useState(filename);
 	const [exportOpen, setExportOpen] = useState(false);
+	const [clearCanvasOpen, setClearCanvasOpen] = useState(false);
 	const exportBtnRef = useRef<HTMLDivElement>(null);
 
 	const iconColor = dk(dark, T.dark, T.textDark) as string;
 
-	const handleNew = () => {
-		if (!window.confirm('Clear canvas? This cannot be undone.')) return;
+	const handleNew = () => setClearCanvasOpen(true);
+	const handleClearConfirm = () => {
 		dispatch({ type: 'CLEAR_CANVAS' });
 		dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 0, rotation: 0 } });
+		sessionStorage.removeItem('diorame-view-initialized');
+		setClearCanvasOpen(false);
 	};
 
 	const handleUndo = () => dispatch({ type: 'UNDO' });
@@ -133,6 +137,12 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 				onUseCompressed={handleUseCompressedExport}
 				shapeCount={shapeCount}
 				dark={state.isDarkMode}
+			/>
+			<ClearCanvasAlertV2
+				open={clearCanvasOpen}
+				onClose={() => setClearCanvasOpen(false)}
+				onConfirm={handleClearConfirm}
+				dark={dark}
 			/>
 		</>
 	);

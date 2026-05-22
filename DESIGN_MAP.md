@@ -24,7 +24,7 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 **Componente:** `FileControlsPill` (`topbar/FileControlsPill.tsx`)  
 **Posición:** `absolute top-12 left-12`  
 **Contenido:**
-- `new` → `window.confirm()` + `CLEAR_CANVAS` + `UPDATE_CAMERA {0,0,0,0}` ⚠️ GAP: no usa ClearCanvasAlertV2
+- `new` → `ClearCanvasAlertV2` → on confirm: `CLEAR_CANVAS` + `UPDATE_CAMERA {0,0,0,0}` + `sessionStorage.removeItem('diorame-view-initialized')`
 - `open` → `fileInputRef.click()` → `LOAD_PROJECT`
 - `save` → blob download `.dior`
 - `export` → `DiSelectorPopover` con opciones SVG / SVG Compressed (ambas pasan por `useExportFlow` con complexity check >800 shapes)
@@ -328,7 +328,7 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 
 | # | Gap | Archivo | Prioridad |
 |---|---|---|---|
-| G1 | `FileControlsPill` botón "New" usa `window.confirm()` en lugar de `ClearCanvasAlertV2`; además no limpia `sessionStorage` | `topbar/FileControlsPill.tsx` | Alta |
+| G1 | ✅ RESUELTO (10.5 commit 3) — `FileControlsPill` botón "New" ahora abre `ClearCanvasAlertV2` y limpia sessionStorage | `topbar/FileControlsPill.tsx` | — |
 | G2 | `FileControlsPill` undo/redo sin disabled states — no comprueba `historyIndex <= 0` ni `historyIndex >= history.length - 1` | `topbar/FileControlsPill.tsx` | Alta |
 | G3 | `GradientControls` despacha a `paletteGradientAngle`/`paletteGradientIntensity` (campos mirror UI-level) en lugar de directamente a `layerGradParams[currentLayerIndex]` | `colorpalette/GradientControls.tsx` | Media |
 | G4 | `ToolOptionsPanel` y `TextSessionPanel` no tienen posicionamiento propio — deben ser posicionados por `ControlsV2` | ambos | Media (bloqueante para 10.4) |
