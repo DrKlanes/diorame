@@ -630,10 +630,6 @@ function LayersPreviewSectionContent({ parentDark, subtleColor, sectionBg, secti
 			}}>
 				<LayersPanel />
 			</div>
-			<p style={{ fontSize: 11, color: subtleColor, margin: '8px 0 0 0' }}>
-				LayerDotsRail usa <code>position: fixed</code> — aparece pegada al margen derecho del viewport global.
-			</p>
-			<LayerDotsRail />
 		</Section>
 	);
 }
