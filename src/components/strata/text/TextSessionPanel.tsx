@@ -34,6 +34,12 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 	const session = state.textSession;
+
+	useEffect(() => {
+		if (!session.isActive) return;
+		textareaRef.current?.focus();
+	}, [session.isActive]);
+
 	if (!session.isActive) return null;
 
 	const bgColor       = dk(dark, T.white, T.panelDarkOpaque);
@@ -54,10 +60,6 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 			dispatch({ type: 'COMMIT_TEXT_SESSION' });
 		}
 	};
-
-	useEffect(() => {
-		textareaRef.current?.focus();
-	}, []);
 
 	return (
 		<div style={{
