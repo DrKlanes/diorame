@@ -297,11 +297,13 @@ El componente `ResetViewPill` retorna `null` cuando `mode !== 'drawing'`. **En V
 
 | Modal | Trigger | Componente |
 |---|---|---|
-| WelcomeModal | Shift+? | `WelcomeModalV2` |
+| WelcomeModal | Shift+? / botón `info` en FileControlsPill | `WelcomeModalV2` |
 | Clear Canvas | Botón "New" en FileControlsPill ⚠️ actualmente `window.confirm()` | `ClearCanvasAlertV2` |
 | Complex Scene | Export con >800 shapes visibles | `ComplexSceneModalV2` |
 | Export Progress | Durante export en curso | `ExportProgressV2` |
 | Mobile Block | Viewport < threshold | `MobileBlockScreenV2` |
+
+**WelcomeModalV2 — footer:** Zona 5 añade un enlace discreto "Found a bug? Email me." (button nativo, 12px, color muted, underline on hover). Construye el `mailto:` en runtime con `['moises','dumaker.com'].join('@')` para evitar que el email quede concatenado en el bundle minificado (verificado post-build: `moises@dumaker.com` no aparece en los assets).
 
 Todos importados desde `src/components/strata/modals/index.ts`.
 

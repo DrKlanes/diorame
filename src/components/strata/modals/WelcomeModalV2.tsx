@@ -33,11 +33,33 @@ interface WelcomeModalV2Props {
 
 export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeModalV2Props) {
 	const [isLoadingExample, setIsLoadingExample] = useState(false);
+	const [isBugHovered, setIsBugHovered] = useState(false);
 
 	const handleLoadExample = async () => {
 		setIsLoadingExample(true);
 		try { await onLoadExample(); }
 		finally { setIsLoadingExample(false); }
+	};
+
+	const handleBugReport = () => {
+		const parts = ['moises', 'dumaker.com'];
+		const addr = parts.join('@');
+		const subject = encodeURIComponent('Diorame bug report — v' + APP_VERSION);
+		const body = encodeURIComponent([
+			'What I expected:',
+			'',
+			'',
+			'What happened instead:',
+			'',
+			'',
+			'Steps to reproduce:',
+			'',
+			'',
+			'---',
+			'Browser:',
+			'OS:',
+		].join('\n'));
+		window.location.href = 'mailto:' + addr + '?subject=' + subject + '&body=' + body;
 	};
 
 	const muted = dk(dark, T.muted, T.textDarkMuted) as string;
@@ -151,6 +173,28 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 						<div>
 							Inspired by <ResourceLink href="https://apps.apple.com/pa/app/graintouch/id6740813845">Graintouch</ResourceLink>
 						</div>
+					</div>
+
+					{/* Zona 5 — Footer bug report */}
+					<div style={{ marginTop: 12, textAlign: 'center' }}>
+						<button
+							onClick={handleBugReport}
+							onMouseEnter={() => setIsBugHovered(true)}
+							onMouseLeave={() => setIsBugHovered(false)}
+							style={{
+								background: 'none',
+								border: 'none',
+								cursor: 'pointer',
+								fontFamily: TYPE.numericValue.family,
+								fontWeight: TYPE.numericValue.weight,
+								fontSize: 12,
+								color: muted,
+								textDecoration: isBugHovered ? 'underline' : 'none',
+								padding: 0,
+							}}
+						>
+							Found a bug? Email me.
+						</button>
 					</div>
 
 				</div>
