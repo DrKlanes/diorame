@@ -2248,8 +2248,8 @@ export const StrataCanvas = () => {
   };
 
   return (
-    <div ref={containerRef} className={cn("absolute inset-0 z-0 overflow-hidden touch-none", state.mode === 'drawing' ? cn("inset-4 sm:inset-6 md:inset-8 lg:inset-10 rounded-[32px] shadow-2xl bg-white border border-slate-100/50", cursorOverride ? cursorOverride : (state.tool === 'move' ? "cursor-move" : "cursor-crosshair")) : "inset-0 bg-slate-50 cursor-default")} style={{ touchAction: 'none' }}>
-      <canvas ref={canvasRef} tabIndex={0} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel} className={cn("block w-full h-full", state.mode === 'drawing' ? "rounded-[32px]" : "")} style={{ touchAction: 'none', outline: 'none' }} />
+    <div ref={containerRef} className={cn("absolute inset-0 z-0 overflow-hidden touch-none", state.mode === 'drawing' ? (cursorOverride ? cursorOverride : (state.tool === 'move' ? "cursor-move" : "cursor-crosshair")) : "cursor-default")} style={{ touchAction: 'none' }}>
+      <canvas ref={canvasRef} tabIndex={0} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel} className="block w-full h-full" style={{ touchAction: 'none', outline: 'none' }} />
       {/* Flip buttons overlay - positioned via render loop */}
       <div
         ref={flipButtonsRef}
