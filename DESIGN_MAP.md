@@ -1,0 +1,339 @@
+# Diorame UI v2 — Mapa canónico del rediseño
+
+**Estado:** documento canónico de referencia para Fase 10.  
+Si código o decisión contradice este mapa, gana el mapa. Ediciones requieren acuerdo explícito.
+
+**Última actualización:** 2026-05-22 (cierre sub-fase 10.3.6)
+
+---
+
+## 1. Filosofía del rediseño
+
+El rediseño v2 no traduce el legacy 1:1 — lo reordena por principio. La premisa es que cada modo de uso (dibujo vs. preview cinemático) tiene un conjunto de controles completamente distinto, y la UI debe reflejar esa dicotomía sin compromisos. Los panels que antes eran popovers flotantes (Layers, FX, Palette) se convierten en panels fijos siempre visibles: en Riso, lo que no ves no existe.
+
+Todos los tokens visuales provienen de `src/design-system/tokens.ts` (T, TYPE, SPACE, RADIUS, SHADOW, dk helper). No hay valores hardcoded en los átomos V2 salvo donde el sistema no cubre el caso (#F59E0B en TextSessionPanel — ver Sección 8). Los primitivos DiPill, DiPanel, DiActionButton, DiMiniSlider, DiSegmentControl, DiVSep son los bloques de construcción de toda la UI; no se usan componentes de Tailwind ni shadcn/ui en código nuevo.
+
+La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) → `TopBar` (persistente) + `BottomBar` (persistente) + paneles fijos por modo. Los átomos de posicionamiento (LayerDotsRail, ResetViewPill) usan `position: fixed` (viewport-relative). Los paneles de contenido (LayersPanel, ColorPalette, FXPanel, TopBar, BottomBar) usan `position: absolute` relativo a su contenedor padre.
+
+---
+
+## 2. Layout DRAW (modo dibujo)
+
+### 2.1 TopBar — slot izquierdo en DRAW
+
+**Componente:** `FileControlsPill` (`topbar/FileControlsPill.tsx`)  
+**Posición:** `absolute top-12 left-12`  
+**Contenido:**
+- `new` → `window.confirm()` + `CLEAR_CANVAS` + `UPDATE_CAMERA {0,0,0,0}` ⚠️ GAP: no usa ClearCanvasAlertV2
+- `open` → `fileInputRef.click()` → `LOAD_PROJECT`
+- `save` → blob download `.dior`
+- `export` → `DiSelectorPopover` con opciones SVG / SVG Compressed (ambas pasan por `useExportFlow` con complexity check >800 shapes)
+- `DiVSep`
+- `undo` → `UNDO` | `redo` → `REDO` ⚠️ GAP: sin disabled states (no comprueba historyIndex)
+- `DiVSep`
+- Project name: editable inline (`SET_PROJECT_NAME`), max 200px
+
+### 2.2 TopBar — slot central (ambos modos)
+
+**Componente:** `ModeSwitchPill` (`topbar/ModeSwitchPill.tsx`)  
+**Posición:** `absolute top-12 left-50% -translateX(50%)`  
+**Contenido:**
+- `draw-mode` → `SET_MODE 'drawing'` (activeStyle: solid)
+- `view-mode` → `SET_MODE 'cinematic'` (activeStyle: solid)
+- `DiVSep`
+- `hide-ui` → `TOGGLE_UI` (activeStyle: solid cuando isUIHidden)
+
+### 2.3 TopBar — slot derecho (ambos modos)
+
+**Componente:** `ThemeTogglePill` (`topbar/ThemeTogglePill.tsx`)  
+**Posición:** `absolute top-12 right-12`  
+**Contenido:**
+- `sun` → `TOGGLE_DARK_MODE` si dark (activeStyle: wash cuando !dark)
+- `moon` → `TOGGLE_DARK_MODE` si !dark (activeStyle: wash cuando dark)
+
+### 2.4 BottomBar — DrawingToolbar
+
+**Componente:** `DrawingToolbar` (`bottombar/DrawingToolbar.tsx`)  
+**Wrapper:** `BottomBar` (`bottombar/BottomBar.tsx`) — `absolute bottom-12 left-50% -translateX(50%)`  
+**Estructura:** DiPill con dos bloques fijos separados por DiVSep estructural:
+
+**Bloque 1 — Herramientas (siempre visible, no shift):**
+| Ícono | ToolType | Dot de color |
+|---|---|---|
+| `blob` | `'brush'` | ✓ |
+| `brush` | `'line'` | ✓ |
+| `eraser` | `'eraser'` | ✗ |
+| `text` | `'text'` | ✓ |
+| `move` | `'move'` | ✗ |
+
+**Bloque 2 — Modificadores (minWidth 158, varía por tool):**
+| Tool activo | Modificadores disponibles |
+|---|---|
+| `brush` | symmetry, draw-inside, draw-behind, organic, smooth |
+| `line` | symmetry, draw-inside, draw-behind + `DiVSep` + `LineModeButton` |
+| `eraser` | symmetry, smooth |
+| `text` | (vacío) |
+| `move` | (vacío) |
+
+`LineModeButton` (`_shared.tsx`): ciclo tapered → uniform → ink, con 3 dots de posición indicadores. Solo aparece si `tool === 'line'`.
+
+### 2.5 LayersPanel
+
+**Componente:** `LayersPanel` (`layers/LayersPanel.tsx`)  
+**Posición:** `absolute top-12 right-12 z-50`  
+**Visibilidad:** `mode === 'drawing'` && `!isUIHidden`  
+**Estado collapsed/expanded:** persiste en `localStorage` key `'diorame-layers-expanded'`
+
+**Modo collapsed** — DiPill vertical (width 40, column):
+- Badge `currentLayerIndex+1 / totalLayers` (purple / muted)
+- HSep
+- `chevron-left` → expand
+- HSep
+- `eye`/`eye-off` → `TOGGLE_LAYER_VISIBILITY` capa activa
+- `duplicate` → `DUPLICATE_LAYER` (disabled si capa vacía o maxLayers)
+- `trash` (danger) → `DELETE_CURRENT_LAYER` (disabled si totalLayers ≤ 1)
+- HSep
+- `arrow-up` → `REORDER_LAYERS` +1 (disabled si en top)
+- `arrow-down` → `REORDER_LAYERS` -1 (disabled si en bottom)
+- HSep
+- `plus` → `NEXT_LAYER` (disabled si ≥ MAX_LAYERS=10)
+
+**Modo expanded** — DiPanel width 220:
+- Header: "LAYERS" + contador `N/10` + `plus` + `chevron-right` (collapse)
+- Visualización eje Z (near/far decorativa)
+- Lista de LayerRows en orden inverso (top = layer más cercana), con dnd-kit drag-reorder
+- `DragEndEvent` → `MOVE_LAYER_TO { fromIndex, toIndex }`
+- FLIP animation via Framer Motion `layout`
+
+**LayerRow** (`layers/LayerRow.tsx`) — por capa:
+- Handle drag (useSortable, `touchAction: 'none'`)
+- Dot Z-axis (purple si activa, borderColor si no)
+- "Layer N" nombre (color: purple si activa, muted si vacía, dark si normal)
+- Badge color mode: `Flat` | `Grad` | `Fade` | `Empty` (relleno con purple10/20 si aplica)
+- `eye`/`eye-off` → `TOGGLE_LAYER_VISIBILITY payload: index`
+- `pin`/`pin-off` → `TOGGLE_3D_LOCK payload: index`
+  - `pin` = anclada en 2D (no se mueve con parallax) → color T.purple
+  - `pin-off` = libre en 3D → color mutedColor
+- Click en row → `SET_CURRENT_LAYER payload: index`
+
+### 2.6 ColorPalette
+
+**Componente:** `ColorPalette` (`colorpalette/ColorPalette.tsx`)  
+**Posición:** `absolute bottom-12 right-12 z-50`  
+**Visibilidad:** `mode === 'drawing'`  
+**Estructura:** DiPanel width 240 radius 20:
+
+- `PaletteHeader`: DiSegmentControl `Primary`/`Alt` (small) → `SET_ACTIVE_PALETTE` + DiSegmentControl `Flat`/`Gradient`/`Fade` (small) → `SET_PALETTE_MODE` + `SET_PALETTE_GRADIENT_TYPE`
+- `GradientControls` (solo si `paletteMode === 'grad'`): dos DiMiniSlider — ángulo (0–360°) e intensidad (0–100%) ⚠️ GAP: despacha `SET_PALETTE_GRADIENT_ANGLE` / `SET_PALETTE_GRADIENT_INTENSITY` (campos mirror UI), no directamente a `layerGradParams`
+- `SwatchGrid`: 14 blob-shapes organics en grid de 8 columnas (7 + 7), ring purple en activo, stroke luminance-based. Click → `SET_COLOR_INDEX`
+
+### 2.7 LayerDotsRail
+
+**Componente:** `LayerDotsRail` (`layers/LayerDotsRail.tsx`)  
+**Posición:** `fixed right-8 top-50% -translateY(50%) z-50`  
+**Visibilidad:** `mode === 'drawing'` && `!isUIHidden`  
+**Estructura:** DiPill vertical (width 24), dots para cada layer en orden inverso:
+- Activa → punto purple
+- Oculta → opacidad 0.4
+- `locked3D` && no activa → `boxShadow: inset 0 0 0 1px T.purple`
+- Click → `SET_CURRENT_LAYER payload: i`
+
+### 2.8 ResetViewPill
+
+**Componente:** `ResetViewPill` (`viewport/ResetViewPill.tsx`)  
+**Posición:** `fixed left-8 bottom-8 z-50`  
+**Visibilidad:** `mode === 'drawing'` && `!isUIHidden`  
+**Contenido:** DiPill con un solo botón: ícono `target` → `RESET_DRAWING_VIEW` (resetea drawingZoom a 1, drawingPan a {0,0})
+
+### 2.9 Overlays condicionales en DRAW
+
+**ToolOptionsPanel** (`drawing/ToolOptionsPanel.tsx`):
+- Renderiza `null` si `state.tool !== 'line'`
+- Cuando visible: DiPill con `LineModeButton` + `DiVSep` + label "Size" + `<input type="range" 1–100>` + valor numérico
+- Slider: `onInput` → `SET_LINE_THICKNESS_PREVIEW`, `onChange` → `SET_LINE_THICKNESS`, `onPointerUp` → `COMMIT_LINE_THICKNESS`
+- ⚠️ NO tiene posicionamiento propio — el parent (ControlsDrawingV2) debe posicionarlo encima del DrawingToolbar
+
+**TextSessionPanel** (`text/TextSessionPanel.tsx`):
+- Renderiza `null` si `!state.textSession.isActive`
+- Cuando visible: panel 280px con fila de fuentes + textarea + fila de controles + acciones
+- Fuentes: noir (Courier Prime) | mansion (Cinzel) | pharma (Inter) | comic (Bangers) | dungeons (Inknut Antiqua) — `UPDATE_TEXT_SESSION { font }`
+- Textarea: `content` hasta 140 chars — `UPDATE_TEXT_SESSION { content }`
+- Counter: color `#F59E0B` si length > 130, muted si ≤ 130
+- Align: align-left / align-center / align-right — `UPDATE_TEXT_SESSION { align }`
+- Cancel → `CANCEL_TEXT_SESSION` | Done → `COMMIT_TEXT_SESSION`
+- Esc → cancel | Cmd/Ctrl+Enter → done
+- ⚠️ NO tiene posicionamiento propio — el parent debe posicionarlo
+
+---
+
+## 3. Layout VIEW (modo cinemático)
+
+### 3.1 TopBar — slot izquierdo en VIEW
+
+**Componente:** `SnapshotRecordPill` (`topbar/SnapshotRecordPill.tsx`)  
+**Posición:** `absolute top-12 left-12` (misma posición que FileControlsPill en DRAW)  
+**Contenido:**
+- `snapshot` → `REQUEST_EXPORT 'png'`
+- `RecordBtn`: ícono `record` → `REQUEST_EXPORT 'mp4'`; cuando `isExporting && exportRequest === 'mp4'`: fondo rojo, etiqueta "REC" en Sora 9px
+
+TopBar centro y derecha: idénticos a DRAW (ModeSwitchPill + ThemeTogglePill).
+
+### 3.2 BottomBar — CameraBar
+
+**Componente:** `CameraBar` (`bottombar/CameraBar.tsx`)  
+**Wrapper:** `BottomBar` — misma posición bottom-center que DrawingToolbar  
+**Responsive:** `window.matchMedia('(max-width: 1100px)')`
+
+**Desktop (>1100px):** DiPill único:
+```
+[CameraPresetsZone] | tall-vsep | [CameraSpeedZone] | tall-vsep | [CameraSlidersZone]
+```
+
+**Tablet (≤1100px):** dos pills apiladas:
+```
+DiPill: [CameraSlidersZone]
+DiPill: [CameraPresetsZone] | tall-vsep | [CameraSpeedZone]
+```
+
+**CameraPresetsZone:** 10 DiActionButton (activeStyle: solid) → `SET_CINEMATIC_TYPE`:
+`forward` · `spiral` · `yoyo` · `pulse` · `twist` · `arc` · `crane` · `truck` · `orbit` · `zoom`
+
+**CameraSpeedZone:**
+- Ícono `ctrl-speed` + DiMiniSlider 0.1–1.0 → `SET_CINEMATIC_SPEED`
+- Botón ciclo 4 estados (Off → Low → Medium → High → Off): ícono `ctrl-handshake`/`ctrl-handshake-off` + label → `TOGGLE_HANDHELD` + `SET_HANDHELD_INTENSITY`
+
+**CameraSlidersZone:**
+- `ctrl-focal` + DiMiniSlider 24–300mm → `SET_FOCAL_LENGTH` (conversión flToMm/mmToFl)
+- `ctrl-distance` + DiMiniSlider -5000–2000 → `SET_VIEW_ZOOM_OFFSET`
+- `ctrl-spacing` + DiMiniSlider 0–2.0 → `SET_LAYER_SPACING_FACTOR`
+
+### 3.3 FXPanel
+
+**Componente:** `FXPanel` (`fx/FXPanel.tsx`)  
+**Posición:** `absolute top-50% right-12 -translateY(50%) z-50`  
+**Visibilidad:** `mode === 'cinematic'` && `!isUIHidden`  
+**Estado collapsed/expanded:** persiste en `localStorage` key `'diorame-fx-expanded'`
+
+**Modo collapsed** — DiPill vertical (análogo a LayersPanel collapsed):
+- Ícono master FX toggle
+- Expander
+
+**Modo expanded** — DiPanel width 248:
+- Header: "FX" + `sparkles` (TOGGLE_FX_MASTER) + `chevron-right` (collapse)
+- 3 grupos con `FXRow` por efecto:
+
+| Grupo | Efecto | Level | Control |
+|---|---|---|---|
+| Texture | Grain | 1 | Slider 0–1 |
+| Texture | Grunge | discrete | Subtle / Medium / Intense |
+| Texture | RISO | 1 | Slider 0–1 |
+| Lens | Vignette | 1 | Slider 0–1 |
+| Lens | Chromatic Ab. | 1 | Slider 0–1 |
+| Lens | Distortion | bipolar | Slider -1–1 |
+| Lens | Glow | 1 | Slider 0–1 |
+| Lens | Blur / DoF | dof | Slider intensidad + focus dist + focus layer |
+| Atmosphere | Fog | 1 | Slider 0–1 |
+| Atmosphere | Particles | composite | Slider + type Circle/Square/Stroke |
+| Atmosphere | Stop Motion | discrete | Light / Medium / Heavy |
+| Atmosphere | Pixel Art | pixel | Size + Depth + Dither sub-sliders |
+
+Cada `FXRow` tiene: toggle ON/OFF (`TOGGLE_FX payload: fxKey`) + controles expandidos según `level`.
+
+### 3.4 ResetViewPill en VIEW
+
+El componente `ResetViewPill` retorna `null` cuando `mode !== 'drawing'`. **En VIEW no existe un equivalente de Reset View** — el usuario regresa a una vista conocida seleccionando un preset de cámara.  
+⚠️ [A CONFIRMAR CON EL USUARIO] ¿Se quiere un reset de cámara en VIEW (ej: botón que resetee a z=500, rotation=0)?
+
+### 3.5 Lo que desaparece en VIEW
+
+- `LayersPanel` — no hay edición de capas en modo cinemático
+- `ColorPalette` — no hay dibujo en modo cinemático
+- `LayerDotsRail` — no hay navegación de capas en modo cinemático
+- `ToolOptionsPanel` — específico de herramienta de dibujo
+- `TextSessionPanel` — específico de herramienta texto
+
+---
+
+## 4. Persistentes (ambos modos)
+
+Átomos que viven en el ControlsV2 root y no dependen de modo:
+
+| Átomo | Componente | Posición |
+|---|---|---|
+| TopBar completo | `TopBar.tsx` | orchestrador; delega a los 3 slots |
+| Slot central (mode switch + hide UI) | `ModeSwitchPill` | `absolute top-12 center` |
+| Slot derecho (theme) | `ThemeTogglePill` | `absolute top-12 right-12` |
+| BottomBar | `BottomBar.tsx` | `absolute bottom-12 center` — cambia contenido por modo |
+
+**LayerDotsRail y ResetViewPill** son visibles solo en DRAW pero son atoms sin deps de modo en su código — retornan null automáticamente. Desde ControlsV2 root se pueden montar incondicionalmente.
+
+---
+
+## 5. Modales y overlays (z-index alto)
+
+| Modal | Trigger | Componente |
+|---|---|---|
+| WelcomeModal | Shift+? | `WelcomeModalV2` |
+| Clear Canvas | Botón "New" en FileControlsPill ⚠️ actualmente `window.confirm()` | `ClearCanvasAlertV2` |
+| Complex Scene | Export con >800 shapes visibles | `ComplexSceneModalV2` |
+| Export Progress | Durante export en curso | `ExportProgressV2` |
+| Mobile Block | Viewport < threshold | `MobileBlockScreenV2` |
+
+Todos importados desde `src/components/strata/modals/index.ts`.
+
+---
+
+## 6. Tabla de cambios entre modos (DRAW ↔ VIEW)
+
+| Zona | DRAW | VIEW |
+|---|---|---|
+| TopBar izquierda (abs top-12 left-12) | `FileControlsPill`: new·open·save·export + undo·redo + project name | `SnapshotRecordPill`: snapshot·record |
+| TopBar centro (abs top-12 center) | `ModeSwitchPill`: draw·view + hide-ui | `ModeSwitchPill`: draw·view + hide-ui (idéntico) |
+| TopBar derecha (abs top-12 right-12) | `ThemeTogglePill`: sun·moon | `ThemeTogglePill`: sun·moon (idéntico) |
+| Bottom-center (abs bottom-12 center) | `DrawingToolbar`: 5 tools + modifiers por tool | `CameraBar`: 10 presets + speed/handheld + 3 sliders |
+| Top-right (abs top-12 right-12) | `LayersPanel`: expanded/collapsed, drag-reorder | (no existe) |
+| Bottom-right (abs bottom-12 right-12) | `ColorPalette`: palette selector + grad controls + swatches | (no existe) |
+| Right-center (abs top-50% right-12) | (no existe) | `FXPanel`: 12 efectos en 3 grupos |
+| Right edge center (fixed right-8 center) | `LayerDotsRail`: dots de navegación rápida | (no existe) |
+| Bottom-left (fixed left-8 bottom-8) | `ResetViewPill`: target icon → RESET_DRAWING_VIEW | (no existe, ver §3.4) |
+| Overlay line tool | `ToolOptionsPanel` (si tool==='line'): mode + thickness | (no existe) |
+| Overlay text session | `TextSessionPanel` (si textSession.isActive): fuentes·align·textarea | (no existe) |
+
+---
+
+## 7. Abolido del legacy (no se traduce, se elimina)
+
+- ❌ **UndoRedoBar V2** bottom-left — fue construido y eliminado en 10.3.6; absorbido por FileControlsPill (undo/redo), ResetViewPill (reset), botón "New" (clear)
+- ❌ **Badges de modificadores activos** (DiBadge: SYM / IN / BACK / FLUID) — en legacy mostraban estado en zona top-right; en V2 el estado activo está visible en los botones del modifier zone (DiActionButton active state)
+- ❌ **Panel de Gradient en ToolOptionsPanel legacy** — tenía controles de tipo (solid/fade) + ángulo + intensidad; absorbido por GradientControls dentro de ColorPalette V2 (siempre visible en DRAW cuando paletteMode=grad)
+- ❌ **Popover de export SVG en bottom bar** (ControlsDrawing legacy) — absorbido por DiSelectorPopover en FileControlsPill V2
+- ❌ **Botón Layers en bottom bar** (abría LayersPanel como popover) — reemplazado por LayersPanel V2 fijo en top-right
+- ❌ **Modal de modo cinemático** (ControlsCinematic legacy era un panel de 768 líneas) — descompuesto en CameraBar + FXPanel + SnapshotRecordPill, cada uno autónomo
+- ❌ **EnhancedTooltip de Lucide/Radix** — reemplazado por prop `tooltip` nativa en DiActionButton
+- ❌ **Botón "Hide UI" standalone** en modo cinematic (legacy tenía botón separado en esquina) — absorbido en ModeSwitchPill como tercer botón (separado por DiVSep)
+- ❌ **Badge "Layer N | Tool | Modifiers"** top-right (legacy) — información distribuida en DrawingToolbar (tool activo via active state) + LayerDotsRail (capa activa) + LayersPanel badge N/total
+
+---
+
+## 8. Gaps conocidos pendientes
+
+| # | Gap | Archivo | Prioridad |
+|---|---|---|---|
+| G1 | `FileControlsPill` botón "New" usa `window.confirm()` en lugar de `ClearCanvasAlertV2`; además no limpia `sessionStorage` | `topbar/FileControlsPill.tsx` | Alta |
+| G2 | `FileControlsPill` undo/redo sin disabled states — no comprueba `historyIndex <= 0` ni `historyIndex >= history.length - 1` | `topbar/FileControlsPill.tsx` | Alta |
+| G3 | `GradientControls` despacha a `paletteGradientAngle`/`paletteGradientIntensity` (campos mirror UI-level) en lugar de directamente a `layerGradParams[currentLayerIndex]` | `colorpalette/GradientControls.tsx` | Media |
+| G4 | `ToolOptionsPanel` y `TextSessionPanel` no tienen posicionamiento propio — deben ser posicionados por `ControlsDrawingV2` | ambos | Media (bloqueante para 10.4) |
+| G5 | Reset de cámara en VIEW no existe — ResetViewPill retorna null en modo cinematic | `viewport/ResetViewPill.tsx` | A confirmar |
+| G6 | `T.amber` / `T.warning` no existe en tokens — TextSessionPanel usa `#F59E0B` hardcoded | `design-system/tokens.ts` | Baja |
+| G7 | FileControlsPill tooltips en español ("Nuevo", "Abrir", "Guardar") — inconsistente con el resto de la app en inglés | `topbar/FileControlsPill.tsx` | Cosmética |
+
+---
+
+## 9. Referencias
+
+- **Banco de iconos:** `src/design-system/icons.ts` — 112 iconos al cierre de 10.3-fix
+- **Tokens design system v2:** `src/design-system/tokens.ts` — T, TYPE, SPACE, RADIUS, SHADOW, dk()
+- **Figma file key:** VYsPFnI7mE5XnCPpiak1fR (Diorame-UI)
+- **Capturas de referencia:** compartidas en chat del copiloto Claude.ai (DRAW + VIEW)
+- **APP_VERSION al cierre de esta fase:** 1.16.0 (en `src/constants/version.ts`)
+- **Rama activa:** `feat/ui-redesign-v2`
