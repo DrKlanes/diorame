@@ -1636,7 +1636,6 @@ export const StrataCanvas = () => {
                           layerCtx.letterSpacing = '0px';
                       }
 
-                      layerCtx.fillStyle = shape.color;
                       layerCtx.globalAlpha = pOrigin.opacity;
                       layerCtx.textAlign = shape.align || 'left';
                       layerCtx.textBaseline = 'middle';
@@ -1645,6 +1644,43 @@ export const StrataCanvas = () => {
                       const lineHeight = effectiveFontSize * 1.2;
                       const totalHeight = lines.length * lineHeight;
                       const startY = -(totalHeight / 2) + (lineHeight / 2);
+
+                      // Apply paletteMode gradient (mirrors shape path; bbox in local text coords)
+                      const shapeLayerIndex = Math.round(Math.abs(shape.zIndex / BASE_DEPTH_STEP));
+                      const renderMode = currentState.layerRenderModes?.[shapeLayerIndex] || 'flat';
+                      if (renderMode === 'grad') {
+                          let maxWidth = 0;
+                          for (const l of lines) {
+                              const w = layerCtx.measureText(l).width;
+                              if (w > maxWidth) maxWidth = w;
+                          }
+                          const align = shape.align || 'left';
+                          let minX = 0, maxX = maxWidth;
+                          if (align === 'center') { minX = -maxWidth / 2; maxX = maxWidth / 2; }
+                          else if (align === 'right') { minX = -maxWidth; maxX = 0; }
+                          const minY = -totalHeight / 2, maxY = totalHeight / 2;
+                          const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+                          const gradParams = currentState.layerGradParams?.[shapeLayerIndex] || { angle: 90, intensity: 0.2 };
+                          const ang = (gradParams.angle * Math.PI) / 180;
+                          const r = Math.hypot(maxX - minX, maxY - minY) / 2;
+                          const grad = layerCtx.createLinearGradient(
+                              cx - Math.cos(ang) * r, cy - Math.sin(ang) * r,
+                              cx + Math.cos(ang) * r, cy + Math.sin(ang) * r
+                          );
+                          const c = shape.color, ints = gradParams.intensity;
+                          if (gradParams.gradType === 'fade') {
+                              const endAlpha = Math.max(0, 1 - (0.2 + ints * 0.8));
+                              grad.addColorStop(0, hexToRgba(c, 1));
+                              grad.addColorStop(1, hexToRgba(c, endAlpha));
+                          } else {
+                              grad.addColorStop(0, getVibrantVariant(c, ints, 'light'));
+                              grad.addColorStop(0.5, c);
+                              grad.addColorStop(1, getVibrantVariant(c, ints, 'dark'));
+                          }
+                          layerCtx.fillStyle = grad;
+                      } else {
+                          layerCtx.fillStyle = shape.color;
+                      }
 
                       lines.forEach((line, i) => {
                           layerCtx.fillText(line, 0, startY + i * lineHeight);
