@@ -67,7 +67,7 @@ function SubControlBlock({ label, value, dark, children }: SubControlBlockProps)
 					fontFamily: TYPE.numericValue.family,
 					fontWeight: TYPE.numericValue.weight,
 					fontSize: TYPE.numericValue.size,
-					color: T.purple,
+					color: accentColor,
 				}}>
 					{value}
 				</span>
@@ -94,6 +94,15 @@ interface FXRowProps {
 export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level = 'special', valueKey, discreteOptions, compositeOptions }: FXRowProps) {
 	const { state, dispatch } = useStrata();
 	const sliderValue = (level === 1 && valueKey) ? (state.postProcessing[valueKey] as number) : 0;
+
+	// Master-OFF snapshot: preserve config UI but muted + click-to-wake.
+	const snapshot = state.postProcessingSnapshot;
+	const wasInSnapshot = snapshot !== null && snapshot[fxKey] === true;
+	const showExpanded = isActive || wasInSnapshot;
+	const isMuted = !isActive && wasInSnapshot;
+	const accentColor = isMuted ? (dk(dark, T.muted, T.textDarkMuted) as string) : T.purple;
+	const handleClick = isMuted ? () => dispatch({ type: 'TOGGLE_FX_MASTER' }) : onToggle;
+
 	const tint = isActive ? T.purple : dk(dark, T.dark, T.textDark) as string;
 
 	const expandedBtnStyle = {
@@ -101,26 +110,27 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 		width: '100%',
 		padding: '8px 10px',
 		borderRadius: RADIUS.iconBtn,
-		background: dk(dark, T.purple10, T.purple20),
+		background: isMuted ? 'transparent' : dk(dark, T.purple10, T.purple20),
 		border: 'none',
 		cursor: 'pointer',
 		textAlign: 'left' as const,
 		boxSizing: 'border-box' as const,
+		opacity: isMuted ? 0.5 : 1,
 	};
 	const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10 };
-	const colStyle = { display: 'flex', flexDirection: 'column' as const, gap: 6, width: '100%' };
+	const colStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column' as const, gap: 6, width: '100%', pointerEvents: isMuted ? 'none' : undefined };
 
 	// --- Level 1: header + slider (0–1) ---
-	if (isActive && level === 1 && valueKey) {
+	if (showExpanded && level === 1 && valueKey) {
 		return (
-			<button onClick={onToggle} style={expandedBtnStyle}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
-						<Ico name={iconName} size={16} color={T.purple} />
-						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: T.purple }}>
+						<Ico name={iconName} size={16} color={accentColor} />
+						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: accentColor }}>
 							{label}
 						</span>
-						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
+						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(sliderValue * 100)}
 						</span>
 					</div>
@@ -134,24 +144,24 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 	}
 
 	// --- Bipolar: header + bipolar slider (-1–1) + center tick ---
-	if (isActive && level === 'bipolar' && valueKey) {
+	if (showExpanded && level === 'bipolar' && valueKey) {
 		const bv = state.postProcessing[valueKey] as number;
 		return (
-			<button onClick={onToggle} style={expandedBtnStyle}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
-						<Ico name={iconName} size={16} color={T.purple} />
-						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: T.purple }}>
+						<Ico name={iconName} size={16} color={accentColor} />
+						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: accentColor }}>
 							{label}
 						</span>
-						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
+						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{formatBipolar(bv)}
 						</span>
 					</div>
 					<div onPointerDown={stopProp} onClick={stopProp} style={{ position: 'relative' }}>
 						<DiMiniSlider dark={dark} value={bv} min={-1} max={1} step={0.01}
 							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
-						<div style={{ position: 'absolute', left: 'calc(50% - 0.5px)', top: 5, height: 4, width: 1, backgroundColor: T.purple, opacity: 0.4, pointerEvents: 'none' }} />
+						<div style={{ position: 'absolute', left: 'calc(50% - 0.5px)', top: 5, height: 4, width: 1, backgroundColor: accentColor, opacity: 0.4, pointerEvents: 'none' }} />
 					</div>
 				</div>
 			</button>
@@ -159,15 +169,15 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 	}
 
 	// --- Discrete: header + SegmentControl (no slider) ---
-	if (isActive && level === 'discrete' && valueKey && discreteOptions) {
+	if (showExpanded && level === 'discrete' && valueKey && discreteOptions) {
 		const dv = state.postProcessing[valueKey] as number;
 		const currentLabel = findClosestLabel(dv, discreteOptions);
 		return (
-			<button onClick={onToggle} style={expandedBtnStyle}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
-						<Ico name={iconName} size={16} color={T.purple} />
-						<span style={{ fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: T.purple }}>
+						<Ico name={iconName} size={16} color={accentColor} />
+						<span style={{ fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: accentColor }}>
 							{label}
 						</span>
 					</div>
@@ -189,19 +199,19 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 	}
 
 	// --- Composite: header + slider (0–1) + SegmentControl for type ---
-	if (isActive && level === 'composite' && valueKey && compositeOptions) {
+	if (showExpanded && level === 'composite' && valueKey && compositeOptions) {
 		const cv = state.postProcessing[valueKey] as number;
 		const pType = state.postProcessing.particleType;
 		const pTypeLabel = pType.charAt(0).toUpperCase() + pType.slice(1);
 		return (
-			<button onClick={onToggle} style={expandedBtnStyle}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
-						<Ico name={iconName} size={16} color={T.purple} />
-						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: T.purple }}>
+						<Ico name={iconName} size={16} color={accentColor} />
+						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: accentColor }}>
 							{label}
 						</span>
-						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
+						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(cv * 100)}
 						</span>
 					</div>
@@ -224,38 +234,38 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 	}
 
 	// --- Pixel: header + Size / Depth / Dither sub-controls ---
-	if (isActive && level === 'pixel') {
+	if (showExpanded && level === 'pixel') {
 		const sz = state.postProcessing.pixelArtSize;
 		const dp = state.postProcessing.pixelArtDepth;
 		const di = state.postProcessing.pixelArtDither;
 		return (
-			<button onClick={onToggle} style={expandedBtnStyle}>
-				<div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
+				<div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', pointerEvents: isMuted ? 'none' : undefined }}>
 					<div style={headerRowStyle}>
-						<Ico name={iconName} size={16} color={T.purple} />
-						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: T.purple }}>
+						<Ico name={iconName} size={16} color={accentColor} />
+						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: accentColor }}>
 							{label}
 						</span>
 					</div>
-					<SubControlBlock label="Size" value={`${sz}px`} dark={dark}>
+					<SubControlBlock accentColor={accentColor} label="Size" value={`${sz}px`} dark={dark}>
 						<div onPointerDown={stopProp} onClick={stopProp}>
 							<DiMiniSlider dark={dark} value={sz} min={2} max={12} step={1}
 								onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtSize', value: v } })} />
 						</div>
 					</SubControlBlock>
-					<SubControlBlock label="Depth" value="" dark={dark}>
+					<SubControlBlock accentColor={accentColor} label="Depth" value="" dark={dark}>
 						<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}
 							onPointerDown={stopProp} onClick={stopProp}>
 							<DiActionButton name="chevron-left" dark={dark}
 								onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDepth', value: Math.max(2, dp - 2) } })} />
-							<span style={{ flex: 1, textAlign: 'center', fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
+							<span style={{ flex: 1, textAlign: 'center', fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 								{DEPTH_LABEL_MAP[dp] ?? '?'}
 							</span>
 							<DiActionButton name="chevron-right" dark={dark}
 								onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDepth', value: Math.min(16, dp + 2) } })} />
 						</div>
 					</SubControlBlock>
-					<SubControlBlock label="Dither" value={formatDither(di)} dark={dark}>
+					<SubControlBlock accentColor={accentColor} label="Dither" value={formatDither(di)} dark={dark}>
 						<div onPointerDown={stopProp} onClick={stopProp}>
 							<DiMiniSlider dark={dark} value={di} min={0} max={1} step={0.1}
 								onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDither', value: v } })} />
@@ -267,20 +277,20 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 	}
 
 	// --- DoF: header + intensity + Free/Lock + conditional Z-Plane or Layer ---
-	if (isActive && level === 'dof') {
+	if (showExpanded && level === 'dof') {
 		const dofIntensity = state.postProcessing.dof;
 		const focusDist = state.postProcessing.focusDist;
 		const focusTargetLayer = state.postProcessing.focusTargetLayer;
 		const isFree = focusTargetLayer === -1;
 		return (
-			<button onClick={onToggle} style={expandedBtnStyle}>
-				<div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
+				<div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', pointerEvents: isMuted ? 'none' : undefined }}>
 					<div style={headerRowStyle}>
-						<Ico name={iconName} size={16} color={T.purple} />
-						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: T.purple }}>
+						<Ico name={iconName} size={16} color={accentColor} />
+						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: accentColor }}>
 							{label}
 						</span>
-						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
+						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(dofIntensity * 100)}
 						</span>
 					</div>
@@ -302,20 +312,20 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 						/>
 					</div>
 					{isFree ? (
-						<SubControlBlock label="Z-Plane" value={formatZPlane(focusDist)} dark={dark}>
+						<SubControlBlock accentColor={accentColor} label="Z-Plane" value={formatZPlane(focusDist)} dark={dark}>
 							<div onPointerDown={stopProp} onClick={stopProp} style={{ position: 'relative' }}>
 								<DiMiniSlider dark={dark} value={focusDist} min={-5000} max={5000} step={50}
 									onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusDist', value: v } })} />
-								<div style={{ position: 'absolute', left: 'calc(50% - 0.5px)', top: 5, height: 4, width: 1, backgroundColor: T.purple, opacity: 0.4, pointerEvents: 'none' }} />
+								<div style={{ position: 'absolute', left: 'calc(50% - 0.5px)', top: 5, height: 4, width: 1, backgroundColor: accentColor, opacity: 0.4, pointerEvents: 'none' }} />
 							</div>
 						</SubControlBlock>
 					) : (
-						<SubControlBlock label="Layer" value="" dark={dark}>
+						<SubControlBlock accentColor={accentColor} label="Layer" value="" dark={dark}>
 							<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}
 								onPointerDown={stopProp} onClick={stopProp}>
 								<DiActionButton name="chevron-left" dark={dark}
 									onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusTargetLayer', value: Math.max(0, focusTargetLayer - 1) } })} />
-								<span style={{ flex: 1, textAlign: 'center', fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: T.purple }}>
+								<span style={{ flex: 1, textAlign: 'center', fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 									Layer {focusTargetLayer + 1}
 								</span>
 								<DiActionButton name="chevron-right" dark={dark}

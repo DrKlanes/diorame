@@ -239,7 +239,18 @@ DiPill: [CameraPresetsZone] | tall-vsep | [CameraSpeedZone]
 | Atmosphere | Stop Motion | discrete | Light / Medium / Heavy |
 | Atmosphere | Pixel Art | pixel | Size + Depth + Dither sub-sliders |
 
-Cada `FXRow` tiene: toggle ON/OFF (`TOGGLE_FX payload: fxKey`) + controles expandidos según `level`.
+Cada `FXRow` tiene 4 estados visuales:
+
+| Estado | `isActive` | `wasInSnapshot` | Render |
+|---|---|---|---|
+| 1 — Master ON, FX activo | `true` | `false` (snapshot=null) | Expandido normal (morado, slider funcional) |
+| 2 — Master ON, FX inactivo | `false` | `false` (snapshot=null) | Flat row (solo icono + nombre) |
+| 3 — Master OFF, en snapshot | `false` | `true` | Expandido muted (gris, opacity 0.5, `pointerEvents:none` en controles internos). Click en cualquier parte dispatcha `TOGGLE_FX_MASTER` que restaura desde snapshot. |
+| 4 — Master OFF, NO en snapshot | `false` | `false` | Flat row. Click dispatcha `TOGGLE_FX` (que también invalida snapshot + restaura master vía `fxMasterEnabled: true` automáticamente). |
+
+`wasInSnapshot = state.postProcessingSnapshot !== null && snapshot[fxKey] === true`. La derivación se hace localmente en `FXRow` — el state shape no cambia.
+
+Toggle ON/OFF normal: `TOGGLE_FX payload: fxKey` + controles expandidos según `level`.
 
 ### 3.4 ResetViewPill en VIEW
 
