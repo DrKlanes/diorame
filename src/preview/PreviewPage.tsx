@@ -17,7 +17,7 @@ import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 import { FXPanel } from '../components/strata/fx/FXPanel';
 import { ToolOptionsPanel } from '../components/strata/drawing/ToolOptionsPanel';
 import { TextSessionPanel } from '../components/strata/text/TextSessionPanel';
-import { ControlsDrawingV2 } from '../components/strata/ControlsDrawingV2';
+import { ControlsV2 } from '../components/strata/ControlsV2';
 import { DiModal, WelcomeModalV2, ClearCanvasAlertV2, ComplexSceneModalV2, ExportProgressV2, OnboardingOverlayV2, MobileBlockScreenV2 } from '../components/strata/modals';
 import type { ExportType } from '../components/strata/modals';
 import { DiSelectorPopover, DiSelectorOption } from '../components/strata/popovers';
@@ -845,7 +845,7 @@ function IntegratedUIPreviewSectionContent({ parentDark, subtleColor, sectionBg,
 				borderRadius: 12,
 				overflow: 'hidden',
 			}}>
-				<ControlsDrawingV2 />
+				<ControlsV2 />
 			</div>
 		</Section>
 	);

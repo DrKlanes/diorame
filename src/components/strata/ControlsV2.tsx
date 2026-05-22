@@ -16,16 +16,15 @@ import { TextSessionPanel } from './text/TextSessionPanel';
 const OVERLAY_BOTTOM = 60;
 
 /**
- * V2 UI root — assembles all atoms for both DRAW and VIEW modes.
+ * V2 controls root — assembles all atoms for both DRAW and VIEW modes.
  * Each atom self-filters by mode (returns null when inactive).
  * isUIHidden is enforced at root level: all atoms are unmounted together.
  * A persistent mini-button at bottom-right allows reactivating UI when hidden.
- * FXPanel added in sub-fase 10.5 (ControlsCinematicV2).
  *
  * Must be mounted inside a position:relative container.
  * LayerDotsRail + ResetViewPill use position:fixed (viewport-relative).
  */
-export function ControlsDrawingV2() {
+export function ControlsV2() {
 	const { dark } = useTheme();
 	const { state, dispatch } = useStrata();
 
@@ -40,7 +39,7 @@ export function ControlsDrawingV2() {
 					{/* BottomBar — absolute bottom-12 center. DrawingToolbar in draw, CameraBar in view */}
 					<BottomBar />
 
-					{/* LayersPanel — absolute top-50% right-12, drawing mode only */}
+					{/* LayersPanel — absolute top-72 right-12, drawing mode only */}
 					<LayersPanel />
 
 					{/* ColorPalette — absolute bottom-12 right-12, drawing mode only */}

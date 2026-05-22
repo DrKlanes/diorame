@@ -153,7 +153,7 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 - Renderiza `null` si `state.tool !== 'line'`
 - Cuando visible: DiPill con `LineModeButton` + `DiVSep` + label "Size" + `<input type="range" 1–100>` + valor numérico
 - Slider: `onInput` → `SET_LINE_THICKNESS_PREVIEW`, `onChange` → `SET_LINE_THICKNESS`, `onPointerUp` → `COMMIT_LINE_THICKNESS`
-- ⚠️ NO tiene posicionamiento propio — el parent (ControlsDrawingV2) debe posicionarlo encima del DrawingToolbar
+- ⚠️ NO tiene posicionamiento propio — el parent (ControlsV2) debe posicionarlo encima del DrawingToolbar
 
 **TextSessionPanel** (`text/TextSessionPanel.tsx`):
 - Renderiza `null` si `!state.textSession.isActive`
@@ -260,7 +260,7 @@ El componente `ResetViewPill` retorna `null` cuando `mode !== 'drawing'`. **En V
 
 Átomos que viven en el ControlsV2 root y no dependen de modo.
 
-**isUIHidden — filtro a nivel root (post-10.4-fix):** El filtro `isUIHidden` se aplica en `ControlsDrawingV2` a nivel root, no átomo por átomo. Cuando `isUIHidden === true`, todos los átomos se desmontan juntos con `{!isUIHidden && <>...</>}`. Excepción: los 4 átomos que ya tenían filtro propio (LayersPanel, LayerDotsRail, ResetViewPill, FXPanel) lo conservan por compatibilidad con usos futuros fuera de ControlsDrawingV2. Cuando `isUIHidden === true`, se renderiza solo el mini-button persistente (ver abajo).
+**isUIHidden — filtro a nivel root (post-10.4-fix):** El filtro `isUIHidden` se aplica en `ControlsV2` a nivel root, no átomo por átomo. Cuando `isUIHidden === true`, todos los átomos se desmontan juntos con `{!isUIHidden && <>...</>}`. Excepción: los 4 átomos que ya tenían filtro propio (LayersPanel, LayerDotsRail, ResetViewPill, FXPanel) lo conservan por compatibilidad con usos futuros fuera de ControlsV2. Cuando `isUIHidden === true`, se renderiza solo el mini-button persistente (ver abajo).
 
 **Mini-button persistente:** Cuando `state.isUIHidden === true`, aparece un `DiActionButton` con icono `eye` en `position:fixed bottom:16 right:16 z-index:100`. Opacidad base 0.25, opacidad hover 1 (transition 0.2s). Click → `TOGGLE_UI`. Este botón NO existe en DOM cuando la UI está visible; el toggle primario es el botón hide-ui de ModeSwitchPill.
 
@@ -331,7 +331,7 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 | G1 | `FileControlsPill` botón "New" usa `window.confirm()` en lugar de `ClearCanvasAlertV2`; además no limpia `sessionStorage` | `topbar/FileControlsPill.tsx` | Alta |
 | G2 | `FileControlsPill` undo/redo sin disabled states — no comprueba `historyIndex <= 0` ni `historyIndex >= history.length - 1` | `topbar/FileControlsPill.tsx` | Alta |
 | G3 | `GradientControls` despacha a `paletteGradientAngle`/`paletteGradientIntensity` (campos mirror UI-level) en lugar de directamente a `layerGradParams[currentLayerIndex]` | `colorpalette/GradientControls.tsx` | Media |
-| G4 | `ToolOptionsPanel` y `TextSessionPanel` no tienen posicionamiento propio — deben ser posicionados por `ControlsDrawingV2` | ambos | Media (bloqueante para 10.4) |
+| G4 | `ToolOptionsPanel` y `TextSessionPanel` no tienen posicionamiento propio — deben ser posicionados por `ControlsV2` | ambos | Media (bloqueante para 10.4) |
 | G5 | Reset de cámara en VIEW no existe — ResetViewPill retorna null en modo cinematic | `viewport/ResetViewPill.tsx` | A confirmar |
 | G6 | `T.amber` / `T.warning` no existe en tokens — TextSessionPanel usa `#F59E0B` hardcoded | `design-system/tokens.ts` | Baja |
 | G7 | FileControlsPill tooltips en español ("Nuevo", "Abrir", "Guardar") — inconsistente con el resto de la app en inglés | `topbar/FileControlsPill.tsx` | Cosmética |
