@@ -3,7 +3,7 @@
 **Estado:** documento canónico de referencia para Fase 10.  
 Si código o decisión contradice este mapa, gana el mapa. Ediciones requieren acuerdo explícito.
 
-**Última actualización:** 2026-05-22 (cierre sub-fase 10.3.6)
+**Última actualización:** 2026-05-22 (post-10.4-fix)
 
 ---
 
@@ -80,7 +80,7 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 ### 2.5 LayersPanel
 
 **Componente:** `LayersPanel` (`layers/LayersPanel.tsx`)  
-**Posición:** `absolute top-12 right-12 z-50`  
+**Posición:** `absolute top-50% right-12 translateY(-50%) z-50`  
 **Visibilidad:** `mode === 'drawing'` && `!isUIHidden`  
 **Estado collapsed/expanded:** persiste en `localStorage` key `'diorame-layers-expanded'`
 
@@ -256,6 +256,12 @@ El componente `ResetViewPill` retorna `null` cuando `mode !== 'drawing'`. **En V
 
 ## 4. Persistentes (ambos modos)
 
+Átomos que viven en el ControlsV2 root y no dependen de modo.
+
+**isUIHidden — filtro a nivel root (post-10.4-fix):** El filtro `isUIHidden` se aplica en `ControlsDrawingV2` a nivel root, no átomo por átomo. Cuando `isUIHidden === true`, todos los átomos se desmontan juntos con `{!isUIHidden && <>...</>}`. Excepción: los 4 átomos que ya tenían filtro propio (LayersPanel, LayerDotsRail, ResetViewPill, FXPanel) lo conservan por compatibilidad con usos futuros fuera de ControlsDrawingV2. Cuando `isUIHidden === true`, se renderiza solo el mini-button persistente (ver abajo).
+
+**Mini-button persistente:** Cuando `state.isUIHidden === true`, aparece un `DiActionButton` con icono `eye` en `position:fixed bottom:16 right:16 z-index:100`. Opacidad base 0.25, opacidad hover 1 (transition 0.2s). Click → `TOGGLE_UI`. Este botón NO existe en DOM cuando la UI está visible; el toggle primario es el botón hide-ui de ModeSwitchPill.
+
 Átomos que viven en el ControlsV2 root y no dependen de modo:
 
 | Átomo | Componente | Posición |
@@ -291,13 +297,14 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 | TopBar centro (abs top-12 center) | `ModeSwitchPill`: draw·view + hide-ui | `ModeSwitchPill`: draw·view + hide-ui (idéntico) |
 | TopBar derecha (abs top-12 right-12) | `ThemeTogglePill`: sun·moon | `ThemeTogglePill`: sun·moon (idéntico) |
 | Bottom-center (abs bottom-12 center) | `DrawingToolbar`: 5 tools + modifiers por tool | `CameraBar`: 10 presets + speed/handheld + 3 sliders |
-| Top-right (abs top-12 right-12) | `LayersPanel`: expanded/collapsed, drag-reorder | (no existe) |
+| Right-center (abs top-50% right-12) | `LayersPanel`: expanded/collapsed, drag-reorder | (no existe) |
 | Bottom-right (abs bottom-12 right-12) | `ColorPalette`: palette selector + grad controls + swatches | (no existe) |
 | Right-center (abs top-50% right-12) | (no existe) | `FXPanel`: 12 efectos en 3 grupos |
 | Right edge center (fixed right-8 center) | `LayerDotsRail`: dots de navegación rápida | (no existe) |
 | Bottom-left (fixed left-8 bottom-8) | `ResetViewPill`: target icon → RESET_DRAWING_VIEW | (no existe, ver §3.4) |
 | Overlay line tool | `ToolOptionsPanel` (si tool==='line'): mode + thickness | (no existe) |
 | Overlay text session | `TextSessionPanel` (si textSession.isActive): fuentes·align·textarea | (no existe) |
+| Hide UI active (isUIHidden) | Solo mini-button: fixed bottom-right, opacity 0.25/1 hover | Solo mini-button: fixed bottom-right, opacity 0.25/1 hover |
 
 ---
 
