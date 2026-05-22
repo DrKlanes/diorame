@@ -220,8 +220,8 @@ DiPill: [CameraPresetsZone] | tall-vsep | [CameraSpeedZone]
 - Ícono master FX toggle
 - Expander
 
-**Modo expanded** — DiPanel width 248:
-- Header: "FX" + `sparkles` (TOGGLE_FX_MASTER) + `chevron-right` (collapse)
+**Modo expanded** — DiPanel width 248 (max-height `calc(100vh - 80px)`, grupos con scroll interno `di-panel-scroll`):
+- Header: "FX" + (cuando master OFF: etiqueta roja "· off") + `sparkles` (TOGGLE_FX_MASTER) + `chevron-right` (collapse)
 - 3 grupos con `FXRow` por efecto:
 
 | Grupo | Efecto | Level | Control |
@@ -328,8 +328,9 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 
 | # | Gap | Archivo | Prioridad |
 |---|---|---|---|
-| G1 | ✅ RESUELTO (10.5 commit 3) — `FileControlsPill` botón "New" ahora abre `ClearCanvasAlertV2` y limpia sessionStorage | `topbar/FileControlsPill.tsx` | — |
+| G1 | ✅ RESUELTO (10.5 c3 + 10.5-fix-final c5) — `FileControlsPill` botón "New" abre `ClearCanvasAlertV2`, limpia sessionStorage y resetea `projectName` a "Untitled Project" | `topbar/FileControlsPill.tsx` | — |
 | G2 | ✅ RESUELTO (10.5 commit 4) — `FileControlsPill` undo/redo con disabled states basados en `historyIndex` | `topbar/FileControlsPill.tsx` | — |
+| G_fx | ✅ RESUELTO (10.5-fix-final c1) — `TOGGLE_FX_MASTER` como snapshot/restore: apaga todos + guarda snapshot; restaura desde snapshot. `postProcessingSnapshot: PostProcessingEnabled | null` en AppState. `TOGGLE_FX` invalida el snapshot. | `StrataContext.tsx`, `strataTypes.ts`, `fx/FXPanel.tsx` | — |
 | G3 | `GradientControls` despacha a `paletteGradientAngle`/`paletteGradientIntensity` (campos mirror UI-level) en lugar de directamente a `layerGradParams[currentLayerIndex]` | `colorpalette/GradientControls.tsx` | Media |
 | G4 | `ToolOptionsPanel` y `TextSessionPanel` no tienen posicionamiento propio — deben ser posicionados por `ControlsV2` | ambos | Media (bloqueante para 10.4) |
 | G5 | Reset de cámara en VIEW no existe — ResetViewPill retorna null en modo cinematic | `viewport/ResetViewPill.tsx` | A confirmar |

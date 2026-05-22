@@ -28,6 +28,7 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 	const handleClearConfirm = () => {
 		dispatch({ type: 'CLEAR_CANVAS' });
 		dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 0, rotation: 0 } });
+		dispatch({ type: 'SET_PROJECT_NAME', payload: 'Untitled Project' });
 		sessionStorage.removeItem('diorame-view-initialized');
 		setClearCanvasOpen(false);
 	};
