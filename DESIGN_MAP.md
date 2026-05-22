@@ -3,7 +3,7 @@
 **Estado:** documento canónico de referencia para Fase 10.  
 Si código o decisión contradice este mapa, gana el mapa. Ediciones requieren acuerdo explícito.
 
-**Última actualización:** 2026-05-22 (post-10.4-fix)
+**Última actualización:** 2026-05-22 (post-10.4-fix-2)
 
 ---
 
@@ -104,6 +104,8 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 - Lista de LayerRows en orden inverso (top = layer más cercana), con dnd-kit drag-reorder
 - `DragEndEvent` → `MOVE_LAYER_TO { fromIndex, toIndex }`
 - FLIP animation via Framer Motion `layout`
+
+**Responsive height**: `max-height: calc(100vh - 328px)` en modo expanded para evitar colisión con ColorPalette en viewports pequeños (≤900px). Scroll interno solo en la lista de LayerRows (`overflowY:auto, flex:1 1 0, minHeight:0`); header y Z-axis visualization (near/far dots) siempre visibles con `flexShrink:0`. Scrollbar: clase `.di-panel-scroll` (`globals.css`) — 4px, gray neutral, compatible light+dark.
 
 **LayerRow** (`layers/LayerRow.tsx`) — por capa:
 - Handle drag (useSortable, `touchAction: 'none'`)

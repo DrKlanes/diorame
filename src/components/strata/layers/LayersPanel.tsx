@@ -163,7 +163,7 @@ export function LayersPanel() {
 
 	return (
 		<div style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50 }}>
-			<DiPanel dark={dark} width={220} radius={20} padding="10px">
+			<DiPanel dark={dark} width={220} radius={20} padding="10px" style={{ maxHeight: 'calc(100vh - 328px)', overflow: 'hidden' }}>
 				{/* Header — chevron-right always top right */}
 				<div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
 					<span style={{
@@ -194,7 +194,7 @@ export function LayersPanel() {
 				</div>
 
 				{/* Z-axis + Layer list */}
-				<div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+				<div style={{ display: 'flex', flexDirection: 'column', gap: 0, flex: '1 1 0', minHeight: 0 }}>
 					{/* Near circle — camera end */}
 					<div style={{
 						width: 10,
@@ -205,13 +205,18 @@ export function LayersPanel() {
 						marginBottom: 3,
 						flexShrink: 0,
 					}} />
-					<div style={{
-						display: 'flex',
-						flexDirection: 'column',
-						gap: 1,
-						borderLeft: `1px solid ${borderColor}`,
-						paddingLeft: 6,
-					}}>
+					<div
+						className="di-panel-scroll"
+						style={{
+							display: 'flex',
+							flexDirection: 'column',
+							gap: 1,
+							borderLeft: `1px solid ${borderColor}`,
+							paddingLeft: 6,
+							flex: '1 1 0',
+							minHeight: 0,
+							overflowY: 'auto',
+						}}>
 						<DndContext
 							sensors={sensors}
 							collisionDetection={closestCenter}
@@ -246,6 +251,7 @@ export function LayersPanel() {
 					justifyContent: 'flex-end',
 					borderTop: `1px solid ${borderColor}`,
 					paddingTop: 6,
+					flexShrink: 0,
 				}}>
 					<DiActionButton name="duplicate"
 						onClick={() => dispatch({ type: 'DUPLICATE_LAYER', payload: currentLayerIndex } as any)}
