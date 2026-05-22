@@ -31,6 +31,14 @@ export const StrataCanvas = () => {
   const stateRef = useRef(state);
   const currentPointsRef = useRef<Point[]>([]); 
   const isDrawingRef = useRef(false);
+  // Sync isDrawingRef with React state for pass-through behavior on panels.
+  // Guard avoids redundant dispatches when value is unchanged.
+  const setIsDrawing = (v: boolean) => {
+    if (isDrawingRef.current !== v) {
+      isDrawingRef.current = v;
+      dispatch({ type: 'SET_DRAWING_ACTIVE', payload: v });
+    }
+  };
   const drawingPointerTypeRef = useRef<string | null>(null);
   const pinchEndTimestampRef = useRef(0); // Cooldown after pinch to prevent ghost strokes
   const drawingPressureRef = useRef(0.5);
@@ -404,7 +412,7 @@ export const StrataCanvas = () => {
           if (isDrawingRef.current && drawingPointerTypeRef.current === 'pen') return;
 
           if (e.touches.length === 2) {
-              isDrawingRef.current = false;
+              setIsDrawing(false);
               currentPointsRef.current = [];
               const t1 = e.touches[0];
               const t2 = e.touches[1];
@@ -423,7 +431,7 @@ export const StrataCanvas = () => {
                   tapTouchCount: 2,
               };
           } else if (e.touches.length === 3) {
-              isDrawingRef.current = false;
+              setIsDrawing(false);
               currentPointsRef.current = [];
               drawingPointerTypeRef.current = null;
               const t1 = e.touches[0];
@@ -745,7 +753,7 @@ export const StrataCanvas = () => {
         }
         if (state.tool === 'move') {
             e.currentTarget.setPointerCapture(e.pointerId);
-            isDrawingRef.current = true;
+            setIsDrawing(true);
             drawingPointerTypeRef.current = e.pointerType;
             
             // Gizmo Interaction
@@ -780,7 +788,7 @@ export const StrataCanvas = () => {
         }
 
         e.currentTarget.setPointerCapture(e.pointerId);
-        isDrawingRef.current = true;
+        setIsDrawing(true);
         drawingPointerTypeRef.current = e.pointerType;
         currentPointsRef.current = [{ x: worldX, y: worldY, pressure: 0.5 }];
         drawingPressureRef.current = 0.5;
@@ -793,7 +801,7 @@ export const StrataCanvas = () => {
         }
     } else if (state.mode === 'cinematic' && state.cinematicType === 'orbit') {
         e.currentTarget.setPointerCapture(e.pointerId);
-        isDrawingRef.current = true; 
+        setIsDrawing(true); 
     }
   };
 
@@ -965,7 +973,7 @@ export const StrataCanvas = () => {
     
     if (state.mode === 'drawing') {
         if (state.tool === 'move') {
-            isDrawingRef.current = false;
+            setIsDrawing(false);
             drawingPointerTypeRef.current = null;
             if (transformRef.current.isActive) {
                  const { x, y, scale, rotation } = transformRef.current.currentTransform;
@@ -1002,7 +1010,7 @@ export const StrataCanvas = () => {
             // Discard micro-strokes from finger/palm touches (not pen or mouse)
              if (drawingPointerTypeRef.current === 'touch' && currentPointsRef.current.length <= MIN_TOUCH_STROKE_POINTS) {
                  currentPointsRef.current = [];
-                 isDrawingRef.current = false;
+                 setIsDrawing(false);
                  drawingPointerTypeRef.current = null;
                  return;
              }
@@ -1115,10 +1123,10 @@ export const StrataCanvas = () => {
         
         // Move flags cleanup to AFTER processing points to allow late pointerMove events
         currentPointsRef.current = [];
-        isDrawingRef.current = false;
+        setIsDrawing(false);
         drawingPointerTypeRef.current = null;
     } else {
-        isDrawingRef.current = false;
+        setIsDrawing(false);
         drawingPointerTypeRef.current = null;
     }
   };

@@ -116,6 +116,7 @@ export interface AppState {
   isWelcomeModalOpen: boolean;
   isOnboardingVisible: boolean; // New: Onboarding overlay on canvas
   isUIHidden: boolean; // New: Toggle UI visibility in View mode
+  isDrawing: boolean; // Transient: true during active pointer drag (draw/move/orbit). NOT serialized.
   isSymmetryEnabled: boolean; // New: Vertical Symmetry Mode
   paletteMode: 'flat' | 'grad'; // New: Palette Rendering Mode
   layerRenderModes: Record<number, 'flat' | 'grad'>; // New: Per-layer render mode

@@ -75,8 +75,9 @@ export function ControlsV2() {
 	return (
 		<>
 			{/* All UI atoms — hidden together when isUIHidden is true */}
+			{/* Wrapper applies pointer-events: none during active drag → panels become pass-through */}
 			{!state.isUIHidden && (
-				<>
+				<div style={{ pointerEvents: state.isDrawing ? 'none' : undefined }}>
 					{/* TopBar — absolute top-12, three slots. FileControlsPill in draw, SnapshotRecordPill in view */}
 					<TopBar />
 
@@ -117,7 +118,7 @@ export function ControlsV2() {
 					}}>
 						<TextSessionPanel dark={dark} />
 					</div>
-				</>
+				</div>
 			)}
 
 			{/* Persistent mini-button — only visible when UI is hidden, allows reactivation */}

@@ -65,6 +65,7 @@ type Action =
   | { type: 'TRANSFORM_LAYER'; payload: { layerIndex: number; transform: { rotation: number; scale: number; dx: number; dy: number; centerX: number; centerY: number } } }
   | { type: 'TOGGLE_WELCOME_MODAL' }
   | { type: 'TOGGLE_UI' }
+  | { type: 'SET_DRAWING_ACTIVE'; payload: boolean }
   | { type: 'TOGGLE_SYMMETRY' }
   | { type: 'SET_PALETTE_MODE'; payload: 'flat' | 'grad' }
   | { type: 'SET_PALETTE_GRADIENT_ANGLE'; payload: number }
@@ -179,6 +180,7 @@ const initialState: AppState = {
   isWelcomeModalOpen: true,
   isOnboardingVisible: true, // New: Onboarding overlay on canvas
   isUIHidden: false,
+  isDrawing: false,
   isSymmetryEnabled: false,
   paletteMode: 'flat',
   layerRenderModes: {},
@@ -244,6 +246,8 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, isWelcomeModalOpen: !state.isWelcomeModalOpen };
     case 'TOGGLE_UI':
       return { ...state, isUIHidden: !state.isUIHidden };
+    case 'SET_DRAWING_ACTIVE':
+      return { ...state, isDrawing: action.payload };
     case 'TOGGLE_SYMMETRY':
       return { ...state, isSymmetryEnabled: !state.isSymmetryEnabled };
     case 'TOGGLE_DRAW_BEHIND':
@@ -744,7 +748,8 @@ function appReducer(state: AppState, action: Action): AppState {
           cinematicSpeed: safeCinematicSpeed,
           isHandheldEnabled: safeIsHandheldEnabled,
           handheldIntensity: safeHandheldIntensity,
-          shouldFitToView: true
+          shouldFitToView: true,
+          isDrawing: false
       };
     case 'COMPLETE_FIT_TO_VIEW':
         return { ...state, shouldFitToView: false };
