@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTheme } from '../../design-system/useTheme';
-import { useStrata } from './StrataContext';
+import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
+import { useSaveLoad } from '../../hooks/useSaveLoad';
+import { useExportFlow } from '../../hooks/useExportFlow';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { DiActionButton } from '../../design-system';
 import { TopBar } from './topbar/TopBar';
 import { BottomBar } from './bottombar/BottomBar';
@@ -22,12 +25,53 @@ const OVERLAY_BOTTOM = 60;
  * isUIHidden is enforced at root level: all atoms are unmounted together.
  * A persistent mini-button at bottom-right allows reactivating UI when hidden.
  *
+ * Also hosts 3 global side-effects (preserved from legacy Controls.tsx):
+ *   1) useKeyboardShortcuts — all global keyboard shortcuts
+ *   2) sessionStorage cleanup on mount — re-arms first-view defaults each refresh
+ *   3) mode-change effect — camera reset + first-view init when entering cinematic
+ *
+ * Note: useSaveLoad and useExportFlow are also instantiated by FileControlsPill
+ * internally. Light duplication is intentional and harmless (both hooks rely on
+ * useStrata context, not local state). May be hoisted in a future housekeeping pass.
+ *
  * Must be mounted inside a position:relative container.
  * LayerDotsRail + ResetViewPill use position:fixed (viewport-relative).
  */
 export function ControlsV2() {
 	const { dark } = useTheme();
 	const { state, dispatch } = useStrata();
+
+	// Side-effect 1: global keyboard shortcuts
+	const { handleSaveProject } = useSaveLoad();
+	const { handleExportRequest } = useExportFlow();
+	useKeyboardShortcuts({ handleExportRequest, handleSaveProject });
+
+	// Side-effect 2: clear "first view initialized" flag on mount
+	useEffect(() => {
+		sessionStorage.removeItem('diorame-view-initialized');
+	}, []);
+
+	// Side-effect 3: mode-change camera reset + first-view init
+	const prevModeRef = useRef(state.mode);
+	useEffect(() => {
+		if (prevModeRef.current === state.mode) return;
+		prevModeRef.current = state.mode;
+
+		if (state.mode === 'cinematic') {
+			const isFirstView = !sessionStorage.getItem('diorame-view-initialized');
+			dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 500 } });
+			if (isFirstView) {
+				sessionStorage.setItem('diorame-view-initialized', 'true');
+				dispatch({ type: 'SET_FOCAL_LENGTH', payload: 3840 });
+				dispatch({ type: 'SET_VIEW_ZOOM_OFFSET', payload: -2500 });
+				dispatch({ type: 'SET_LAYER_SPACING_FACTOR', payload: 1.0 });
+				dispatch({ type: 'SET_CINEMATIC_TYPE', payload: 'forward' });
+			}
+		} else if (state.mode === 'drawing') {
+			const activeZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
+			dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: activeZ, rotation: 0 } });
+		}
+	}, [state.mode, state.currentLayerIndex, dispatch]);
 
 	return (
 		<>

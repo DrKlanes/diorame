@@ -1,7 +1,7 @@
 import React from 'react';
 import { StrataProvider, useStrata } from './components/strata/StrataContext';
 import { StrataCanvas } from './components/strata/StrataCanvas';
-import { Controls } from './components/strata/Controls';
+import { ControlsV2 } from './components/strata/ControlsV2';
 import { useIsMobile } from './hooks/useIsMobile';
 import { useLoadExampleScene } from './hooks/useLoadExampleScene';
 import { MobileBlockScreenV2, ExportProgressV2, WelcomeModalV2 } from './components/strata/modals';
@@ -23,7 +23,7 @@ function AppContent() {
       `}} />
 
       <StrataCanvas />
-      <Controls />
+      <ControlsV2 />
       <WelcomeModalV2
         open={state.isWelcomeModalOpen}
         onClose={() => dispatch({ type: 'TOGGLE_WELCOME_MODAL' })}
