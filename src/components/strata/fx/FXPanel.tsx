@@ -121,7 +121,7 @@ export function FXPanel() {
 						</div>
 					</div>
 					<PanelHSep />
-					<div className="di-panel-scroll" style={{ overflowY: 'auto', flex: '1 1 0', minHeight: 0 }}>
+					<div className="di-panel-scroll" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 141px)' }}>
 					{/* Texture */}
 					<GroupLabel label="Texture" />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

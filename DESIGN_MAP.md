@@ -220,7 +220,7 @@ DiPill: [CameraPresetsZone] | tall-vsep | [CameraSpeedZone]
 - Ícono master FX toggle
 - Expander
 
-**Modo expanded** — DiPanel width 248 (max-height `calc(100vh - 80px)`, grupos con scroll interno `di-panel-scroll`):
+**Modo expanded** — DiPanel width 248. **Responsive height**: panel con `max-height: calc(100vh - 80px)` + `overflow: hidden`; lista interna de FX (3 grupos con FXRows) en wrapper `.di-panel-scroll` con `max-height: calc(100vh - 141px)` y `overflow-y: auto` (mismo patrón que LayersPanel post-86dec45 — `maxHeight` directo en el hijo, sin `flex-grow`). Header + sparkles + chevron siempre visibles.
 - Header: "FX" + (cuando master OFF: etiqueta roja "· off") + `sparkles` (TOGGLE_FX_MASTER) + `chevron-right` (collapse)
 - 3 grupos con `FXRow` por efecto:
 
