@@ -43,7 +43,8 @@ export function FXPanel() {
 	if (state.isUIHidden) return null;
 
 	const { postProcessingEnabled: px, fxMasterEnabled } = state;
-	const hasSnapshot = state.postProcessingSnapshot !== null;
+	const snap = state.postProcessingSnapshot;
+	const hasSnapshot = snap !== null;
 	const fxClick = (key: keyof typeof px) => hasSnapshot
 		? () => dispatch({ type: 'TOGGLE_FX_MASTER' })
 		: () => dispatch({ type: 'TOGGLE_FX', payload: key });
@@ -176,21 +177,23 @@ export function FXPanel() {
 				<DiActionButton name="sparkles" onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} tooltip="Toggle all FX" />
 				<PillHSep />
 				<DiActionButton name="chevron-left" onClick={() => toggle(true)} dark={dark} tooltip="Expand FX panel" />
+				<div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: 40, opacity: hasSnapshot ? 0.5 : 1 }}>
 				<PillHSep />
-				<DiActionButton name="fx-grain"     onClick={fxClick('grain')} dark={dark} active={px.grain}  tooltip="Grain" />
-				<DiActionButton name="fx-grunge"    onClick={fxClick('grunge')} dark={dark} active={px.grunge} tooltip="Grunge" />
-				<DiActionButton name="fx-riso"      onClick={fxClick('riso')} dark={dark} active={px.riso}   tooltip="Riso" />
+				<DiActionButton name="fx-grain"     onClick={fxClick('grain')} dark={dark} active={snap ? snap.grain : px.grain}  tooltip="Grain" />
+				<DiActionButton name="fx-grunge"    onClick={fxClick('grunge')} dark={dark} active={snap ? snap.grunge : px.grunge} tooltip="Grunge" />
+				<DiActionButton name="fx-riso"      onClick={fxClick('riso')} dark={dark} active={snap ? snap.riso : px.riso}   tooltip="Riso" />
 				<PillHSep />
-				<DiActionButton name="fx-vignette"   onClick={fxClick('vignette')} dark={dark} active={px.vignette}            tooltip="Vignette" />
-				<DiActionButton name="fx-chroma"     onClick={fxClick('chromaticAberration')} dark={dark} active={px.chromaticAberration} tooltip="Chromatic Aberration" />
-				<DiActionButton name="fx-distortion" onClick={fxClick('distortion')} dark={dark} active={px.distortion}          tooltip="Distortion" />
-				<DiActionButton name="fx-glow"       onClick={fxClick('glow')} dark={dark} active={px.glow}                tooltip="Glow" />
-				<DiActionButton name="fx-dof"        onClick={fxClick('dof')} dark={dark} active={px.dof}                 tooltip="Depth of Field" />
+				<DiActionButton name="fx-vignette"   onClick={fxClick('vignette')} dark={dark} active={snap ? snap.vignette : px.vignette}            tooltip="Vignette" />
+				<DiActionButton name="fx-chroma"     onClick={fxClick('chromaticAberration')} dark={dark} active={snap ? snap.chromaticAberration : px.chromaticAberration} tooltip="Chromatic Aberration" />
+				<DiActionButton name="fx-distortion" onClick={fxClick('distortion')} dark={dark} active={snap ? snap.distortion : px.distortion}          tooltip="Distortion" />
+				<DiActionButton name="fx-glow"       onClick={fxClick('glow')} dark={dark} active={snap ? snap.glow : px.glow}                tooltip="Glow" />
+				<DiActionButton name="fx-dof"        onClick={fxClick('dof')} dark={dark} active={snap ? snap.dof : px.dof}                 tooltip="Depth of Field" />
 				<PillHSep />
-				<DiActionButton name="fx-fog"       onClick={fxClick('fog')} dark={dark} active={px.fog}       tooltip="Fog" />
-				<DiActionButton name="fx-particles" onClick={fxClick('particles')} dark={dark} active={px.particles} tooltip="Particles" />
-				<DiActionButton name="fx-wiggle"    onClick={fxClick('wiggle')} dark={dark} active={px.wiggle}    tooltip="Wiggle" />
-				<DiActionButton name="fx-pixel"     onClick={fxClick('pixelArt')} dark={dark} active={px.pixelArt}  tooltip="Pixel Art" />
+				<DiActionButton name="fx-fog"       onClick={fxClick('fog')} dark={dark} active={snap ? snap.fog : px.fog}       tooltip="Fog" />
+				<DiActionButton name="fx-particles" onClick={fxClick('particles')} dark={dark} active={snap ? snap.particles : px.particles} tooltip="Particles" />
+				<DiActionButton name="fx-wiggle"    onClick={fxClick('wiggle')} dark={dark} active={snap ? snap.wiggle : px.wiggle}    tooltip="Wiggle" />
+				<DiActionButton name="fx-pixel"     onClick={fxClick('pixelArt')} dark={dark} active={snap ? snap.pixelArt : px.pixelArt}  tooltip="Pixel Art" />
+				</div>
 			</DiPill>
 		</div>
 	);

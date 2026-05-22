@@ -245,14 +245,14 @@ Cada `FXRow` tiene 4 estados visuales:
 |---|---|---|---|
 | 1 — Master ON, FX activo | `true` | `false` (snapshot=null) | Expandido normal (morado, slider funcional) |
 | 2 — Master ON, FX inactivo | `false` | `false` (snapshot=null) | Flat row (solo icono + nombre) |
-| 3 — Master OFF, en snapshot | `false` | `true` | Expandido muted (gris, opacity 0.5, `pointerEvents:none` en controles internos). Click en cualquier parte dispatcha `TOGGLE_FX_MASTER` que restaura desde snapshot. |
-| 4 — Master OFF, NO en snapshot | `false` | `false` | Flat row. Click dispatcha `TOGGLE_FX_MASTER` (wake/restore). Snapshot sagrado: nunca se modifica con master OFF. |
+| 3 — Master OFF, en snapshot | `false` | `true` | Expandido muted (gris, opacity 0.5, `pointerEvents:none` en controles internos). Click dispara `TOGGLE_FX_MASTER`. |
+| 4 — Master OFF, NO en snapshot | `false` | `false` | Flat row muted (gris, opacity 0.5). Click dispara `TOGGLE_FX_MASTER`. Snapshot sagrado: nunca se modifica con master OFF. |
 
-`wasInSnapshot = state.postProcessingSnapshot !== null && snapshot[fxKey] === true`. La derivación se hace localmente en `FXRow` — el state shape no cambia.
+Cuando hay snapshot activo, **todo el panel se ve visualmente apagado** (ningún FX se está aplicando):
+- **Expanded**: `isMuted = hasSnapshot` → todos los FXRow usan `accentColor = T.muted` y `opacity: 0.5`. `wasInSnapshot` solo distingue si se muestra expandido o flat.
+- **Collapsed**: wrapper `<div opacity: hasSnapshot ? 0.5 : 1>` atenúa los 12 iconos. Los que estaban en snapshot muestran `active={snap.KEY}` (tono morado atenuado); los que no estaban muestran `active=false` (gris atenuado). Esto da una pista visual sutil de qué se restaurará.
 
-`handleClick`: cuando `hasSnapshot` (master OFF), cualquier FXRow (muted o flat) dispara `TOGGLE_FX_MASTER`. `isMuted` sigue gobernando solo el render visual (opacity, colores, pointerEvents internos).
-
-El comportamiento wake/restore con master OFF aplica tanto al modo **expanded** (via `handleClick` en FXRow) como al modo **collapsed** (via `fxClick` helper en FXPanel). En collapsed, los 12 iconos de FX usan `fxClick(key)` en lugar de dispatch directo; `fxClick` retorna el mismo handler condicional: `hasSnapshot ? TOGGLE_FX_MASTER : TOGGLE_FX`.
+`handleClick`/`fxClick`: cualquier click sobre FX con master OFF dispara `TOGGLE_FX_MASTER` (wake/restore). Aplica en expanded y collapsed. `isMuted` solo gobierna render visual.
 
 Toggle ON/OFF normal: `TOGGLE_FX payload: fxKey` + controles expandidos según `level`.
 

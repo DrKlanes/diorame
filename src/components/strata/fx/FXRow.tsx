@@ -98,14 +98,15 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 
 	// Master-OFF snapshot: preserve config UI but muted + click-to-wake.
 	const snapshot = state.postProcessingSnapshot;
-	const wasInSnapshot = snapshot !== null && snapshot[fxKey] === true;
+	const hasSnapshot = snapshot !== null;
+	const wasInSnapshot = hasSnapshot && snapshot[fxKey] === true;
 	const showExpanded = isActive || wasInSnapshot;
-	const hasSnapshot = state.postProcessingSnapshot !== null;
-	const isMuted = !isActive && wasInSnapshot;  // governs visual render only
+	const isMuted = hasSnapshot;  // whole panel dims when master OFF
 	const accentColor = isMuted ? (dk(dark, T.muted, T.textDarkMuted) as string) : T.purple;
 	const handleClick = hasSnapshot ? () => dispatch({ type: 'TOGGLE_FX_MASTER' }) : onToggle;
 
 	const tint = isActive ? T.purple : dk(dark, T.dark, T.textDark) as string;
+	const flatTint = isMuted ? (dk(dark, T.muted, T.textDarkMuted) as string) : tint;
 
 	const expandedBtnStyle = {
 		display: 'flex',
@@ -356,14 +357,15 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 				cursor: 'pointer',
 				textAlign: 'left',
 				boxSizing: 'border-box',
+				opacity: isMuted ? 0.5 : 1,
 			}}
 		>
-			<Ico name={iconName} size={16} color={tint} />
+			<Ico name={iconName} size={16} color={flatTint} />
 			<span style={{
 				fontFamily: TYPE.controlLabel.family,
 				fontWeight: TYPE.controlLabel.weight,
 				fontSize: TYPE.controlLabel.size,
-				color: tint,
+				color: flatTint,
 				flexShrink: 0,
 			}}>
 				{label}
