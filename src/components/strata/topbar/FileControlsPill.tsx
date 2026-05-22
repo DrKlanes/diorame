@@ -113,6 +113,7 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 						{filename}
 					</button>
 				)}
+				<DiActionButton name="info" onClick={() => dispatch({ type: 'TOGGLE_WELCOME_MODAL' })} dark={dark} tooltip="About Diorame" />
 			</DiPill>
 			<DiSelectorPopover
 				anchorRef={exportBtnRef}

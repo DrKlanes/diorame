@@ -32,6 +32,7 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 - `undo` → `UNDO` (disabled si `historyIndex <= 0`) | `redo` → `REDO` (disabled si `historyIndex >= history.length - 1`)
 - `DiVSep`
 - Project name: editable inline (`SET_PROJECT_NAME`), max 200px
+- `info` → `TOGGLE_WELCOME_MODAL` (reabre WelcomeModalV2), tooltip "About Diorame"
 
 ### 2.2 TopBar — slot central (ambos modos)
 
