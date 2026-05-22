@@ -68,7 +68,7 @@ export function LayersPanel() {
 
 	if (!isExpanded) {
 		return (
-			<div style={{ position: 'absolute', top: 72, right: 12, zIndex: 50 }}>
+			<div style={{ position: 'absolute', top: 72, right: 12, zIndex: 50, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
 				<DiPill
 					dark={dark}
 					padding="8px 0"
@@ -133,6 +133,7 @@ export function LayersPanel() {
 						onClick={() => dispatch({ type: 'NEXT_LAYER' } as any)}
 						dark={dark} tooltip="Add layer" disabled={!canAdd} />
 				</DiPill>
+				<LayerDotsRail inline />
 			</div>
 		);
 	}
@@ -162,7 +163,7 @@ export function LayersPanel() {
 	};
 
 	return (
-		<div style={{ position: 'absolute', top: 72, right: 12, zIndex: 50 }}>
+		<div style={{ position: 'absolute', top: 72, right: 12, zIndex: 50, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
 			<DiPanel dark={dark} width={220} radius={20} padding="10px" style={{ maxHeight: 'calc(100vh - 372px)', overflow: 'hidden' }}>
 				{/* Header — chevron-right always top right */}
 				<div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -266,6 +267,7 @@ export function LayersPanel() {
 						dark={dark} tooltip="Delete layer" disabled={!canDelete} danger={true} />
 				</div>
 			</DiPanel>
+			<LayerDotsRail inline />
 		</div>
 	);
 }

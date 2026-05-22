@@ -9,7 +9,6 @@ import { TopBar } from './topbar/TopBar';
 import { BottomBar } from './bottombar/BottomBar';
 import { LayersPanel } from './layers/LayersPanel';
 import { ColorPalette } from './colorpalette/ColorPalette';
-import { LayerDotsRail } from './layers/LayerDotsRail';
 import { ResetViewPill } from './viewport/ResetViewPill';
 import { FXPanel } from './fx/FXPanel';
 import { ToolOptionsPanel } from './drawing/ToolOptionsPanel';
@@ -90,8 +89,6 @@ export function ControlsV2() {
 					{/* ColorPalette — absolute bottom-12 right-12, drawing mode only */}
 					<ColorPalette />
 
-					{/* LayerDotsRail — fixed right-8 center, drawing mode only */}
-					<LayerDotsRail />
 
 					{/* ResetViewPill — fixed left-8 bottom-8, drawing mode only */}
 					<ResetViewPill />
