@@ -3,7 +3,7 @@
 **Estado:** documento canónico de referencia para Fase 10.  
 Si código o decisión contradice este mapa, gana el mapa. Ediciones requieren acuerdo explícito.
 
-**Última actualización:** 2026-05-22 (post-10.4-fix-4)
+**Última actualización:** 2026-05-22 (post-10.5, swap atómico + borrado de legacies ejecutados)
 
 ---
 
@@ -339,6 +339,13 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 - ❌ **EnhancedTooltip de Lucide/Radix** — reemplazado por prop `tooltip` nativa en DiActionButton
 - ❌ **Botón "Hide UI" standalone** en modo cinematic (legacy tenía botón separado en esquina) — absorbido en ModeSwitchPill como tercer botón (separado por DiVSep)
 - ❌ **Badge "Layer N | Tool | Modifiers"** top-right (legacy) — información distribuida en DrawingToolbar (tool activo via active state) + LayerDotsRail (capa activa) + LayersPanel badge N/total
+
+### 7.1 Archivos legacy borrados en 10.5 commit 8
+
+- ❌ **Controls.tsx** — orquestador legacy (162 líneas tras 10.2). Reemplazado por ControlsV2 como root delgado de orquestación
+- ❌ **ControlsDrawing.tsx** — UI legacy del modo DRAW (914 líneas). Descompuesta en átomos V2 (TopBar, BottomBar, LayersPanel, ColorPalette, LayerDotsRail, ResetViewPill, ToolOptionsPanel) orquestados desde ControlsV2
+- ❌ **ControlsCinematic.tsx** — UI legacy del modo VIEW (766 líneas). Descompuesta en átomos V2 (SnapshotRecordPill, CameraBar, FXPanel) orquestados desde ControlsV2
+- ❌ **ToolOptionsPanel.tsx (legacy strata/)** — reemplazado por strata/drawing/ToolOptionsPanel.tsx V2 (solo Brush options; el panel Gradient legacy fue absorbido por GradientControls dentro de ColorPalette V2)
 
 ---
 

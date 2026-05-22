@@ -59,9 +59,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 			'Browser:',
 			'OS:',
 		].join('\n'));
-		const mailtoUrl = 'mailto:' + addr + '?subject=' + subject + '&body=' + body;
-		console.log('Bug report clicked', mailtoUrl);
-		window.location.href = mailtoUrl;
+		window.location.href = 'mailto:' + addr + '?subject=' + subject + '&body=' + body;
 	};
 
 	const muted = dk(dark, T.muted, T.textDarkMuted) as string;
