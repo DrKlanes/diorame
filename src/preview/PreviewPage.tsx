@@ -17,6 +17,7 @@ import { ResetViewPill } from '../components/strata/viewport/ResetViewPill';
 import { FXPanel } from '../components/strata/fx/FXPanel';
 import { ToolOptionsPanel } from '../components/strata/drawing/ToolOptionsPanel';
 import { TextSessionPanel } from '../components/strata/text/TextSessionPanel';
+import { ControlsDrawingV2 } from '../components/strata/ControlsDrawingV2';
 import { DiModal, WelcomeModalV2, ClearCanvasAlertV2, ComplexSceneModalV2, ExportProgressV2, OnboardingOverlayV2, MobileBlockScreenV2 } from '../components/strata/modals';
 import type { ExportType } from '../components/strata/modals';
 import { DiSelectorPopover, DiSelectorOption } from '../components/strata/popovers';
@@ -553,6 +554,9 @@ function PreviewPageContent() {
 				</div>
 			</Section>
 
+			{/* ── SECTION 1l: Integrated UI V2 ── */}
+			<IntegratedUIPreviewSection dark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
+
 			{/* ── SECTION 2: Icon Gallery ── */}
 			<Section title={`Icons (${Object.keys(ICONS).length} total)`} dark={dark} bg={sectionBg} border={sectionBorder}>
 
@@ -789,6 +793,63 @@ function TextSessionPreviewSectionContent({ parentDark, subtleColor, sectionBg, 
 				boxSizing: 'border-box',
 			}}>
 				<TextSessionPanel dark={parentDark} />
+			</div>
+		</Section>
+	);
+}
+
+// ─── Integrated UI V2 preview seed ───────────────────────────────────────────
+
+const INTEGRATED_SEED_STATE: Partial<AppState> = {
+	mode: 'drawing',
+	tool: 'brush',
+	totalLayers: 3,
+	currentLayerIndex: 1,
+	shapes: [
+		{ id: 'int-0', points: [], color: '#e8433a', zIndex: 0 },
+		{ id: 'int-1', points: [], color: '#384fbc', zIndex: -150 },
+	],
+	layerRenderModes: { 0: 'grad', 1: 'flat' },
+	layerGradParams: { 0: { angle: 90, intensity: 50, gradType: 'fade' } },
+};
+
+function IntegratedUIPreviewSection({ dark, subtleColor, sectionBg, sectionBorder }: {
+	dark: boolean; subtleColor: string; sectionBg: string; sectionBorder: string;
+}) {
+	const seedWithDark = { ...INTEGRATED_SEED_STATE, isDarkMode: dark };
+	return (
+		<StrataProvider initialStateOverride={seedWithDark}>
+			<IntegratedUIPreviewSectionContent parentDark={dark} subtleColor={subtleColor} sectionBg={sectionBg} sectionBorder={sectionBorder} />
+		</StrataProvider>
+	);
+}
+
+function IntegratedUIPreviewSectionContent({ parentDark, subtleColor, sectionBg, sectionBorder }: {
+	parentDark: boolean; subtleColor: string; sectionBg: string; sectionBorder: string;
+}) {
+	const { state, dispatch } = useStrata();
+
+	useEffect(() => {
+		if (state.isDarkMode !== parentDark) {
+			dispatch({ type: 'TOGGLE_DARK_MODE' } as any);
+		}
+	}, [parentDark]);
+
+	return (
+		<Section title="Integrated UI V2 (live)" dark={parentDark} bg={sectionBg} border={sectionBorder}>
+			<p style={{ fontSize: 11, color: subtleColor, margin: '0 0 12px 0' }}>
+				UI V2 completa ensamblada. Cambia de modo con ModeSwitchPill (draw/view). LayersPanel, ColorPalette y FX se muestran según modo.
+				LayerDotsRail + ResetViewPill usan <code>position:fixed</code> — aparecen pegados al borde del viewport.
+			</p>
+			<div style={{
+				position: 'relative',
+				width: '100%',
+				height: 600,
+				backgroundColor: dk(parentDark, 'rgb(248,247,243)', '#1a1a1a'),
+				borderRadius: 12,
+				overflow: 'hidden',
+			}}>
+				<ControlsDrawingV2 />
 			</div>
 		</Section>
 	);
