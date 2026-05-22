@@ -48,9 +48,10 @@ type SubControlBlockProps = {
 	value: string;
 	dark: boolean;
 	children: ReactNode;
+	accentColor: string;
 };
 
-function SubControlBlock({ label, value, dark, children }: SubControlBlockProps) {
+function SubControlBlock({ label, value, dark, children, accentColor }: SubControlBlockProps) {
 	return (
 		<div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
 			<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
