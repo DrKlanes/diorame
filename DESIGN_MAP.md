@@ -132,8 +132,8 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 ### 2.7 LayerDotsRail
 
 **Componente:** `LayerDotsRail` (`layers/LayerDotsRail.tsx`)  
-**Posición:** `fixed right-8 top-50% -translateY(50%) z-50`  
-**Visibilidad:** `mode === 'drawing'` && `!isUIHidden`  
+**Posición:** Vive dentro del wrapper exterior de `LayersPanel` (`flex row, alignItems: center, gap: 6`), a la derecha del panel/pill (collapsed y expanded). Prop `inline=true` suprime el wrapper fixed y retorna el DiPill directamente. Sin `inline`, funciona como `fixed right-8 top-50% -translateY(50%) z-50` (standalone legacy).  
+**Visibilidad:** `mode === 'drawing'` && `!isUIHidden` (controlado por el parent LayersPanel cuando inline)  
 **Estructura:** DiPill vertical (width 24), dots para cada layer en orden inverso:
 - Activa → punto purple
 - Oculta → opacidad 0.4
