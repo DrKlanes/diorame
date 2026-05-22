@@ -64,8 +64,8 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 
 				<DiVSep dark={dark} />
 
-				<DiActionButton name="undo" onClick={handleUndo} dark={dark} tooltip="Deshacer (Ctrl+Z)" />
-				<DiActionButton name="redo" onClick={handleRedo} dark={dark} tooltip="Rehacer (Ctrl+Y)" />
+				<DiActionButton name="undo" onClick={handleUndo} dark={dark} tooltip="Deshacer (Ctrl+Z)" disabled={state.historyIndex <= 0} />
+				<DiActionButton name="redo" onClick={handleRedo} dark={dark} tooltip="Rehacer (Ctrl+Y)" disabled={state.historyIndex >= state.history.length - 1} />
 
 				<DiVSep dark={dark} />
 

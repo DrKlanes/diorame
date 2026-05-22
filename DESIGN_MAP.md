@@ -29,7 +29,7 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 - `save` → blob download `.dior`
 - `export` → `DiSelectorPopover` con opciones SVG / SVG Compressed (ambas pasan por `useExportFlow` con complexity check >800 shapes)
 - `DiVSep`
-- `undo` → `UNDO` | `redo` → `REDO` ⚠️ GAP: sin disabled states (no comprueba historyIndex)
+- `undo` → `UNDO` (disabled si `historyIndex <= 0`) | `redo` → `REDO` (disabled si `historyIndex >= history.length - 1`)
 - `DiVSep`
 - Project name: editable inline (`SET_PROJECT_NAME`), max 200px
 
@@ -329,7 +329,7 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 | # | Gap | Archivo | Prioridad |
 |---|---|---|---|
 | G1 | ✅ RESUELTO (10.5 commit 3) — `FileControlsPill` botón "New" ahora abre `ClearCanvasAlertV2` y limpia sessionStorage | `topbar/FileControlsPill.tsx` | — |
-| G2 | `FileControlsPill` undo/redo sin disabled states — no comprueba `historyIndex <= 0` ni `historyIndex >= history.length - 1` | `topbar/FileControlsPill.tsx` | Alta |
+| G2 | ✅ RESUELTO (10.5 commit 4) — `FileControlsPill` undo/redo con disabled states basados en `historyIndex` | `topbar/FileControlsPill.tsx` | — |
 | G3 | `GradientControls` despacha a `paletteGradientAngle`/`paletteGradientIntensity` (campos mirror UI-level) en lugar de directamente a `layerGradParams[currentLayerIndex]` | `colorpalette/GradientControls.tsx` | Media |
 | G4 | `ToolOptionsPanel` y `TextSessionPanel` no tienen posicionamiento propio — deben ser posicionados por `ControlsV2` | ambos | Media (bloqueante para 10.4) |
 | G5 | Reset de cámara en VIEW no existe — ResetViewPill retorna null en modo cinematic | `viewport/ResetViewPill.tsx` | A confirmar |
