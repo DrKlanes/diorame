@@ -68,7 +68,7 @@ export function LayersPanel() {
 
 	if (!isExpanded) {
 		return (
-			<div style={{ position: 'absolute', top: 12, right: 12, zIndex: 50 }}>
+			<div style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50 }}>
 				<DiPill
 					dark={dark}
 					padding="8px 0"
@@ -162,7 +162,7 @@ export function LayersPanel() {
 	};
 
 	return (
-		<div style={{ position: 'absolute', top: 12, right: 12, zIndex: 50 }}>
+		<div style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50 }}>
 			<DiPanel dark={dark} width={220} radius={20} padding="10px">
 				{/* Header — chevron-right always top right */}
 				<div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
