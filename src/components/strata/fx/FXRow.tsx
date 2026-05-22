@@ -100,9 +100,10 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 	const snapshot = state.postProcessingSnapshot;
 	const wasInSnapshot = snapshot !== null && snapshot[fxKey] === true;
 	const showExpanded = isActive || wasInSnapshot;
-	const isMuted = !isActive && wasInSnapshot;
+	const hasSnapshot = state.postProcessingSnapshot !== null;
+	const isMuted = !isActive && wasInSnapshot;  // governs visual render only
 	const accentColor = isMuted ? (dk(dark, T.muted, T.textDarkMuted) as string) : T.purple;
-	const handleClick = isMuted ? () => dispatch({ type: 'TOGGLE_FX_MASTER' }) : onToggle;
+	const handleClick = hasSnapshot ? () => dispatch({ type: 'TOGGLE_FX_MASTER' }) : onToggle;
 
 	const tint = isActive ? T.purple : dk(dark, T.dark, T.textDark) as string;
 
@@ -342,7 +343,7 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 	// --- Flat row: inactive or special (placeholder) ---
 	return (
 		<button
-			onClick={onToggle}
+			onClick={handleClick}
 			style={{
 				display: 'flex',
 				alignItems: 'center',

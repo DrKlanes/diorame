@@ -246,9 +246,11 @@ Cada `FXRow` tiene 4 estados visuales:
 | 1 — Master ON, FX activo | `true` | `false` (snapshot=null) | Expandido normal (morado, slider funcional) |
 | 2 — Master ON, FX inactivo | `false` | `false` (snapshot=null) | Flat row (solo icono + nombre) |
 | 3 — Master OFF, en snapshot | `false` | `true` | Expandido muted (gris, opacity 0.5, `pointerEvents:none` en controles internos). Click en cualquier parte dispatcha `TOGGLE_FX_MASTER` que restaura desde snapshot. |
-| 4 — Master OFF, NO en snapshot | `false` | `false` | Flat row. Click dispatcha `TOGGLE_FX` (que también invalida snapshot + restaura master vía `fxMasterEnabled: true` automáticamente). |
+| 4 — Master OFF, NO en snapshot | `false` | `false` | Flat row. Click dispatcha `TOGGLE_FX_MASTER` (wake/restore). Snapshot sagrado: nunca se modifica con master OFF. |
 
 `wasInSnapshot = state.postProcessingSnapshot !== null && snapshot[fxKey] === true`. La derivación se hace localmente en `FXRow` — el state shape no cambia.
+
+`handleClick`: cuando `hasSnapshot` (master OFF), cualquier FXRow (muted o flat) dispara `TOGGLE_FX_MASTER`. `isMuted` sigue gobernando solo el render visual (opacity, colores, pointerEvents internos).
 
 Toggle ON/OFF normal: `TOGGLE_FX payload: fxKey` + controles expandidos según `level`.
 
