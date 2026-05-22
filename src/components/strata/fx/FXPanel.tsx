@@ -89,9 +89,9 @@ export function FXPanel() {
 	if (isExpanded) {
 		return (
 			<div style={{ position: 'absolute', top: '50%', right: SPACE.edge, transform: 'translateY(-50%)', zIndex: 50 }}>
-				<DiPanel dark={dark} width={248} radius={RADIUS.panel} padding="10px" style={{ gap: 0 }}>
+				<DiPanel dark={dark} width={248} radius={RADIUS.panel} padding="10px" style={{ gap: 0, maxHeight: 'calc(100vh - 80px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 					{/* Header */}
-					<div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+					<div style={{ display: 'flex', alignItems: 'center', marginBottom: 4, flexShrink: 0 }}>
 						<span style={{
 							fontFamily: TYPE.panelHeader.family,
 							fontWeight: TYPE.panelHeader.weight,
@@ -103,12 +103,25 @@ export function FXPanel() {
 						}}>
 							FX
 						</span>
+						{!fxMasterEnabled && (
+							<span style={{
+								fontFamily: TYPE.numericValue.family,
+								fontSize: TYPE.numericValue.size,
+								fontWeight: 600,
+								color: dk(dark, T.danger, T.dangerDark),
+								marginRight: 4,
+								flexShrink: 0,
+							}}>
+								· off
+							</span>
+						)}
 						<div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 							<DiActionButton name="sparkles" onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} tooltip="Toggle all FX" />
 							<DiActionButton name="chevron-right" onClick={() => toggle(false)} dark={dark} tooltip="Collapse" />
 						</div>
 					</div>
 					<PanelHSep />
+					<div className="di-panel-scroll" style={{ overflowY: 'auto', flex: '1 1 0', minHeight: 0 }}>
 					{/* Texture */}
 					<GroupLabel label="Texture" />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -143,6 +156,7 @@ export function FXPanel() {
 								level={level} valueKey={valueKey}
 								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
 						))}
+					</div>
 					</div>
 				</DiPanel>
 			</div>
