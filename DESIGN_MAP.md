@@ -252,6 +252,8 @@ Cada `FXRow` tiene 4 estados visuales:
 
 `handleClick`: cuando `hasSnapshot` (master OFF), cualquier FXRow (muted o flat) dispara `TOGGLE_FX_MASTER`. `isMuted` sigue gobernando solo el render visual (opacity, colores, pointerEvents internos).
 
+El comportamiento wake/restore con master OFF aplica tanto al modo **expanded** (via `handleClick` en FXRow) como al modo **collapsed** (via `fxClick` helper en FXPanel). En collapsed, los 12 iconos de FX usan `fxClick(key)` en lugar de dispatch directo; `fxClick` retorna el mismo handler condicional: `hasSnapshot ? TOGGLE_FX_MASTER : TOGGLE_FX`.
+
 Toggle ON/OFF normal: `TOGGLE_FX payload: fxKey` + controles expandidos según `level`.
 
 ### 3.4 ResetViewPill en VIEW
