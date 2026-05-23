@@ -298,19 +298,35 @@ The codebase has been modularized through a multi-phase refactoring (completed i
 
 | File | Lines | Purpose |
 |---|---|---|
-| `StrataCanvas.tsx` | ~2143 | Main canvas renderer, render loop, event handlers, gesture input. **Frozen** — extract only, never add. |
-| `StrataContext.tsx` | ~1500 | React Context + useReducer: app reducer, constants, re-exports all types |
-| `Controls.tsx` | 229 | Thin compositor: mode switch, shared export state, keyboard shortcuts |
-| `ControlsDrawing.tsx` | 950 | Drawing mode UI: toolbar, palette, layer nav, undo/redo, save/load, text panel |
-| `ControlsCinematic.tsx` | 1003 | View mode UI: animation types, FX Mix popover, focal length, zoom, spacing sliders |
-| `ControlsExport.tsx` | 80 | Export complexity warning dialog |
-| `LayersPanel.tsx` | — | Layer management panel: visibility, 3D lock, reorder, duplicate, delete |
-| `ToolOptionsPanel.tsx` | — | Context-sensitive options for Brush (line mode, thickness) and Gradient settings |
-| `WelcomeModal.tsx` | — | First-launch welcome dialog with version display |
-| `OnboardingOverlay.tsx` | — | Empty-canvas onboarding hints, auto-dismissed on first stroke |
-| `ExportProgress.tsx` | — | Visual overlay showing export progress during video captures |
-| `MobileBlockScreen.tsx` | — | Full-screen block for mobile devices (tablet+ required) |
-| `pixelArtPalettes.ts` | — | Readonly palette data for the Pixel Art post-processing effect |
+| `StrataCanvas.tsx` | ~2300 | Main canvas renderer, render loop, event handlers, gesture input. **Frozen** — extract only, never add. |
+| `StrataContext.tsx` | ~1300 | React Context + useReducer: app reducer, constants, re-exports all types |
+| `ControlsV2.tsx` | ~150 | Thin root compositor for both modes. Mounts all UI atoms; enforces `isUIHidden`; hosts 3 global side-effects (keyboard shortcuts, sessionStorage cleanup, mode-change camera reset). |
+
+**Drawing mode atoms (`topbar/`, `bottombar/`, `layers/`, `colorpalette/`, `drawing/`, `viewport/`, `text/`):**
+
+| File | Purpose |
+|---|---|
+| `topbar/TopBar.tsx` | Slot router: FileControlsPill (draw) / SnapshotRecordPill (view) + shared ModeSwitchPill + ThemeTogglePill |
+| `topbar/FileControlsPill.tsx` | new / open / save / export (SVG/SVGZ) + undo/redo + project name + info |
+| `topbar/SnapshotRecordPill.tsx` | PNG snapshot + MP4 record in VIEW mode |
+| `topbar/ModeSwitchPill.tsx` | DRAW / VIEW / hide-UI mode toggle |
+| `topbar/ThemeTogglePill.tsx` | Light/dark paper toggle |
+| `bottombar/BottomBar.tsx` | Slot router: DrawingToolbar (draw) / CameraBar (view) |
+| `bottombar/DrawingToolbar.tsx` | 5-tool selector + modifiers + LineModeButton (line tool) |
+| `bottombar/CameraBar.tsx` | Camera presets + speed + sliders; responsive desktop/tablet layout |
+| `layers/LayersPanel.tsx` | Layer management (collapsed pill + expanded panel) with dnd-kit drag-reorder |
+| `layers/LayerRow.tsx` | Per-layer row: Empty/Flat/Grad/Fade chip, visibility, 3D lock |
+| `layers/LayerDotsRail.tsx` | Dot indicator rail, inline or fixed |
+| `colorpalette/ColorPalette.tsx` | Palette panel: header + gradient controls + swatch grid |
+| `drawing/ToolOptionsPanel.tsx` | Line thickness + mode overlay (line tool only) |
+| `viewport/ResetViewPill.tsx` | Reset drawingZoom/Pan to defaults (draw mode) |
+| `text/TextSessionPanel.tsx` | Text input overlay: fonts, textarea, align, confirm/cancel |
+| `fx/FXPanel.tsx` | FX panel (VIEW mode): 12 effects in 3 groups, master toggle FXMasterBtn, snapshot/restore |
+| `fx/FXRow.tsx` | Per-effect row: toggle + slider/discrete/composite control |
+
+**Modals (`modals/`):** ClearCanvasAlertV2, ComplexSceneModalV2, WelcomeModalV2, OnboardingOverlayV2, ExportProgressV2, MobileBlockScreenV2 + shared DiModal primitives
+
+**Popovers (`popovers/`):** DiSelectorPopover + DiSelectorOption
 
 ### Canvas Pipeline (`src/components/strata/canvas/`)
 
@@ -479,6 +495,23 @@ APP_VERSION = "1.14.0"          // Current release version
 ## Appendix C: Changelog Highlights (1.7.3 -> 1.15.1)
 
 ---
+
+### 2.0.0 — 2026-05-23
+
+**Fase 10 completa — UI redesign V2 en producción.**
+
+Full replacement of the legacy monolithic controls (Controls.tsx + ControlsDrawing.tsx + ControlsCinematic.tsx + ControlsExport.tsx) with a modular atom-based V2 UI system, orchestrated by the thin `ControlsV2` root.
+
+**Key changes:**
+- **UI v2**: TopBar/BottomBar as mode-variable containers, fixed panels (LayersPanel, ColorPalette, FXPanel) replace the legacy monolith. `ControlsV2` is the new thin orchestrator.
+- **Full-canvas**: Paper texture fills the entire viewport. No card/frame border in drawing mode.
+- **Pass-through during draw**: All UI panels become pointer-events transparent while a stroke is active (`state.isDrawing`), ensuring uninterrupted strokes across panel areas.
+- **TEXT gradient**: TEXT shapes now apply `paletteMode` gradient/fade (parity with blob/brush shapes).
+- **Master FX toggle**: `TOGGLE_FX_MASTER` as snapshot/restore — disables all effects, preserves individual settings, restores on re-enable.
+- **FXMasterBtn**: Visual distinction for master toggle (35×35 / 21px icon vs 30×30 / 18px FX rows, purple inset outline).
+- **Non-neutral FX defaults**: `distortion` initial value changed from 0 to -0.3 for visible effect on first toggle.
+- **T.warning token**: `#F59E0B` amber added as `T.warning` / `T.warningDark` design token.
+- **Bug report**: WelcomeModal bug report link opens in new tab (preserves unsaved canvas state).
 
 ### 1.16.0 — 2026-05-17
 

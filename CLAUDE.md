@@ -12,7 +12,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 | | |
 |---|---|
-| **Versión** | 1.16.0 |
+| **Versión** | 2.0.0 |
 | **Stack** | React 18 + TypeScript + Vite 6 + Tailwind CSS 4 + Canvas 2D API |
 | **Dev** | `npm run dev` → puerto 3000 |
 | **Build** | `npm run build` — siempre verificar antes de hacer commit |
@@ -123,23 +123,11 @@ Si dudas si tu cambio es "swap de import" o algo más, asume que es más y escal
 
 | Archivo | Líneas | Rol |
 |---|---|---|
-| `StrataCanvas.tsx` | 2143 | Render loop, event handlers, gestures. **CONGELADO.** |
-| `StrataContext.tsx` | 1242 | React Context + useReducer, constantes, re-exports de tipos |
-| `Controls.tsx` | 203 | Compositor: mode switch, estado de export, keyboard shortcuts globales |
-| `ControlsDrawing.tsx` | 920 | UI modo DRAW: toolbar, paleta, navegación de capas, undo/redo, save/load |
-| `ControlsCinematic.tsx` | 768 | UI modo VIEW: tipos de animación, FX Mix popover, sliders de cámara |
-| `ControlsExport.tsx` | 80 | Dialog de advertencia de complejidad para export |
-| `LayersPanel.tsx` | 381 | Panel de capas (legacy — activo en app real hasta Fase 8) |
-| `ToolOptionsPanel.tsx` | 199 | Opciones contextuales: modo de línea, grosor, gradiente por capa |
-| `WelcomeModal.tsx` | — | Dialog de bienvenida con versión |
-| `OnboardingOverlay.tsx` | — | Hints en canvas vacío, auto-dismiss al primer trazo |
-| `ExportProgress.tsx` | — | Overlay de progreso durante exports de video |
-| `MobileBlockScreen.tsx` | — | Bloqueo para dispositivos móviles (tablet+ requerido) |
-| `pixelArtPalettes.ts` | — | Datos readonly para el efecto Pixel Art |
+| `StrataCanvas.tsx` | ~2300 | Render loop, event handlers, gestures. **CONGELADO.** |
+| `StrataContext.tsx` | ~1300 | React Context + useReducer, constantes, re-exports de tipos |
+| `ControlsV2.tsx` | ~150 | Root orquestador delgado para ambos modos. Side-effects globales (keyboard shortcuts, sessionStorage, mode-change camera reset). |
 
-### Rediseño UI v2 — `src/components/strata/` (rama `feat/ui-redesign-v2`)
-
-Componentes nuevos, NO integrados en la app real hasta Fase 8. Validados en `/preview?preview=true`.
+**Átomos UI V2 (producción, v2.0.0):**
 
 | Directorio | Archivos clave |
 |---|---|
@@ -148,8 +136,11 @@ Componentes nuevos, NO integrados en la app real hasta Fase 8. Validados en `/pr
 | `colorpalette/` | `ColorPalette.tsx`, `PaletteHeader.tsx`, `GradientControls.tsx`, `SwatchGrid.tsx` |
 | `layers/` | `LayersPanel.tsx`, `LayerRow.tsx`, `LayerDotsRail.tsx` |
 | `viewport/` | `ResetViewPill.tsx` |
-
-Ver `src/REFERENCE.md → UI Redesign v2` para historial de fases y estado detallado.
+| `drawing/` | `ToolOptionsPanel.tsx` |
+| `text/` | `TextSessionPanel.tsx` |
+| `fx/` | `FXPanel.tsx`, `FXRow.tsx` |
+| `modals/` | `WelcomeModalV2.tsx`, `ClearCanvasAlertV2.tsx`, `ComplexSceneModalV2.tsx`, `ExportProgressV2.tsx`, `OnboardingOverlayV2.tsx`, `MobileBlockScreenV2.tsx` |
+| `popovers/` | `DiSelectorPopover.tsx`, `DiSelectorOption.tsx` |
 
 ---
 

@@ -3,7 +3,7 @@
 **Estado:** documento canónico de referencia para Fase 10.  
 Si código o decisión contradice este mapa, gana el mapa. Ediciones requieren acuerdo explícito.
 
-**Última actualización:** 2026-05-22 (post-10.5, swap atómico + borrado de legacies ejecutados)
+**Estado:** release v2.0.0 (feat/ui-redesign-v2 lista para merge a main)
 
 ---
 
@@ -356,11 +356,11 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 | G1 | ✅ RESUELTO (10.5 c3 + 10.5-fix-final c5) — `FileControlsPill` botón "New" abre `ClearCanvasAlertV2`, limpia sessionStorage y resetea `projectName` a "Untitled Project" | `topbar/FileControlsPill.tsx` | — |
 | G2 | ✅ RESUELTO (10.5 commit 4) — `FileControlsPill` undo/redo con disabled states basados en `historyIndex` | `topbar/FileControlsPill.tsx` | — |
 | G_fx | ✅ RESUELTO (10.5-fix-final c1) — `TOGGLE_FX_MASTER` como snapshot/restore: apaga todos + guarda snapshot; restaura desde snapshot. `postProcessingSnapshot: PostProcessingEnabled | null` en AppState. `TOGGLE_FX` invalida el snapshot. | `StrataContext.tsx`, `strataTypes.ts`, `fx/FXPanel.tsx` | — |
-| G3 | `GradientControls` despacha a `paletteGradientAngle`/`paletteGradientIntensity` (campos mirror UI-level) en lugar de directamente a `layerGradParams[currentLayerIndex]` | `colorpalette/GradientControls.tsx` | Media |
-| G4 | `ToolOptionsPanel` y `TextSessionPanel` no tienen posicionamiento propio — deben ser posicionados por `ControlsV2` | ambos | Media (bloqueante para 10.4) |
-| G5 | Reset de cámara en VIEW no existe — ResetViewPill retorna null en modo cinematic | `viewport/ResetViewPill.tsx` | A confirmar |
-| G6 | `T.amber` / `T.warning` no existe en tokens — TextSessionPanel usa `#F59E0B` hardcoded | `design-system/tokens.ts` | Baja |
-| G7 | FileControlsPill tooltips en español ("Nuevo", "Abrir", "Guardar") — inconsistente con el resto de la app en inglés | `topbar/FileControlsPill.tsx` | Cosmética |
+| G3 | POSPUESTO A 2.1 — refactor `paletteGradient*` mirrors a `layerGradParams` directo en `GradientControls`. No bloquea release. | `colorpalette/GradientControls.tsx` | — |
+| G4 | ✅ RESUELTO (10.5 c5) — `ControlsV2` posiciona ambos paneles como overlays absolutos `bottom:60 left:50%` sobre DrawingToolbar | ambos | — |
+| G5 | POSPUESTO A 2.1 — ResetViewPill es draw-only por diseño. VIEW camera reset via CameraBar presets. | `viewport/ResetViewPill.tsx` | — |
+| G6 | ✅ RESUELTO (10.6 c6) — `T.warning`/`T.warningDark` añadidos a tokens.ts. TextSessionPanel usa `dk(dark, T.warning, T.warningDark)`. | `design-system/tokens.ts` | — |
+| G7 | ✅ RESUELTO (10.6 c7) — 6 tooltips traducidos al inglés (New, Open, Save, Export SVG, Undo, Redo). | `topbar/FileControlsPill.tsx` | — |
 
 ---
 
