@@ -39,10 +39,10 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 **Componente:** `ModeSwitchPill` (`topbar/ModeSwitchPill.tsx`)  
 **Posición:** `absolute top-12 left-50% -translateX(50%)`  
 **Contenido:**
-- `draw-mode` → `SET_MODE 'drawing'` (activeStyle: solid)
-- `view-mode` → `SET_MODE 'cinematic'` (activeStyle: solid)
+- `draw-mode` → `SET_MODE 'drawing'` (activeStyle: solid, iconSize default 18px)
+- `view-mode` → `SET_MODE 'cinematic'` (activeStyle: solid, iconSize default 18px)
 - `DiVSep`
-- `hide-ui` → `TOGGLE_UI` (activeStyle: solid cuando isUIHidden)
+- `hide-ui` → `TOGGLE_UI` (activeStyle: solid, iconSize 14px, iconWeight secondary) — icono reducido ~22% e inactivo en muted para jerarquía visual secundaria; color activo preservado cuando `isUIHidden === true`
 
 ### 2.3 TopBar — slot derecho (ambos modos)
 

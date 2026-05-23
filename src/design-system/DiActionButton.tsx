@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Ico } from './Ico';
 import { T, RADIUS, dk } from './tokens';
 
-export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', tooltip, disabled = false, danger = false }: {
+export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, tooltip, disabled = false, danger = false }: {
 	name: string;
 	onClick: () => void;
 	dark: boolean;
 	active?: boolean;
 	activeStyle?: 'wash' | 'solid';
 	iconWeight?: 'normal' | 'secondary';
+	iconSize?: number;
 	tooltip?: string;
 	disabled?: boolean;
 	danger?: boolean;
@@ -56,7 +57,7 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 				pointerEvents: disabled ? 'none' : undefined,
 			}}
 		>
-			<Ico name={name} size={18} color={iconColor} />
+			<Ico name={name} size={iconSize} color={iconColor} />
 		</button>
 	);
 }

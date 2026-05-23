@@ -34,6 +34,8 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				dark={dark}
 				active={uiHidden}
 				activeStyle="solid"
+				iconWeight="secondary"
+				iconSize={14}
 				tooltip="Hide UI"
 			/>
 		</DiPill>
