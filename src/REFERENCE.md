@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 1.16.0
+**Version**: 2.0.0
 **Last Updated**: March 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.

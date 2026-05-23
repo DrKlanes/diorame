@@ -229,7 +229,7 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 ## Constantes clave
 
 ```typescript
-APP_VERSION         = "1.16.0"   // en src/constants/version.ts — bump en cualquier cambio visible
+APP_VERSION         = "2.0.0"    // en src/constants/version.ts — bump en cualquier cambio visible
 BASE_DEPTH_STEP     = 150        // Z-units por capa
 MAX_LAYERS          = 10
 MAX_HISTORY_STEPS   = 50
