@@ -57,6 +57,8 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 				onChange={e => { const f = e.target.files?.[0]; if (f) handleLoadProject(f); }}
 			/>
 			<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
+				<InfoButton dark={dark} />
+				<DiVSep dark={dark} />
 				<DiActionButton name="new"  onClick={handleNew}         dark={dark} tooltip="New" />
 				<DiActionButton name="open" onClick={triggerFileSelect} dark={dark} tooltip="Open" />
 				<DiActionButton name="save" onClick={handleSaveProject} dark={dark} tooltip="Save" shortcut="Ctrl+S" />
@@ -71,8 +73,6 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 
 				<DiVSep dark={dark} />
 
-				<InfoButton dark={dark} />
-				<DiVSep dark={dark} />
 
 				{editing ? (
 					<input

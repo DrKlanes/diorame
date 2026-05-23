@@ -3,7 +3,7 @@ import { Ico } from './Ico';
 import { T, TYPE, RADIUS, dk } from './tokens';
 import { hasFinePointer, formatShortcut } from '../utils/keyboardShortcuts';
 
-export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, label, tooltip, shortcut, disabled = false, danger = false }: {
+export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, label, tooltip, shortcut, disabled = false, danger = false, minWidth }: {
 	name: string;
 	onClick: () => void;
 	dark: boolean;
@@ -16,6 +16,7 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 	shortcut?: string;
 	disabled?: boolean;
 	danger?: boolean;
+	minWidth?: number;
 }) {
 	const [hov, setHov] = useState(false);
 	const titleText: string | undefined = (() => {
@@ -50,9 +51,11 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 			title={titleText}
 			style={{
 				width: label ? 'auto' : 30,
+				minWidth: minWidth,
 				height: 30,
 				padding: label ? '0 10px' : 0,
 				gap: label ? 6 : 0,
+				justifyContent: label && minWidth ? 'flex-start' : 'center',
 				borderRadius: RADIUS.iconBtn,
 				border: 'none',
 				background: bg,
@@ -60,7 +63,6 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 				cursor: 'pointer',
 				display: 'flex',
 				alignItems: 'center',
-				justifyContent: 'center',
 				transition: 'background 0.1s',
 				flexShrink: 0,
 				opacity: disabled ? 0.3 : 1,

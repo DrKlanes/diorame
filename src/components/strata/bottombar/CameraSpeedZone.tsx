@@ -58,6 +58,7 @@ export function CameraSpeedZone({ dark }: CameraSpeedZoneProps) {
 				activeStyle="wash"
 				iconSize={16}
 				tooltip="Handheld camera"
+				minWidth={128}
 			/>
 		</div>
 	);

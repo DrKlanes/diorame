@@ -32,7 +32,7 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 - `undo` → `UNDO` (disabled si `historyIndex <= 0`) | `redo` → `REDO` (disabled si `historyIndex >= history.length - 1`)
 - `DiVSep`
 - Project name: editable inline (`SET_PROJECT_NAME`), max 200px
-- `info` → `TOGGLE_WELCOME_MODAL` (reabre WelcomeModalV2), tooltip "About Diorame" — **reemplazado por `<InfoButton />` (C20)**, reposicionado antes del nombre de proyecto
+- `info` → `TOGGLE_WELCOME_MODAL` (reabre WelcomeModalV2), tooltip "About Diorame" — **reemplazado por `<InfoButton />` (C20)**, reposicionado **al inicio del pill (C21)**: estructura final `[InfoButton][DiVSep][new][open][save][export][DiVSep][undo][redo][DiVSep][project name]`
 
 ### 2.2 TopBar — slot central (ambos modos)
 
@@ -211,7 +211,7 @@ DiPill: [CameraPresetsZone] | tall-vsep | [CameraSpeedZone]
 
 **CameraSpeedZone:**
 - Ícono `ctrl-speed` + DiMiniSlider 0.1–1.0 → `SET_CINEMATIC_SPEED`
-- Botón ciclo 4 estados (Off → Low → Medium → High → Off) **(C20: refactorizado a `DiActionButton`)**: `name={enabled ? "ctrl-handshake" : "ctrl-handshake-off"}` iconSize=16, `label` dinámico ("Handheld" / "Handheld · low/medium/high"), `active={enabled}` activeStyle="wash", `tooltip="Handheld camera"` → `TOGGLE_HANDHELD` + `SET_HANDHELD_INTENSITY`
+- Botón ciclo 4 estados (Off → Low → Medium → High → Off) **(C20: refactorizado a `DiActionButton`; C21: minWidth fijo 128px)**: `name={enabled ? "ctrl-handshake" : "ctrl-handshake-off"}` iconSize=16, `label` dinámico ("Handheld" / "Handheld · low/medium/high"), `active={enabled}` activeStyle="wash", `tooltip="Handheld camera"`, `minWidth={128}` evita que el pill se redimensione al ciclar → `TOGGLE_HANDHELD` + `SET_HANDHELD_INTENSITY`
 
 **CameraSlidersZone:**
 - `ctrl-focal` + DiMiniSlider 24–300mm → `SET_FOCAL_LENGTH` (conversión flToMm/mmToFl)
@@ -319,6 +319,8 @@ El componente `ResetViewPill` retorna `null` cuando `mode !== 'drawing'`. **En V
 
 **WelcomeModalV2 — Zona 6 — Keyboard shortcuts (C17):** Sección colapsable al final del panel derecho, después de Zona 5. Solo se monta si `hasFinePointer()` (matchMedia pointer:fine) — invisible en tablet/touch. Estado local `shortcutsExpanded` (inicia en false). Header: "Keyboard shortcuts" + `Ico chevron-up/down` (toggle). Expandido: lista con `maxHeight:220 overflowY:auto`, 6 categorías (File, Edit, View, Tools/Draw, Layers/Draw, Canvas/Draw), cada categoría con header uppercase 10px muted + items flex space-between label/shortcut. Shortcuts formateados por `formatShortcut()`: en Mac usa ⌘⇧⌥ (regex `Ctrl+Shift+` → `⇧⌘`, `Ctrl+` → `⌘`, `Shift+` → `⇧`), en Windows/Linux sin cambios. Helpers extraídos a `src/utils/keyboardShortcuts.ts` (C18): `hasFinePointer()`, `isMac()`, `formatShortcut()`, `SHORTCUTS_GROUPS`, tipos `ShortcutItem`/`ShortcutGroup`. `WelcomeModalV2` importa desde el util; tipografía Zona 3 y Zona 6 toggle unificada a `TYPE.numericValue.size` (10px). `chevron-up`/`chevron-down` añadidos al banco de iconos (`icons.ts`, sección Navigation & Global).
 
+**WelcomeModalV2 — jerarquía dos niveles + tipografía expandida unificada (C21):** `ResourceLink` ahora acepta prop opcional `mutedColor?: string`. Sin prop → **NIVEL 1** (color `T.purple`, underline solo en hover). Con prop → **NIVEL 2** (color muted, underline permanente). Distribución: NIVEL 1 → Watch tutorial, Support on Ko-fi, by @dumaker (frase completa unificada como link). NIVEL 2 → Inspired by Graintouch, Found a bug? Email me. (button con underline permanente, sin hover state), Keyboard shortcuts toggle (`<span>` interno con underline permanente). Sección expandida unificada a 10px en todos los elementos: headers FILE/EDIT/VIEW pasan a fontWeight 400 + letterSpacing 0.06em + marginBottom 6, gap entre categorías 12, rows con gap 14 + fontSize 10 + lineHeight 20px, items label fontSize 10 explícito, items shortcut fontWeight 500.
+
 Todos importados desde `src/components/strata/modals/index.ts`.
 
 ---
@@ -354,7 +356,7 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 
 **InfoButton (C20):** Componente reutilizable en `src/components/strata/topbar/InfoButton.tsx`. Encapsula `DiActionButton name="info"` + dispatch `TOGGLE_WELCOME_MODAL` + `tooltip="About Diorame"` + `shortcut="Shift+?"`. Acepta `{ dark: boolean }`. Montado en: `FileControlsPill` (antes del nombre de proyecto, entre dos `DiVSep`) y `SnapshotRecordPill` (antes de Snapshot/Record, separado por `DiVSep`). Funciona en DRAW y VIEW sin filtros internos.
 
-**DiActionButton — prop `shortcut` (C18):** Prop opcional `shortcut?: string`. Si está presente y `hasFinePointer()` es true, el `title` nativo del button muestra `"{tooltip} · {formatShortcut(shortcut)}"` (o solo el shortcut formateado si no hay tooltip). En tablet/touch (`hasFinePointer() === false`) el shortcut se suprime y el title muestra solo el tooltip. Callers con shortcut: `FileControlsPill` (save Ctrl+S, export Ctrl+E, undo Ctrl+Z, redo Ctrl+Y, info Shift+?), `ThemeTogglePill` (moon Shift+D), `ResetViewPill` (Space), `DrawingToolbar` vía `ToolBtn` (B/L/E/T/M).
+**DiActionButton — props `shortcut` (C18) y `minWidth` (C21):** Prop opcional `shortcut?: string`. Si está presente y `hasFinePointer()` es true, el `title` nativo del button muestra `"{tooltip} · {formatShortcut(shortcut)}"` (o solo el shortcut formateado si no hay tooltip). En tablet/touch (`hasFinePointer() === false`) el shortcut se suprime y el title muestra solo el tooltip. Callers con shortcut: `FileControlsPill` (save Ctrl+S, export Ctrl+E, undo Ctrl+Z, redo Ctrl+Y, info Shift+?), `ThemeTogglePill` (moon Shift+D), `ResetViewPill` (Space), `DrawingToolbar` vía `ToolBtn` (B/L/E/T/M). Prop `minWidth?: number` añadida en C21: si presente y hay label, el botón fija `minWidth` y cambia `justifyContent` a `flex-start` para evitar que el contenido baile al ciclar estados (caso: Handheld con minWidth 128). Si ausente o sin label, comportamiento idéntico al original (`justifyContent: center`, ancho 30 o auto).
 - ❌ **Botón "Hide UI" standalone** en modo cinematic (legacy tenía botón separado en esquina) — absorbido en ModeSwitchPill como tercer botón (separado por DiVSep)
 - ❌ **Badge "Layer N | Tool | Modifiers"** top-right (legacy) — información distribuida en DrawingToolbar (tool activo via active state) + LayerDotsRail (capa activa) + LayersPanel badge N/total
 

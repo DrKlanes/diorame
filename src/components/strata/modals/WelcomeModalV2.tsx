@@ -9,8 +9,9 @@ import { hasFinePointer, formatShortcut, SHORTCUTS_GROUPS } from '../../../utils
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
-function ResourceLink({ href, children }: { href: string; children: React.ReactNode }) {
+function ResourceLink({ href, children, mutedColor }: { href: string; children: React.ReactNode; mutedColor?: string }) {
 	const [hovered, setHovered] = useState(false);
+	const isMuted = mutedColor !== undefined;
 	return (
 		<a
 			href={href}
@@ -18,7 +19,10 @@ function ResourceLink({ href, children }: { href: string; children: React.ReactN
 			rel="noopener noreferrer"
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
-			style={{ color: T.purple, textDecoration: hovered ? 'underline' : 'none' }}
+			style={{
+				color: isMuted ? mutedColor : T.purple,
+				textDecoration: isMuted ? 'underline' : (hovered ? 'underline' : 'none'),
+			}}
 		>
 			{children}
 		</a>
@@ -36,7 +40,6 @@ interface WelcomeModalV2Props {
 
 export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeModalV2Props) {
 	const [isLoadingExample, setIsLoadingExample] = useState(false);
-	const [isBugHovered, setIsBugHovered] = useState(false);
 	const [shortcutsExpanded, setShortcutsExpanded] = useState(false);
 
 	const handleLoadExample = async () => {
@@ -177,10 +180,10 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 						color: muted,
 					}}>
 						<div>
-							by <ResourceLink href="https://www.instagram.com/dumaker/">@dumaker</ResourceLink>
+							<ResourceLink href="https://www.instagram.com/dumaker/">by @dumaker</ResourceLink>
 						</div>
 						<div>
-							Inspired by <ResourceLink href="https://apps.apple.com/pa/app/graintouch/id6740813845">Graintouch</ResourceLink>
+							<ResourceLink href="https://apps.apple.com/pa/app/graintouch/id6740813845" mutedColor={muted}>Inspired by Graintouch</ResourceLink>
 						</div>
 					</div>
 
@@ -188,17 +191,15 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 					<div style={{ marginTop: 12, textAlign: 'left' }}>
 						<button
 							onClick={handleBugReport}
-							onMouseEnter={() => setIsBugHovered(true)}
-							onMouseLeave={() => setIsBugHovered(false)}
 							style={{
 								background: 'none',
 								border: 'none',
 								cursor: 'pointer',
 								fontFamily: TYPE.numericValue.family,
-								fontWeight: TYPE.numericValue.weight,
+								fontWeight: 400,
 								fontSize: TYPE.numericValue.size,
 								color: muted,
-								textDecoration: isBugHovered ? 'underline' : 'none',
+								textDecoration: 'underline',
 								padding: 0,
 							}}
 						>
@@ -220,35 +221,35 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 									gap: 6,
 									color: muted,
 									fontFamily: TYPE.numericValue.family,
-									fontWeight: TYPE.numericValue.weight,
+									fontWeight: 400,
 									fontSize: TYPE.numericValue.size,
 									padding: 0,
 								}}
 							>
-								<span>Keyboard shortcuts</span>
+								<span style={{ textDecoration: 'underline' }}>Keyboard shortcuts</span>
 								<Ico name={shortcutsExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={muted} />
 							</button>
 							{shortcutsExpanded && (
-								<div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 220, overflowY: 'auto' }}>
+								<div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 220, overflowY: 'auto' }}>
 									{SHORTCUTS_GROUPS.map(group => (
 										<div key={group.category}>
 											<div style={{
 												fontFamily: TYPE.controlLabel.family,
-												fontWeight: 700,
+												fontWeight: 400,
 												fontSize: 10,
 												textTransform: 'uppercase' as const,
-												letterSpacing: '0.08em',
+												letterSpacing: '0.06em',
 												color: muted,
-												marginBottom: 4,
+												marginBottom: 6,
 											}}>
 												{group.category}
 											</div>
 											{group.items.map(item => (
-												<div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, lineHeight: '22px' }}>
-													<span style={{ fontFamily: TYPE.controlLabel.family, fontWeight: 400, color: dk(dark, T.dark, T.textDark) as string }}>
+												<div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, fontSize: 10, lineHeight: '20px' }}>
+													<span style={{ fontFamily: TYPE.controlLabel.family, fontWeight: 400, fontSize: 10, color: dk(dark, T.dark, T.textDark) as string }}>
 														{item.label}
 													</span>
-													<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: 10, color: muted, letterSpacing: '0.02em' }}>
+													<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: 500, fontSize: 10, color: muted, letterSpacing: '0.02em' }}>
 														{formatShortcut(item.shortcut)}
 													</span>
 												</div>
