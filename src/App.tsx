@@ -1,36 +1,57 @@
 import React from 'react';
-import { StrataProvider } from './components/strata/StrataContext';
+import { StrataProvider, useStrata } from './components/strata/StrataContext';
 import { StrataCanvas } from './components/strata/StrataCanvas';
-import { Controls } from './components/strata/Controls';
-import { WelcomeModal } from './components/strata/WelcomeModal';
-import { MobileBlockScreen, useIsMobile } from './components/strata/MobileBlockScreen';
+import { CompositionGuideOverlay } from './components/strata/viewport/CompositionGuideOverlay';
+import { ControlsV2 } from './components/strata/ControlsV2';
+import { useIsMobile } from './hooks/useIsMobile';
+import { useLoadExampleScene } from './hooks/useLoadExampleScene';
+import { MobileBlockScreenV2, ExportProgressV2, WelcomeModalV2 } from './components/strata/modals';
 import { ToastProvider } from './components/ui/toast-provider';
-import { ExportProgress } from './components/strata/ExportProgress';
+import { PreviewPage } from './preview/PreviewPage';
 
 function AppContent() {
+  const { state, dispatch } = useStrata();
+  const loadExampleScene = useLoadExampleScene();
+  const handleLoadExample = async () => {
+    await loadExampleScene();
+    dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
+  };
   return (
     <div className="relative w-full h-[100dvh] overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]">
-      {/* Font Injection */}
+      {/* Global interaction lock */}
       <style dangerouslySetInnerHTML={{__html: `
-          @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap');
-          .font-manrope { font-family: 'Manrope', sans-serif; }
           * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
       `}} />
-      
+
       <StrataCanvas />
-      <Controls />
-      <WelcomeModal />
-      <ExportProgress />
+      <CompositionGuideOverlay />
+      <ControlsV2 />
+      <WelcomeModalV2
+        open={state.isWelcomeModalOpen}
+        onClose={() => dispatch({ type: 'TOGGLE_WELCOME_MODAL' })}
+        onLoadExample={handleLoadExample}
+        dark={state.isDarkMode}
+      />
+      <ExportProgressV2
+        open={state.isExporting}
+        exportType={state.exportRequest ?? 'png'}
+        dark={state.isDarkMode}
+      />
     </div>
   );
 }
 
 export default function App() {
+  // Preview mode: dev only, activated via ?preview=true
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'true') {
+    return <PreviewPage />;
+  }
+
   const isMobile = useIsMobile();
 
   // If mobile, show only the block screen (no app initialization)
   if (isMobile) {
-    return <MobileBlockScreen />;
+    return <MobileBlockScreenV2 />;
   }
 
   // If tablet/desktop, render the full app

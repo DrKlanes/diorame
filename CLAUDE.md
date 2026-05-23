@@ -12,7 +12,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 | | |
 |---|---|
-| **Versión** | 1.15.1 |
+| **Versión** | 2.0.0 |
 | **Stack** | React 18 + TypeScript + Vite 6 + Tailwind CSS 4 + Canvas 2D API |
 | **Dev** | `npm run dev` → puerto 3000 |
 | **Build** | `npm run build` — siempre verificar antes de hacer commit |
@@ -84,6 +84,37 @@ lines = open('archivo.tsx', encoding='utf-8').readlines()
 print(repr(lines[782]))  # ver tabs exactos
 ```
 
+### Tablet como consideración sistemática
+
+Diorame soporta desktop y tablet. Cualquier cambio que toque interacción debe contemplar input táctil sin teclado físico:
+
+- **Eventos de input**: usar `pointerdown`/`pointerup` (unifica mouse + touch + pen). NO `mousedown`/`mouseup` (desktop-only).
+- **Atajos de teclado**: siempre tener alternativa táctil. Si la funcionalidad solo es accesible por shortcut, está rota en tablet.
+- **Focus management**: return-focus al anchor solo cuando el cierre fue iniciado por teclado (ESC). En cierre por pointer (click/tap), el foco queda donde el usuario lo puso.
+- **Tooltips con shortcuts**: en tablet, los shortcuts (`Cmd+E`, etc.) son ruido irrelevante. Tooltip ideal en táctil: o se suprime, o muestra solo la descripción sin el atajo.
+- **Modales**: cierre por gesto táctil debe estar contemplado (click outside, X visible, ESC opcional pero no único).
+- **Hover states**: nunca depender solo de hover para revelar UI crítica (no hay hover persistente en touch).
+
+Esto NO es preocupación añadida — es parte del filtro de decisión de cualquier prompt que toque UX.
+
+### Cambios mínimos en StrataCanvas.tsx — precedente operativo
+
+`StrataCanvas.tsx` es monolito de alto riesgo (render loop, gestos, proyección 3D). Regla por defecto: **no se toca**.
+
+Excepción documentada (precedente sub-fase 8.6): **swap de import con alias** es aceptable.
+
+```typescript
+// Cambio de 1 línea con alias, JSX intacto, lógica intacta — OK
+import { ComponentConnected as Component } from './ComponentConnected';
+```
+
+Cualquier otra modificación (añadir import nuevo, cambiar JSX, tocar listeners, modificar lógica de render) requiere:
+- Modelo Opus (no Sonnet)
+- Análisis previo explícito de impacto
+- Validación visual exhaustiva post-cambio
+
+Si dudas si tu cambio es "swap de import" o algo más, asume que es más y escala a Opus.
+
 ---
 
 ## Mapa de archivos (estado actual)
@@ -92,19 +123,26 @@ print(repr(lines[782]))  # ver tabs exactos
 
 | Archivo | Líneas | Rol |
 |---|---|---|
-| `StrataCanvas.tsx` | 2143 | Render loop, event handlers, gestures. **CONGELADO.** |
-| `StrataContext.tsx` | 1242 | React Context + useReducer, constantes, re-exports de tipos |
-| `Controls.tsx` | 203 | Compositor: mode switch, estado de export, keyboard shortcuts globales |
-| `ControlsDrawing.tsx` | 920 | UI modo DRAW: toolbar, paleta, navegación de capas, undo/redo, save/load |
-| `ControlsCinematic.tsx` | 768 | UI modo VIEW: tipos de animación, FX Mix popover, sliders de cámara |
-| `ControlsExport.tsx` | 80 | Dialog de advertencia de complejidad para export |
-| `LayersPanel.tsx` | 381 | Panel de capas: visibilidad, lock 3D, reordenar, duplicar, eliminar |
-| `ToolOptionsPanel.tsx` | 199 | Opciones contextuales: modo de línea, grosor, gradiente por capa |
-| `WelcomeModal.tsx` | — | Dialog de bienvenida con versión |
-| `OnboardingOverlay.tsx` | — | Hints en canvas vacío, auto-dismiss al primer trazo |
-| `ExportProgress.tsx` | — | Overlay de progreso durante exports de video |
-| `MobileBlockScreen.tsx` | — | Bloqueo para dispositivos móviles (tablet+ requerido) |
-| `pixelArtPalettes.ts` | — | Datos readonly para el efecto Pixel Art |
+| `StrataCanvas.tsx` | ~2300 | Render loop, event handlers, gestures. **CONGELADO.** |
+| `StrataContext.tsx` | ~1300 | React Context + useReducer, constantes, re-exports de tipos |
+| `ControlsV2.tsx` | ~150 | Root orquestador delgado para ambos modos. Side-effects globales (keyboard shortcuts, sessionStorage, mode-change camera reset). |
+
+**Átomos UI V2 (producción, v2.0.0):**
+
+| Directorio | Archivos clave |
+|---|---|
+| `topbar/` | `TopBar.tsx`, `FileControlsPill.tsx`, `SnapshotRecordPill.tsx`, `ModeSwitchPill.tsx`, `ThemeTogglePill.tsx` |
+| `bottombar/` | `BottomBar.tsx`, `DrawingToolbar.tsx`, `CameraBar.tsx`, `CameraPresetsZone.tsx`, `CameraSpeedZone.tsx`, `CameraSlidersZone.tsx`, `_shared.tsx` |
+| `colorpalette/` | `ColorPalette.tsx`, `PaletteHeader.tsx`, `GradientControls.tsx`, `SwatchGrid.tsx` |
+| `layers/` | `LayersPanel.tsx`, `LayerRow.tsx`, `LayerDotsRail.tsx` |
+| `viewport/` | `ResetViewPill.tsx` |
+| `drawing/` | `ToolOptionsPanel.tsx` |
+| `text/` | `TextSessionPanel.tsx` |
+| `fx/` | `FXPanel.tsx`, `FXRow.tsx` |
+| `modals/` | `WelcomeModalV2.tsx`, `ClearCanvasAlertV2.tsx`, `ComplexSceneModalV2.tsx`, `ExportProgressV2.tsx`, `OnboardingOverlayV2.tsx`, `MobileBlockScreenV2.tsx` |
+| `popovers/` | `DiSelectorPopover.tsx`, `DiSelectorOption.tsx` |
+
+---
 
 ### Canvas pipeline — `src/components/strata/canvas/`
 
@@ -164,6 +202,7 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 | `DiPanel` | Contenedor de superficie |
 | `DiDivider` | Separador horizontal/vertical |
 | `DiBadge` | Status pill con icono opcional |
+| `DiActionButton` | Botón icono con props `disabled` y `danger`. Sustituye al IconBtn legacy. Usado en LayersPanel V2, top bar pills, y bottom bars. (Añadido en 9.8) |
 
 **Tailwind CSS 4 JIT:** Los class strings deben ser strings estáticos literales — nunca template literals. El scanner JIT no evalúa expresiones.
 
@@ -190,7 +229,7 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 ## Constantes clave
 
 ```typescript
-APP_VERSION         = "1.15.1"   // en StrataContext.tsx — bump en cualquier cambio visible
+APP_VERSION         = "2.0.0"    // en src/constants/version.ts — bump en cualquier cambio visible
 BASE_DEPTH_STEP     = 150        // Z-units por capa
 MAX_LAYERS          = 10
 MAX_HISTORY_STEPS   = 50

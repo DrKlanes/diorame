@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
 import { generateTaperedStroke, generateUniformStroke, generateStrokeForMode } from '../../utils/strokeGenerators';
 import { Shape, Point } from '../../types/strataTypes';
-import paperTexture from "figma:asset/dedf59e02015e1400029a84197a5242f42fdbb01.png";
-import grungeTexture from "figma:asset/cbf89ce40bab5dc98000a75dbc50509b964706a0.png";
+import paperTexture from "figma:asset/texture-paper.png";
+import grungeTexture from "figma:asset/texture-grunge.png";
 import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
-import { OnboardingOverlay } from './OnboardingOverlay';
+import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOverlayConnected';
 import { processPixelArt } from './canvas/PixelArtProcessor';
 import { applyFog, applyGlow, applyDoFBlur, applyRisoV2, generateRisoGrain, applyChromaticAberration, applyVignette, applyGrain, applyGrunge } from './canvas/postProcessing';
 import { hexToHSL, hslToHex, getVibrantVariant, hexToRgba } from '../../utils/colorUtils';
@@ -31,6 +31,14 @@ export const StrataCanvas = () => {
   const stateRef = useRef(state);
   const currentPointsRef = useRef<Point[]>([]); 
   const isDrawingRef = useRef(false);
+  // Sync isDrawingRef with React state for pass-through behavior on panels.
+  // Guard avoids redundant dispatches when value is unchanged.
+  const setIsDrawing = (v: boolean) => {
+    if (isDrawingRef.current !== v) {
+      isDrawingRef.current = v;
+      dispatch({ type: 'SET_DRAWING_ACTIVE', payload: v });
+    }
+  };
   const drawingPointerTypeRef = useRef<string | null>(null);
   const pinchEndTimestampRef = useRef(0); // Cooldown after pinch to prevent ghost strokes
   const drawingPressureRef = useRef(0.5);
@@ -379,7 +387,7 @@ export const StrataCanvas = () => {
 
   // --- Export Handling ---
   useEffect(() => {
-      if (state.exportRequest === 'none') return;
+      if (!state.exportRequest) return;
       const canvas = canvasRef.current;
       if (!canvas) { dispatch({ type: 'FINISH_EXPORT' }); return; }
       const onFinish = () => dispatch({ type: 'FINISH_EXPORT' });
@@ -404,7 +412,7 @@ export const StrataCanvas = () => {
           if (isDrawingRef.current && drawingPointerTypeRef.current === 'pen') return;
 
           if (e.touches.length === 2) {
-              isDrawingRef.current = false;
+              setIsDrawing(false);
               currentPointsRef.current = [];
               const t1 = e.touches[0];
               const t2 = e.touches[1];
@@ -423,7 +431,7 @@ export const StrataCanvas = () => {
                   tapTouchCount: 2,
               };
           } else if (e.touches.length === 3) {
-              isDrawingRef.current = false;
+              setIsDrawing(false);
               currentPointsRef.current = [];
               drawingPointerTypeRef.current = null;
               const t1 = e.touches[0];
@@ -745,7 +753,7 @@ export const StrataCanvas = () => {
         }
         if (state.tool === 'move') {
             e.currentTarget.setPointerCapture(e.pointerId);
-            isDrawingRef.current = true;
+            setIsDrawing(true);
             drawingPointerTypeRef.current = e.pointerType;
             
             // Gizmo Interaction
@@ -780,7 +788,7 @@ export const StrataCanvas = () => {
         }
 
         e.currentTarget.setPointerCapture(e.pointerId);
-        isDrawingRef.current = true;
+        setIsDrawing(true);
         drawingPointerTypeRef.current = e.pointerType;
         currentPointsRef.current = [{ x: worldX, y: worldY, pressure: 0.5 }];
         drawingPressureRef.current = 0.5;
@@ -793,7 +801,7 @@ export const StrataCanvas = () => {
         }
     } else if (state.mode === 'cinematic' && state.cinematicType === 'orbit') {
         e.currentTarget.setPointerCapture(e.pointerId);
-        isDrawingRef.current = true; 
+        setIsDrawing(true); 
     }
   };
 
@@ -965,7 +973,7 @@ export const StrataCanvas = () => {
     
     if (state.mode === 'drawing') {
         if (state.tool === 'move') {
-            isDrawingRef.current = false;
+            setIsDrawing(false);
             drawingPointerTypeRef.current = null;
             if (transformRef.current.isActive) {
                  const { x, y, scale, rotation } = transformRef.current.currentTransform;
@@ -1002,7 +1010,7 @@ export const StrataCanvas = () => {
             // Discard micro-strokes from finger/palm touches (not pen or mouse)
              if (drawingPointerTypeRef.current === 'touch' && currentPointsRef.current.length <= MIN_TOUCH_STROKE_POINTS) {
                  currentPointsRef.current = [];
-                 isDrawingRef.current = false;
+                 setIsDrawing(false);
                  drawingPointerTypeRef.current = null;
                  return;
              }
@@ -1115,10 +1123,10 @@ export const StrataCanvas = () => {
         
         // Move flags cleanup to AFTER processing points to allow late pointerMove events
         currentPointsRef.current = [];
-        isDrawingRef.current = false;
+        setIsDrawing(false);
         drawingPointerTypeRef.current = null;
     } else {
-        isDrawingRef.current = false;
+        setIsDrawing(false);
         drawingPointerTypeRef.current = null;
     }
   };
@@ -1177,7 +1185,8 @@ export const StrataCanvas = () => {
       const isDrawing = isDrawingRef.current;
       const currentPoints = currentPointsRef.current;
       const isCinematic = currentState.mode === 'cinematic';
-      const isPixelArt = isCinematic && currentState.postProcessingEnabled.pixelArt;
+      const fxEnabled = isCinematic && currentState.fxMasterEnabled;
+      const isPixelArt = fxEnabled && currentState.postProcessingEnabled.pixelArt;
       
       // Throttle rendering during drawing for better performance
       const renderTime = performance.now();
@@ -1394,7 +1403,7 @@ export const StrataCanvas = () => {
       const dzCenter = isArcOrOrbit ? centerZ - effectiveCameraZ : 0;
       const arcPivotScale = isArcOrOrbit ? FL / (FL + dzCenter) : 0;
 
-      const fxDistortion = (isCinematic && currentState.postProcessingEnabled.distortion) ? currentState.postProcessing.distortion : 0;
+      const fxDistortion = (fxEnabled && currentState.postProcessingEnabled.distortion) ? currentState.postProcessing.distortion : 0;
       const distortionK = Math.abs(fxDistortion) > 0.01 ? (fxDistortion * -0.8) * (500 / FL) : 0;
 
       renderZs.forEach(z => {
@@ -1481,7 +1490,7 @@ export const StrataCanvas = () => {
           };
 
           // Draw Particles
-          if (isCinematic && currentState.postProcessingEnabled.particles && currentState.postProcessing.particles > 0.01) {
+          if (fxEnabled && currentState.postProcessingEnabled.particles && currentState.postProcessing.particles > 0.01) {
              const pIntensity = currentState.postProcessing.particles;
              const pType = currentState.postProcessing.particleType;
              particlesRef.current.forEach(p => {
@@ -1529,7 +1538,7 @@ export const StrataCanvas = () => {
           shapes.forEach(shape => {
               if (shape.points.length === 0) return;
               let wiggleX = 0, wiggleY = 0;
-              if (isCinematic && currentState.postProcessingEnabled.wiggle) {
+              if (fxEnabled && currentState.postProcessingEnabled.wiggle) {
                   const seed = shape.id.charCodeAt(0) + (shape.id.charCodeAt(1) || 0);
                   const noiseValX = Math.sin(seed + wiggleFrame * 12.9898) * 43758.5453;
                   const noiseValY = Math.cos(seed + wiggleFrame * 78.233) * 43758.5453;
@@ -1635,7 +1644,6 @@ export const StrataCanvas = () => {
                           layerCtx.letterSpacing = '0px';
                       }
 
-                      layerCtx.fillStyle = shape.color;
                       layerCtx.globalAlpha = pOrigin.opacity;
                       layerCtx.textAlign = shape.align || 'left';
                       layerCtx.textBaseline = 'middle';
@@ -1644,6 +1652,43 @@ export const StrataCanvas = () => {
                       const lineHeight = effectiveFontSize * 1.2;
                       const totalHeight = lines.length * lineHeight;
                       const startY = -(totalHeight / 2) + (lineHeight / 2);
+
+                      // Apply paletteMode gradient (mirrors shape path; bbox in local text coords)
+                      const shapeLayerIndex = Math.round(Math.abs(shape.zIndex / BASE_DEPTH_STEP));
+                      const renderMode = currentState.layerRenderModes?.[shapeLayerIndex] || 'flat';
+                      if (renderMode === 'grad') {
+                          let maxWidth = 0;
+                          for (const l of lines) {
+                              const w = layerCtx.measureText(l).width;
+                              if (w > maxWidth) maxWidth = w;
+                          }
+                          const align = shape.align || 'left';
+                          let minX = 0, maxX = maxWidth;
+                          if (align === 'center') { minX = -maxWidth / 2; maxX = maxWidth / 2; }
+                          else if (align === 'right') { minX = -maxWidth; maxX = 0; }
+                          const minY = -totalHeight / 2, maxY = totalHeight / 2;
+                          const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+                          const gradParams = currentState.layerGradParams?.[shapeLayerIndex] || { angle: 90, intensity: 0.2 };
+                          const ang = (gradParams.angle * Math.PI) / 180;
+                          const r = Math.hypot(maxX - minX, maxY - minY) / 2;
+                          const grad = layerCtx.createLinearGradient(
+                              cx - Math.cos(ang) * r, cy - Math.sin(ang) * r,
+                              cx + Math.cos(ang) * r, cy + Math.sin(ang) * r
+                          );
+                          const c = shape.color, ints = gradParams.intensity;
+                          if (gradParams.gradType === 'fade') {
+                              const endAlpha = Math.max(0, 1 - (0.2 + ints * 0.8));
+                              grad.addColorStop(0, hexToRgba(c, 1));
+                              grad.addColorStop(1, hexToRgba(c, endAlpha));
+                          } else {
+                              grad.addColorStop(0, getVibrantVariant(c, ints, 'light'));
+                              grad.addColorStop(0.5, c);
+                              grad.addColorStop(1, getVibrantVariant(c, ints, 'dark'));
+                          }
+                          layerCtx.fillStyle = grad;
+                      } else {
+                          layerCtx.fillStyle = shape.color;
+                      }
 
                       lines.forEach((line, i) => {
                           layerCtx.fillText(line, 0, startY + i * lineHeight);
@@ -1959,7 +2004,7 @@ export const StrataCanvas = () => {
              }
 
              // Fog
-             if (isCinematic && currentState.postProcessingEnabled.fog) {
+             if (fxEnabled && currentState.postProcessingEnabled.fog) {
                  applyFog(layerCtx, w, h, currentState.postProcessing.fog, currentState.isDarkMode, FL + layerAvgZ);
              }
 
@@ -1977,11 +2022,11 @@ export const StrataCanvas = () => {
              }
 
              const glowInt = currentState.postProcessing.glow;
-             const dofBlur = (isCinematic && currentState.postProcessingEnabled.dof)
+             const dofBlur = (fxEnabled && currentState.postProcessingEnabled.dof)
                  ? Math.min((Math.abs(layerAvgZ - fxFocusDist)/1000)*(FL/400)*4, 30*currentState.postProcessing.dof)
                  : 0;
 
-             if (isCinematic && currentState.postProcessingEnabled.glow && glowInt > 0.01) {
+             if (fxEnabled && currentState.postProcessingEnabled.glow && glowInt > 0.01) {
                  applyGlow(offCtx, helperCanvasRef.current!, glowInt, dofBlur, currentState.isDarkMode);
              }
 
@@ -1992,13 +2037,13 @@ export const StrataCanvas = () => {
       // --- 3. Final Composition ---
       
       // RISO Texture
-      if (isCinematic && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && risoGrainRef.current) {
-          applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, risoGrainRef.current, helperCanvasRef.current!.getContext('2d')!, currentState.postProcessing.risoInkBlend ?? 0);
+      if (fxEnabled && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && risoGrainRef.current) {
+          applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, risoGrainRef.current, helperCanvasRef.current!.getContext('2d')!);
       }
 
       // Chromatic Aberration & Transfer to Main
       const caInt = currentState.postProcessing.chromaticAberration;
-      const useCA = isCinematic && currentState.postProcessingEnabled.chromaticAberration && caInt > 0.01;
+      const useCA = fxEnabled && currentState.postProcessingEnabled.chromaticAberration && caInt > 0.01;
 
       ctx.globalCompositeOperation = currentState.isDarkMode ? 'source-over' : 'multiply';
 
@@ -2015,18 +2060,18 @@ export const StrataCanvas = () => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalCompositeOperation = 'source-over';
       
-      if (isCinematic && currentState.postProcessingEnabled.vignette) {
+      if (fxEnabled && currentState.postProcessingEnabled.vignette) {
           applyVignette(ctx, w, h, currentState.postProcessing.vignette);
       }
 
-      const grain = (isCinematic && currentState.postProcessingEnabled.grain) ? currentState.postProcessing.grain : 0;
+      const grain = (fxEnabled && currentState.postProcessingEnabled.grain) ? currentState.postProcessing.grain : 0;
       if (grain > 0.01 && noiseCanvasRef.current) {
           applyGrain(ctx, noiseCanvasRef.current, w, h, grain);
       }
 
 
       // --- Grunge Overlay (Animated) ---
-      if (isCinematic && currentState.postProcessingEnabled.grungeOverlay && grungeImgRef.current) {
+      if (fxEnabled && currentState.postProcessingEnabled.grunge && grungeImgRef.current) {
           applyGrunge(ctx, grungeImgRef.current, w, h, currentState.postProcessing.grungeIntensity ?? 0.5);
       }
 
@@ -2211,8 +2256,8 @@ export const StrataCanvas = () => {
   };
 
   return (
-    <div ref={containerRef} className={cn("absolute inset-0 z-0 overflow-hidden touch-none", state.mode === 'drawing' ? cn("inset-4 sm:inset-6 md:inset-8 lg:inset-10 rounded-[32px] shadow-2xl bg-white border border-slate-100/50", cursorOverride ? cursorOverride : (state.tool === 'move' ? "cursor-move" : "cursor-crosshair")) : "inset-0 bg-slate-50 cursor-default")} style={{ touchAction: 'none' }}>
-      <canvas ref={canvasRef} tabIndex={0} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel} className={cn("block w-full h-full", state.mode === 'drawing' ? "rounded-[32px]" : "")} style={{ touchAction: 'none', outline: 'none' }} />
+    <div ref={containerRef} className={cn("absolute inset-0 z-0 overflow-hidden touch-none", state.mode === 'drawing' ? (cursorOverride ? cursorOverride : (state.tool === 'move' ? "cursor-move" : "cursor-crosshair")) : "cursor-default")} style={{ touchAction: 'none' }}>
+      <canvas ref={canvasRef} tabIndex={0} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel} className="block w-full h-full" style={{ touchAction: 'none', outline: 'none' }} />
       {/* Flip buttons overlay - positioned via render loop */}
       <div
         ref={flipButtonsRef}
@@ -2222,10 +2267,10 @@ export const StrataCanvas = () => {
         <button
           onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
           onClick={(e) => { e.stopPropagation(); handleFlip('horizontal'); }}
-          className="flex items-center justify-center w-7 h-7 rounded-md bg-white/90 border border-slate-200 shadow-sm hover:bg-blue-50 hover:border-blue-300 active:bg-blue-100 transition-colors backdrop-blur-sm"
+          className="flex items-center justify-center w-7 h-7 rounded-md bg-white/90 border border-slate-200 shadow-sm hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 transition-colors backdrop-blur-sm"
           title="Flip Horizontal"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(26, 26, 26)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M8 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h3" />
             <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3" />
             <path d="M12 20v2" />
@@ -2237,10 +2282,10 @@ export const StrataCanvas = () => {
         <button
           onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
           onClick={(e) => { e.stopPropagation(); handleFlip('vertical'); }}
-          className="flex items-center justify-center w-7 h-7 rounded-md bg-white/90 border border-slate-200 shadow-sm hover:bg-blue-50 hover:border-blue-300 active:bg-blue-100 transition-colors backdrop-blur-sm"
+          className="flex items-center justify-center w-7 h-7 rounded-md bg-white/90 border border-slate-200 shadow-sm hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 transition-colors backdrop-blur-sm"
           title="Flip Vertical"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(26, 26, 26)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 8V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3" />
             <path d="M3 16v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3" />
             <path d="M20 12h2" />

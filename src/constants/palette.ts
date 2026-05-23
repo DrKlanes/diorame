@@ -68,7 +68,7 @@ export const GRADIENT_DEFAULTS = {
 	gradType: 'solid' as const,
 } satisfies { angle: number; intensity: number; gradType: 'solid' | 'fade' };
 
-// Derivado de ambas paletas. Reemplaza el array hardcodeado en ControlsDrawing.tsx.
+// Derivado de ambas paletas. Usado por ColorPalette y SwatchGrid para estilos de contraste.
 // Se recalcula automáticamente si se modifican los isDark de las paletas.
 export const DARK_COLORS = new Set<string>([
 	...PALETTE_PRIMARY.filter(c => c.isDark).map(c => c.hex),

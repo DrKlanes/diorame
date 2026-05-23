@@ -14,7 +14,7 @@ export type {
 // --- Constants ---
 export const BASE_DEPTH_STEP = 150;  
 export const MAX_LAYERS = 10;
-export const APP_VERSION = "1.15.1"; // Release version
+export { APP_VERSION } from '../../constants/version'; // Moved to constants/version.ts
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS } from '../../constants/palette';
@@ -46,12 +46,15 @@ type Action =
   | { type: 'UPDATE_CAMERA'; payload: { x?: number; y?: number; z?: number; rotation?: number } }
   | { type: 'NEXT_LAYER' }
   | { type: 'PREV_LAYER' }
+  | { type: 'SET_CURRENT_LAYER'; payload: number }
   | { type: 'SET_FOCAL_LENGTH'; payload: number }
   | { type: 'SET_VIEW_ZOOM_OFFSET'; payload: number }
   | { type: 'SET_DRAWING_ZOOM'; payload: { zoom: number; pan?: { x: number; y: number } } }
   | { type: 'TOGGLE_DARK_MODE' }
   | { type: 'SET_FX_INTENSITY'; payload: { fx: keyof PostProcessingSettings; value: number } }
+  | { type: 'SET_PARTICLE_TYPE'; payload: 'circle' | 'square' | 'stroke' }
   | { type: 'TOGGLE_FX'; payload: keyof PostProcessingEnabled }
+  | { type: 'TOGGLE_FX_MASTER' }
   | { type: 'REQUEST_EXPORT'; payload: ExportType }
   | { type: 'FINISH_EXPORT' }
   | { type: 'CLEAR_CANVAS' }
@@ -62,7 +65,9 @@ type Action =
   | { type: 'TRANSFORM_LAYER'; payload: { layerIndex: number; transform: { rotation: number; scale: number; dx: number; dy: number; centerX: number; centerY: number } } }
   | { type: 'TOGGLE_WELCOME_MODAL' }
   | { type: 'TOGGLE_UI' }
+  | { type: 'SET_DRAWING_ACTIVE'; payload: boolean }
   | { type: 'TOGGLE_SYMMETRY' }
+  | { type: 'TOGGLE_GRID' }
   | { type: 'SET_PALETTE_MODE'; payload: 'flat' | 'grad' }
   | { type: 'SET_PALETTE_GRADIENT_ANGLE'; payload: number }
   | { type: 'SET_PALETTE_GRADIENT_INTENSITY'; payload: number }
@@ -89,6 +94,7 @@ type Action =
   | { type: 'SET_LAYER_SPACING_FACTOR'; payload: number }
   | { type: 'SET_PROJECT_NAME'; payload: string }
   | { type: 'REORDER_LAYERS'; payload: { fromIndex: number; toIndex: number } }
+  | { type: 'MOVE_LAYER_TO'; payload: { fromIndex: number; toIndex: number } }
   | { type: 'DUPLICATE_LAYER'; payload: number }
   | { type: 'DISMISS_ONBOARDING' }
   | { type: 'SET_ACTIVE_PALETTE'; payload: 'primary' | 'alternative' }
@@ -125,7 +131,7 @@ const initialState: AppState = {
   postProcessing: {
       grain: 0.5,
       vignette: 0.5,
-      distortion: 0,
+      distortion: -0.3, // Non-neutral default: ensures visible effect on first toggle
       dof: 0.5,
       focusDist: 800, // Default focus distance
       focusTargetLayer: -1, // Default: -1 (Manual/Free Focus). 0+ = Lock to Layer Index
@@ -153,8 +159,10 @@ const initialState: AppState = {
       glow: false,
       riso: false,
       pixelArt: false,
-      grungeOverlay: false
+      grunge: false
   },
+  fxMasterEnabled: true, // Master toggle for all FX (defaults ON)
+  postProcessingSnapshot: null,
   history: [{
       shapes: [],
       totalLayers: 1,
@@ -166,14 +174,16 @@ const initialState: AppState = {
       layerBrushSettings: {}
   }],
   historyIndex: 0,
-  exportRequest: 'none',
+  exportRequest: null,
   isExporting: false,
   hiddenLayers: [],
   locked3DLayers: [],
   isWelcomeModalOpen: true,
   isOnboardingVisible: true, // New: Onboarding overlay on canvas
   isUIHidden: false,
+  isDrawing: false,
   isSymmetryEnabled: false,
+  gridEnabled: typeof window !== 'undefined' && window.localStorage?.getItem('diorame-grid-enabled') === 'true',
   paletteMode: 'flat',
   layerRenderModes: {},
   layerGradParams: {},
@@ -238,8 +248,15 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, isWelcomeModalOpen: !state.isWelcomeModalOpen };
     case 'TOGGLE_UI':
       return { ...state, isUIHidden: !state.isUIHidden };
+    case 'SET_DRAWING_ACTIVE':
+      return { ...state, isDrawing: action.payload };
     case 'TOGGLE_SYMMETRY':
       return { ...state, isSymmetryEnabled: !state.isSymmetryEnabled };
+    case 'TOGGLE_GRID': {
+      const newValue = !state.gridEnabled;
+      try { window.localStorage.setItem('diorame-grid-enabled', String(newValue)); } catch (_) { /* private mode */ }
+      return { ...state, gridEnabled: newValue };
+    }
     case 'TOGGLE_DRAW_BEHIND':
       if (state.tool === 'eraser') return state;
       const willBeBehind = !state.isDrawBehind;
@@ -505,6 +522,28 @@ function appReducer(state: AppState, action: Action): AppState {
         }
         return state;
     }
+    case 'SET_CURRENT_LAYER': {
+        const targetIndex = action.payload;
+        if (targetIndex === state.currentLayerIndex) return state;
+        if (targetIndex < 0 || targetIndex >= state.totalLayers) return state;
+        const newZ = targetIndex * -BASE_DEPTH_STEP;
+        const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
+        const targetParams = state.layerGradParams[targetIndex] || GRADIENT_DEFAULTS;
+        const targetBrush = state.layerBrushSettings[targetIndex] || { thickness: state.currentLineThickness, mode: state.lineMode };
+        return {
+            ...state,
+            currentLayerIndex: targetIndex,
+            camera: { ...state.camera, z: newZ, rotation: 0 },
+            isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
+            isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
+            paletteMode: state.layerRenderModes[targetIndex] || 'flat',
+            paletteGradientAngle: targetParams.angle,
+            paletteGradientIntensity: targetParams.intensity,
+            paletteGradientType: targetParams.gradType || 'solid',
+            currentLineThickness: targetBrush.thickness,
+            lineMode: targetBrush.mode
+        };
+    }
     case 'SET_FOCAL_LENGTH':
       return { ...state, focalLength: action.payload };
     case 'SET_VIEW_ZOOM_OFFSET':
@@ -518,11 +557,19 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'TOGGLE_DARK_MODE':
       return { ...state, isDarkMode: !state.isDarkMode };
     case 'SET_FX_INTENSITY':
-      return { 
-          ...state, 
+      return {
+          ...state,
           postProcessing: {
               ...state.postProcessing,
               [action.payload.fx]: action.payload.value
+          }
+      };
+    case 'SET_PARTICLE_TYPE':
+      return {
+          ...state,
+          postProcessing: {
+              ...state.postProcessing,
+              particleType: action.payload
           }
       };
     case 'TOGGLE_FX':
@@ -531,12 +578,38 @@ function appReducer(state: AppState, action: Action): AppState {
           postProcessingEnabled: {
               ...state.postProcessingEnabled,
               [action.payload]: !state.postProcessingEnabled[action.payload]
-          }
+          },
+          postProcessingSnapshot: null,
+          fxMasterEnabled: true,
       };
+    case 'TOGGLE_FX_MASTER': {
+      const px = state.postProcessingEnabled;
+      const hasActiveEffects = Object.values(px).some(v => v);
+      if (hasActiveEffects && state.postProcessingSnapshot === null) {
+          const allOff = Object.fromEntries(
+              Object.keys(px).map(k => [k, false])
+          ) as PostProcessingEnabled;
+          return {
+              ...state,
+              postProcessingSnapshot: { ...px } as PostProcessingEnabled,
+              postProcessingEnabled: allOff,
+              fxMasterEnabled: false,
+          };
+      } else if (state.postProcessingSnapshot !== null) {
+          return {
+              ...state,
+              postProcessingEnabled: state.postProcessingSnapshot,
+              postProcessingSnapshot: null,
+              fxMasterEnabled: Object.values(state.postProcessingSnapshot).some(v => v),
+          };
+      } else {
+          return state;
+      }
+    }
     case 'REQUEST_EXPORT':
       return { ...state, exportRequest: action.payload, isExporting: true };
     case 'FINISH_EXPORT':
-      return { ...state, exportRequest: 'none', isExporting: false };
+      return { ...state, exportRequest: null, isExporting: false };
     case 'CLEAR_CANVAS':
       return {
           ...state,
@@ -555,7 +628,7 @@ function appReducer(state: AppState, action: Action): AppState {
           currentLayerIndex: 0,
           totalLayers: 1,
           camera: { x: 0, y: 0, z: 0, rotation: 0 },
-          exportRequest: 'none',
+          exportRequest: null,
           isExporting: false,
           hiddenLayers: [],
           locked3DLayers: [],
@@ -576,18 +649,27 @@ function appReducer(state: AppState, action: Action): AppState {
           handheldIntensity: initialState.handheldIntensity,
           cinematicType: initialState.cinematicType,
           postProcessing: initialState.postProcessing,
-          postProcessingEnabled: initialState.postProcessingEnabled
+          postProcessingEnabled: initialState.postProcessingEnabled,
+          fxMasterEnabled: initialState.fxMasterEnabled,
+          postProcessingSnapshot: null,
       }
     case 'LOAD_PROJECT':
       // Ensure we merge postProcessing settings correctly to avoid undefined values
+      // Legacy migration: drop risoInkBlend if present (was never in stable releases)
+      const incomingPostProcessing: any = action.payload.postProcessing || {};
       const mergedPostProcessing = {
           ...initialState.postProcessing,
-          ...(action.payload.postProcessing || {})
+          ...incomingPostProcessing
       };
+      delete (mergedPostProcessing as any).risoInkBlend;
+      // Legacy migration: grungeOverlay -> grunge
+      const incomingPostProcessingEnabled: any = action.payload.postProcessingEnabled || {};
       const mergedPostProcessingEnabled = {
           ...initialState.postProcessingEnabled,
-          ...(action.payload.postProcessingEnabled || {})
+          ...incomingPostProcessingEnabled,
+          grunge: incomingPostProcessingEnabled.grunge ?? incomingPostProcessingEnabled.grungeOverlay ?? false
       };
+      delete (mergedPostProcessingEnabled as any).grungeOverlay;
       
       const loadedLayerRenderModes = action.payload.layerRenderModes || {};
       const loadedLayerGradParams = action.payload.layerGradParams || {};
@@ -620,6 +702,7 @@ function appReducer(state: AppState, action: Action): AppState {
       const safeCinematicSpeed = typeof action.payload.cinematicSpeed === 'number' ? action.payload.cinematicSpeed : state.cinematicSpeed;
       const safeIsHandheldEnabled = typeof action.payload.isHandheldEnabled === 'boolean' ? action.payload.isHandheldEnabled : state.isHandheldEnabled;
       const safeHandheldIntensity = (typeof action.payload.handheldIntensity === 'string' && ['low', 'medium', 'high'].includes(action.payload.handheldIntensity as string)) ? action.payload.handheldIntensity as HandheldIntensity : state.handheldIntensity;
+      const safeFxMasterEnabled = typeof action.payload.fxMasterEnabled === 'boolean' ? action.payload.fxMasterEnabled : true;
 
       // Create initial history snapshot with loaded state
       const initialSnapshot: HistorySnapshot = {
@@ -643,6 +726,7 @@ function appReducer(state: AppState, action: Action): AppState {
           projectName: safeProjectName,
           postProcessing: mergedPostProcessing,
           postProcessingEnabled: mergedPostProcessingEnabled,
+          fxMasterEnabled: safeFxMasterEnabled,
           // Ensure critical state is reset/set correctly
           history: [initialSnapshot],
           historyIndex: 0,
@@ -671,7 +755,8 @@ function appReducer(state: AppState, action: Action): AppState {
           cinematicSpeed: safeCinematicSpeed,
           isHandheldEnabled: safeIsHandheldEnabled,
           handheldIntensity: safeHandheldIntensity,
-          shouldFitToView: true
+          shouldFitToView: true,
+          isDrawing: false
       };
     case 'COMPLETE_FIT_TO_VIEW':
         return { ...state, shouldFitToView: false };
@@ -1133,7 +1218,96 @@ function appReducer(state: AppState, action: Action): AppState {
         };
         
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
-        
+
+        return {
+            ...newState,
+            history,
+            historyIndex: index
+        };
+    }
+    case 'MOVE_LAYER_TO': {
+        const { fromIndex, toIndex } = action.payload;
+
+        // Guards
+        if (fromIndex === toIndex) return state;
+        if (fromIndex < 0 || fromIndex >= state.totalLayers) return state;
+        if (toIndex < 0 || toIndex >= state.totalLayers) return state;
+
+        // Helper: given an old layer index, return its new index after the move.
+        // Case A (from < to): items in (from, to] shift down by 1; fromIndex jumps to toIndex.
+        // Case B (from > to): items in [to, from) shift up by 1; fromIndex jumps to toIndex.
+        const remap = (oldIdx: number): number => {
+            if (oldIdx === fromIndex) return toIndex;
+            if (fromIndex < toIndex) {
+                if (oldIdx > fromIndex && oldIdx <= toIndex) return oldIdx - 1;
+            } else {
+                if (oldIdx >= toIndex && oldIdx < fromIndex) return oldIdx + 1;
+            }
+            return oldIdx;
+        };
+
+        // 1. Reindex shapes via zIndex
+        const newShapes = state.shapes.map(shape => {
+            const oldLayerIdx = Math.round(shape.zIndex / -BASE_DEPTH_STEP);
+            const newLayerIdx = remap(oldLayerIdx);
+            if (newLayerIdx === oldLayerIdx) return shape;
+            return { ...shape, zIndex: newLayerIdx * -BASE_DEPTH_STEP };
+        });
+
+        // 2. Reindex index arrays
+        const newHidden = state.hiddenLayers.map(remap);
+        const newLocked = state.locked3DLayers.map(remap);
+
+        // 3. Reindex Records (Record<number, T>)
+        const remapRecord = <T,>(record: Record<number, T>): Record<number, T> => {
+            const result: Record<number, T> = {};
+            for (let i = 0; i < state.totalLayers; i++) {
+                if (record[i] !== undefined) {
+                    result[remap(i)] = record[i];
+                }
+            }
+            return result;
+        };
+
+        const newRenderModes = remapRecord(state.layerRenderModes);
+        const newGradParams = remapRecord(state.layerGradParams);
+        const newBrushSettings = remapRecord(state.layerBrushSettings);
+
+        // 4. Reindex currentLayerIndex (active layer follows its content)
+        const newCurrent = remap(state.currentLayerIndex);
+
+        // 5. Reindex focusTargetLayer (cinematic focus follows its target layer when not -1/manual)
+        const oldFocusTarget = state.postProcessing.focusTargetLayer;
+        const newFocusTarget = (typeof oldFocusTarget === 'number' && oldFocusTarget >= 0)
+            ? remap(oldFocusTarget)
+            : oldFocusTarget;
+
+        const newState = {
+            ...state,
+            shapes: newShapes,
+            hiddenLayers: newHidden,
+            locked3DLayers: newLocked,
+            layerRenderModes: newRenderModes,
+            layerGradParams: newGradParams,
+            layerBrushSettings: newBrushSettings,
+            currentLayerIndex: newCurrent,
+            camera: {
+                ...state.camera,
+                z: newCurrent * -BASE_DEPTH_STEP,
+                rotation: 0
+            },
+            postProcessing: {
+                ...state.postProcessing,
+                focusTargetLayer: newFocusTarget
+            }
+        };
+
+        const { history, index } = pushHistory(
+            state.history,
+            state.historyIndex,
+            createSnapshot(newState)
+        );
+
         return {
             ...newState,
             history,
@@ -1257,8 +1431,9 @@ function appReducer(state: AppState, action: Action): AppState {
 
 const StrataContext = createContext<{ state: AppState; dispatch: React.Dispatch<Action> } | undefined>(undefined);
 
-export const StrataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+export const StrataProvider: React.FC<{ children: ReactNode; initialStateOverride?: Partial<AppState> }> = ({ children, initialStateOverride }) => {
+  const merged = initialStateOverride ? { ...initialState, ...initialStateOverride } : initialState;
+  const [state, dispatch] = useReducer(appReducer, merged);
 
   return (
     <StrataContext.Provider value={{ state, dispatch }}>

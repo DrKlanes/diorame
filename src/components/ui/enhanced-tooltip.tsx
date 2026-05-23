@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { cn } from './utils';
 
@@ -10,19 +10,37 @@ interface EnhancedTooltipProps {
   disabled?: boolean;
 }
 
-export function EnhancedTooltip({ 
-  children, 
-  content, 
-  shortcut, 
+export function EnhancedTooltip({
+  children,
+  content,
+  shortcut,
   side = 'bottom',
-  disabled = false 
+  disabled = false
 }: EnhancedTooltipProps) {
+  const [open, setOpen] = useState(false);
+  const pointerTypeRef = useRef<string>('mouse');
+
   if (disabled) return <>{children}</>;
 
   return (
     <TooltipPrimitive.Provider delayDuration={300}>
-      <TooltipPrimitive.Root>
-        <TooltipPrimitive.Trigger asChild>
+      <TooltipPrimitive.Root
+        open={open}
+        onOpenChange={(wantsOpen) => {
+          // Suppress tooltip on touch — keyboard shortcuts are irrelevant for touch input
+          if (wantsOpen && pointerTypeRef.current === 'touch') return;
+          setOpen(wantsOpen);
+        }}
+      >
+        <TooltipPrimitive.Trigger
+          asChild
+          onPointerDown={(e: React.PointerEvent) => {
+            pointerTypeRef.current = e.pointerType;
+          }}
+          onBlur={() => {
+            pointerTypeRef.current = 'mouse'; // Reset so keyboard Tab after touch works correctly
+          }}
+        >
           {children}
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>

@@ -25,7 +25,7 @@ export interface Shape {
 export type AppMode = 'drawing' | 'cinematic';
 export type ToolType = 'brush' | 'eraser' | 'text' | 'move' | 'line';
 export type CinematicType = 'forward' | 'spiral' | 'yoyo' | 'pulse' | 'twist' | 'arc' | 'crane' | 'truck' | 'orbit' | 'zoom';
-export type ExportType = 'none' | 'png' | 'webm' | 'mp4' | 'svg' | 'svgz';
+export type ExportType = 'png' | 'mp4' | 'svg' | 'svgz';
 export type LineMode = 'tapered' | 'uniform' | 'ink';
 
 export type PostProcessingSettings = {
@@ -60,7 +60,7 @@ export type PostProcessingEnabled = {
     glow: boolean;
     riso: boolean;
     pixelArt: boolean;
-    grungeOverlay: boolean;
+    grunge: boolean;
 };
 
 export type HandheldIntensity = 'low' | 'medium' | 'high';
@@ -105,16 +105,20 @@ export interface AppState {
   layerSpacingFactor: number; // New: Z-spacing multiplier for layers in VIEW mode (0.5 to 2.0, default 1.0)
   postProcessing: PostProcessingSettings;
   postProcessingEnabled: PostProcessingEnabled;
+  fxMasterEnabled: boolean; // New: Global toggle for all post-processing FX (not undoable)
+  postProcessingSnapshot: PostProcessingEnabled | null; // Transient: snapshot for master toggle restore
   history: HistorySnapshot[];
   historyIndex: number;
-  exportRequest: ExportType;
+  exportRequest: ExportType | null;
   isExporting: boolean;
   hiddenLayers: number[]; // Indices of hidden layers
   locked3DLayers: number[]; // Indices of layers with 3D Lock (fixed in VIEW mode)
   isWelcomeModalOpen: boolean;
   isOnboardingVisible: boolean; // New: Onboarding overlay on canvas
   isUIHidden: boolean; // New: Toggle UI visibility in View mode
+  isDrawing: boolean; // Transient: true during active pointer drag (draw/move/orbit). NOT serialized.
   isSymmetryEnabled: boolean; // New: Vertical Symmetry Mode
+  gridEnabled: boolean; // Composition guide overlay (3x3 dot grid). Persisted in localStorage. NOT serialized in .dior.
   paletteMode: 'flat' | 'grad'; // New: Palette Rendering Mode
   layerRenderModes: Record<number, 'flat' | 'grad'>; // New: Per-layer render mode
   layerGradParams: Record<number, { angle: number; intensity: number; gradType?: 'solid' | 'fade' }>; // New: Per-layer gradient params
