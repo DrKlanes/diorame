@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Ico } from './Ico';
-import { T, RADIUS, dk } from './tokens';
+import { T, TYPE, RADIUS, dk } from './tokens';
 
-export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, tooltip, disabled = false, danger = false }: {
+export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, label, tooltip, disabled = false, danger = false }: {
 	name: string;
 	onClick: () => void;
 	dark: boolean;
@@ -10,6 +10,7 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 	activeStyle?: 'wash' | 'solid';
 	iconWeight?: 'normal' | 'secondary';
 	iconSize?: number;
+	label?: string;
 	tooltip?: string;
 	disabled?: boolean;
 	danger?: boolean;
@@ -41,8 +42,10 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 			onPointerLeave={() => setHov(false)}
 			title={tooltip}
 			style={{
-				width: 30,
+				width: label ? 'auto' : 30,
 				height: 30,
+				padding: label ? '0 10px' : 0,
+				gap: label ? 6 : 0,
 				borderRadius: RADIUS.iconBtn,
 				border: 'none',
 				background: bg,
@@ -58,6 +61,19 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 			}}
 		>
 			<Ico name={name} size={iconSize} color={iconColor} />
+			{label && (
+				<span style={{
+					fontFamily: TYPE.controlLabel.family,
+					fontSize: TYPE.controlLabel.size,
+					fontWeight: active ? 600 : 400,
+					color: iconColor as string,
+					letterSpacing: '0.01em',
+					whiteSpace: 'nowrap',
+					userSelect: 'none',
+				}}>
+					{label}
+				</span>
+			)}
 		</button>
 	);
 }

@@ -10,13 +10,14 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 	const uiHidden     = state.isUIHidden;
 
 	return (
-		<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
+		<DiPill dark={dark} height={40} padding="0 6px" gap={6}>
 			<DiActionButton
 				name="draw-mode"
 				onClick={() => dispatch({ type: 'SET_MODE', payload: 'drawing' })}
 				dark={dark}
 				active={isDrawing}
 				activeStyle="solid"
+				label="Draw"
 				tooltip="Draw mode"
 			/>
 			<DiActionButton
@@ -25,6 +26,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				dark={dark}
 				active={isCinematic}
 				activeStyle="solid"
+				label="View"
 				tooltip="View mode"
 			/>
 			<DiVSep dark={dark} />
