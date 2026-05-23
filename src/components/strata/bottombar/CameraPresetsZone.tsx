@@ -11,7 +11,7 @@ const PRESETS = [
 	{ type: 'arc',     icon: 'cam-arc',     tooltip: 'Arc'     },
 	{ type: 'crane',   icon: 'cam-crane',   tooltip: 'Crane'   },
 	{ type: 'truck',   icon: 'cam-truck',   tooltip: 'Truck'   },
-	{ type: 'orbit',   icon: 'cam-orbit',   tooltip: 'Orbit'   },
+	{ type: 'orbit',   icon: 'cam-orbit',   tooltip: 'Free'   },
 	{ type: 'zoom',    icon: 'cam-zoom',    tooltip: 'Zoom'    },
 ] as const;
 

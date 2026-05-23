@@ -158,7 +158,7 @@ export function OnboardingOverlayV2({ open, onClose, onLoadExample, dark }: Onbo
 								lineHeight: 1.4,
 								color:      dk(dark, T.muted, T.textDarkMuted) as string,
 							}}>
-								Draw in 2D. Watch it come alive in 3D.
+								Draw in 2D. And watch it come alive in 3D.
 							</p>
 						</div>
 

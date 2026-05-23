@@ -141,7 +141,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 							lineHeight: 1.4,
 							color: muted,
 						}}>
-							Draw in 2D. Watch it come alive in 3D.
+							Draw in 2D. And watch it come alive in 3D.
 						</p>
 					</div>
 
