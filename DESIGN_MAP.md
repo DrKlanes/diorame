@@ -32,7 +32,7 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 - `undo` → `UNDO` (disabled si `historyIndex <= 0`) | `redo` → `REDO` (disabled si `historyIndex >= history.length - 1`)
 - `DiVSep`
 - Project name: editable inline (`SET_PROJECT_NAME`), max 200px
-- `info` → `TOGGLE_WELCOME_MODAL` (reabre WelcomeModalV2), tooltip "About Diorame"
+- `info` → `TOGGLE_WELCOME_MODAL` (reabre WelcomeModalV2), tooltip "About Diorame" — **reemplazado por `<InfoButton />` (C20)**, reposicionado antes del nombre de proyecto
 
 ### 2.2 TopBar — slot central (ambos modos)
 
@@ -211,7 +211,7 @@ DiPill: [CameraPresetsZone] | tall-vsep | [CameraSpeedZone]
 
 **CameraSpeedZone:**
 - Ícono `ctrl-speed` + DiMiniSlider 0.1–1.0 → `SET_CINEMATIC_SPEED`
-- Botón ciclo 4 estados (Off → Low → Medium → High → Off): ícono `ctrl-handshake`/`ctrl-handshake-off` + label → `TOGGLE_HANDHELD` + `SET_HANDHELD_INTENSITY`
+- Botón ciclo 4 estados (Off → Low → Medium → High → Off) **(C20: refactorizado a `DiActionButton`)**: `name={enabled ? "ctrl-handshake" : "ctrl-handshake-off"}` iconSize=16, `label` dinámico ("Handheld" / "Handheld · low/medium/high"), `active={enabled}` activeStyle="wash", `tooltip="Handheld camera"` → `TOGGLE_HANDHELD` + `SET_HANDHELD_INTENSITY`
 
 **CameraSlidersZone:**
 - `ctrl-focal` + DiMiniSlider 24–300mm → `SET_FOCAL_LENGTH` (conversión flToMm/mmToFl)
@@ -351,6 +351,8 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 - ❌ **Botón Layers en bottom bar** (abría LayersPanel como popover) — reemplazado por LayersPanel V2 fijo en top-right
 - ❌ **Modal de modo cinemático** (ControlsCinematic legacy era un panel de 768 líneas) — descompuesto en CameraBar + FXPanel + SnapshotRecordPill, cada uno autónomo
 - ❌ **EnhancedTooltip de Lucide/Radix** — reemplazado por prop `tooltip` nativa en DiActionButton
+
+**InfoButton (C20):** Componente reutilizable en `src/components/strata/topbar/InfoButton.tsx`. Encapsula `DiActionButton name="info"` + dispatch `TOGGLE_WELCOME_MODAL` + `tooltip="About Diorame"` + `shortcut="Shift+?"`. Acepta `{ dark: boolean }`. Montado en: `FileControlsPill` (antes del nombre de proyecto, entre dos `DiVSep`) y `SnapshotRecordPill` (antes de Snapshot/Record, separado por `DiVSep`). Funciona en DRAW y VIEW sin filtros internos.
 
 **DiActionButton — prop `shortcut` (C18):** Prop opcional `shortcut?: string`. Si está presente y `hasFinePointer()` es true, el `title` nativo del button muestra `"{tooltip} · {formatShortcut(shortcut)}"` (o solo el shortcut formateado si no hay tooltip). En tablet/touch (`hasFinePointer() === false`) el shortcut se suprime y el title muestra solo el tooltip. Callers con shortcut: `FileControlsPill` (save Ctrl+S, export Ctrl+E, undo Ctrl+Z, redo Ctrl+Y, info Shift+?), `ThemeTogglePill` (moon Shift+D), `ResetViewPill` (Space), `DrawingToolbar` vía `ToolBtn` (B/L/E/T/M).
 - ❌ **Botón "Hide UI" standalone** en modo cinematic (legacy tenía botón separado en esquina) — absorbido en ModeSwitchPill como tercer botón (separado por DiVSep)

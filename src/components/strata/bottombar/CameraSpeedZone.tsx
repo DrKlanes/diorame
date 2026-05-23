@@ -1,24 +1,15 @@
 import React from 'react';
 import { useStrata } from '../StrataContext';
-import { Ico, DiMiniSlider } from '../../../design-system';
+import { Ico, DiMiniSlider, DiActionButton } from '../../../design-system';
 import { T, dk } from '../../../design-system/tokens';
 
 interface CameraSpeedZoneProps { dark: boolean; }
-
-const HANDSHAKE_LABELS: Record<string, string> = {
-	off:    'Off',
-	low:    'Low',
-	medium: 'Medium',
-	high:   'High',
-};
 
 export function CameraSpeedZone({ dark }: CameraSpeedZoneProps) {
 	const { state, dispatch } = useStrata();
 	const speed     = state.cinematicSpeed ?? 1.0;
 	const enabled   = state.isHandheldEnabled ?? false;
 	const intensity = state.handheldIntensity ?? 'low';
-
-	const currentLabel = !enabled ? 'off' : intensity;
 
 	// Cycle: Off → Low → Medium → High → Off
 	const cycleHandshake = () => {
@@ -39,9 +30,8 @@ export function CameraSpeedZone({ dark }: CameraSpeedZoneProps) {
 		dispatch({ type: 'TOGGLE_HANDHELD' } as any);
 	};
 
-	const iconColor          = dk(dark, T.dark, T.textDark) as string;
-	const iconSecondaryColor = dk(dark, T.muted, T.textDarkMuted) as string;
-	const labelColor         = dk(dark, T.dark, T.textDark) as string;
+	const iconColor = dk(dark, T.dark, T.textDark) as string;
+	const handheldLabel = enabled ? 'Handheld · ' + intensity : 'Handheld';
 
 	return (
 		<div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 6px', flexShrink: 0 }}>
@@ -58,37 +48,17 @@ export function CameraSpeedZone({ dark }: CameraSpeedZoneProps) {
 				formattedValue={speed.toFixed(1)}
 			/>
 
-			{/* Handshake button cíclico: icon + label de texto, ciclo 4 estados */}
-			<button
+			{/* Handheld cycle button: off → low → medium → high → off */}
+			<DiActionButton
+				name={enabled ? 'ctrl-handshake' : 'ctrl-handshake-off'}
+				label={handheldLabel}
 				onClick={cycleHandshake}
-				title={`Handshake: ${HANDSHAKE_LABELS[currentLabel]}`}
-				style={{
-					height: 30,
-					padding: '0 8px',
-					borderRadius: 9,
-					border: 'none',
-					background: 'transparent',
-					cursor: 'pointer',
-					display: 'flex',
-					alignItems: 'center',
-					gap: 6,
-					flexShrink: 0,
-					fontFamily: "'Manrope', sans-serif",
-				}}
-			>
-				<Ico
-					name={enabled ? 'ctrl-handshake' : 'ctrl-handshake-off'}
-					size={16}
-					color={enabled ? iconColor : iconSecondaryColor}
-				/>
-				<span style={{
-					fontSize: 10,
-					fontWeight: 600,
-					color: enabled ? labelColor : iconSecondaryColor,
-					minWidth: 42,
-					textAlign: 'left',
-				}}>{HANDSHAKE_LABELS[currentLabel]}</span>
-			</button>
+				dark={dark}
+				active={enabled}
+				activeStyle="wash"
+				iconSize={16}
+				tooltip="Handheld camera"
+			/>
 		</div>
 	);
 }

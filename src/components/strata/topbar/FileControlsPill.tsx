@@ -70,6 +70,9 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 
 				<DiVSep dark={dark} />
 
+				<InfoButton dark={dark} />
+				<DiVSep dark={dark} />
+
 				{editing ? (
 					<input
 						autoFocus
@@ -113,7 +116,6 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 						{filename}
 					</button>
 				)}
-				<DiActionButton name="info" onClick={() => dispatch({ type: 'TOGGLE_WELCOME_MODAL' })} dark={dark} tooltip="About Diorame" shortcut="Shift+?" />
 			</DiPill>
 			<DiSelectorPopover
 				anchorRef={exportBtnRef}

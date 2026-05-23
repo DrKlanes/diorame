@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { DiPill, Ico } from '../../../design-system';
+import { DiPill, DiVSep, Ico } from '../../../design-system';
 import { T, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { DiActionButton } from '../../../design-system';
+import { InfoButton } from './InfoButton';
 
 interface SnapshotRecordPillProps { dark: boolean; }
 
@@ -15,6 +16,8 @@ export function SnapshotRecordPill({ dark }: SnapshotRecordPillProps) {
 
 	return (
 		<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
+			<InfoButton dark={dark} />
+			<DiVSep dark={dark} />
 			<DiActionButton name="snapshot" onClick={handleSnapshot} dark={dark} tooltip="Snapshot PNG" />
 			<RecordBtn recording={recording} onClick={handleRecord} dark={dark} />
 		</DiPill>
