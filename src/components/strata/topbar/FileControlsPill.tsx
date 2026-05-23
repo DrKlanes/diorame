@@ -8,6 +8,7 @@ import { useExportFlow } from '../../../hooks/useExportFlow';
 import { DiSelectorPopover, DiSelectorOption } from '../popovers';
 import { ComplexSceneModalV2 } from '../modals/ComplexSceneModalV2';
 import { ClearCanvasAlertV2 } from '../modals/ClearCanvasAlertV2';
+import { InfoButton } from './InfoButton';
 
 interface FileControlsPillProps { dark: boolean; }
 
