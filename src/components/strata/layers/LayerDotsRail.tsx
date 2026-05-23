@@ -3,12 +3,14 @@ import { useStrata } from '../StrataContext';
 import { DiPill } from '../../../design-system';
 import { T, dk } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
+import { useTranslation } from '../../../i18n';
 
 interface LayerDotsRailProps { inline?: boolean; }
 
 export function LayerDotsRail({ inline = false }: LayerDotsRailProps) {
 	const { state, dispatch } = useStrata();
 	const { dark } = useTheme();
+	const { t } = useTranslation();
 
 	if (!inline) {
 		if (state.mode !== 'drawing') return null;
@@ -37,8 +39,8 @@ export function LayerDotsRail({ inline = false }: LayerDotsRailProps) {
 					<button
 						key={i}
 						onClick={() => dispatch({ type: 'SET_CURRENT_LAYER', payload: i } as any)}
-						aria-label={`Go to layer ${i + 1}`}
-						title={`Layer ${i + 1}`}
+						aria-label={t('layers.row.goTo', { n: i + 1 })}
+						title={t('layers.row.name', { n: i + 1 })}
 						style={{
 							background: 'none',
 							border: 'none',

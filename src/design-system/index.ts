@@ -26,3 +26,4 @@ export { DiDivider } from './DiDivider';
 export { DiActionButton } from './DiActionButton';
 export { DiBadge } from './DiBadge';
 export { Wordmark } from './Wordmark';
+export { LanguageToggle } from './LanguageToggle';

@@ -3,6 +3,7 @@ import logoImg from 'figma:asset/logo-symbol.png';
 import { Ico } from '../../../design-system';
 import { T } from '../../../design-system/tokens';
 import { Wordmark } from '../../../design-system/Wordmark';
+import { useTranslation } from '../../../i18n';
 
 // ── Theme CSS — prefers-color-scheme ─────────────────────────────────────────
 // Values are hardcoded because this component renders before ThemeProvider.
@@ -33,8 +34,10 @@ const THEME_CSS = `
 // ── MobileBlockScreenV2 ───────────────────────────────────────────────────────
 // No props — terminal component. Renders before ThemeProvider.
 // Uses prefers-color-scheme CSS for theming; no framer-motion; no CTAs.
+// Wrapped by LanguageProvider in main.tsx → useTranslation is available even on mobile path.
 
 export function MobileBlockScreenV2() {
+	const { t } = useTranslation();
 	return (
 		<>
 			<style dangerouslySetInnerHTML={{ __html: THEME_CSS }} />
@@ -56,7 +59,7 @@ export function MobileBlockScreenV2() {
 				{/* Logo — symbol glyph only; wordmark rendered as text below */}
 				<img
 					src={logoImg}
-					alt="Diorame"
+					alt={t('modal.mobile.alt')}
 					style={{
 						maxWidth:     120,
 						width:        '100%',
@@ -91,7 +94,7 @@ export function MobileBlockScreenV2() {
 					fontSize:   16,
 					lineHeight: 1.4,
 				}}>
-					Diorame is designed for tablet and desktop.
+					{t('modal.mobile.primary')}
 				</p>
 
 				{/* Secondary message */}
@@ -106,7 +109,7 @@ export function MobileBlockScreenV2() {
 						maxWidth:   320,
 					}}
 				>
-					You'll need a larger screen to draw, layer, and view your scenes in motion.
+					{t('modal.mobile.secondary')}
 				</p>
 			</div>
 		</>

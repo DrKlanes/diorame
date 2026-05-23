@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useStrata, BASE_DEPTH_STEP } from '../StrataContext';
 import { Ico } from '../../../design-system';
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
+import { useTranslation } from '../../../i18n';
 
 interface LayerRowProps {
 	index: number;
@@ -16,6 +17,7 @@ const SPRING = { type: 'spring' as const, stiffness: 500, damping: 35, mass: 0.8
 
 export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 
 	const {
 		attributes,
@@ -118,7 +120,7 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 				flex: 1,
 				textAlign: 'left',
 			}}>
-				Layer {index + 1}
+				{t('layers.row.name', { n: index + 1 })}
 			</span>
 
 			<div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
@@ -132,7 +134,7 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 					borderRadius: 999,
 					letterSpacing: '0.3px',
 				}}>
-					{colorMode}
+					{t(`layers.badge.${colorMode.toLowerCase()}`)}
 				</span>
 
 				<button

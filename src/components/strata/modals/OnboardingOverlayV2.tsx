@@ -4,6 +4,7 @@ import { T, TYPE, RADIUS, Z_INDEX, dk } from '../../../design-system/tokens';
 import { Ico } from '../../../design-system';
 import { DiModalContext } from './DiModalContext';
 import { PrimaryActionLg, SecondaryActionLg } from './DiModalActions';
+import { useTranslation } from '../../../i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -14,21 +15,21 @@ interface OnboardingOverlayV2Props {
 	dark:          boolean;
 }
 
-type CardData = { icon: string; title: string; description: string };
+type CardData = { icon: string; titleKey: string; descKey: string };
 
 // ── Card data ─────────────────────────────────────────────────────────────────
 
 const DRAW_CARDS: CardData[] = [
-	{ icon: 'blob',   title: 'Blob',   description: 'Spray-like organic shapes'       },
-	{ icon: 'brush',  title: 'Brush',  description: 'Tapered, calligraphic strokes'   },
-	{ icon: 'layers', title: 'Layers', description: 'Build depth with stacked planes' },
+	{ icon: 'blob',   titleKey: 'modal.onboarding.card.blob.title',   descKey: 'modal.onboarding.card.blob.desc'   },
+	{ icon: 'brush',  titleKey: 'modal.onboarding.card.brush.title',  descKey: 'modal.onboarding.card.brush.desc'  },
+	{ icon: 'layers', titleKey: 'modal.onboarding.card.layers.title', descKey: 'modal.onboarding.card.layers.desc' },
 ];
 
 // 'video' icon not in ICONS — Motion fallback: 'cam-orbit' (circular camera path)
 const VIEW_CARDS: CardData[] = [
-	{ icon: 'camera',    title: 'Motion',  description: 'Camera presets and movements' },
-	{ icon: 'sparkles',  title: 'Effects', description: 'Grain, glow, fog and more'    },
-	{ icon: 'depth-far', title: 'Depth',   description: 'Layer spacing and parallax'   },
+	{ icon: 'camera',    titleKey: 'modal.onboarding.card.motion.title',  descKey: 'modal.onboarding.card.motion.desc'  },
+	{ icon: 'sparkles',  titleKey: 'modal.onboarding.card.effects.title', descKey: 'modal.onboarding.card.effects.desc' },
+	{ icon: 'depth-far', titleKey: 'modal.onboarding.card.depth.title',   descKey: 'modal.onboarding.card.depth.desc'   },
 ];
 
 // ── Animation variants ────────────────────────────────────────────────────────
@@ -40,7 +41,8 @@ const overlayVariants = {
 
 // ── Internal sub-components ───────────────────────────────────────────────────
 
-function OnboardingCard({ icon, title, description, dark }: CardData & { dark: boolean }) {
+function OnboardingCard({ icon, titleKey, descKey, dark }: CardData & { dark: boolean }) {
+	const { t } = useTranslation();
 	return (
 		<div style={{
 			border:        `1px solid ${dk(dark, T.border, T.borderDark) as string}`,
@@ -57,7 +59,7 @@ function OnboardingCard({ icon, title, description, dark }: CardData & { dark: b
 				fontSize:   16,
 				color:      dk(dark, T.dark, T.textDark) as string,
 			}}>
-				{title}
+				{t(titleKey)}
 			</span>
 			<span style={{
 				fontFamily: TYPE.numericValue.family,
@@ -66,13 +68,14 @@ function OnboardingCard({ icon, title, description, dark }: CardData & { dark: b
 				lineHeight: 1.4,
 				color:      dk(dark, T.muted, T.textDarkMuted) as string,
 			}}>
-				{description}
+				{t(descKey)}
 			</span>
 		</div>
 	);
 }
 
-function CardSection({ label, cards, dark }: { label: string; cards: CardData[]; dark: boolean }) {
+function CardSection({ labelKey, cards, dark }: { labelKey: string; cards: CardData[]; dark: boolean }) {
+	const { t } = useTranslation();
 	return (
 		<div>
 			<div style={{
@@ -84,7 +87,7 @@ function CardSection({ label, cards, dark }: { label: string; cards: CardData[];
 				color:         dk(dark, T.muted, T.textDarkMuted) as string,
 				marginBottom:  12,
 			}}>
-				{label}
+				{t(labelKey)}
 			</div>
 			<div style={{
 				display:             'grid',
@@ -92,7 +95,7 @@ function CardSection({ label, cards, dark }: { label: string; cards: CardData[];
 				gap:                 12,
 			}}>
 				{cards.map(card => (
-					<OnboardingCard key={card.title} {...card} dark={dark} />
+					<OnboardingCard key={card.titleKey} {...card} dark={dark} />
 				))}
 			</div>
 		</div>
@@ -102,6 +105,7 @@ function CardSection({ label, cards, dark }: { label: string; cards: CardData[];
 // ── OnboardingOverlayV2 ───────────────────────────────────────────────────────
 
 export function OnboardingOverlayV2({ open, onClose, onLoadExample, dark }: OnboardingOverlayV2Props) {
+	const { t } = useTranslation();
 	const [isLoadingExample, setIsLoadingExample] = useState(false);
 
 	const handleLoadExample = async () => {
@@ -148,7 +152,7 @@ export function OnboardingOverlayV2({ open, onClose, onLoadExample, dark }: Onbo
 								letterSpacing: '-0.01em',
 								color:         dk(dark, T.dark, T.textDark) as string,
 							}}>
-								Welcome to Diorame
+								{t('modal.onboarding.header')}
 							</div>
 							<p style={{
 								margin:     '8px 0 0',
@@ -158,14 +162,14 @@ export function OnboardingOverlayV2({ open, onClose, onLoadExample, dark }: Onbo
 								lineHeight: 1.4,
 								color:      dk(dark, T.muted, T.textDarkMuted) as string,
 							}}>
-								Draw in 2D. And watch it come alive in 3D.
+								{t('modal.onboarding.tagline')}
 							</p>
 						</div>
 
 						{/* DRAW + VIEW card sections */}
 						<div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-							<CardSection label="DRAW" cards={DRAW_CARDS} dark={dark} />
-							<CardSection label="VIEW" cards={VIEW_CARDS} dark={dark} />
+							<CardSection labelKey="modal.onboarding.section.draw" cards={DRAW_CARDS} dark={dark} />
+							<CardSection labelKey="modal.onboarding.section.view" cards={VIEW_CARDS} dark={dark} />
 						</div>
 
 						{/* CTAs — DiModalContext.Provider supplies dark mode to Action sub-components */}
@@ -178,10 +182,10 @@ export function OnboardingOverlayV2({ open, onClose, onLoadExample, dark }: Onbo
 								marginTop:      32,
 							}}>
 								<SecondaryActionLg onClick={handleLoadExample} disabled={isLoadingExample}>
-									{isLoadingExample ? 'Loading…' : 'Load example scene'}
+									{isLoadingExample ? t('modal.onboarding.cta.exampleLoading') : t('modal.onboarding.cta.example')}
 								</SecondaryActionLg>
 								<PrimaryActionLg onClick={onClose}>
-									Start drawing
+									{t('modal.onboarding.cta.start')}
 								</PrimaryActionLg>
 							</div>
 						</DiModalContext.Provider>

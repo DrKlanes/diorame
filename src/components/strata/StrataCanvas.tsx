@@ -14,6 +14,7 @@ import { createNoise, drawSmoothLine, drawStraightLine } from '../../utils/canva
 import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS } from '../../constants/renderConstants';
 import { computeCinematicTick, CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
 import { exportAsPNG, exportAsSVG, exportAsMP4 } from './canvas/exportHandlers';
+import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
 
 export const StrataCanvas = () => {
@@ -21,6 +22,7 @@ export const StrataCanvas = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRectRef = useRef<DOMRect | null>(null);
   const { state, dispatch } = useStrata();
+  const { t } = useTranslation();
 
   // --- Constants ---
   const DRAW_FOCAL_LENGTH = 5000;
@@ -393,15 +395,15 @@ export const StrataCanvas = () => {
       const onFinish = () => dispatch({ type: 'FINISH_EXPORT' });
 
       if (state.exportRequest === 'png') {
-          exportAsPNG(canvas, state.projectName, onFinish);
+          exportAsPNG(canvas, state.projectName, onFinish, t);
       }
       if (state.exportRequest === 'svg' || state.exportRequest === 'svgz') {
-          exportAsSVG(state.exportRequest, state.shapes, state.projectName, onFinish);
+          exportAsSVG(state.exportRequest, state.shapes, state.projectName, onFinish, t);
       }
       if (state.exportRequest === 'mp4') {
-          exportAsMP4(canvas, state.projectName, recordedChunksRef, onFinish);
+          exportAsMP4(canvas, state.projectName, recordedChunksRef, onFinish, t);
       }
-  }, [state.exportRequest, dispatch, state.shapes, state.projectName]);
+  }, [state.exportRequest, dispatch, state.shapes, state.projectName, t]);
 
   // --- Event Handlers ---
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -2268,7 +2270,7 @@ export const StrataCanvas = () => {
           onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
           onClick={(e) => { e.stopPropagation(); handleFlip('horizontal'); }}
           className="flex items-center justify-center w-7 h-7 rounded-md bg-white/90 border border-slate-200 shadow-sm hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 transition-colors backdrop-blur-sm"
-          title="Flip Horizontal"
+          title={t('viewport.flipHorizontal')}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(26, 26, 26)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M8 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h3" />
@@ -2283,7 +2285,7 @@ export const StrataCanvas = () => {
           onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
           onClick={(e) => { e.stopPropagation(); handleFlip('vertical'); }}
           className="flex items-center justify-center w-7 h-7 rounded-md bg-white/90 border border-slate-200 shadow-sm hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 transition-colors backdrop-blur-sm"
-          title="Flip Vertical"
+          title={t('viewport.flipVertical')}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(26, 26, 26)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 8V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3" />

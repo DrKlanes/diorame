@@ -1,7 +1,8 @@
 import React from 'react';
 import { useStrata } from '../StrataContext';
 import { T } from '../../../design-system/tokens';
-import { DARK_COLORS } from '../../../constants/palette';
+import { DARK_COLORS, COLOR_NAME_KEYS } from '../../../constants/palette';
+import { useTranslation } from '../../../i18n';
 
 interface SwatchGridProps { dark: boolean; }
 
@@ -65,6 +66,9 @@ interface SwatchProps {
 }
 
 function Swatch({ color, isActive, blobPath, dark, onClick }: SwatchProps) {
+	const { t } = useTranslation();
+	const nameKey = COLOR_NAME_KEYS.get(color);
+	const displayName = nameKey ? t(nameKey) : color;
 	const lightColor = isLightColor(color);
 	const strokeColor = lightColor
 		? (dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)')
@@ -74,7 +78,7 @@ function Swatch({ color, isActive, blobPath, dark, onClick }: SwatchProps) {
 	return (
 		<button
 			onClick={onClick}
-			title={color}
+			title={displayName}
 			style={{
 				width: 24,
 				height: 24,

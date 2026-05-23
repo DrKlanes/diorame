@@ -3,35 +3,64 @@ import { useStrata, PostProcessingEnabled, PostProcessingSettings } from '../Str
 import { DiPill, DiPanel, DiActionButton, Ico } from '../../../design-system';
 import { T, TYPE, RADIUS, dk, SPACE } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
+import { useTranslation } from '../../../i18n';
 import { FXRow } from './FXRow';
 
 const STORAGE_KEY = 'diorame-fx-expanded';
 
-type FXEntry = { fxKey: keyof PostProcessingEnabled; iconName: string; label: string; level: 1 | 'special' | 'bipolar' | 'discrete' | 'composite' | 'pixel' | 'dof'; valueKey?: keyof PostProcessingSettings; discreteOptions?: Array<{ label: string; value: number }>; compositeOptions?: string[] };
+// ── Types ────────────────────────────────────────────────────────────────────
+// All visible strings carry i18n keys (resolved via t() in FXRow at render time).
+// Option values are stable internal identifiers (numeric or canonical string).
+
+type DiscreteOption = { value: number; labelKey: string };
+type CompositeOption = { value: 'circle' | 'square' | 'stroke'; labelKey: string };
+
+type FXEntry = {
+	fxKey: keyof PostProcessingEnabled;
+	iconName: string;
+	labelKey: string;
+	level: 1 | 'special' | 'bipolar' | 'discrete' | 'composite' | 'pixel' | 'dof';
+	valueKey?: keyof PostProcessingSettings;
+	discreteOptions?: DiscreteOption[];
+	compositeOptions?: CompositeOption[];
+};
 
 const TEXTURE_FX: FXEntry[] = [
-	{ fxKey: 'grain',  iconName: 'fx-grain',  label: 'Grain',  level: 1,         valueKey: 'grain' },
-	{ fxKey: 'grunge', iconName: 'fx-grunge', label: 'Grunge', level: 'discrete', valueKey: 'grungeIntensity', discreteOptions: [{ label: 'Subtle', value: 0 }, { label: 'Medium', value: 0.5 }, { label: 'Intense', value: 1 }] },
-	{ fxKey: 'riso',   iconName: 'fx-riso',   label: 'Riso',   level: 1,         valueKey: 'riso' },
+	{ fxKey: 'grain',  iconName: 'fx-grain',  labelKey: 'fx.texture.grain.label',  level: 1, valueKey: 'grain' },
+	{ fxKey: 'grunge', iconName: 'fx-grunge', labelKey: 'fx.texture.grunge.label', level: 'discrete', valueKey: 'grungeIntensity', discreteOptions: [
+		{ value: 0,   labelKey: 'fx.intensity.subtle'  },
+		{ value: 0.5, labelKey: 'fx.intensity.medium'  },
+		{ value: 1,   labelKey: 'fx.intensity.intense' },
+	]},
+	{ fxKey: 'riso',   iconName: 'fx-riso',   labelKey: 'fx.texture.riso.label',   level: 1, valueKey: 'riso' },
 ];
 
 const LENS_FX: FXEntry[] = [
-	{ fxKey: 'vignette',            iconName: 'fx-vignette',   label: 'Vignette',      level: 1,         valueKey: 'vignette' },
-	{ fxKey: 'chromaticAberration', iconName: 'fx-chroma',     label: 'Chromatic Ab.', level: 1,         valueKey: 'chromaticAberration' },
-	{ fxKey: 'distortion',          iconName: 'fx-distortion', label: 'Distortion',    level: 'bipolar', valueKey: 'distortion' },
-	{ fxKey: 'glow',                iconName: 'fx-glow',       label: 'Glow',          level: 1,         valueKey: 'glow' },
-	{ fxKey: 'dof',                 iconName: 'fx-dof',        label: 'DoF',    level: 'dof', valueKey: 'dof' },
+	{ fxKey: 'vignette',            iconName: 'fx-vignette',   labelKey: 'fx.lens.vignette.label',      level: 1,         valueKey: 'vignette' },
+	{ fxKey: 'chromaticAberration', iconName: 'fx-chroma',     labelKey: 'fx.lens.chromaticAb.label',   level: 1,         valueKey: 'chromaticAberration' },
+	{ fxKey: 'distortion',          iconName: 'fx-distortion', labelKey: 'fx.lens.distortion.label',    level: 'bipolar', valueKey: 'distortion' },
+	{ fxKey: 'glow',                iconName: 'fx-glow',       labelKey: 'fx.lens.glow.label',          level: 1,         valueKey: 'glow' },
+	{ fxKey: 'dof',                 iconName: 'fx-dof',        labelKey: 'fx.lens.dof.label',           level: 'dof',     valueKey: 'dof' },
 ];
 
 const ATMOSPHERE_FX: FXEntry[] = [
-	{ fxKey: 'fog',       iconName: 'fx-fog',       label: 'Fog',         level: 1,         valueKey: 'fog' },
-	{ fxKey: 'particles', iconName: 'fx-particles', label: 'Particles',   level: 'composite', valueKey: 'particles', compositeOptions: ['Circle', 'Square', 'Stroke'] },
-	{ fxKey: 'wiggle',    iconName: 'fx-wiggle',    label: 'Stop Motion', level: 'discrete', valueKey: 'wiggle', discreteOptions: [{ label: 'Light', value: 0 }, { label: 'Medium', value: 0.5 }, { label: 'Heavy', value: 1 }] },
-	{ fxKey: 'pixelArt',  iconName: 'fx-pixel',     label: 'Pixel Art',   level: 'pixel' },
+	{ fxKey: 'fog',       iconName: 'fx-fog',       labelKey: 'fx.atmosphere.fog.label',        level: 1, valueKey: 'fog' },
+	{ fxKey: 'particles', iconName: 'fx-particles', labelKey: 'fx.atmosphere.particles.label',  level: 'composite', valueKey: 'particles', compositeOptions: [
+		{ value: 'circle', labelKey: 'fx.particles.circle' },
+		{ value: 'square', labelKey: 'fx.particles.square' },
+		{ value: 'stroke', labelKey: 'fx.particles.stroke' },
+	]},
+	{ fxKey: 'wiggle',    iconName: 'fx-wiggle',    labelKey: 'fx.atmosphere.stopMotion.label', level: 'discrete',  valueKey: 'wiggle', discreteOptions: [
+		{ value: 0,   labelKey: 'fx.intensity.light'  },
+		{ value: 0.5, labelKey: 'fx.intensity.medium' },
+		{ value: 1,   labelKey: 'fx.intensity.heavy'  },
+	]},
+	{ fxKey: 'pixelArt',  iconName: 'fx-pixel',     labelKey: 'fx.atmosphere.pixelArt.label',   level: 'pixel' },
 ];
 
 // Local helper: master FX button — larger size + outline to distinguish from FX row icons
 function FXMasterBtn({ dark, active, onClick }: { dark: boolean; active: boolean; onClick: () => void }) {
+	const { t } = useTranslation();
 	const [hov, setHov] = useState(false);
 	const bg = active
 		? dk(dark, T.purple10, T.purple20)
@@ -46,7 +75,7 @@ function FXMasterBtn({ dark, active, onClick }: { dark: boolean; active: boolean
 			onClick={onClick}
 			onPointerEnter={() => setHov(true)}
 			onPointerLeave={() => setHov(false)}
-			title="Toggle all FX"
+			title={t('fx.panel.toggleAll')}
 			style={{
 				width: 35,
 				height: 35,
@@ -70,6 +99,7 @@ function FXMasterBtn({ dark, active, onClick }: { dark: boolean; active: boolean
 export function FXPanel() {
 	const { state, dispatch } = useStrata();
 	const { dark } = useTheme();
+	const { t } = useTranslation();
 	const [isExpanded, setIsExpanded] = useState(() => {
 		try { return localStorage.getItem(STORAGE_KEY) === 'true'; }
 		catch { return false; }
@@ -142,7 +172,7 @@ export function FXPanel() {
 							color: dk(dark, T.dark, T.textDark),
 							flex: 1,
 						}}>
-							FX
+							{t('fx.panel.header')}
 						</span>
 						{!fxMasterEnabled && (
 							<> · <span style={{
@@ -152,20 +182,20 @@ export function FXPanel() {
 								color: dk(dark, T.danger, T.dangerDark),
 								marginRight: 4,
 								flexShrink: 0,
-							}}>off</span></>
+							}}>{t('common.off')}</span></>
 						)}
 						<div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 							<FXMasterBtn dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} />
-							<DiActionButton name="chevron-right" onClick={() => toggle(false)} dark={dark} tooltip="Collapse" />
+							<DiActionButton name="chevron-right" onClick={() => toggle(false)} dark={dark} tooltip={t('fx.panel.collapse')} />
 						</div>
 					</div>
 					<PanelHSep />
 					<div className="di-panel-scroll" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 141px)' }}>
 					{/* Texture */}
-					<GroupLabel label="Texture" />
+					<GroupLabel label={t('fx.group.texture')} />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{TEXTURE_FX.map(({ fxKey, iconName, label, level, valueKey, discreteOptions, compositeOptions }) => (
-							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
+						{TEXTURE_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions }) => (
+							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} labelKey={labelKey}
 								isActive={px[fxKey]} dark={dark}
 								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
 								level={level} valueKey={valueKey}
@@ -174,10 +204,10 @@ export function FXPanel() {
 					</div>
 					<PanelHSep />
 					{/* Lens */}
-					<GroupLabel label="Lens" />
+					<GroupLabel label={t('fx.group.lens')} />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{LENS_FX.map(({ fxKey, iconName, label, level, valueKey, discreteOptions, compositeOptions }) => (
-							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
+						{LENS_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions }) => (
+							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} labelKey={labelKey}
 								isActive={px[fxKey]} dark={dark}
 								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
 								level={level} valueKey={valueKey}
@@ -186,10 +216,10 @@ export function FXPanel() {
 					</div>
 					<PanelHSep />
 					{/* Atmosphere */}
-					<GroupLabel label="Atmosphere" />
+					<GroupLabel label={t('fx.group.atmosphere')} />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{ATMOSPHERE_FX.map(({ fxKey, iconName, label, level, valueKey, discreteOptions, compositeOptions }) => (
-							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} label={label}
+						{ATMOSPHERE_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions }) => (
+							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} labelKey={labelKey}
 								isActive={px[fxKey]} dark={dark}
 								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
 								level={level} valueKey={valueKey}
@@ -210,23 +240,23 @@ export function FXPanel() {
 			>
 				<FXMasterBtn dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} />
 				<PillHSep />
-				<DiActionButton name="chevron-left" onClick={() => toggle(true)} dark={dark} tooltip="Expand FX panel" />
+				<DiActionButton name="chevron-left" onClick={() => toggle(true)} dark={dark} tooltip={t('fx.panel.expand')} />
 				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: 40, opacity: hasSnapshot ? 0.5 : 1 }}>
 				<PillHSep />
-				<DiActionButton name="fx-grain"     onClick={fxClick('grain')} dark={dark} active={snap ? snap.grain : px.grain}  tooltip="Grain" />
-				<DiActionButton name="fx-grunge"    onClick={fxClick('grunge')} dark={dark} active={snap ? snap.grunge : px.grunge} tooltip="Grunge" />
-				<DiActionButton name="fx-riso"      onClick={fxClick('riso')} dark={dark} active={snap ? snap.riso : px.riso}   tooltip="Riso" />
+				<DiActionButton name="fx-grain"     onClick={fxClick('grain')} dark={dark} active={snap ? snap.grain : px.grain}  tooltip={t('fx.texture.grain.tooltip')} />
+				<DiActionButton name="fx-grunge"    onClick={fxClick('grunge')} dark={dark} active={snap ? snap.grunge : px.grunge} tooltip={t('fx.texture.grunge.tooltip')} />
+				<DiActionButton name="fx-riso"      onClick={fxClick('riso')} dark={dark} active={snap ? snap.riso : px.riso}   tooltip={t('fx.texture.riso.tooltip')} />
 				<PillHSep />
-				<DiActionButton name="fx-vignette"   onClick={fxClick('vignette')} dark={dark} active={snap ? snap.vignette : px.vignette}            tooltip="Vignette" />
-				<DiActionButton name="fx-chroma"     onClick={fxClick('chromaticAberration')} dark={dark} active={snap ? snap.chromaticAberration : px.chromaticAberration} tooltip="Chromatic Aberration" />
-				<DiActionButton name="fx-distortion" onClick={fxClick('distortion')} dark={dark} active={snap ? snap.distortion : px.distortion}          tooltip="Distortion" />
-				<DiActionButton name="fx-glow"       onClick={fxClick('glow')} dark={dark} active={snap ? snap.glow : px.glow}                tooltip="Glow" />
-				<DiActionButton name="fx-dof"        onClick={fxClick('dof')} dark={dark} active={snap ? snap.dof : px.dof}                 tooltip="Depth of Field" />
+				<DiActionButton name="fx-vignette"   onClick={fxClick('vignette')} dark={dark} active={snap ? snap.vignette : px.vignette}            tooltip={t('fx.lens.vignette.tooltip')} />
+				<DiActionButton name="fx-chroma"     onClick={fxClick('chromaticAberration')} dark={dark} active={snap ? snap.chromaticAberration : px.chromaticAberration} tooltip={t('fx.lens.chromaticAb.tooltip')} />
+				<DiActionButton name="fx-distortion" onClick={fxClick('distortion')} dark={dark} active={snap ? snap.distortion : px.distortion}          tooltip={t('fx.lens.distortion.tooltip')} />
+				<DiActionButton name="fx-glow"       onClick={fxClick('glow')} dark={dark} active={snap ? snap.glow : px.glow}                tooltip={t('fx.lens.glow.tooltip')} />
+				<DiActionButton name="fx-dof"        onClick={fxClick('dof')} dark={dark} active={snap ? snap.dof : px.dof}                 tooltip={t('fx.lens.dof.tooltip')} />
 				<PillHSep />
-				<DiActionButton name="fx-fog"       onClick={fxClick('fog')} dark={dark} active={snap ? snap.fog : px.fog}       tooltip="Fog" />
-				<DiActionButton name="fx-particles" onClick={fxClick('particles')} dark={dark} active={snap ? snap.particles : px.particles} tooltip="Particles" />
-				<DiActionButton name="fx-wiggle"    onClick={fxClick('wiggle')} dark={dark} active={snap ? snap.wiggle : px.wiggle}    tooltip="Wiggle" />
-				<DiActionButton name="fx-pixel"     onClick={fxClick('pixelArt')} dark={dark} active={snap ? snap.pixelArt : px.pixelArt}  tooltip="Pixel Art" />
+				<DiActionButton name="fx-fog"       onClick={fxClick('fog')} dark={dark} active={snap ? snap.fog : px.fog}       tooltip={t('fx.atmosphere.fog.tooltip')} />
+				<DiActionButton name="fx-particles" onClick={fxClick('particles')} dark={dark} active={snap ? snap.particles : px.particles} tooltip={t('fx.atmosphere.particles.tooltip')} />
+				<DiActionButton name="fx-wiggle"    onClick={fxClick('wiggle')} dark={dark} active={snap ? snap.wiggle : px.wiggle}    tooltip={t('fx.atmosphere.wiggle.tooltip')} />
+				<DiActionButton name="fx-pixel"     onClick={fxClick('pixelArt')} dark={dark} active={snap ? snap.pixelArt : px.pixelArt}  tooltip={t('fx.atmosphere.pixelArt.tooltip')} />
 				</div>
 			</DiPill>
 		</div>

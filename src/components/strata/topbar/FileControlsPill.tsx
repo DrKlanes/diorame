@@ -9,14 +9,20 @@ import { DiSelectorPopover, DiSelectorOption } from '../popovers';
 import { ComplexSceneModalV2 } from '../modals/ComplexSceneModalV2';
 import { ClearCanvasAlertV2 } from '../modals/ClearCanvasAlertV2';
 import { InfoButton } from './InfoButton';
+import { useTranslation } from '../../../i18n';
+import { UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 
 interface FileControlsPillProps { dark: boolean; }
 
 export function FileControlsPill({ dark }: FileControlsPillProps) {
 	const { state, dispatch } = useStrata();
 	const { handleSaveProject, handleLoadProject, triggerFileSelect, fileInputRef } = useSaveLoad();
+	const { t } = useTranslation();
 	const { handleExportRequest, handleProceedWithExport, handleCancelExport, handleUseCompressedExport, showComplexityWarning, shapeCount } = useExportFlow();
 	const filename = state.projectName;
+	const displayedName = filename === UNTITLED_PROJECT_SENTINEL
+		? t('topbar.file.untitledProject')
+		: filename;
 	const [editing, setEditing] = useState(false);
 	const [draft, setDraft] = useState(filename);
 	const [exportOpen, setExportOpen] = useState(false);
@@ -29,7 +35,7 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 	const handleClearConfirm = () => {
 		dispatch({ type: 'CLEAR_CANVAS' });
 		dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 0, rotation: 0 } });
-		dispatch({ type: 'SET_PROJECT_NAME', payload: 'Untitled Project' });
+		dispatch({ type: 'SET_PROJECT_NAME', payload: UNTITLED_PROJECT_SENTINEL });
 		sessionStorage.removeItem('diorame-view-initialized');
 		setClearCanvasOpen(false);
 	};
@@ -40,10 +46,14 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 	const commitFilename = () => {
 		setEditing(false);
 		const trimmed = draft.trim();
-		if (trimmed && trimmed !== filename) {
+		if (trimmed === '') {
+			// Empty input -> revert to sentinel
+			if (filename !== UNTITLED_PROJECT_SENTINEL) {
+				dispatch({ type: 'SET_PROJECT_NAME', payload: UNTITLED_PROJECT_SENTINEL });
+			}
+		} else if (trimmed !== filename) {
+			// Non-empty -> save literal (no magic match against translated label)
 			dispatch({ type: 'SET_PROJECT_NAME', payload: trimmed });
-		} else {
-			setDraft(filename);
 		}
 	};
 
@@ -59,17 +69,17 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 			<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
 				<InfoButton dark={dark} />
 				<DiVSep dark={dark} />
-				<DiActionButton name="new"  onClick={handleNew}         dark={dark} tooltip="New" />
-				<DiActionButton name="open" onClick={triggerFileSelect} dark={dark} tooltip="Open" />
-				<DiActionButton name="save" onClick={handleSaveProject} dark={dark} tooltip="Save" shortcut="Ctrl+S" />
+				<DiActionButton name="new"  onClick={handleNew}         dark={dark} tooltip={t('topbar.file.new')} />
+				<DiActionButton name="open" onClick={triggerFileSelect} dark={dark} tooltip={t('topbar.file.open')} />
+				<DiActionButton name="save" onClick={handleSaveProject} dark={dark} tooltip={t('topbar.file.save')} shortcut="Ctrl+S" />
 				<div ref={exportBtnRef}>
-					<DiActionButton name="export" onClick={() => setExportOpen(v => !v)} dark={dark} tooltip="Export SVG" shortcut="Ctrl+E" />
+					<DiActionButton name="export" onClick={() => setExportOpen(v => !v)} dark={dark} tooltip={t('topbar.file.exportSvg')} shortcut="Ctrl+E" />
 				</div>
 
 				<DiVSep dark={dark} />
 
-				<DiActionButton name="undo" onClick={handleUndo} dark={dark} tooltip="Undo" shortcut="Ctrl+Z" disabled={state.historyIndex <= 0} />
-				<DiActionButton name="redo" onClick={handleRedo} dark={dark} tooltip="Redo" shortcut="Ctrl+Y" disabled={state.historyIndex >= state.history.length - 1} />
+				<DiActionButton name="undo" onClick={handleUndo} dark={dark} tooltip={t('topbar.file.undo')} shortcut="Ctrl+Z" disabled={state.historyIndex <= 0} />
+				<DiActionButton name="redo" onClick={handleRedo} dark={dark} tooltip={t('topbar.file.redo')} shortcut="Ctrl+Y" disabled={state.historyIndex >= state.history.length - 1} />
 
 				<DiVSep dark={dark} />
 
@@ -82,7 +92,7 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 						onBlur={commitFilename}
 						onKeyDown={e => {
 							if (e.key === 'Enter') commitFilename();
-							if (e.key === 'Escape') { setDraft(filename); setEditing(false); }
+							if (e.key === 'Escape') { setDraft(displayedName); setEditing(false); }
 						}}
 						style={{
 							background: 'transparent',
@@ -98,7 +108,7 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 					/>
 				) : (
 					<button
-						onClick={() => { setDraft(filename); setEditing(true); }}
+						onClick={() => { setDraft(displayedName); setEditing(true); }}
 						style={{
 							background: 'transparent',
 							border: 'none',
@@ -114,7 +124,7 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 							whiteSpace: 'nowrap',
 						}}
 					>
-						{filename}
+						{displayedName}
 					</button>
 				)}
 			</DiPill>
@@ -127,11 +137,11 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 				align="start"
 			>
 				<DiSelectorOption
-					title="SVG"
+					title={t('topbar.file.svg')}
 					onSelect={() => { handleExportRequest('svg'); setExportOpen(false); }}
 				/>
 				<DiSelectorOption
-					title="SVG (Compressed)"
+					title={t('topbar.file.svgCompressed')}
 					onSelect={() => { handleExportRequest('svgz'); setExportOpen(false); }}
 				/>
 			</DiSelectorPopover>

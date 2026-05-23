@@ -1,12 +1,14 @@
 import React from 'react';
 import { useStrata } from '../StrataContext';
 import { Ico, DiMiniSlider, DiActionButton } from '../../../design-system';
+import { useTranslation } from '../../../i18n';
 import { T, dk } from '../../../design-system/tokens';
 
 interface CameraSpeedZoneProps { dark: boolean; }
 
 export function CameraSpeedZone({ dark }: CameraSpeedZoneProps) {
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 	const speed     = state.cinematicSpeed ?? 1.0;
 	const enabled   = state.isHandheldEnabled ?? false;
 	const intensity = state.handheldIntensity ?? 'low';
@@ -31,7 +33,9 @@ export function CameraSpeedZone({ dark }: CameraSpeedZoneProps) {
 	};
 
 	const iconColor = dk(dark, T.dark, T.textDark) as string;
-	const handheldLabel = enabled ? 'Handheld · ' + intensity : 'Handheld';
+	const handheldLabel = enabled
+		? t('bottombar.view.handheld.dynamic', { intensity: t(`bottombar.view.handheld.intensity.${intensity}`) })
+		: t('bottombar.view.handheld.label');
 
 	return (
 		<div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 6px', flexShrink: 0 }}>
@@ -57,7 +61,7 @@ export function CameraSpeedZone({ dark }: CameraSpeedZoneProps) {
 				active={enabled}
 				activeStyle="wash"
 				iconSize={16}
-				tooltip="Handheld camera"
+				tooltip={t('bottombar.view.handheld.tooltip')}
 				minWidth={150}
 			/>
 		</div>

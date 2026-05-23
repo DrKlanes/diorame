@@ -1,5 +1,5 @@
-export interface ShortcutItem { label: string; shortcut: string; }
-export interface ShortcutGroup { category: string; items: ShortcutItem[]; }
+export interface ShortcutItem { labelKey: string; shortcut: string; }
+export interface ShortcutGroup { categoryKey: string; items: ShortcutItem[]; }
 
 export function hasFinePointer(): boolean {
 	return typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
@@ -22,32 +22,33 @@ export function formatShortcut(s: string): string {
 	return s;
 }
 
+// Values are i18n keys (resolved via t() at the WelcomeModalV2 render site).
 export const SHORTCUTS_GROUPS: ShortcutGroup[] = [
-	{ category: 'File', items: [
-		{ label: 'Save project', shortcut: 'Ctrl+S' },
-		{ label: 'Export SVG', shortcut: 'Ctrl+E' },
-		{ label: 'Export SVGZ', shortcut: 'Ctrl+Shift+E' },
+	{ categoryKey: 'shortcuts.category.file', items: [
+		{ labelKey: 'shortcuts.label.saveProject', shortcut: 'Ctrl+S' },
+		{ labelKey: 'shortcuts.label.exportSvg',   shortcut: 'Ctrl+E' },
+		{ labelKey: 'shortcuts.label.exportSvgz',  shortcut: 'Ctrl+Shift+E' },
 	] },
-	{ category: 'Edit', items: [
-		{ label: 'Undo', shortcut: 'Ctrl+Z' },
-		{ label: 'Redo', shortcut: 'Ctrl+Y' },
+	{ categoryKey: 'shortcuts.category.edit', items: [
+		{ labelKey: 'shortcuts.label.undo', shortcut: 'Ctrl+Z' },
+		{ labelKey: 'shortcuts.label.redo', shortcut: 'Ctrl+Y' },
 	] },
-	{ category: 'View', items: [
-		{ label: 'Dark mode', shortcut: 'Shift+D' },
-		{ label: 'Open shortcuts', shortcut: 'Shift+?' },
+	{ categoryKey: 'shortcuts.category.view', items: [
+		{ labelKey: 'shortcuts.label.darkMode',       shortcut: 'Shift+D' },
+		{ labelKey: 'shortcuts.label.openShortcuts',  shortcut: 'Shift+?' },
 	] },
-	{ category: 'Tools (Draw)', items: [
-		{ label: 'Blob', shortcut: 'B' },
-		{ label: 'Brush', shortcut: 'L' },
-		{ label: 'Eraser', shortcut: 'E' },
-		{ label: 'Text', shortcut: 'T' },
-		{ label: 'Move', shortcut: 'M' },
+	{ categoryKey: 'shortcuts.category.toolsDraw', items: [
+		{ labelKey: 'shortcuts.label.blob',   shortcut: 'B' },
+		{ labelKey: 'shortcuts.label.brush',  shortcut: 'L' },
+		{ labelKey: 'shortcuts.label.eraser', shortcut: 'E' },
+		{ labelKey: 'shortcuts.label.text',   shortcut: 'T' },
+		{ labelKey: 'shortcuts.label.move',   shortcut: 'M' },
 	] },
-	{ category: 'Layers (Draw)', items: [
-		{ label: 'Previous layer', shortcut: '[' },
-		{ label: 'Next layer', shortcut: ']' },
+	{ categoryKey: 'shortcuts.category.layersDraw', items: [
+		{ labelKey: 'shortcuts.label.previousLayer', shortcut: '[' },
+		{ labelKey: 'shortcuts.label.nextLayer',     shortcut: ']' },
 	] },
-	{ category: 'Canvas (Draw)', items: [
-		{ label: 'Reset view', shortcut: 'Space' },
+	{ categoryKey: 'shortcuts.category.canvasDraw', items: [
+		{ labelKey: 'shortcuts.label.resetView', shortcut: 'Space' },
 	] },
 ];

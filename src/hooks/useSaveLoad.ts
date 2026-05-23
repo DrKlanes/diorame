@@ -1,9 +1,12 @@
 import { useRef, useCallback } from 'react';
 import { toast } from 'sonner@2.0.3';
 import { useStrata } from '../components/strata/StrataContext';
+import { getFilenameBase } from '../constants/project';
+import { useTranslation } from '../i18n';
 
 export function useSaveLoad() {
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const handleSaveProject = useCallback(() => {
@@ -19,7 +22,7 @@ export function useSaveLoad() {
 			layerSpacingFactor: state.layerSpacingFactor, cinematicSpeed: state.cinematicSpeed,
 			isHandheldEnabled: state.isHandheldEnabled, handheldIntensity: state.handheldIntensity,
 		};
-		const sanitized = state.projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+		const sanitized = getFilenameBase(state.projectName);
 		setTimeout(() => {
 			let url: string | null = null;
 			let link: HTMLAnchorElement | null = null;
@@ -32,9 +35,9 @@ export function useSaveLoad() {
 				link.style.display = 'none';
 				document.body.appendChild(link);
 				link.click();
-				toast.success('Project saved', { description: `${sanitized}.dior`, duration: 2000 });
+				toast.success(t('toast.save.successTitle'), { description: t('toast.save.successDesc', { filename: sanitized }), duration: 2000 });
 			} catch (err) {
-				toast.error('Failed to save', { description: 'Please try again' });
+				toast.error(t('toast.save.errorTitle'), { description: t('common.pleaseRetry') });
 			} finally {
 				setTimeout(() => {
 					try { if (link?.parentNode) document.body.removeChild(link!); } catch (_) { /* */ }
@@ -42,11 +45,11 @@ export function useSaveLoad() {
 				}, 200);
 			}
 		}, 0);
-	}, [state]);
+	}, [state, t]);
 
 	const handleLoadProject = useCallback((file: File) => {
 		if (file.size > 50 * 1024 * 1024) {
-			toast.error('File too large', { description: 'Maximum file size is 50 MB' });
+			toast.error(t('toast.load.errorDescFile'), { description: t('toast.load.errorDescSize') });
 			if (fileInputRef.current) fileInputRef.current.value = '';
 			return;
 		}
@@ -56,14 +59,16 @@ export function useSaveLoad() {
 				const json = JSON.parse(ev.target?.result as string);
 				if (!json || typeof json !== 'object' || !Array.isArray(json.shapes)) throw new Error('Invalid project format');
 				dispatch({ type: 'LOAD_PROJECT', payload: json });
-				toast.success('Project loaded', { description: `${json.shapes.length} shapes`, duration: 2000 });
+				const n = json.shapes.length;
+				const desc = n === 1 ? t('toast.load.successDescOne', { n }) : t('toast.load.successDesc', { n });
+				toast.success(t('toast.load.successTitle'), { description: desc, duration: 2000 });
 			} catch (err) {
-				toast.error('Failed to load project', { description: err instanceof Error ? err.message : 'Check file validity' });
+				toast.error(t('toast.load.errorTitle'), { description: err instanceof Error ? err.message : t('toast.load.errorDescGeneric') });
 			}
 		};
 		reader.readAsText(file);
 		if (fileInputRef.current) fileInputRef.current.value = '';
-	}, [dispatch]);
+	}, [dispatch, t]);
 
 	const triggerFileSelect = useCallback(() => {
 		fileInputRef.current?.click();

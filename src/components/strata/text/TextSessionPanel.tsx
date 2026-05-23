@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Ico } from '../../../design-system';
 import { T, TYPE, RADIUS, SHADOW, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
+import { useTranslation } from '../../../i18n';
 
 // Font CSS values keyed by TextSession font name
 const FONT_CSS: Record<string, string> = {
@@ -10,14 +11,6 @@ const FONT_CSS: Record<string, string> = {
 	pharma:   "'Inter', sans-serif",
 	comic:    "'Bangers', cursive",
 	dungeons: "'Inknut Antiqua', serif",
-};
-
-const FONT_LABELS: Record<string, string> = {
-	noir:     'Noir',
-	mansion:  'Mansion',
-	pharma:   'Pharma',
-	comic:    'Comic',
-	dungeons: 'Dungeon',
 };
 
 const FONT_ORDER = ['noir', 'mansion', 'pharma', 'comic', 'dungeons'] as const;
@@ -31,6 +24,7 @@ interface TextSessionPanelProps {
 
 export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 	const session = state.textSession;
@@ -88,7 +82,7 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 						<button
 							key={f}
 							onClick={() => dispatch({ type: 'UPDATE_TEXT_SESSION', payload: { font: f } })}
-							title={FONT_LABELS[f]}
+							title={t(`text.font.${f}`)}
 							style={{
 								flex: 1,
 								height: 32,
@@ -125,7 +119,7 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 				}}
 				onKeyDown={handleKeyDown}
 				rows={3}
-				placeholder="Type here…"
+				placeholder={t('text.placeholder')}
 				style={{
 					width: '100%',
 					boxSizing: 'border-box',
@@ -156,7 +150,7 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 						<button
 							key={a}
 							onClick={() => dispatch({ type: 'UPDATE_TEXT_SESSION', payload: { align: a } })}
-							title={`Align ${a}`}
+							title={t(`text.align.${a}`)}
 							style={{
 								width: 28,
 								height: 28,
@@ -204,7 +198,7 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 						color: mutedColor,
 					}}
 				>
-					Cancel
+					{t('text.action.cancel')}
 				</button>
 
 				{/* Done */}
@@ -222,7 +216,7 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 						color: T.white,
 					}}
 				>
-					Done
+					{t('text.action.done')}
 				</button>
 			</div>
 		</div>

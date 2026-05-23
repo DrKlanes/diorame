@@ -3,6 +3,7 @@ import { DiPill, DiVSep } from '../../../design-system';
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { LineModeButton } from '../bottombar/_shared';
+import { useTranslation } from '../../../i18n';
 
 interface ToolOptionsPanelProps {
 	dark: boolean;
@@ -10,6 +11,7 @@ interface ToolOptionsPanelProps {
 
 export function ToolOptionsPanel({ dark }: ToolOptionsPanelProps) {
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 
 	if (state.tool !== 'line') return null;
 
@@ -28,7 +30,7 @@ export function ToolOptionsPanel({ dark }: ToolOptionsPanelProps) {
 				color: labelColor,
 				whiteSpace: 'nowrap',
 			}}>
-				Size
+				{t('bottombar.draw.toolOptions.size')}
 			</span>
 			<input
 				type="range"

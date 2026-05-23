@@ -1,10 +1,12 @@
 import React from 'react';
 import { DiPill } from '../../../design-system';
 import { useStrata } from '../StrataContext';
+import { useTranslation } from '../../../i18n';
 import { DiActionButton } from '../../../design-system';
 
 export function ThemeTogglePill({ dark }: { dark: boolean }) {
 	const { dispatch } = useStrata();
+	const { t } = useTranslation();
 	const setLight = () => { if (dark)  dispatch({ type: 'TOGGLE_DARK_MODE' }); };
 	const setDark  = () => { if (!dark) dispatch({ type: 'TOGGLE_DARK_MODE' }); };
 
@@ -16,7 +18,7 @@ export function ThemeTogglePill({ dark }: { dark: boolean }) {
 				dark={dark}
 				active={!dark}
 				activeStyle="wash"
-				tooltip="Light mode"
+				tooltip={t('topbar.theme.light')}
 			/>
 			<DiActionButton
 				name="moon"
@@ -24,7 +26,7 @@ export function ThemeTogglePill({ dark }: { dark: boolean }) {
 				dark={dark}
 				active={dark}
 				activeStyle="wash"
-				tooltip="Dark mode"
+				tooltip={t('topbar.theme.dark')}
 				shortcut="Shift+D"
 			/>
 		</DiPill>

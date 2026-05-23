@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { T, RADIUS, dk } from '../../../design-system/tokens';
 import { useDiModalContext } from './DiModalContext';
+import { useTranslation } from '../../../i18n';
 
 export function DiModalCloseButton() {
 	const { onClose, dark } = useDiModalContext();
+	const { t } = useTranslation();
 	const [hovered, setHovered] = useState(false);
 
 	return (
 		<button
 			onClick={onClose}
-			aria-label="Close"
+			aria-label={t('common.close')}
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
 			style={{

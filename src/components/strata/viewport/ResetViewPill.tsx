@@ -2,6 +2,7 @@ import React from 'react';
 import { useStrata } from '../StrataContext';
 import { DiActionButton } from '../../../design-system';
 import { useTheme } from '../../../design-system/useTheme';
+import { useTranslation } from '../../../i18n';
 
 /**
  * ResetViewPill — resets drawing pan/zoom to origin.
@@ -12,13 +13,14 @@ import { useTheme } from '../../../design-system/useTheme';
 export function ResetViewPill() {
 	const { state, dispatch } = useStrata();
 	const { dark } = useTheme();
+	const { t } = useTranslation();
 
 	return (
 		<DiActionButton
 			name="target"
 			onClick={() => dispatch({ type: 'RESET_DRAWING_VIEW' } as any)}
 			dark={dark}
-			tooltip="Reset view"
+			tooltip={t('viewport.resetView')}
 			shortcut="Space"
 		/>
 	);

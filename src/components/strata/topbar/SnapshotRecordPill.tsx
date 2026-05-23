@@ -4,11 +4,13 @@ import { T, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { DiActionButton } from '../../../design-system';
 import { InfoButton } from './InfoButton';
+import { useTranslation } from '../../../i18n';
 
 interface SnapshotRecordPillProps { dark: boolean; }
 
 export function SnapshotRecordPill({ dark }: SnapshotRecordPillProps) {
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 	const recording = state.isExporting && state.exportRequest === 'mp4';
 
 	const handleSnapshot = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
@@ -18,7 +20,7 @@ export function SnapshotRecordPill({ dark }: SnapshotRecordPillProps) {
 		<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
 			<InfoButton dark={dark} />
 			<DiVSep dark={dark} />
-			<DiActionButton name="snapshot" onClick={handleSnapshot} dark={dark} tooltip="Snapshot PNG" />
+			<DiActionButton name="snapshot" onClick={handleSnapshot} dark={dark} tooltip={t('topbar.snapshot.png')} />
 			<RecordBtn recording={recording} onClick={handleRecord} dark={dark} />
 		</DiPill>
 	);
@@ -29,13 +31,14 @@ function RecordBtn({ recording, onClick, dark }: {
 	onClick: () => void;
 	dark: boolean;
 }) {
+	const { t } = useTranslation();
 	const [hov, setHov] = useState(false);
 	return (
 		<button
 			onClick={onClick}
 			onPointerEnter={() => setHov(true)}
 			onPointerLeave={() => setHov(false)}
-			title={recording ? 'Stop recording' : 'Record MP4'}
+			title={t(recording ? 'topbar.record.stop' : 'topbar.record.start')}
 			style={{
 				height: 30,
 				minWidth: 30,
@@ -67,7 +70,7 @@ function RecordBtn({ recording, onClick, dark }: {
 					fontWeight: 700,
 					color: '#dc2626',
 					letterSpacing: '0.05em',
-				}}>REC</span>
+				}}>{t('topbar.record.badge')}</span>
 			)}
 		</button>
 	);

@@ -2,6 +2,7 @@ import React from 'react';
 import { useStrata } from '../StrataContext';
 import { DiActionButton } from '../../../design-system';
 import { useTheme } from '../../../design-system/useTheme';
+import { useTranslation } from '../../../i18n';
 
 /**
  * GridTogglePill — toggles the CompositionGuideOverlay (3x3 world-space dot grid).
@@ -12,6 +13,7 @@ import { useTheme } from '../../../design-system/useTheme';
 export function GridTogglePill() {
 	const { state, dispatch } = useStrata();
 	const { dark } = useTheme();
+	const { t } = useTranslation();
 
 	return (
 		<DiActionButton
@@ -20,7 +22,7 @@ export function GridTogglePill() {
 			dark={dark}
 			active={state.gridEnabled}
 			activeStyle="wash"
-			tooltip="Composition guide"
+			tooltip={t('viewport.compositionGuide')}
 		/>
 	);
 }

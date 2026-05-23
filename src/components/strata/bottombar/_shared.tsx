@@ -3,6 +3,7 @@ import { DiActionButton } from '../../../design-system';
 import { Ico } from '../../../design-system';
 import { T, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
+import { useTranslation } from '../../../i18n';
 
 interface ToolBtnProps {
 	name: string;
@@ -53,11 +54,6 @@ const LINE_MODE_ICONS: Record<string, string> = {
 	uniform: 'line-uniform',
 	ink: 'line-ink',
 };
-const LINE_MODE_LABELS: Record<string, string> = {
-	tapered: 'Tapered',
-	uniform: 'Uniform',
-	ink: 'Ink',
-};
 const LINE_MODE_NEXT: Record<string, string> = {
 	tapered: 'uniform',
 	uniform: 'ink',
@@ -68,6 +64,7 @@ interface LineModeButtonProps { dark: boolean; }
 
 export function LineModeButton({ dark }: LineModeButtonProps) {
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 	const currentMode = state.lineMode ?? 'tapered';
 	const currentIndex = LINE_MODE_ORDER.indexOf(currentMode as any);
 
@@ -84,7 +81,7 @@ export function LineModeButton({ dark }: LineModeButtonProps) {
 	return (
 		<button
 			onClick={handleClick}
-			title={`Line mode: ${LINE_MODE_LABELS[currentMode]} (${currentIndex + 1}/3) — click to cycle`}
+			title={t('bottombar.draw.lineMode.title', { label: t(`bottombar.draw.lineMode.${currentMode}`), n: currentIndex + 1 })}
 			style={{
 				width: 30,
 				height: 30,

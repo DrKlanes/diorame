@@ -1,30 +1,32 @@
 import React from 'react';
 import { useStrata } from '../StrataContext';
 import { DiSegmentControl } from '../../../design-system';
+import { useTranslation } from '../../../i18n';
 
 interface PaletteHeaderProps { dark: boolean; }
 
+type PaletteSegmentMode = 'flat' | 'gradient' | 'fade';
+
 export function PaletteHeader({ dark }: PaletteHeaderProps) {
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 
-	const paletteValue = state.activePaletteId === 'primary' ? 'Primary' : 'Alt';
-
-	const handlePaletteChange = (v: string) => {
-		dispatch({ type: 'SET_ACTIVE_PALETTE', payload: v === 'Primary' ? 'primary' : 'alternative' } as any);
+	const handlePaletteChange = (v: 'primary' | 'alternative') => {
+		dispatch({ type: 'SET_ACTIVE_PALETTE', payload: v } as any);
 	};
 
 	// Map 3-state (flat / grad+solid / grad+fade) to segment value
-	const modeValue =
-		state.paletteMode === 'flat' ? 'Flat' :
-		state.paletteGradientType === 'fade' ? 'Fade' : 'Gradient';
+	const modeValue: PaletteSegmentMode =
+		state.paletteMode === 'flat' ? 'flat' :
+		state.paletteGradientType === 'fade' ? 'fade' : 'gradient';
 
-	const handleModeChange = (v: string) => {
-		if (v === 'Flat') {
+	const handleModeChange = (v: PaletteSegmentMode) => {
+		if (v === 'flat') {
 			dispatch({ type: 'SET_PALETTE_MODE', payload: 'flat' } as any);
 			return;
 		}
 		dispatch({ type: 'SET_PALETTE_MODE', payload: 'grad' } as any);
-		dispatch({ type: 'SET_PALETTE_GRADIENT_TYPE', payload: v === 'Gradient' ? 'solid' : 'fade' } as any);
+		dispatch({ type: 'SET_PALETTE_GRADIENT_TYPE', payload: v === 'gradient' ? 'solid' : 'fade' } as any);
 	};
 
 	return (
@@ -35,16 +37,23 @@ export function PaletteHeader({ dark }: PaletteHeaderProps) {
 			gap: 6,
 			flexWrap: 'wrap',
 		}}>
-			<DiSegmentControl
-				options={['Primary', 'Alt']}
-				value={paletteValue}
+			<DiSegmentControl<'primary' | 'alternative'>
+				options={[
+					{ value: 'primary',     label: t('palette.segment.primary') },
+					{ value: 'alternative', label: t('palette.segment.alt') },
+				]}
+				value={state.activePaletteId}
 				onChange={handlePaletteChange}
 				dark={dark}
 				small
 			/>
 
-			<DiSegmentControl
-				options={['Flat', 'Gradient', 'Fade']}
+			<DiSegmentControl<PaletteSegmentMode>
+				options={[
+					{ value: 'flat',     label: t('palette.segment.flat') },
+					{ value: 'gradient', label: t('palette.segment.gradient') },
+					{ value: 'fade',     label: t('palette.segment.fade') },
+				]}
 				value={modeValue}
 				onChange={handleModeChange}
 				dark={dark}

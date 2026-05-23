@@ -1,21 +1,44 @@
 import React, { useState } from 'react';
 import { T, TYPE, RADIUS, dk } from './tokens';
 
-interface DiSegmentControlProps {
-	options: string[];
-	value: string;
-	onChange: (value: string) => void;
+/**
+ * SegmentOption — admite dos formatos:
+ *   1) primitivo (string | number): el value es el primitivo y el label es su String() (backward compat)
+ *   2) { value, label }: value es el identifier estable (interno, no traducible),
+ *      label es el display string (traducible, puede cambiar con i18n)
+ *
+ * Para i18n: pasa { value: 'primary', label: t('palette.segment.primary') } — el matching
+ * y la key de React se hacen contra `value` (estable), así que el cambio de idioma
+ * NO desmonta los segmentos.
+ *
+ * Soporta T number para casos donde el value semántico es numérico (e.g. discrete FX intensity).
+ */
+export type SegmentOption<T extends string | number = string> = T | { value: T; label: string };
+
+interface DiSegmentControlProps<T extends string | number = string> {
+	options: SegmentOption<T>[];
+	value: T;
+	onChange: (value: T) => void;
 	dark: boolean;
 	small?: boolean;
 }
 
-export function DiSegmentControl({
+export function DiSegmentControl<T extends string | number = string>({
 	options,
 	value,
 	onChange,
 	dark,
 	small = false,
-}: DiSegmentControlProps) {
+}: DiSegmentControlProps<T>) {
+	// Normalize each option to { value, label } shape.
+	// Primitives (string or number) become { value: opt, label: String(opt) }.
+	const normalized = options.map(opt => {
+		if (typeof opt === 'string' || typeof opt === 'number') {
+			return { value: opt as T, label: String(opt) };
+		}
+		return opt;
+	});
+
 	return (
 		<div style={{
 			display: 'flex',
@@ -24,14 +47,14 @@ export function DiSegmentControl({
 			padding: 2,
 			gap: 1,
 		}}>
-			{options.map(opt => (
+			{normalized.map(opt => (
 				<SegmentItem
-					key={opt}
-					option={opt}
-					active={value === opt}
+					key={opt.value}
+					label={opt.label}
+					active={value === opt.value}
 					small={small}
 					dark={dark}
-					onClick={() => onChange(opt)}
+					onClick={() => onChange(opt.value)}
 				/>
 			))}
 		</div>
@@ -39,14 +62,14 @@ export function DiSegmentControl({
 }
 
 interface SegmentItemProps {
-	option: string;
+	label: string;
 	active: boolean;
 	small: boolean;
 	dark: boolean;
 	onClick: () => void;
 }
 
-function SegmentItem({ option, active, small, dark, onClick }: SegmentItemProps) {
+function SegmentItem({ label, active, small, dark, onClick }: SegmentItemProps) {
 	const [hov, setHov] = useState(false);
 
 	return (
@@ -79,7 +102,7 @@ function SegmentItem({ option, active, small, dark, onClick }: SegmentItemProps)
 				whiteSpace: 'nowrap',
 				padding: '0 5px',
 			}}>
-				{option}
+				{label}
 			</span>
 		</div>
 	);

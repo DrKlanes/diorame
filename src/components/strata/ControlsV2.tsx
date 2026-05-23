@@ -5,6 +5,7 @@ import { useSaveLoad } from '../../hooks/useSaveLoad';
 import { useExportFlow } from '../../hooks/useExportFlow';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { DiActionButton, DiPill } from '../../design-system';
+import { useTranslation } from '../../i18n';
 import { TopBar } from './topbar/TopBar';
 import { BottomBar } from './bottombar/BottomBar';
 import { LayersPanel } from './layers/LayersPanel';
@@ -40,6 +41,7 @@ const OVERLAY_BOTTOM = 60;
 export function ControlsV2() {
 	const { dark } = useTheme();
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 
 	// Side-effect 1: global keyboard shortcuts
 	const { handleSaveProject } = useSaveLoad();
@@ -152,7 +154,7 @@ export function ControlsV2() {
 						name="eye"
 						onClick={() => dispatch({ type: 'TOGGLE_UI' })}
 						dark={dark}
-						tooltip="Show UI"
+						tooltip={t('viewport.showUi')}
 					/>
 				</div>
 			)}

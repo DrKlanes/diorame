@@ -7,6 +7,8 @@ import { APP_VERSION } from '../../../constants/version';
 import { getWelcomeIllustration } from './welcomeIllustrations';
 import logoImg from 'figma:asset/logo-symbol.png';
 import { hasFinePointer, formatShortcut, SHORTCUTS_GROUPS } from '../../../utils/keyboardShortcuts';
+import { useTranslation } from '../../../i18n';
+import { LanguageToggle } from '../../../design-system/LanguageToggle';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -40,6 +42,7 @@ interface WelcomeModalV2Props {
 }
 
 export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeModalV2Props) {
+	const { t } = useTranslation();
 	const [isLoadingExample, setIsLoadingExample] = useState(false);
 	const [shortcutsExpanded, setShortcutsExpanded] = useState(false);
 
@@ -52,21 +55,8 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 	const handleBugReport = () => {
 		const parts = ['dumaker', 'gmail.com'];
 		const addr = parts.join('@');
-		const subject = encodeURIComponent('Diorame bug report — v' + APP_VERSION);
-		const body = encodeURIComponent([
-			'What I expected:',
-			'',
-			'',
-			'What happened instead:',
-			'',
-			'',
-			'Steps to reproduce:',
-			'',
-			'',
-			'---',
-			'Browser:',
-			'OS:',
-		].join('\n'));
+		const subject = encodeURIComponent(t('modal.welcome.bugReport.subject', { version: APP_VERSION }));
+		const body = encodeURIComponent(t('modal.welcome.bugReport.body'));
 		window.open('mailto:' + addr + '?subject=' + subject + '&body=' + body, '_blank');
 	};
 
@@ -110,7 +100,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 					<div style={{ marginBottom: 28 }}>
 						<img
 							src={logoImg}
-							alt="Diorame logo"
+							alt={t('modal.welcome.logoAlt')}
 							style={{ height: 28, width: 'auto', marginBottom: 8, display: 'block' }}
 						/>
 						<div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
@@ -141,17 +131,17 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 							lineHeight: 1.4,
 							color: muted,
 						}}>
-							Draw in 2D. And watch it come alive in 3D.
+							{t('modal.welcome.tagline')}
 						</p>
 					</div>
 
 					{/* Zona 2 — Acciones (PrimaryActionLg arriba, Secondary abajo) */}
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch', marginBottom: 28 }}>
 						<DiModal.PrimaryActionLg onClick={onClose}>
-							Start drawing
+							{t('modal.welcome.cta.primary')}
 						</DiModal.PrimaryActionLg>
 						<DiModal.SecondaryAction onClick={handleLoadExample} disabled={isLoadingExample}>
-							{isLoadingExample ? 'Loading…' : 'Load example scene'}
+							{isLoadingExample ? t('modal.welcome.cta.loading') : t('modal.welcome.cta.secondary')}
 						</DiModal.SecondaryAction>
 					</div>
 
@@ -164,12 +154,12 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 						lineHeight: 1.5,
 					}}>
 						<div>
-							<ResourceLink href="https://www.youtube.com/watch?v=Ieb280ncEfA">Watch tutorial</ResourceLink>
+							<ResourceLink href="https://www.youtube.com/watch?v=Ieb280ncEfA">{t('modal.welcome.tutorial')}</ResourceLink>
 							<span style={{ color: muted, margin: '0 6px' }}>·</span>
-							<ResourceLink href="https://www.instagram.com/dumaker/">by @dumaker</ResourceLink>
+							<ResourceLink href="https://www.instagram.com/dumaker/">{t('modal.welcome.dumaker')}</ResourceLink>
 						</div>
 						<div>
-							<ResourceLink href="https://ko-fi.com/dumaker">Support on Ko-fi 🤍</ResourceLink>
+							<ResourceLink href="https://ko-fi.com/dumaker">{t('modal.welcome.kofi')}</ResourceLink>
 						</div>
 					</div>
 
@@ -184,7 +174,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 						color: muted,
 					}}>
 						<div>
-							<ResourceLink href="https://apps.apple.com/pa/app/graintouch/id6740813845" mutedColor={muted}>Inspired by Graintouch</ResourceLink>
+							<ResourceLink href="https://apps.apple.com/pa/app/graintouch/id6740813845" mutedColor={muted}>{t('modal.welcome.graintouch')}</ResourceLink>
 						</div>
 						<div>
 							<button
@@ -201,7 +191,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 									padding: 0,
 								}}
 							>
-								Found a bug? Email me.
+								{t('modal.welcome.bugReport.link')}
 							</button>
 						</div>
 						{hasFinePointer() && (
@@ -222,13 +212,13 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 										padding: 0,
 									}}
 								>
-									<span style={{ textDecoration: 'underline' }}>Keyboard shortcuts</span>
+									<span style={{ textDecoration: 'underline' }}>{t('modal.welcome.shortcuts')}</span>
 									<Ico name={shortcutsExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={muted} />
 								</button>
 								{shortcutsExpanded && (
 									<div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 220, overflowY: 'auto' }}>
 										{SHORTCUTS_GROUPS.map(group => (
-											<div key={group.category}>
+											<div key={group.categoryKey}>
 												<div style={{
 													fontFamily: TYPE.controlLabel.family,
 													fontWeight: 400,
@@ -238,12 +228,12 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 													color: muted,
 													marginBottom: 6,
 												}}>
-													{group.category}
+													{t(group.categoryKey)}
 												</div>
 												{group.items.map(item => (
-													<div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, fontSize: 10, lineHeight: '20px' }}>
+													<div key={item.labelKey} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, fontSize: 10, lineHeight: '20px' }}>
 														<span style={{ fontFamily: TYPE.controlLabel.family, fontWeight: 400, fontSize: 10, color: dk(dark, T.dark, T.textDark) as string }}>
-															{item.label}
+															{t(item.labelKey)}
 														</span>
 														<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: 500, fontSize: 10, color: muted, letterSpacing: '0.02em' }}>
 															{formatShortcut(item.shortcut)}
@@ -256,6 +246,10 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 								)}
 							</div>
 						)}
+
+						<div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 16 }}>
+							<LanguageToggle />
+						</div>
 					</div>
 
 				</div>

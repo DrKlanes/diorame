@@ -3,36 +3,38 @@ import { useStrata, PostProcessingSettings, PostProcessingEnabled } from '../Str
 import { Ico, DiMiniSlider, DiSegmentControl } from '../../../design-system';
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 import { DiActionButton } from '../../../design-system';
+import { useTranslation } from '../../../i18n';
 
 // ── Pixel Art depth mapping ──────────────────────────────────────────
+// Values are i18n keys, resolved via t() at render time.
+// If a depth value falls outside this map, fallback to literal '?' (defensive).
 const DEPTH_LABEL_MAP: Record<number, string> = {
-	2:  '1-bit',
-	4:  'CGA',
-	6:  '8-Color',
-	8:  'Retro',
-	10: 'Hi-Color',
-	12: 'Pocket',
-	14: 'Stylized',
-	16: 'Original',
+	2:  'fx.depth.1bit',
+	4:  'fx.depth.cga',
+	6:  'fx.depth.8color',
+	8:  'fx.depth.retro',
+	10: 'fx.depth.hiColor',
+	12: 'fx.depth.pocket',
+	14: 'fx.depth.stylized',
+	16: 'fx.depth.original',
 };
+
+// ── Types ────────────────────────────────────────────────────────────
+type DiscreteOption = { value: number; labelKey: string };
+type CompositeOption = { value: 'circle' | 'square' | 'stroke'; labelKey: string };
 
 // ── Helpers ─────────────────────────────────────────────────────────
 const stopProp = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
 
-const findClosestLabel = (value: number, options: Array<{ label: string; value: number }>) =>
+const findClosestOption = (value: number, options: DiscreteOption[]): DiscreteOption =>
 	options.reduce((closest, opt) =>
 		Math.abs(opt.value - value) < Math.abs(closest.value - value) ? opt : closest
-	).label;
+	);
 
 const formatBipolar = (v: number) => {
 	const snapped = Math.abs(v) < 0.005 ? 0 : v;
 	if (snapped === 0) return '0.00';
 	return snapped > 0 ? `+${snapped.toFixed(2)}` : snapped.toFixed(2);
-};
-
-const formatDither = (v: number): string => {
-	if (v < 0.05) return 'Clean';
-	return `${Math.round(v * 100)}%`;
 };
 
 const formatZPlane = (v: number): string => {
@@ -82,18 +84,19 @@ function SubControlBlock({ label, value, dark, children, accentColor }: SubContr
 interface FXRowProps {
 	fxKey: keyof PostProcessingEnabled;
 	iconName: string;
-	label: string;
+	labelKey: string;
 	isActive: boolean;
 	dark: boolean;
 	onToggle: () => void;
 	level?: 1 | 'special' | 'bipolar' | 'discrete' | 'composite' | 'pixel' | 'dof';
 	valueKey?: keyof PostProcessingSettings;
-	discreteOptions?: Array<{ label: string; value: number }>;
-	compositeOptions?: string[];
+	discreteOptions?: DiscreteOption[];
+	compositeOptions?: CompositeOption[];
 }
 
-export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level = 'special', valueKey, discreteOptions, compositeOptions }: FXRowProps) {
+export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, level = 'special', valueKey, discreteOptions, compositeOptions }: FXRowProps) {
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 	const sliderValue = (level === 1 && valueKey) ? (state.postProcessing[valueKey] as number) : 0;
 
 	// Master-OFF snapshot: preserve config UI but muted + click-to-wake.
@@ -107,6 +110,7 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 
 	const tint = isActive ? T.purple : dk(dark, T.dark, T.textDark) as string;
 	const flatTint = isMuted ? (dk(dark, T.muted, T.textDarkMuted) as string) : tint;
+	const label = t(labelKey);
 
 	const expandedBtnStyle = {
 		display: 'flex',
@@ -172,9 +176,10 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 	}
 
 	// --- Discrete: header + SegmentControl (no slider) ---
+	// Numeric value identifiers; labels resolved via t() at render time.
 	if (showExpanded && level === 'discrete' && valueKey && discreteOptions) {
 		const dv = state.postProcessing[valueKey] as number;
-		const currentLabel = findClosestLabel(dv, discreteOptions);
+		const currentValue = findClosestOption(dv, discreteOptions).value;
 		return (
 			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={colStyle}>
@@ -185,14 +190,11 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 						</span>
 					</div>
 					<div onPointerDown={stopProp} onClick={stopProp} style={{ borderRadius: RADIUS.segmentSmall + 2, overflow: 'hidden', background: dk(dark, T.white, T.panelDarkOpaque) }}>
-						<DiSegmentControl
+						<DiSegmentControl<number>
 							dark={dark}
-							options={discreteOptions.map(o => o.label)}
-							value={currentLabel}
-							onChange={newLabel => {
-								const opt = discreteOptions.find(o => o.label === newLabel);
-								if (opt) dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: opt.value } });
-							}}
+							options={discreteOptions.map(o => ({ value: o.value, label: t(o.labelKey) }))}
+							value={currentValue}
+							onChange={(v) => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })}
 							small
 						/>
 					</div>
@@ -202,10 +204,10 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 	}
 
 	// --- Composite: header + slider (0–1) + SegmentControl for type ---
+	// Internal identifier ('circle' | 'square' | 'stroke') used directly as segment value.
 	if (showExpanded && level === 'composite' && valueKey && compositeOptions) {
 		const cv = state.postProcessing[valueKey] as number;
 		const pType = state.postProcessing.particleType;
-		const pTypeLabel = pType.charAt(0).toUpperCase() + pType.slice(1);
 		return (
 			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={colStyle}>
@@ -223,11 +225,11 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
 					</div>
 					<div onPointerDown={stopProp} onClick={stopProp} style={{ borderRadius: RADIUS.segmentSmall + 2, overflow: 'hidden', background: dk(dark, T.white, T.panelDarkOpaque) }}>
-						<DiSegmentControl
+						<DiSegmentControl<'circle' | 'square' | 'stroke'>
 							dark={dark}
-							options={compositeOptions}
-							value={pTypeLabel}
-							onChange={v => dispatch({ type: 'SET_PARTICLE_TYPE', payload: v.toLowerCase() as 'circle' | 'square' | 'stroke' })}
+							options={compositeOptions.map(o => ({ value: o.value, label: t(o.labelKey) }))}
+							value={pType}
+							onChange={(v) => dispatch({ type: 'SET_PARTICLE_TYPE', payload: v })}
 							small
 						/>
 					</div>
@@ -241,6 +243,9 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 		const sz = state.postProcessing.pixelArtSize;
 		const dp = state.postProcessing.pixelArtDepth;
 		const di = state.postProcessing.pixelArtDither;
+		const depthKey = DEPTH_LABEL_MAP[dp];
+		const depthLabel = depthKey ? t(depthKey) : '?';
+		const ditherDisplay = di < 0.05 ? t('fx.dither.clean') : `${Math.round(di * 100)}%`;
 		return (
 			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', pointerEvents: isMuted ? 'none' : undefined }}>
@@ -250,25 +255,25 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 							{label}
 						</span>
 					</div>
-					<SubControlBlock accentColor={accentColor} label="Size" value={`${sz}px`} dark={dark}>
+					<SubControlBlock accentColor={accentColor} label={t('fx.subcontrol.size')} value={`${sz}px`} dark={dark}>
 						<div onPointerDown={stopProp} onClick={stopProp}>
 							<DiMiniSlider dark={dark} value={sz} min={2} max={12} step={1}
 								onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtSize', value: v } })} />
 						</div>
 					</SubControlBlock>
-					<SubControlBlock accentColor={accentColor} label="Depth" value="" dark={dark}>
+					<SubControlBlock accentColor={accentColor} label={t('fx.subcontrol.depth')} value="" dark={dark}>
 						<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}
 							onPointerDown={stopProp} onClick={stopProp}>
 							<DiActionButton name="chevron-left" dark={dark}
 								onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDepth', value: Math.max(2, dp - 2) } })} />
 							<span style={{ flex: 1, textAlign: 'center', fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
-								{DEPTH_LABEL_MAP[dp] ?? '?'}
+								{depthLabel}
 							</span>
 							<DiActionButton name="chevron-right" dark={dark}
 								onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDepth', value: Math.min(16, dp + 2) } })} />
 						</div>
 					</SubControlBlock>
-					<SubControlBlock accentColor={accentColor} label="Dither" value={formatDither(di)} dark={dark}>
+					<SubControlBlock accentColor={accentColor} label={t('fx.subcontrol.dither')} value={ditherDisplay} dark={dark}>
 						<div onPointerDown={stopProp} onClick={stopProp}>
 							<DiMiniSlider dark={dark} value={di} min={0} max={1} step={0.1}
 								onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDither', value: v } })} />
@@ -303,19 +308,22 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 					</div>
 					<div style={{ height: 1, width: '100%', backgroundColor: dk(dark, T.border, T.borderDark), margin: '4px 0' }} />
 					<div onPointerDown={stopProp} onClick={stopProp} style={{ borderRadius: RADIUS.segmentSmall + 2, overflow: 'hidden', background: dk(dark, T.white, T.panelDarkOpaque) }}>
-						<DiSegmentControl
+						<DiSegmentControl<'free' | 'lock'>
 							dark={dark}
 							small
-							options={['Free', 'Lock']}
-							value={isFree ? 'Free' : 'Lock'}
-							onChange={v => {
-								const newValue = v === 'Free' ? -1 : state.currentLayerIndex;
+							options={[
+								{ value: 'free', label: t('fx.dof.free') },
+								{ value: 'lock', label: t('fx.dof.lock') },
+							]}
+							value={isFree ? 'free' : 'lock'}
+							onChange={(v) => {
+								const newValue = v === 'free' ? -1 : state.currentLayerIndex;
 								dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusTargetLayer', value: newValue } });
 							}}
 						/>
 					</div>
 					{isFree ? (
-						<SubControlBlock accentColor={accentColor} label="Z-Plane" value={formatZPlane(focusDist)} dark={dark}>
+						<SubControlBlock accentColor={accentColor} label={t('fx.subcontrol.zPlane')} value={formatZPlane(focusDist)} dark={dark}>
 							<div onPointerDown={stopProp} onClick={stopProp} style={{ position: 'relative' }}>
 								<DiMiniSlider dark={dark} value={focusDist} min={-5000} max={5000} step={50}
 									onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusDist', value: v } })} />
@@ -323,13 +331,13 @@ export function FXRow({ fxKey, iconName, label, isActive, dark, onToggle, level 
 							</div>
 						</SubControlBlock>
 					) : (
-						<SubControlBlock accentColor={accentColor} label="Layer" value="" dark={dark}>
+						<SubControlBlock accentColor={accentColor} label={t('fx.subcontrol.layer')} value="" dark={dark}>
 							<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}
 								onPointerDown={stopProp} onClick={stopProp}>
 								<DiActionButton name="chevron-left" dark={dark}
 									onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusTargetLayer', value: Math.max(0, focusTargetLayer - 1) } })} />
 								<span style={{ flex: 1, textAlign: 'center', fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
-									Layer {focusTargetLayer + 1}
+									{t('fx.dof.layerDynamic', { n: focusTargetLayer + 1 })}
 								</span>
 								<DiActionButton name="chevron-right" dark={dark}
 									onClick={() => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusTargetLayer', value: Math.min(state.totalLayers - 1, focusTargetLayer + 1) } })} />

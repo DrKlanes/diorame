@@ -1,5 +1,6 @@
 import { toast } from 'sonner@2.0.3';
 import { useStrata } from '../components/strata/StrataContext';
+import { useTranslation } from '../i18n';
 
 /**
  * Returns an async function that fetches /examples/diorame_onboarding.dior,
@@ -12,6 +13,7 @@ import { useStrata } from '../components/strata/StrataContext';
  */
 export function useLoadExampleScene(): () => Promise<void> {
 	const { dispatch } = useStrata();
+	const { t } = useTranslation();
 
 	return async () => {
 		try {
@@ -23,8 +25,8 @@ export function useLoadExampleScene(): () => Promise<void> {
 			if (!Array.isArray(json.shapes)) throw new Error('Missing or invalid shapes data');
 			dispatch({ type: 'LOAD_PROJECT', payload: json });
 		} catch (err) {
-			toast.error('Failed to load example', {
-				description: err instanceof Error ? err.message : 'Please check your connection',
+			toast.error(t('toast.example.errorTitle'), {
+				description: err instanceof Error ? err.message : t('toast.example.errorDesc'),
 				duration: 3000,
 			});
 			throw err;

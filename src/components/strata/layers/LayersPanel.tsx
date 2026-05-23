@@ -17,12 +17,14 @@ import { LayerRow } from './LayerRow';
 import { LayerDotsRail } from './LayerDotsRail';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
+import { useTranslation } from '../../../i18n';
 
 const STORAGE_KEY = 'diorame-layers-expanded';
 
 export function LayersPanel() {
 	const { state, dispatch } = useStrata();
 	const { dark } = useTheme();
+	const { t } = useTranslation();
 	const [isExpanded, setIsExpanded] = useState(() => {
 		try { return localStorage.getItem(STORAGE_KEY) === 'true'; }
 		catch { return false; }
@@ -107,32 +109,32 @@ export function LayersPanel() {
 					{/* Chevron expand — top position */}
 					<DiActionButton name="chevron-left"
 						onClick={() => toggle(true)}
-						dark={dark} tooltip="Expand layers panel" />
+						dark={dark} tooltip={t('layers.panel.expand')} />
 					<HSep />
 					<DiActionButton
 						name={isCurrentHidden ? 'eye-off' : 'eye'}
 						onClick={() => dispatch({ type: 'TOGGLE_LAYER_VISIBILITY', payload: currentLayerIndex } as any)}
 						dark={dark}
 						active={isCurrentHidden}
-						tooltip={isCurrentHidden ? 'Show layer' : 'Hide layer'}
+						tooltip={t(isCurrentHidden ? 'layers.action.show' : 'layers.action.hide')}
 					/>
 					<DiActionButton name="duplicate"
 						onClick={() => dispatch({ type: 'DUPLICATE_LAYER', payload: currentLayerIndex } as any)}
-						dark={dark} tooltip="Duplicate layer" disabled={!canDuplicate} />
+						dark={dark} tooltip={t('layers.action.duplicate')} disabled={!canDuplicate} />
 					<DiActionButton name="trash"
 						onClick={() => dispatch({ type: 'DELETE_CURRENT_LAYER' } as any)}
-						dark={dark} tooltip="Delete layer" disabled={!canDelete} danger={true} />
+						dark={dark} tooltip={t('layers.action.delete')} disabled={!canDelete} danger={true} />
 					<HSep />
 					<DiActionButton name="arrow-up"
 						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex + 1 } } as any)}
-						dark={dark} tooltip="Move layer up" disabled={isAtTop} />
+						dark={dark} tooltip={t('layers.action.moveUp')} disabled={isAtTop} />
 					<DiActionButton name="arrow-down"
 						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex - 1 } } as any)}
-						dark={dark} tooltip="Move layer down" disabled={isAtBottom} />
+						dark={dark} tooltip={t('layers.action.moveDown')} disabled={isAtBottom} />
 					<HSep />
 					<DiActionButton name="plus"
 						onClick={() => dispatch({ type: 'NEXT_LAYER' } as any)}
-						dark={dark} tooltip="Add layer" disabled={!canAdd} />
+						dark={dark} tooltip={t('layers.action.add')} disabled={!canAdd} />
 				</DiPill>
 				<LayerDotsRail inline />
 			</div>
@@ -177,7 +179,7 @@ export function LayersPanel() {
 						color: dk(dark, T.dark, T.textDark),
 						flexGrow: 1,
 					}}>
-						Layers
+						{t('layers.panel.header')}
 					</span>
 					<span style={{
 						fontFamily: TYPE.numericValue.family,
@@ -189,10 +191,10 @@ export function LayersPanel() {
 					</span>
 					<DiActionButton name="plus"
 						onClick={() => dispatch({ type: 'NEXT_LAYER' } as any)}
-						dark={dark} tooltip="Add layer" disabled={!canAdd} />
+						dark={dark} tooltip={t('layers.action.add')} disabled={!canAdd} />
 					<DiActionButton name="chevron-right"
 						onClick={() => toggle(false)}
-						dark={dark} tooltip="Collapse" />
+						dark={dark} tooltip={t('layers.panel.collapse')} />
 				</div>
 
 				{/* Z-axis + Layer list */}
@@ -256,16 +258,16 @@ export function LayersPanel() {
 				}}>
 					<DiActionButton name="duplicate"
 						onClick={() => dispatch({ type: 'DUPLICATE_LAYER', payload: currentLayerIndex } as any)}
-						dark={dark} tooltip="Duplicate layer" disabled={!canDuplicate} />
+						dark={dark} tooltip={t('layers.action.duplicate')} disabled={!canDuplicate} />
 					<DiActionButton name="arrow-up"
 						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex + 1 } } as any)}
-						dark={dark} tooltip="Move layer up" disabled={isAtTop} />
+						dark={dark} tooltip={t('layers.action.moveUp')} disabled={isAtTop} />
 					<DiActionButton name="arrow-down"
 						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex - 1 } } as any)}
-						dark={dark} tooltip="Move layer down" disabled={isAtBottom} />
+						dark={dark} tooltip={t('layers.action.moveDown')} disabled={isAtBottom} />
 					<DiActionButton name="trash"
 						onClick={() => dispatch({ type: 'DELETE_CURRENT_LAYER' } as any)}
-						dark={dark} tooltip="Delete layer" disabled={!canDelete} danger={true} />
+						dark={dark} tooltip={t('layers.action.delete')} disabled={!canDelete} danger={true} />
 				</div>
 			</DiPanel>
 			<LayerDotsRail inline />

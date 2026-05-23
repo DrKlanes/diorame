@@ -4,6 +4,7 @@ import { DiPill, DiVSep } from '../../../design-system';
 import { DiActionButton } from '../../../design-system';
 import { ToolBtn, LineModeButton } from './_shared';
 import type { ToolType } from '../StrataContext';
+import { useTranslation } from '../../../i18n';
 
 interface DrawingToolbarProps { dark: boolean; }
 
@@ -11,7 +12,7 @@ type ModifierConfig = {
 	iconName: string;
 	field: keyof ModifierFields;
 	actionType: string;
-	tooltip: string;
+	tooltipKey: string;
 };
 
 // Only the boolean modifier fields we read from state
@@ -25,20 +26,20 @@ type ModifierFields = {
 
 const MODIFIERS_BY_TOOL: Record<ToolType, ModifierConfig[]> = {
 	'brush': [
-		{ iconName: 'symmetry',    field: 'isSymmetryEnabled', actionType: 'TOGGLE_SYMMETRY',       tooltip: 'Symmetry' },
-		{ iconName: 'draw-inside', field: 'isDrawInside',      actionType: 'TOGGLE_DRAW_INSIDE',    tooltip: 'Draw Inside' },
-		{ iconName: 'draw-behind', field: 'isDrawBehind',      actionType: 'TOGGLE_DRAW_BEHIND',    tooltip: 'Draw Behind' },
-		{ iconName: 'organic',     field: 'isOrganicMode',     actionType: 'TOGGLE_ORGANIC_MODE',   tooltip: 'Organic' },
-		{ iconName: 'smooth',      field: 'blobSmoothing',     actionType: 'TOGGLE_BLOB_SMOOTHING', tooltip: 'Smooth' },
+		{ iconName: 'symmetry',    field: 'isSymmetryEnabled', actionType: 'TOGGLE_SYMMETRY',       tooltipKey: 'bottombar.draw.mod.symmetry' },
+		{ iconName: 'draw-inside', field: 'isDrawInside',      actionType: 'TOGGLE_DRAW_INSIDE',    tooltipKey: 'bottombar.draw.mod.drawInside' },
+		{ iconName: 'draw-behind', field: 'isDrawBehind',      actionType: 'TOGGLE_DRAW_BEHIND',    tooltipKey: 'bottombar.draw.mod.drawBehind' },
+		{ iconName: 'organic',     field: 'isOrganicMode',     actionType: 'TOGGLE_ORGANIC_MODE',   tooltipKey: 'bottombar.draw.mod.organic' },
+		{ iconName: 'smooth',      field: 'blobSmoothing',     actionType: 'TOGGLE_BLOB_SMOOTHING', tooltipKey: 'bottombar.draw.mod.smooth' },
 	],
 	'line': [
-		{ iconName: 'symmetry',    field: 'isSymmetryEnabled', actionType: 'TOGGLE_SYMMETRY',    tooltip: 'Symmetry' },
-		{ iconName: 'draw-inside', field: 'isDrawInside',      actionType: 'TOGGLE_DRAW_INSIDE', tooltip: 'Draw Inside' },
-		{ iconName: 'draw-behind', field: 'isDrawBehind',      actionType: 'TOGGLE_DRAW_BEHIND', tooltip: 'Draw Behind' },
+		{ iconName: 'symmetry',    field: 'isSymmetryEnabled', actionType: 'TOGGLE_SYMMETRY',    tooltipKey: 'bottombar.draw.mod.symmetry' },
+		{ iconName: 'draw-inside', field: 'isDrawInside',      actionType: 'TOGGLE_DRAW_INSIDE', tooltipKey: 'bottombar.draw.mod.drawInside' },
+		{ iconName: 'draw-behind', field: 'isDrawBehind',      actionType: 'TOGGLE_DRAW_BEHIND', tooltipKey: 'bottombar.draw.mod.drawBehind' },
 	],
 	'eraser': [
-		{ iconName: 'symmetry', field: 'isSymmetryEnabled', actionType: 'TOGGLE_SYMMETRY',       tooltip: 'Symmetry' },
-		{ iconName: 'smooth',   field: 'blobSmoothing',     actionType: 'TOGGLE_BLOB_SMOOTHING', tooltip: 'Smooth' },
+		{ iconName: 'symmetry', field: 'isSymmetryEnabled', actionType: 'TOGGLE_SYMMETRY',       tooltipKey: 'bottombar.draw.mod.symmetry' },
+		{ iconName: 'smooth',   field: 'blobSmoothing',     actionType: 'TOGGLE_BLOB_SMOOTHING', tooltipKey: 'bottombar.draw.mod.smooth' },
 	],
 	'text': [],
 	'move': [],
@@ -48,6 +49,7 @@ const TOOLS_WITH_DOT: ToolType[] = ['brush', 'line', 'text'];
 
 export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 	const tool = state.tool;
 	const paletteColor = state.palette?.[state.currentColorIndex] ?? null;
 
@@ -71,26 +73,26 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 			<div style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
 				<ToolBtn
 					name="blob" onClick={() => setTool('brush')} dark={dark}
-					active={tool === 'brush'} tooltip="Blob" shortcut="B"
+					active={tool === 'brush'} tooltip={t('bottombar.draw.tool.blob')} shortcut="B"
 					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('brush')}
 				/>
 				<ToolBtn
 					name="brush" onClick={() => setTool('line')} dark={dark}
-					active={tool === 'line'} tooltip="Brush" shortcut="L"
+					active={tool === 'line'} tooltip={t('bottombar.draw.tool.brush')} shortcut="L"
 					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('line')}
 				/>
 				<ToolBtn
 					name="eraser" onClick={() => setTool('eraser')} dark={dark}
-					active={tool === 'eraser'} tooltip="Eraser" shortcut="E"
+					active={tool === 'eraser'} tooltip={t('bottombar.draw.tool.eraser')} shortcut="E"
 				/>
 				<ToolBtn
 					name="text" onClick={() => setTool('text')} dark={dark}
-					active={tool === 'text'} tooltip="Text" shortcut="T"
+					active={tool === 'text'} tooltip={t('bottombar.draw.tool.text')} shortcut="T"
 					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('text')}
 				/>
 				<ToolBtn
 					name="move" onClick={() => setTool('move')} dark={dark}
-					active={tool === 'move'} tooltip="Move" shortcut="M"
+					active={tool === 'move'} tooltip={t('bottombar.draw.tool.move')} shortcut="M"
 				/>
 			</div>
 			{/* VSep estructural: siempre visible, comunica que la zona derecha es expansible */}
@@ -106,7 +108,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 						active={modifierFields[mod.field]}
 						activeStyle="wash"
 						iconWeight="secondary"
-						tooltip={mod.tooltip}
+						tooltip={t(mod.tooltipKey)}
 					/>
 				))}
 				{tool === 'line' && <><DiVSep dark={dark} /><LineModeButton dark={dark} /></>}

@@ -2,9 +2,11 @@ import React from 'react';
 import { DiPill, DiVSep } from '../../../design-system';
 import { useStrata } from '../StrataContext';
 import { DiActionButton } from '../../../design-system';
+import { useTranslation } from '../../../i18n';
 
 export function ModeSwitchPill({ dark }: { dark: boolean }) {
 	const { state, dispatch } = useStrata();
+	const { t } = useTranslation();
 	const isDrawing    = state.mode === 'drawing';
 	const isCinematic  = state.mode === 'cinematic';
 	const uiHidden     = state.isUIHidden;
@@ -17,8 +19,8 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				dark={dark}
 				active={isDrawing}
 				activeStyle="solid"
-				label="Draw"
-				tooltip="Draw mode"
+				label={t('topbar.mode.draw')}
+				tooltip={t('topbar.mode.drawTooltip')}
 			/>
 			<DiActionButton
 				name="view-mode"
@@ -26,8 +28,8 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				dark={dark}
 				active={isCinematic}
 				activeStyle="solid"
-				label="View"
-				tooltip="View mode"
+				label={t('topbar.mode.view')}
+				tooltip={t('topbar.mode.viewTooltip')}
 			/>
 			<DiVSep dark={dark} />
 			<DiActionButton
@@ -38,7 +40,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				activeStyle="solid"
 				iconWeight="secondary"
 				iconSize={14}
-				tooltip="Hide UI"
+				tooltip={t('topbar.mode.hideUi')}
 			/>
 		</DiPill>
 	);

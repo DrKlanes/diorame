@@ -1,5 +1,14 @@
 import { toast } from 'sonner@2.0.3';
 import { Shape } from '../../../types/strataTypes';
+import { getFilenameBase } from '../../../constants/project';
+import type { TranslationParams } from '../../../i18n';
+
+/**
+ * t function signature. Passed from the caller (a React component that has
+ * access to useTranslation) so toast messages translate with the current UI language.
+ * Why: exportHandlers are pure functions outside React's component tree.
+ */
+type TFunction = (key: string, params?: TranslationParams) => string;
 
 /**
  * Exports the current canvas frame as a PNG file.
@@ -7,22 +16,23 @@ import { Shape } from '../../../types/strataTypes';
 export const exportAsPNG = (
 	canvas: HTMLCanvasElement,
 	projectName: string,
-	onFinish: () => void
+	onFinish: () => void,
+	t: TFunction,
 ): void => {
 	try {
 		const link = document.createElement('a');
-		const sanitizedName = projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+		const sanitizedName = getFilenameBase(projectName);
 		link.download = `${sanitizedName}-${Date.now()}.png`;
 		link.href = canvas.toDataURL('image/png', 1.0);
 		link.click();
-		toast.success('Snapshot saved!', {
-			description: 'PNG image downloaded successfully',
+		toast.success(t('toast.export.snapshot.successTitle'), {
+			description: t('toast.export.snapshot.successDesc'),
 			duration: 2000,
 		});
 	} catch (e) {
 		console.error("Export PNG failed", e);
-		toast.error('Failed to save snapshot', {
-			description: 'Please try again',
+		toast.error(t('toast.export.snapshot.errorTitle'), {
+			description: t('common.pleaseRetry'),
 			duration: 3000,
 		});
 	}
@@ -37,7 +47,8 @@ export const exportAsSVG = async (
 	exportRequest: 'svg' | 'svgz',
 	shapes: Shape[],
 	projectName: string,
-	onFinish: () => void
+	onFinish: () => void,
+	t: TFunction,
 ): Promise<void> => {
 	try {
 		// All shapes including erasers (erasers become SVG mask content)
@@ -281,7 +292,7 @@ export const exportAsSVG = async (
 		const svgContent = parts.join('');
 
 		// Download SVG or SVGZ
-		const sanitizedName = projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+		const sanitizedName = getFilenameBase(projectName);
 		let blob: Blob;
 		let filename: string;
 
@@ -307,14 +318,14 @@ export const exportAsSVG = async (
 		URL.revokeObjectURL(url);
 
 		const isCompressed = exportRequest === 'svgz' && typeof CompressionStream !== 'undefined';
-		toast.success('Vector exported!', {
-			description: isCompressed ? 'SVGZ file downloaded successfully' : 'SVG file downloaded successfully',
+		toast.success(t('toast.export.vector.successTitle'), {
+			description: isCompressed ? t('toast.export.vector.successDescSvgz') : t('toast.export.vector.successDescSvg'),
 			duration: 2000,
 		});
 	} catch (e) {
 		console.error("Export SVG failed", e);
-		toast.error('Failed to export vector', {
-			description: 'Please try again',
+		toast.error(t('toast.export.vector.errorTitle'), {
+			description: t('common.pleaseRetry'),
 			duration: 3000,
 		});
 	}
@@ -329,7 +340,8 @@ export const exportAsMP4 = (
 	canvas: HTMLCanvasElement,
 	projectName: string,
 	recordedChunksRef: { current: Blob[] },
-	onFinish: () => void
+	onFinish: () => void,
+	t: TFunction,
 ): void => {
 	try {
 		const stream = canvas.captureStream(60);
@@ -351,12 +363,12 @@ export const exportAsMP4 = (
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
-			const sanitizedName = projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+			const sanitizedName = getFilenameBase(projectName);
 			a.download = `${sanitizedName}-${Date.now()}.${ext}`;
 			a.click();
 			URL.revokeObjectURL(url);
-			toast.success('Animation saved!', {
-				description: 'Video loop downloaded successfully',
+			toast.success(t('toast.export.animation.successTitle'), {
+				description: t('toast.export.animation.successDesc'),
 				duration: 2000,
 			});
 			onFinish();
@@ -365,8 +377,8 @@ export const exportAsMP4 = (
 		setTimeout(() => { recorder.stop(); }, 6000);
 	} catch (e) {
 		console.error("Export MP4 failed", e);
-		toast.error('Failed to save animation', {
-			description: 'Please try again',
+		toast.error(t('toast.export.animation.errorTitle'), {
+			description: t('common.pleaseRetry'),
 			duration: 3000,
 		});
 		onFinish();

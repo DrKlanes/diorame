@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { DiModal } from './index';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { Ico } from '../../../design-system';
+import { useTranslation } from '../../../i18n';
 import type { ExportType } from '../../../types/strataTypes';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
+// labelKey resolves to translated string via t() at render time.
 // Fallbacks: 'video' → 'record', 'code' → 'export' (not yet in ICONS — pre-Fase 8 task)
-const EXPORT_CONFIG: Record<ExportType, { icon: string; label: string }> = {
-	png:  { icon: 'camera', label: 'Capturing snapshot…'  },
-	mp4:  { icon: 'record', label: 'Rendering animation…' },
-	svg:  { icon: 'export', label: 'Exporting vector…'    },
-	svgz: { icon: 'export', label: 'Exporting vector…'    },
+const EXPORT_CONFIG: Record<ExportType, { icon: string; labelKey: string }> = {
+	png:  { icon: 'camera', labelKey: 'modal.export.snapshot'  },
+	mp4:  { icon: 'record', labelKey: 'modal.export.animation' },
+	svg:  { icon: 'export', labelKey: 'modal.export.vector'    },
+	svgz: { icon: 'export', labelKey: 'modal.export.vector'    },
 };
 
 // ── ExportProgressV2 ──────────────────────────────────────────────────────────
@@ -23,6 +25,7 @@ interface ExportProgressV2Props {
 }
 
 export function ExportProgressV2({ open, exportType, dark }: ExportProgressV2Props) {
+	const { t } = useTranslation();
 	const [progress, setProgress] = useState(0);
 
 	useEffect(() => {
@@ -36,7 +39,8 @@ export function ExportProgressV2({ open, exportType, dark }: ExportProgressV2Pro
 		return () => clearInterval(interval);
 	}, [open]);
 
-	const { icon, label } = EXPORT_CONFIG[exportType];
+	const { icon, labelKey } = EXPORT_CONFIG[exportType];
+	const label      = t(labelKey);
 	const muted      = dk(dark, T.muted,  T.textDarkMuted) as string;
 	const labelColor = dk(dark, T.dark,   T.textDark)      as string;
 	const trackColor = dk(dark, T.border, T.borderDark)    as string;
