@@ -81,7 +81,7 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 ### 2.5 LayersPanel
 
 **Componente:** `LayersPanel` (`layers/LayersPanel.tsx`)  
-**Posición:** `absolute top-72 right-12 z-50` (bajo TopBar, deja espacio para ColorPalette debajo)  
+**Posición:** `absolute top-50% right-12 z-50 translateY(-50%)` (centrado vertical viewport, a la derecha)  
 **Visibilidad:** `mode === 'drawing'` && `!isUIHidden`  
 **Estado collapsed/expanded:** persiste en `localStorage` key `'diorame-layers-expanded'`
 
@@ -106,7 +106,7 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 - `DragEndEvent` → `MOVE_LAYER_TO { fromIndex, toIndex }`
 - FLIP animation via Framer Motion `layout`
 
-**Responsive height**: Panel anclado a `top:72` (bajo TopBar). `max-height: calc(100vh - 372px)` en modo expanded; rows list interna con `max-height: calc(100vh - 496px)` y `overflowY:auto`. Fórmula: `100vh − 72 (top offset) − 12 (bottom margin) − 280 (ColorPalette grad worst-case) − 8 (gap) = 100vh − 372`. Header y Z-axis visualization siempre visibles con `flexShrink:0`. Scrollbar: clase `.di-panel-scroll` (`globals.css`) — 4px, gray neutral, compatible light+dark.
+**Responsive height**: Panel centrado verticalmente con `translateY(-50%)`. `max-height: calc(100vh - 420px)` en DiPanel; rows list interna con `max-height: calc(100vh - 540px)` y `overflowY:auto`. Fórmula: `100vh − 64 (TopBar+margin) − 356 (BottomBar+ColorPalette+margin) = 100vh − 420`; rows = DiPanel − ~118px (header+circles+actions) ≈ 100vh − 540. Header y Z-axis visualization siempre visibles con `flexShrink:0`. Scrollbar: clase `.di-panel-scroll` (`globals.css`) — 4px, gray neutral, compatible light+dark.
 
 **LayerRow** (`layers/LayerRow.tsx`) — por capa:
 - Handle drag (useSortable, `touchAction: 'none'`)
