@@ -154,112 +154,108 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 						</DiModal.SecondaryAction>
 					</div>
 
-					{/* Zona 3 — Recursos */}
+					{/* NIVEL 1 — morado, peso 500, sin underline (C22) */}
 					<div style={{
 						textAlign: 'left',
-						fontFamily: TYPE.controlLabel.family,
-						fontWeight: TYPE.controlLabel.weight,
+						fontFamily: TYPE.numericValue.family,
+						fontWeight: 500,
 						fontSize: TYPE.numericValue.size,
 						lineHeight: 1.5,
 					}}>
-						<ResourceLink href="https://www.youtube.com/watch?v=Ieb280ncEfA">Watch tutorial</ResourceLink>
-						<span style={{ color: muted, margin: '0 6px' }}>·</span>
-						<ResourceLink href="https://ko-fi.com/dumaker">Support on Ko-fi 🤍</ResourceLink>
-					</div>
-
-					{/* Zona 4 — Créditos */}
-					<div style={{
-						marginTop: 12,
-						display: 'flex',
-						flexDirection: 'column',
-						gap: 4,
-						textAlign: 'left',
-						fontFamily: TYPE.numericValue.family,
-						fontWeight: TYPE.numericValue.weight,
-						fontSize: TYPE.numericValue.size,
-						color: muted,
-					}}>
 						<div>
+							<ResourceLink href="https://www.youtube.com/watch?v=Ieb280ncEfA">Watch tutorial</ResourceLink>
+							<span style={{ color: muted, margin: '0 6px' }}>·</span>
 							<ResourceLink href="https://www.instagram.com/dumaker/">by @dumaker</ResourceLink>
 						</div>
 						<div>
-							<ResourceLink href="https://apps.apple.com/pa/app/graintouch/id6740813845" mutedColor={muted}>Inspired by Graintouch</ResourceLink>
+							<ResourceLink href="https://ko-fi.com/dumaker">Support on Ko-fi 🤍</ResourceLink>
 						</div>
 					</div>
 
-					{/* Zona 5 — Footer bug report */}
-					<div style={{ marginTop: 12, textAlign: 'left' }}>
-						<button
-							onClick={handleBugReport}
-							style={{
-								background: 'none',
-								border: 'none',
-								cursor: 'pointer',
-								fontFamily: TYPE.numericValue.family,
-								fontWeight: 400,
-								fontSize: TYPE.numericValue.size,
-								color: muted,
-								textDecoration: 'underline',
-								padding: 0,
-							}}
-						>
-							Found a bug? Email me.
-						</button>
-					</div>
-					
-					{/* Zona 6 — Keyboard shortcuts (collapsible, desktop-only) */}
-					{hasFinePointer() && (
-						<div style={{ marginTop: 16 }}>
+					{/* NIVEL 2 — muted, peso 400, underline permanente (C22) */}
+					<div style={{
+						marginTop: 14,
+						textAlign: 'left',
+						fontFamily: TYPE.numericValue.family,
+						fontWeight: 400,
+						fontSize: TYPE.numericValue.size,
+						lineHeight: 1.5,
+						color: muted,
+					}}>
+						<div>
+							<ResourceLink href="https://apps.apple.com/pa/app/graintouch/id6740813845" mutedColor={muted}>Inspired by Graintouch</ResourceLink>
+						</div>
+						<div>
 							<button
-								onClick={() => setShortcutsExpanded(!shortcutsExpanded)}
+								onClick={handleBugReport}
 								style={{
-									background: 'transparent',
+									background: 'none',
 									border: 'none',
 									cursor: 'pointer',
-									display: 'flex',
-									alignItems: 'center',
-									gap: 6,
-									color: muted,
 									fontFamily: TYPE.numericValue.family,
 									fontWeight: 400,
 									fontSize: TYPE.numericValue.size,
+									color: muted,
+									textDecoration: 'underline',
 									padding: 0,
 								}}
 							>
-								<span style={{ textDecoration: 'underline' }}>Keyboard shortcuts</span>
-								<Ico name={shortcutsExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={muted} />
+								Found a bug? Email me.
 							</button>
-							{shortcutsExpanded && (
-								<div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 220, overflowY: 'auto' }}>
-									{SHORTCUTS_GROUPS.map(group => (
-										<div key={group.category}>
-											<div style={{
-												fontFamily: TYPE.controlLabel.family,
-												fontWeight: 400,
-												fontSize: 10,
-												textTransform: 'uppercase' as const,
-												letterSpacing: '0.06em',
-												color: muted,
-												marginBottom: 6,
-											}}>
-												{group.category}
-											</div>
-											{group.items.map(item => (
-												<div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, fontSize: 10, lineHeight: '20px' }}>
-													<span style={{ fontFamily: TYPE.controlLabel.family, fontWeight: 400, fontSize: 10, color: dk(dark, T.dark, T.textDark) as string }}>
-														{item.label}
-													</span>
-													<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: 500, fontSize: 10, color: muted, letterSpacing: '0.02em' }}>
-														{formatShortcut(item.shortcut)}
-													</span>
-												</div>
-											))}
-										</div>
-									))}
-								</div>
-							)}
 						</div>
-					)}
+						{hasFinePointer() && (
+							<div>
+								<button
+									onClick={() => setShortcutsExpanded(!shortcutsExpanded)}
+									style={{
+										background: 'transparent',
+										border: 'none',
+										cursor: 'pointer',
+										display: 'inline-flex',
+										alignItems: 'center',
+										gap: 6,
+										color: muted,
+										fontFamily: TYPE.numericValue.family,
+										fontWeight: 400,
+										fontSize: TYPE.numericValue.size,
+										padding: 0,
+									}}
+								>
+									<span style={{ textDecoration: 'underline' }}>Keyboard shortcuts</span>
+									<Ico name={shortcutsExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={muted} />
+								</button>
+								{shortcutsExpanded && (
+									<div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 220, overflowY: 'auto' }}>
+										{SHORTCUTS_GROUPS.map(group => (
+											<div key={group.category}>
+												<div style={{
+													fontFamily: TYPE.controlLabel.family,
+													fontWeight: 400,
+													fontSize: 10,
+													textTransform: 'uppercase' as const,
+													letterSpacing: '0.06em',
+													color: muted,
+													marginBottom: 6,
+												}}>
+													{group.category}
+												</div>
+												{group.items.map(item => (
+													<div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, fontSize: 10, lineHeight: '20px' }}>
+														<span style={{ fontFamily: TYPE.controlLabel.family, fontWeight: 400, fontSize: 10, color: dk(dark, T.dark, T.textDark) as string }}>
+															{item.label}
+														</span>
+														<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: 500, fontSize: 10, color: muted, letterSpacing: '0.02em' }}>
+															{formatShortcut(item.shortcut)}
+														</span>
+													</div>
+												))}
+											</div>
+										))}
+									</div>
+								)}
+							</div>
+						)}
+					</div>
 
 				</div>
 			</div>

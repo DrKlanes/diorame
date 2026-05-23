@@ -37,8 +37,9 @@ export function CompositionGuideOverlay() {
 		const GRID_SPACING_WORLD = 50;
 		const DOT_RADIUS_BASE = 1;
 		const DOT_RADIUS_MAX = 2.5;
-		const dotColor = state.isDarkMode ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.28)';
-		const centerColor = state.isDarkMode ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)';
+		// Solid white + mix-blend-mode: difference on canvas → dots invert against any backdrop.
+		const dotColor = 'white';
+		const centerColor = 'white';
 
 		const draw = () => {
 			const w = container.clientWidth;
@@ -95,7 +96,7 @@ export function CompositionGuideOverlay() {
 		const ro = new ResizeObserver(() => draw());
 		ro.observe(container);
 		return () => ro.disconnect();
-	}, [active, state.drawingZoom, state.drawingPan, state.isDarkMode]);
+	}, [active, state.drawingZoom, state.drawingPan]);
 
 	if (!active) return null;
 
@@ -109,7 +110,7 @@ export function CompositionGuideOverlay() {
 				pointerEvents: 'none',
 			}}
 		>
-			<canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+			<canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%', mixBlendMode: 'difference' }} />
 		</div>
 	);
 }
