@@ -130,7 +130,7 @@ const initialState: AppState = {
   postProcessing: {
       grain: 0.5,
       vignette: 0.5,
-      distortion: 0,
+      distortion: -0.3, // Non-neutral default: ensures visible effect on first toggle
       dof: 0.5,
       focusDist: 800, // Default focus distance
       focusTargetLayer: -1, // Default: -1 (Manual/Free Focus). 0+ = Lock to Layer Index
