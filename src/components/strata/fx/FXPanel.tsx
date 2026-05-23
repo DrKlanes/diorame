@@ -12,7 +12,7 @@ type FXEntry = { fxKey: keyof PostProcessingEnabled; iconName: string; label: st
 const TEXTURE_FX: FXEntry[] = [
 	{ fxKey: 'grain',  iconName: 'fx-grain',  label: 'Grain',  level: 1,         valueKey: 'grain' },
 	{ fxKey: 'grunge', iconName: 'fx-grunge', label: 'Grunge', level: 'discrete', valueKey: 'grungeIntensity', discreteOptions: [{ label: 'Subtle', value: 0 }, { label: 'Medium', value: 0.5 }, { label: 'Intense', value: 1 }] },
-	{ fxKey: 'riso',   iconName: 'fx-riso',   label: 'RISO',   level: 1,         valueKey: 'riso' },
+	{ fxKey: 'riso',   iconName: 'fx-riso',   label: 'Riso',   level: 1,         valueKey: 'riso' },
 ];
 
 const LENS_FX: FXEntry[] = [
@@ -20,7 +20,7 @@ const LENS_FX: FXEntry[] = [
 	{ fxKey: 'chromaticAberration', iconName: 'fx-chroma',     label: 'Chromatic Ab.', level: 1,         valueKey: 'chromaticAberration' },
 	{ fxKey: 'distortion',          iconName: 'fx-distortion', label: 'Distortion',    level: 'bipolar', valueKey: 'distortion' },
 	{ fxKey: 'glow',                iconName: 'fx-glow',       label: 'Glow',          level: 1,         valueKey: 'glow' },
-	{ fxKey: 'dof',                 iconName: 'fx-dof',        label: 'Blur / DoF',    level: 'dof', valueKey: 'dof' },
+	{ fxKey: 'dof',                 iconName: 'fx-dof',        label: 'DoF',    level: 'dof', valueKey: 'dof' },
 ];
 
 const ATMOSPHERE_FX: FXEntry[] = [
@@ -145,16 +145,14 @@ export function FXPanel() {
 							FX
 						</span>
 						{!fxMasterEnabled && (
-							<span style={{
+							<> · <span style={{
 								fontFamily: TYPE.numericValue.family,
 								fontSize: TYPE.numericValue.size,
 								fontWeight: 600,
 								color: dk(dark, T.danger, T.dangerDark),
 								marginRight: 4,
 								flexShrink: 0,
-							}}>
-								· off
-							</span>
+							}}>off</span></>
 						)}
 						<div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 							<FXMasterBtn dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} />

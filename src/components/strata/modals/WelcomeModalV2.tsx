@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DiModal } from './index';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { Ico } from '../../../design-system';
+import { Wordmark } from '../../../design-system/Wordmark';
 import { APP_VERSION } from '../../../constants/version';
 import { getWelcomeIllustration } from './welcomeIllustrations';
 import logoImg from 'figma:asset/logo-symbol.png';
@@ -120,7 +121,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 								letterSpacing: '-0.01em',
 								color: dk(dark, T.dark, T.textDark) as string,
 							}}>
-								diorame<span style={{ fontSize: '0.6em' }}>™</span>
+								<Wordmark />
 							</span>
 							<span style={{
 								fontFamily: TYPE.numericValue.family,

@@ -25,3 +25,4 @@ export { DiPanel } from './DiPanel';
 export { DiDivider } from './DiDivider';
 export { DiActionButton } from './DiActionButton';
 export { DiBadge } from './DiBadge';
+export { Wordmark } from './Wordmark';

@@ -2,6 +2,7 @@ import React from 'react';
 import logoImg from 'figma:asset/logo-symbol.png';
 import { Ico } from '../../../design-system';
 import { T } from '../../../design-system/tokens';
+import { Wordmark } from '../../../design-system/Wordmark';
 
 // ── Theme CSS — prefers-color-scheme ─────────────────────────────────────────
 // Values are hardcoded because this component renders before ThemeProvider.
@@ -73,7 +74,7 @@ export function MobileBlockScreenV2() {
 					letterSpacing: '-0.02em',
 					marginBottom:  32,
 				}}>
-					diorame<sup style={{ fontSize: '0.55em', verticalAlign: 'super', fontWeight: 400 }}>&#8482;</sup>
+					<Wordmark />
 				</div>
 
 				{/* Device icons — tablet + monitor, T.purple = rgb(154, 15, 249) */}

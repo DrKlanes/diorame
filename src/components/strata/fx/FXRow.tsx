@@ -11,7 +11,7 @@ const DEPTH_LABEL_MAP: Record<number, string> = {
 	6:  '8-Color',
 	8:  'Retro',
 	10: 'Hi-Color',
-	12: 'Handheld',
+	12: 'Pocket',
 	14: 'Stylized',
 	16: 'Original',
 };
