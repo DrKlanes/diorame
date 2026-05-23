@@ -184,7 +184,7 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 					fontFamily: TYPE.numericValue.family,
 					fontSize: TYPE.numericValue.size,
 					fontWeight: TYPE.numericValue.weight,
-					color: session.content.length > 130 ? dk(dark, T.warning, T.warningDark) as string : mutedColor,
+					color: session.content.length > 130 ? T.warning : mutedColor,
 				}}>
 					{session.content.length}/{MAX_CHARS}
 				</span>
