@@ -248,6 +248,8 @@ DiPill: [CameraPresetsZone] | tall-vsep | [CameraSpeedZone]
 | Atmosphere | Stop Motion | discrete | Light / Medium / Heavy |
 | Atmosphere | Pixel Art | pixel | Size + Depth + Dither sub-sliders |
 
+**`fx-pixel` icon (V1):** 9 rects filled, mosaico 3×3 con patrón de opacidad alternado (full / 0.4). Sustituye el diseño anterior stroke-based (2×2 + 2 pequeños). `fill="currentColor" stroke="none"` en todos los rects.
+
 Cada `FXRow` tiene 4 estados visuales:
 
 | Estado | `isActive` | `wasInSnapshot` | Render |

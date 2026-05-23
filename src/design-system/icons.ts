@@ -69,12 +69,15 @@ export const ICONS: Record<string, string> = {
 	'fx-dof':
 		`<ellipse cx="12" cy="12" rx="8" ry="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="12" cy="12" rx="4" ry="2.5" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.5"/><line x1="4" y1="12" x2="2" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="20" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'fx-pixel':
-		`<rect x="4" y="4" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.5"/>` +
-		`<rect x="10" y="4" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.5"/>` +
-		`<rect x="4" y="10" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.5"/>` +
-		`<rect x="10" y="10" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.5"/>` +
-		`<rect x="16" y="4" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1" opacity="0.4"/>` +
-		`<rect x="16" y="15" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1" opacity="0.4"/>`,
+		`<rect x="4" y="4" width="5" height="5" fill="currentColor" stroke="none"/>` +
+		`<rect x="10" y="4" width="5" height="5" fill="currentColor" stroke="none" opacity="0.4"/>` +
+		`<rect x="16" y="4" width="4" height="5" fill="currentColor" stroke="none"/>` +
+		`<rect x="4" y="10" width="5" height="5" fill="currentColor" stroke="none" opacity="0.4"/>` +
+		`<rect x="10" y="10" width="5" height="5" fill="currentColor" stroke="none"/>` +
+		`<rect x="16" y="10" width="4" height="5" fill="currentColor" stroke="none" opacity="0.4"/>` +
+		`<rect x="4" y="16" width="5" height="4" fill="currentColor" stroke="none" opacity="0.4"/>` +
+		`<rect x="10" y="16" width="5" height="4" fill="currentColor" stroke="none"/>` +
+		`<rect x="16" y="16" width="4" height="4" fill="currentColor" stroke="none" opacity="0.4"/>`,
 
 	// ─── Camera Presets ──────────────────────────────────────────────────
 	'cam-forward':
