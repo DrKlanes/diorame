@@ -172,11 +172,11 @@ export const diTokens = {
 	spinnerBorder: "border-slate-400",
 	spinnerTop:    "border-t-slate-900",
 
-	// --- Marca (hardcodeados en Controls.tsx) ---
+	// --- Brand colors ---
 	brandPurple:      "#9a0ff9",
 	brandPurpleHover: "#8a0fe0",
 
-	// --- Dialog de complejidad (hardcodeados en ControlsExport.tsx / ControlsCinematic.tsx) ---
+	// --- Dialog de complejidad ---
 	dialogText:         "#353535",
 	dialogTextMuted:    "#666666",
 	dialogProceedBg:    "rgb(3,2,19)",

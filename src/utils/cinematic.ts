@@ -1,5 +1,5 @@
 // Cinematic camera conversion utilities
-// Extracted from ControlsCinematic.tsx — formulas are identical to the legacy component.
+// Extracted from ControlsCinematic.tsx legacy (removed in v2.0.0, formulas preserved).
 // FL raw reference: 800 = 50mm
 
 export const flToMm = (fl: number): number => Math.round((fl / 800) * 50);
