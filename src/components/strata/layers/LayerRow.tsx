@@ -28,7 +28,7 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 	} = useSortable({ id: sortableId });
 
 	const zIndex = index * -BASE_DEPTH_STEP;
-	const isEmpty = !state.shapes.some(s => s.zIndex === zIndex);
+	const isEmpty = !state.shapes.some(s => s.zIndex === zIndex && !s.isEraser);
 	const isActive = index === state.currentLayerIndex;
 	const isHidden = state.hiddenLayers.includes(index);
 	const isLocked3D = state.locked3DLayers.includes(index); // TODO: replace with anchor/pin icon
