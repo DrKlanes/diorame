@@ -37,9 +37,11 @@ export function CompositionGuideOverlay() {
 		const GRID_SPACING_WORLD = 50;
 		const DOT_RADIUS_BASE = 1;
 		const DOT_RADIUS_MAX = 2.5;
-		// Solid white + mix-blend-mode: difference on canvas → dots invert against any backdrop.
-		const dotColor = 'white';
-		const centerColor = 'white';
+		// White with reduced alpha + mix-blend-mode: exclusion on canvas →
+		// replicates Photoshop "Exclusion + ~20% fill" recipe: soft gray over light
+		// paper, gray-white over dark canvas, visible on any backdrop without glare.
+		const dotColor = 'rgba(255, 255, 255, 0.4)';
+		const centerColor = 'rgba(255, 255, 255, 0.6)';
 
 		const draw = () => {
 			const w = container.clientWidth;
@@ -110,7 +112,7 @@ export function CompositionGuideOverlay() {
 				pointerEvents: 'none',
 			}}
 		>
-			<canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%', mixBlendMode: 'difference' }} />
+			<canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%', mixBlendMode: 'exclusion' }} />
 		</div>
 	);
 }
