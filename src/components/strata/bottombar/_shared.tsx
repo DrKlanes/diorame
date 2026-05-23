@@ -12,10 +12,11 @@ interface ToolBtnProps {
 	tooltip?: string;
 	paletteColor?: string | null;
 	showDot?: boolean;
+	shortcut?: string;
 }
 
 export function ToolBtn({
-	name, onClick, dark, active = false, tooltip, paletteColor, showDot = false,
+	name, onClick, dark, active = false, tooltip, paletteColor, showDot = false, shortcut,
 }: ToolBtnProps) {
 	return (
 		<div style={{ position: 'relative', display: 'inline-block' }}>
