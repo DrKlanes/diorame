@@ -35,7 +35,8 @@ export function CompositionGuideOverlay() {
 		if (!canvas || !container) return;
 
 		const GRID_SPACING_WORLD = 50;
-		const DOT_RADIUS = 1;
+		const DOT_RADIUS_BASE = 1;
+		const DOT_RADIUS_MAX = 2.5;
 		const dotColor = state.isDarkMode ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.28)';
 		const centerColor = state.isDarkMode ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)';
 
@@ -52,6 +53,7 @@ export function CompositionGuideOverlay() {
 			ctx.clearRect(0, 0, w, h);
 
 			const zoom = state.drawingZoom || 1;
+			const dotRadius = Math.min(DOT_RADIUS_BASE + Math.max(0, zoom - 1) * 0.5, DOT_RADIUS_MAX);
 			const panX = state.drawingPan?.x || 0;
 			const panY = state.drawingPan?.y || 0;
 
@@ -73,7 +75,7 @@ export function CompositionGuideOverlay() {
 					const sx = w / 2 + wx * zoom + panX;
 					const sy = h / 2 + wy * zoom + panY;
 					ctx.beginPath();
-					ctx.arc(sx, sy, DOT_RADIUS, 0, Math.PI * 2);
+					ctx.arc(sx, sy, dotRadius, 0, Math.PI * 2);
 					ctx.fill();
 				}
 			}
