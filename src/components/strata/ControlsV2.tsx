@@ -10,6 +10,7 @@ import { BottomBar } from './bottombar/BottomBar';
 import { LayersPanel } from './layers/LayersPanel';
 import { ColorPalette } from './colorpalette/ColorPalette';
 import { ResetViewPill } from './viewport/ResetViewPill';
+import { GridTogglePill } from './viewport/GridTogglePill';
 import { FXPanel } from './fx/FXPanel';
 import { ToolOptionsPanel } from './drawing/ToolOptionsPanel';
 import { TextSessionPanel } from './text/TextSessionPanel';
@@ -93,6 +94,9 @@ export function ControlsV2() {
 
 					{/* ResetViewPill — fixed left-8 bottom-8, drawing mode only */}
 					<ResetViewPill />
+
+					{/* GridTogglePill — fixed left-8 bottom-56 (stacked above ResetView), drawing mode only */}
+					<GridTogglePill />
 
 					{/* FXPanel — absolute top-50% right-12, cinematic mode only */}
 					<FXPanel />

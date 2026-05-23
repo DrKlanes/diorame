@@ -67,6 +67,7 @@ type Action =
   | { type: 'TOGGLE_UI' }
   | { type: 'SET_DRAWING_ACTIVE'; payload: boolean }
   | { type: 'TOGGLE_SYMMETRY' }
+  | { type: 'TOGGLE_GRID' }
   | { type: 'SET_PALETTE_MODE'; payload: 'flat' | 'grad' }
   | { type: 'SET_PALETTE_GRADIENT_ANGLE'; payload: number }
   | { type: 'SET_PALETTE_GRADIENT_INTENSITY'; payload: number }
@@ -182,6 +183,7 @@ const initialState: AppState = {
   isUIHidden: false,
   isDrawing: false,
   isSymmetryEnabled: false,
+  gridEnabled: typeof window !== 'undefined' && window.localStorage?.getItem('diorame-grid-enabled') === 'true',
   paletteMode: 'flat',
   layerRenderModes: {},
   layerGradParams: {},
@@ -250,6 +252,11 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, isDrawing: action.payload };
     case 'TOGGLE_SYMMETRY':
       return { ...state, isSymmetryEnabled: !state.isSymmetryEnabled };
+    case 'TOGGLE_GRID': {
+      const newValue = !state.gridEnabled;
+      try { window.localStorage.setItem('diorame-grid-enabled', String(newValue)); } catch (_) { /* private mode */ }
+      return { ...state, gridEnabled: newValue };
+    }
     case 'TOGGLE_DRAW_BEHIND':
       if (state.tool === 'eraser') return state;
       const willBeBehind = !state.isDrawBehind;

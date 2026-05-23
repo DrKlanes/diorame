@@ -148,7 +148,19 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 **Visibilidad:** `mode === 'drawing'` && `!isUIHidden`  
 **Contenido:** DiPill con un solo botón: ícono `target` → `RESET_DRAWING_VIEW` (resetea drawingZoom a 1, drawingPan a {0,0})
 
-### 2.9 Overlays condicionales en DRAW
+### 2.9 GridTogglePill + CompositionGuideOverlay
+
+**Componente UI:** `GridTogglePill` (`viewport/GridTogglePill.tsx`)  
+**Posición:** `fixed left-8 bottom-56 z-50` — stacked encima de ResetViewPill (gap 8px sobre los 40px del DiPill + 8 padding)  
+**Visibilidad:** `mode === 'drawing'` && `!isUIHidden`  
+**Contenido:** DiPill con un solo botón: ícono `guide` (3x3 dots) → `TOGGLE_GRID`. `active={state.gridEnabled}` con `activeStyle="wash"`.
+
+**Overlay renderer:** `CompositionGuideOverlay` (`viewport/CompositionGuideOverlay.tsx`) — `<canvas>` separado montado en `App.tsx` como sibling de `<StrataCanvas />` (NO dentro). Position `absolute inset-0 z-1, pointer-events:none`. Se filtra por `mode/isUIHidden/gridEnabled` y retorna `null` cuando off (no monta DOM).  
+**Render:** grid de puntos en world coords con spacing 50 unidades + marker más grande en world (0,0). Dark mode usa rgba blanco. Reactiva a `drawingZoom`, `drawingPan`, `isDarkMode`, container resize (vía ResizeObserver).  
+**Export-safe:** PNG (`canvas.toDataURL`) y MP4 (`MediaRecorder` sobre canvas.captureStream) operan sobre el canvas principal de StrataCanvas. El overlay es un canvas DOM distinto → grid nunca aparece en exports.  
+**Persistencia:** `state.gridEnabled` se lee/escribe en `localStorage["diorame-grid-enabled"]` desde el reducer (`TOGGLE_GRID` case). NO se serializa en `.dior` (whitelist explícita en useSaveLoad y LOAD_PROJECT).
+
+### 2.10 Overlays condicionales en DRAW
 
 **ToolOptionsPanel** (`drawing/ToolOptionsPanel.tsx`):
 - Renderiza `null` si `state.tool !== 'line'`

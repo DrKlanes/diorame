@@ -118,6 +118,7 @@ export interface AppState {
   isUIHidden: boolean; // New: Toggle UI visibility in View mode
   isDrawing: boolean; // Transient: true during active pointer drag (draw/move/orbit). NOT serialized.
   isSymmetryEnabled: boolean; // New: Vertical Symmetry Mode
+  gridEnabled: boolean; // Composition guide overlay (3x3 dot grid). Persisted in localStorage. NOT serialized in .dior.
   paletteMode: 'flat' | 'grad'; // New: Palette Rendering Mode
   layerRenderModes: Record<number, 'flat' | 'grad'>; // New: Per-layer render mode
   layerGradParams: Record<number, { angle: number; intensity: number; gradType?: 'solid' | 'fade' }>; // New: Per-layer gradient params

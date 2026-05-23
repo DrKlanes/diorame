@@ -253,6 +253,16 @@ export const ICONS: Record<string, string> = {
 	'sparkles':
 		`<path d="m12 3-1.91 5.81a2 2 0 0 1-1.28 1.28L3 12l5.81 1.91a2 2 0 0 1 1.28 1.28L12 21l1.91-5.81a2 2 0 0 1 1.28-1.28L21 12l-5.81-1.91a2 2 0 0 1-1.28-1.28z"/>` +
 		`<path d="M5 3v4M19 17v4M3 5h4M17 19h4"/>`,
+	'guide':
+		`<circle cx="6" cy="6" r="1" fill="currentColor"/>` +
+		`<circle cx="12" cy="6" r="1" fill="currentColor"/>` +
+		`<circle cx="18" cy="6" r="1" fill="currentColor"/>` +
+		`<circle cx="6" cy="12" r="1" fill="currentColor"/>` +
+		`<circle cx="12" cy="12" r="1" fill="currentColor"/>` +
+		`<circle cx="18" cy="12" r="1" fill="currentColor"/>` +
+		`<circle cx="6" cy="18" r="1" fill="currentColor"/>` +
+		`<circle cx="12" cy="18" r="1" fill="currentColor"/>` +
+		`<circle cx="18" cy="18" r="1" fill="currentColor"/>`,
 	'info':
 		`<circle cx="12" cy="12" r="10"/>` +
 		`<path d="M12 16v-4"/><path d="M12 8h.01"/>`,
@@ -303,5 +313,5 @@ export const ICON_SECTIONS: Record<string, string[]> = {
 	'Drawing Tools':       ['brush', 'eraser', 'blob', 'text', 'move', 'symmetry', 'smooth', 'organic', 'draw-behind', 'draw-inside', 'rotate', 'pen', 'line-tapered', 'line-uniform', 'line-ink'],
 	'File Operations':     ['new', 'open', 'save', 'export', 'undo', 'redo'],
 	'Layer Panel':         ['eye', 'eye-off', 'layers', 'duplicate', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal'],
-	'Custom Additions':    ['align-left', 'align-center', 'align-right', 'lock', 'unlock', 'pin', 'pin-off', 'flip-horizontal', 'maximize', 'minimize', 'cloud-fog', 'globe', 'scan-line', 'zoom-in', 'target', 'loader', 'monitor', 'tablet', 'sparkles', 'info', 'check', 'x', 'plus', 'hand', 'move-vertical', 'move-horizontal', 'aperture', 'wand', 'tornado', 'image'],
+	'Custom Additions':    ['align-left', 'align-center', 'align-right', 'lock', 'unlock', 'pin', 'pin-off', 'flip-horizontal', 'maximize', 'minimize', 'cloud-fog', 'globe', 'scan-line', 'zoom-in', 'target', 'loader', 'monitor', 'tablet', 'sparkles', 'guide', 'info', 'check', 'x', 'plus', 'hand', 'move-vertical', 'move-horizontal', 'aperture', 'wand', 'tornado', 'image'],
 };
