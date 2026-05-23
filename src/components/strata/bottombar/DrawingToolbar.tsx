@@ -71,26 +71,26 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 			<div style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
 				<ToolBtn
 					name="blob" onClick={() => setTool('brush')} dark={dark}
-					active={tool === 'brush'} tooltip="Blob"
+					active={tool === 'brush'} tooltip="Blob" shortcut="B"
 					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('brush')}
 				/>
 				<ToolBtn
 					name="brush" onClick={() => setTool('line')} dark={dark}
-					active={tool === 'line'} tooltip="Brush"
+					active={tool === 'line'} tooltip="Brush" shortcut="L"
 					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('line')}
 				/>
 				<ToolBtn
 					name="eraser" onClick={() => setTool('eraser')} dark={dark}
-					active={tool === 'eraser'} tooltip="Eraser"
+					active={tool === 'eraser'} tooltip="Eraser" shortcut="E"
 				/>
 				<ToolBtn
 					name="text" onClick={() => setTool('text')} dark={dark}
-					active={tool === 'text'} tooltip="Text"
+					active={tool === 'text'} tooltip="Text" shortcut="T"
 					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('text')}
 				/>
 				<ToolBtn
 					name="move" onClick={() => setTool('move')} dark={dark}
-					active={tool === 'move'} tooltip="Move"
+					active={tool === 'move'} tooltip="Move" shortcut="M"
 				/>
 			</div>
 			{/* VSep estructural: siempre visible, comunica que la zona derecha es expansible */}

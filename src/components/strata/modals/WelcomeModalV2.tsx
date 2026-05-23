@@ -5,6 +5,7 @@ import { Ico } from '../../../design-system';
 import { APP_VERSION } from '../../../constants/version';
 import { getWelcomeIllustration } from './welcomeIllustrations';
 import logoImg from 'figma:asset/logo-symbol.png';
+import { hasFinePointer, formatShortcut, SHORTCUTS_GROUPS } from '../../../utils/keyboardShortcuts';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -23,57 +24,6 @@ function ResourceLink({ href, children }: { href: string; children: React.ReactN
 		</a>
 	);
 }
-
-// ── Helpers (keyboard shortcuts section) ───────────────────────────────────
-
-function hasFinePointer(): boolean {
-	return typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
-}
-
-function isMac(): boolean {
-	return typeof navigator !== 'undefined' && /mac/i.test(navigator.platform || navigator.userAgent);
-}
-
-function formatShortcut(s: string): string {
-	if (isMac()) {
-		return s
-			.replace(/Ctrl\+Shift\+/g, '⇧⌘')
-			.replace(/Ctrl\+/g, '⌘')
-			.replace(/Shift\+/g, '⇧')
-			.replace(/Alt\+/g, '⌥');
-	}
-	return s;
-}
-
-const SHORTCUTS_GROUPS = [
-	{ category: 'File', items: [
-		{ label: 'Save project', shortcut: 'Ctrl+S' },
-		{ label: 'Export SVG', shortcut: 'Ctrl+E' },
-		{ label: 'Export SVGZ', shortcut: 'Ctrl+Shift+E' },
-	] },
-	{ category: 'Edit', items: [
-		{ label: 'Undo', shortcut: 'Ctrl+Z' },
-		{ label: 'Redo', shortcut: 'Ctrl+Y' },
-	] },
-	{ category: 'View', items: [
-		{ label: 'Dark mode', shortcut: 'Shift+D' },
-		{ label: 'Open shortcuts', shortcut: 'Shift+?' },
-	] },
-	{ category: 'Tools (Draw)', items: [
-		{ label: 'Brush', shortcut: 'B' },
-		{ label: 'Line', shortcut: 'L' },
-		{ label: 'Eraser', shortcut: 'E' },
-		{ label: 'Text', shortcut: 'T' },
-		{ label: 'Move', shortcut: 'M' },
-	] },
-	{ category: 'Layers (Draw)', items: [
-		{ label: 'Previous layer', shortcut: '[' },
-		{ label: 'Next layer', shortcut: ']' },
-	] },
-	{ category: 'Canvas (Draw)', items: [
-		{ label: 'Reset view', shortcut: 'Space' },
-	] },
-];
 
 // ── WelcomeModalV2 ────────────────────────────────────────────────────────────
 
@@ -206,7 +156,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 						textAlign: 'left',
 						fontFamily: TYPE.controlLabel.family,
 						fontWeight: TYPE.controlLabel.weight,
-						fontSize: TYPE.controlLabel.size,
+						fontSize: TYPE.numericValue.size,
 						lineHeight: 1.5,
 					}}>
 						<ResourceLink href="https://www.youtube.com/watch?v=Ieb280ncEfA">Watch tutorial</ResourceLink>
@@ -269,9 +219,9 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 									alignItems: 'center',
 									gap: 6,
 									color: muted,
-									fontFamily: TYPE.controlLabel.family,
-									fontWeight: TYPE.controlLabel.weight,
-									fontSize: TYPE.controlLabel.size,
+									fontFamily: TYPE.numericValue.family,
+									fontWeight: TYPE.numericValue.weight,
+									fontSize: TYPE.numericValue.size,
 									padding: 0,
 								}}
 							>

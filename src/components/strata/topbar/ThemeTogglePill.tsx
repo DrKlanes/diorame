@@ -25,6 +25,7 @@ export function ThemeTogglePill({ dark }: { dark: boolean }) {
 				active={dark}
 				activeStyle="wash"
 				tooltip="Dark mode"
+				shortcut="Shift+D"
 			/>
 		</DiPill>
 	);

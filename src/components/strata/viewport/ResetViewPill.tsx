@@ -19,6 +19,7 @@ export function ResetViewPill() {
 			onClick={() => dispatch({ type: 'RESET_DRAWING_VIEW' } as any)}
 			dark={dark}
 			tooltip="Reset view"
+			shortcut="Space"
 		/>
 	);
 }

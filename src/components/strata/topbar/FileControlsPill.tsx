@@ -58,15 +58,15 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 			<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
 				<DiActionButton name="new"  onClick={handleNew}         dark={dark} tooltip="New" />
 				<DiActionButton name="open" onClick={triggerFileSelect} dark={dark} tooltip="Open" />
-				<DiActionButton name="save" onClick={handleSaveProject} dark={dark} tooltip="Save" />
+				<DiActionButton name="save" onClick={handleSaveProject} dark={dark} tooltip="Save" shortcut="Ctrl+S" />
 				<div ref={exportBtnRef}>
-					<DiActionButton name="export" onClick={() => setExportOpen(v => !v)} dark={dark} tooltip="Export SVG" />
+					<DiActionButton name="export" onClick={() => setExportOpen(v => !v)} dark={dark} tooltip="Export SVG" shortcut="Ctrl+E" />
 				</div>
 
 				<DiVSep dark={dark} />
 
-				<DiActionButton name="undo" onClick={handleUndo} dark={dark} tooltip="Undo (Ctrl+Z)" disabled={state.historyIndex <= 0} />
-				<DiActionButton name="redo" onClick={handleRedo} dark={dark} tooltip="Redo (Ctrl+Y)" disabled={state.historyIndex >= state.history.length - 1} />
+				<DiActionButton name="undo" onClick={handleUndo} dark={dark} tooltip="Undo" shortcut="Ctrl+Z" disabled={state.historyIndex <= 0} />
+				<DiActionButton name="redo" onClick={handleRedo} dark={dark} tooltip="Redo" shortcut="Ctrl+Y" disabled={state.historyIndex >= state.history.length - 1} />
 
 				<DiVSep dark={dark} />
 
@@ -113,7 +113,7 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 						{filename}
 					</button>
 				)}
-				<DiActionButton name="info" onClick={() => dispatch({ type: 'TOGGLE_WELCOME_MODAL' })} dark={dark} tooltip="About Diorame" />
+				<DiActionButton name="info" onClick={() => dispatch({ type: 'TOGGLE_WELCOME_MODAL' })} dark={dark} tooltip="About Diorame" shortcut="Shift+?" />
 			</DiPill>
 			<DiSelectorPopover
 				anchorRef={exportBtnRef}

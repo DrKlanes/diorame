@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Ico } from './Ico';
 import { T, TYPE, RADIUS, dk } from './tokens';
+import { hasFinePointer, formatShortcut } from '../utils/keyboardShortcuts';
 
-export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, label, tooltip, disabled = false, danger = false }: {
+export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, label, tooltip, shortcut, disabled = false, danger = false }: {
 	name: string;
 	onClick: () => void;
 	dark: boolean;
@@ -12,10 +13,16 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 	iconSize?: number;
 	label?: string;
 	tooltip?: string;
+	shortcut?: string;
 	disabled?: boolean;
 	danger?: boolean;
 }) {
 	const [hov, setHov] = useState(false);
+	const titleText: string | undefined = (() => {
+		if (!shortcut || !hasFinePointer()) return tooltip;
+		const fmt = formatShortcut(shortcut);
+		return tooltip ? tooltip + ' · ' + fmt : fmt;
+	})();
 	const activeBg = activeStyle === 'solid'
 		? T.purple
 		: dk(dark, T.purple10, T.purple20);
@@ -40,7 +47,7 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 			onClick={onClick}
 			onPointerEnter={() => setHov(true)}
 			onPointerLeave={() => setHov(false)}
-			title={tooltip}
+			title={titleText}
 			style={{
 				width: label ? 'auto' : 30,
 				height: 30,

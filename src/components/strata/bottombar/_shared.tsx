@@ -26,6 +26,7 @@ export function ToolBtn({
 				active={active}
 				activeStyle="solid"
 				tooltip={tooltip}
+				shortcut={shortcut}
 			/>
 			{active && showDot && paletteColor && (
 				<div style={{
