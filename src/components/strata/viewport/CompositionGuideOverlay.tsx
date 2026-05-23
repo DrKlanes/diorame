@@ -108,7 +108,12 @@ export function CompositionGuideOverlay() {
 			style={{
 				position: 'absolute',
 				inset: 0,
-				zIndex: 1,
+				// NO zIndex here: a positioned element with z-index creates a new stacking
+				// context, which would isolate the canvas's mix-blend-mode from StrataCanvas
+				// (its sibling backdrop). Without zIndex, the wrapper stays in the parent's
+				// stacking context, so the blend mode can see StrataCanvas's painted pixels.
+				// Layer order is preserved by DOM order: this overlay is rendered after
+				// StrataCanvas (z-0) in App.tsx, so it paints on top naturally.
 				pointerEvents: 'none',
 			}}
 		>
