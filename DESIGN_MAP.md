@@ -141,22 +141,18 @@ La separación de responsabilidades sigue la jerarquía: `ControlsV2` (root) →
 - `locked3D` && no activa → `boxShadow: inset 0 0 0 1px T.purple`
 - Click → `SET_CURRENT_LAYER payload: i`
 
-### 2.8 ResetViewPill
+### 2.8 ViewPills (GridTogglePill + ResetViewPill)
 
-**Componente:** `ResetViewPill` (`viewport/ResetViewPill.tsx`)  
-**Posición:** `fixed left-8 bottom-8 z-50`  
-**Visibilidad:** `mode === 'drawing'` && `!isUIHidden`  
-**Contenido:** DiPill con un solo botón: ícono `target` → `RESET_DRAWING_VIEW` (resetea drawingZoom a 1, drawingPan a {0,0})
+**Contenedor (ControlsV2):** `fixed left-8 bottom-8 z-50` — `DiPill dark padding="5px"`. Filtrado por `mode === 'drawing'` (dentro del bloque `!isUIHidden`). Ambos átomos son `DiActionButton` desnudos sin wrapper ni filtros propios.  
+**Orden:** `GridTogglePill` (izquierda) + `ResetViewPill` (derecha)
 
-### 2.9 GridTogglePill + CompositionGuideOverlay
+**`GridTogglePill`** (`viewport/GridTogglePill.tsx`): ícono `guide` (3x3 dots) → `TOGGLE_GRID`. `active={state.gridEnabled}` con `activeStyle="wash"`.  
+**`ResetViewPill`** (`viewport/ResetViewPill.tsx`): ícono `target` → `RESET_DRAWING_VIEW` (resetea drawingZoom a 1, drawingPan a {0,0}).
 
-**Componente UI:** `GridTogglePill` (`viewport/GridTogglePill.tsx`)  
-**Posición:** `fixed left-8 bottom-56 z-50` — stacked encima de ResetViewPill (gap 8px sobre los 40px del DiPill + 8 padding)  
-**Visibilidad:** `mode === 'drawing'` && `!isUIHidden`  
-**Contenido:** DiPill con un solo botón: ícono `guide` (3x3 dots) → `TOGGLE_GRID`. `active={state.gridEnabled}` con `activeStyle="wash"`.
+### 2.9 CompositionGuideOverlay
 
 **Overlay renderer:** `CompositionGuideOverlay` (`viewport/CompositionGuideOverlay.tsx`) — `<canvas>` separado montado en `App.tsx` como sibling de `<StrataCanvas />` (NO dentro). Position `absolute inset-0 z-1, pointer-events:none`. Se filtra por `mode/isUIHidden/gridEnabled` y retorna `null` cuando off (no monta DOM).  
-**Render:** grid de puntos en world coords con spacing 50 unidades + marker más grande en world (0,0). Dark mode usa rgba blanco. Reactiva a `drawingZoom`, `drawingPan`, `isDarkMode`, container resize (vía ResizeObserver).  
+**Render:** grid de puntos en world coords con spacing 50 unidades + marker más grande en world (0,0). Light mode opacidad `rgba(0,0,0,0.28)`, dark mode `rgba(255,255,255,0.18)`. Reactiva a `drawingZoom`, `drawingPan`, `isDarkMode`, container resize (vía ResizeObserver).  
 **Export-safe:** PNG (`canvas.toDataURL`) y MP4 (`MediaRecorder` sobre canvas.captureStream) operan sobre el canvas principal de StrataCanvas. El overlay es un canvas DOM distinto → grid nunca aparece en exports.  
 **Persistencia:** `state.gridEnabled` se lee/escribe en `localStorage["diorame-grid-enabled"]` desde el reducer (`TOGGLE_GRID` case). NO se serializa en `.dior` (whitelist explícita en useSaveLoad y LOAD_PROJECT).
 
@@ -288,7 +284,7 @@ El componente `ResetViewPill` retorna `null` cuando `mode !== 'drawing'`. **En V
 
 Átomos que viven en el ControlsV2 root y no dependen de modo.
 
-**isUIHidden — filtro a nivel root (post-10.4-fix):** El filtro `isUIHidden` se aplica en `ControlsV2` a nivel root, no átomo por átomo. Cuando `isUIHidden === true`, todos los átomos se desmontan juntos con `{!isUIHidden && <>...</>}`. Excepción: los 4 átomos que ya tenían filtro propio (LayersPanel, LayerDotsRail, ResetViewPill, FXPanel) lo conservan por compatibilidad con usos futuros fuera de ControlsV2. Cuando `isUIHidden === true`, se renderiza solo el mini-button persistente (ver abajo).
+**isUIHidden — filtro a nivel root (post-10.4-fix):** El filtro `isUIHidden` se aplica en `ControlsV2` a nivel root, no átomo por átomo. Cuando `isUIHidden === true`, todos los átomos se desmontan juntos con `{!isUIHidden && <>...</>}`. Excepción: los 3 átomos que ya tenían filtro propio (LayersPanel, LayerDotsRail, FXPanel) lo conservan por compatibilidad con usos futuros fuera de ControlsV2. Cuando `isUIHidden === true`, se renderiza solo el mini-button persistente (ver abajo).
 
 **Mini-button persistente:** Cuando `state.isUIHidden === true`, aparece un `DiActionButton` con icono `eye` en `position:fixed bottom:16 right:16 z-index:100`. Opacidad base 0.25, opacidad hover 1 (transition 0.2s). Click → `TOGGLE_UI`. Este botón NO existe en DOM cuando la UI está visible; el toggle primario es el botón hide-ui de ModeSwitchPill.
 
@@ -301,7 +297,7 @@ El componente `ResetViewPill` retorna `null` cuando `mode !== 'drawing'`. **En V
 | Slot derecho (theme) | `ThemeTogglePill` | `absolute top-12 right-12` |
 | BottomBar | `BottomBar.tsx` | `absolute bottom-12 center` — cambia contenido por modo |
 
-**LayerDotsRail y ResetViewPill** son visibles solo en DRAW pero son atoms sin deps de modo en su código — retornan null automáticamente. Desde ControlsV2 root se pueden montar incondicionalmente.
+**LayerDotsRail** es visible solo en DRAW pero es un atom sin deps de modo en su código — retorna null automáticamente. Desde ControlsV2 root se puede montar incondicionalmente. **ViewPills** (GridTogglePill + ResetViewPill) tienen el modo guardado en su wrapper de ControlsV2.
 
 ---
 
@@ -335,7 +331,7 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 | Bottom-right (abs bottom-12 right-12) | `ColorPalette`: palette selector + grad controls + swatches | (no existe) |
 | Right-center (abs top-50% right-12) | (no existe) | `FXPanel`: 12 efectos en 3 grupos |
 | Right edge center (fixed right-8 center) | `LayerDotsRail`: dots de navegación rápida | (no existe) |
-| Bottom-left (fixed left-8 bottom-8) | `ResetViewPill`: target icon → RESET_DRAWING_VIEW | (no existe, ver §3.4) |
+| Bottom-left (fixed left-8 bottom-8) | `ViewPills`: `GridTogglePill` (guide → TOGGLE_GRID) + `ResetViewPill` (target → RESET_DRAWING_VIEW) | (no existe, ver §3.4) |
 | Overlay line tool | `ToolOptionsPanel` (si tool==='line'): mode + thickness | (no existe) |
 | Overlay text session | `TextSessionPanel` (si textSession.isActive): fuentes·align·textarea | (no existe) |
 | Hide UI active (isUIHidden) | Solo mini-button: fixed bottom-right, opacity 0.25/1 hover | Solo mini-button: fixed bottom-right, opacity 0.25/1 hover |

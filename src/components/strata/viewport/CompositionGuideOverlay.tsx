@@ -36,7 +36,7 @@ export function CompositionGuideOverlay() {
 
 		const GRID_SPACING_WORLD = 50;
 		const DOT_RADIUS = 1;
-		const dotColor = state.isDarkMode ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.18)';
+		const dotColor = state.isDarkMode ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.28)';
 		const centerColor = state.isDarkMode ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)';
 
 		const draw = () => {

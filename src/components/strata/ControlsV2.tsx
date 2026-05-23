@@ -4,7 +4,7 @@ import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
 import { useSaveLoad } from '../../hooks/useSaveLoad';
 import { useExportFlow } from '../../hooks/useExportFlow';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
-import { DiActionButton } from '../../design-system';
+import { DiActionButton, DiPill } from '../../design-system';
 import { TopBar } from './topbar/TopBar';
 import { BottomBar } from './bottombar/BottomBar';
 import { LayersPanel } from './layers/LayersPanel';
@@ -92,11 +92,20 @@ export function ControlsV2() {
 					<ColorPalette />
 
 
-					{/* ResetViewPill — fixed left-8 bottom-8, drawing mode only */}
-					<ResetViewPill />
-
-					{/* GridTogglePill — fixed left-8 bottom-56 (stacked above ResetView), drawing mode only */}
-					<GridTogglePill />
+					{/* ViewPills — fixed left-8 bottom-8, drawing mode only. Single DiPill: GridToggle (left) + ResetView (right) */}
+					{state.mode === 'drawing' && (
+						<div style={{
+							position: 'fixed',
+							left: 8,
+							bottom: 8,
+							zIndex: 50,
+						}}>
+							<DiPill dark={dark} padding="5px">
+								<GridTogglePill />
+								<ResetViewPill />
+							</DiPill>
+						</div>
+					)}
 
 					{/* FXPanel — absolute top-50% right-12, cinematic mode only */}
 					<FXPanel />
