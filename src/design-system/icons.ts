@@ -21,6 +21,10 @@ export const ICONS: Record<string, string> = {
 		`<path d="M14 7L9 12L14 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'chevron-right':
 		`<path d="M10 7L15 12L10 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+	'chevron-up':
+		`<path d="M7 14L12 9L17 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+	'chevron-down':
+		`<path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 
 	// ─── Export ──────────────────────────────────────────────────────────
 	'snapshot':
@@ -308,7 +312,7 @@ export const ICONS: Record<string, string> = {
  * Both steps are needed for the icon to appear in the preview gallery.
  */
 export const ICON_SECTIONS: Record<string, string[]> = {
-	'Navigation & Global': ['draw-mode', 'view-mode', 'hide-ui', 'sun', 'moon', 'chevron-left', 'chevron-right'],
+	'Navigation & Global': ['draw-mode', 'view-mode', 'hide-ui', 'sun', 'moon', 'chevron-left', 'chevron-right', 'chevron-up', 'chevron-down'],
 	'Export':              ['snapshot', 'record'],
 	'FX':                  ['fx-grain', 'fx-vignette', 'fx-chroma', 'fx-fog', 'fx-glow', 'fx-riso', 'fx-distortion', 'fx-wiggle', 'fx-grunge', 'fx-particles', 'fx-dof', 'fx-pixel'],
 	'Camera Presets':      ['cam-forward', 'cam-spiral', 'cam-yoyo', 'cam-pulse', 'cam-twist', 'cam-arc', 'cam-crane', 'cam-truck', 'cam-orbit', 'cam-zoom'],

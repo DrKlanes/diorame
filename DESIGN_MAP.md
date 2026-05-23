@@ -317,6 +317,8 @@ El componente `ResetViewPill` retorna `null` cuando `mode !== 'drawing'`. **En V
 
 **WelcomeModalV2 — footer (Zonas 3-4-5):** Recursos, créditos y bug report alineados a la **izquierda** (`textAlign: 'left'`). CTAs (Zona 2) mantienen `alignItems: 'stretch'`. Zona 5: "Found a bug? Email me." (button nativo, 12px, color muted, underline on hover). Construye el `mailto:` en runtime con `['moises','dumaker.com'].join('@')` para evitar que el email quede concatenado en el bundle minificado (verificado post-build: `moises@dumaker.com` no aparece en los assets).
 
+**WelcomeModalV2 — Zona 6 — Keyboard shortcuts (C17):** Sección colapsable al final del panel derecho, después de Zona 5. Solo se monta si `hasFinePointer()` (matchMedia pointer:fine) — invisible en tablet/touch. Estado local `shortcutsExpanded` (inicia en false). Header: "Keyboard shortcuts" + `Ico chevron-up/down` (toggle). Expandido: lista con `maxHeight:220 overflowY:auto`, 6 categorías (File, Edit, View, Tools/Draw, Layers/Draw, Canvas/Draw), cada categoría con header uppercase 10px muted + items flex space-between label/shortcut. Shortcuts formateados por `formatShortcut()`: en Mac usa ⌘⇧⌥ (regex `Ctrl+Shift+` → `⇧⌘`, `Ctrl+` → `⌘`, `Shift+` → `⇧`), en Windows/Linux sin cambios. Helpers a nivel módulo: `hasFinePointer()`, `isMac()`, `formatShortcut()`. `chevron-up`/`chevron-down` añadidos al banco de iconos (`icons.ts`, sección Navigation & Global).
+
 Todos importados desde `src/components/strata/modals/index.ts`.
 
 ---

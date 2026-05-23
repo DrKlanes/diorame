@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DiModal } from './index';
 import { T, TYPE, dk } from '../../../design-system/tokens';
+import { Ico } from '../../../design-system';
 import { APP_VERSION } from '../../../constants/version';
 import { getWelcomeIllustration } from './welcomeIllustrations';
 import logoImg from 'figma:asset/logo-symbol.png';
@@ -23,6 +24,57 @@ function ResourceLink({ href, children }: { href: string; children: React.ReactN
 	);
 }
 
+// ── Helpers (keyboard shortcuts section) ───────────────────────────────────
+
+function hasFinePointer(): boolean {
+	return typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
+}
+
+function isMac(): boolean {
+	return typeof navigator !== 'undefined' && /mac/i.test(navigator.platform || navigator.userAgent);
+}
+
+function formatShortcut(s: string): string {
+	if (isMac()) {
+		return s
+			.replace(/Ctrl\+Shift\+/g, '⇧⌘')
+			.replace(/Ctrl\+/g, '⌘')
+			.replace(/Shift\+/g, '⇧')
+			.replace(/Alt\+/g, '⌥');
+	}
+	return s;
+}
+
+const SHORTCUTS_GROUPS = [
+	{ category: 'File', items: [
+		{ label: 'Save project', shortcut: 'Ctrl+S' },
+		{ label: 'Export SVG', shortcut: 'Ctrl+E' },
+		{ label: 'Export SVGZ', shortcut: 'Ctrl+Shift+E' },
+	] },
+	{ category: 'Edit', items: [
+		{ label: 'Undo', shortcut: 'Ctrl+Z' },
+		{ label: 'Redo', shortcut: 'Ctrl+Y' },
+	] },
+	{ category: 'View', items: [
+		{ label: 'Dark mode', shortcut: 'Shift+D' },
+		{ label: 'Open shortcuts', shortcut: 'Shift+?' },
+	] },
+	{ category: 'Tools (Draw)', items: [
+		{ label: 'Brush', shortcut: 'B' },
+		{ label: 'Line', shortcut: 'L' },
+		{ label: 'Eraser', shortcut: 'E' },
+		{ label: 'Text', shortcut: 'T' },
+		{ label: 'Move', shortcut: 'M' },
+	] },
+	{ category: 'Layers (Draw)', items: [
+		{ label: 'Previous layer', shortcut: '[' },
+		{ label: 'Next layer', shortcut: ']' },
+	] },
+	{ category: 'Canvas (Draw)', items: [
+		{ label: 'Reset view', shortcut: 'Space' },
+	] },
+];
+
 // ── WelcomeModalV2 ────────────────────────────────────────────────────────────
 
 interface WelcomeModalV2Props {
@@ -35,6 +87,7 @@ interface WelcomeModalV2Props {
 export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeModalV2Props) {
 	const [isLoadingExample, setIsLoadingExample] = useState(false);
 	const [isBugHovered, setIsBugHovered] = useState(false);
+	const [shortcutsExpanded, setShortcutsExpanded] = useState(false);
 
 	const handleLoadExample = async () => {
 		setIsLoadingExample(true);
@@ -202,6 +255,60 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 							Found a bug? Email me.
 						</button>
 					</div>
+					
+					{/* Zona 6 — Keyboard shortcuts (collapsible, desktop-only) */}
+					{hasFinePointer() && (
+						<div style={{ marginTop: 16 }}>
+							<button
+								onClick={() => setShortcutsExpanded(!shortcutsExpanded)}
+								style={{
+									background: 'transparent',
+									border: 'none',
+									cursor: 'pointer',
+									display: 'flex',
+									alignItems: 'center',
+									gap: 6,
+									color: muted,
+									fontFamily: TYPE.controlLabel.family,
+									fontWeight: TYPE.controlLabel.weight,
+									fontSize: TYPE.controlLabel.size,
+									padding: 0,
+								}}
+							>
+								<span>Keyboard shortcuts</span>
+								<Ico name={shortcutsExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={muted} />
+							</button>
+							{shortcutsExpanded && (
+								<div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 220, overflowY: 'auto' }}>
+									{SHORTCUTS_GROUPS.map(group => (
+										<div key={group.category}>
+											<div style={{
+												fontFamily: TYPE.controlLabel.family,
+												fontWeight: 700,
+												fontSize: 10,
+												textTransform: 'uppercase' as const,
+												letterSpacing: '0.08em',
+												color: muted,
+												marginBottom: 4,
+											}}>
+												{group.category}
+											</div>
+											{group.items.map(item => (
+												<div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, lineHeight: '22px' }}>
+													<span style={{ fontFamily: TYPE.controlLabel.family, fontWeight: 400, color: dk(dark, T.dark, T.textDark) as string }}>
+														{item.label}
+													</span>
+													<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: 10, color: muted, letterSpacing: '0.02em' }}>
+														{formatShortcut(item.shortcut)}
+													</span>
+												</div>
+											))}
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+					)}
 
 				</div>
 			</div>
