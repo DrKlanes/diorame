@@ -43,6 +43,10 @@ export const T = {
 	dangerDark:      'rgb(248, 113, 113)',
 	dangerHover:     'rgb(185, 28, 28)',
 	dangerHoverDark: 'rgb(252, 165, 165)',
+
+	// Warning / Amber
+	warning:         '#F59E0B',
+	warningDark:     '#FBBF24',
 } as const;
 
 // ──────────────────────────────────────────────────────────────────
