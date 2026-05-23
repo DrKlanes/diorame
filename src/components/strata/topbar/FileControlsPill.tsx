@@ -56,17 +56,17 @@ export function FileControlsPill({ dark }: FileControlsPillProps) {
 				onChange={e => { const f = e.target.files?.[0]; if (f) handleLoadProject(f); }}
 			/>
 			<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
-				<DiActionButton name="new"  onClick={handleNew}         dark={dark} tooltip="Nuevo" />
-				<DiActionButton name="open" onClick={triggerFileSelect} dark={dark} tooltip="Abrir" />
-				<DiActionButton name="save" onClick={handleSaveProject} dark={dark} tooltip="Guardar" />
+				<DiActionButton name="new"  onClick={handleNew}         dark={dark} tooltip="New" />
+				<DiActionButton name="open" onClick={triggerFileSelect} dark={dark} tooltip="Open" />
+				<DiActionButton name="save" onClick={handleSaveProject} dark={dark} tooltip="Save" />
 				<div ref={exportBtnRef}>
-					<DiActionButton name="export" onClick={() => setExportOpen(v => !v)} dark={dark} tooltip="Exportar SVG" />
+					<DiActionButton name="export" onClick={() => setExportOpen(v => !v)} dark={dark} tooltip="Export SVG" />
 				</div>
 
 				<DiVSep dark={dark} />
 
-				<DiActionButton name="undo" onClick={handleUndo} dark={dark} tooltip="Deshacer (Ctrl+Z)" disabled={state.historyIndex <= 0} />
-				<DiActionButton name="redo" onClick={handleRedo} dark={dark} tooltip="Rehacer (Ctrl+Y)" disabled={state.historyIndex >= state.history.length - 1} />
+				<DiActionButton name="undo" onClick={handleUndo} dark={dark} tooltip="Undo (Ctrl+Z)" disabled={state.historyIndex <= 0} />
+				<DiActionButton name="redo" onClick={handleRedo} dark={dark} tooltip="Redo (Ctrl+Y)" disabled={state.historyIndex >= state.history.length - 1} />
 
 				<DiVSep dark={dark} />
 
