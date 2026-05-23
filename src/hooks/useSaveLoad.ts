@@ -1,7 +1,7 @@
 import { useRef, useCallback } from 'react';
 import { toast } from 'sonner@2.0.3';
 import { useStrata } from '../components/strata/StrataContext';
-import { getFilenameBase } from '../constants/project';
+import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../constants/project';
 import { useTranslation } from '../i18n';
 
 export function useSaveLoad() {
@@ -22,7 +22,10 @@ export function useSaveLoad() {
 			layerSpacingFactor: state.layerSpacingFactor, cinematicSpeed: state.cinematicSpeed,
 			isHandheldEnabled: state.isHandheldEnabled, handheldIntensity: state.handheldIntensity,
 		};
-		const sanitized = getFilenameBase(state.projectName);
+		const displayName = state.projectName === UNTITLED_PROJECT_SENTINEL
+			? t('topbar.file.untitledProject')
+			: state.projectName;
+		const sanitized = getFilenameBase(displayName);
 		setTimeout(() => {
 			let url: string | null = null;
 			let link: HTMLAnchorElement | null = null;

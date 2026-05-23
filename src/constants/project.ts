@@ -17,11 +17,16 @@ export const UNTITLED_PROJECT_SENTINEL = '__UNTITLED__';
 /**
  * Filename-safe base for exports (PNG, SVG, SVGZ, MP4, .dior).
  *
- * Filesystems are language-agnostic — the sentinel maps to a literal 'untitled'
- * regardless of the active UI language. User-typed names are sanitized by
- * stripping non-alphanumeric characters.
+ * Pure sanitizer: callers pass the DISPLAY name they want reflected in the file
+ * (either the user's custom name or the translated default for the active UI
+ * language). NFD normalization strips diacritics so accented characters become
+ * their ASCII counterparts ("Proyecto sin título" → "proyecto-sin-titulo",
+ * "Mi muñeco" → "mi-muneco"), then non-alphanumerics collapse to dashes.
  */
 export function getFilenameBase(name: string): string {
-	if (name === UNTITLED_PROJECT_SENTINEL) return 'untitled';
-	return name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+	return name
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^a-z0-9]/gi, '-')
+		.toLowerCase();
 }

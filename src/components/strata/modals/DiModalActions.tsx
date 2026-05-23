@@ -21,13 +21,14 @@ const ACTION_BASE: React.CSSProperties = {
 	whiteSpace: 'nowrap' as const,
 };
 
-// Larger variant — same visual style as PrimaryAction, bigger touch target
+// Larger variant — same visual style as PrimaryAction, bigger touch target.
+// fontSize inherited from ACTION_BASE (13) — keeps Lg buttons visually consistent
+// with non-Lg siblings when mixed in the same row (e.g. WelcomeModal CTAs).
 const ACTION_BASE_LG: React.CSSProperties = {
 	...ACTION_BASE,
 	height: 44,
 	paddingLeft: 18,
 	paddingRight: 18,
-	fontSize: 12,
 	borderRadius: RADIUS.pill,
 };
 

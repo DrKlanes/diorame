@@ -1,6 +1,6 @@
 import { toast } from 'sonner@2.0.3';
 import { Shape } from '../../../types/strataTypes';
-import { getFilenameBase } from '../../../constants/project';
+import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
 
 /**
@@ -21,7 +21,10 @@ export const exportAsPNG = (
 ): void => {
 	try {
 		const link = document.createElement('a');
-		const sanitizedName = getFilenameBase(projectName);
+		const displayName = projectName === UNTITLED_PROJECT_SENTINEL
+			? t('topbar.file.untitledProject')
+			: projectName;
+		const sanitizedName = getFilenameBase(displayName);
 		link.download = `${sanitizedName}-${Date.now()}.png`;
 		link.href = canvas.toDataURL('image/png', 1.0);
 		link.click();
@@ -292,7 +295,10 @@ export const exportAsSVG = async (
 		const svgContent = parts.join('');
 
 		// Download SVG or SVGZ
-		const sanitizedName = getFilenameBase(projectName);
+		const displayName = projectName === UNTITLED_PROJECT_SENTINEL
+			? t('topbar.file.untitledProject')
+			: projectName;
+		const sanitizedName = getFilenameBase(displayName);
 		let blob: Blob;
 		let filename: string;
 
@@ -363,7 +369,10 @@ export const exportAsMP4 = (
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
-			const sanitizedName = getFilenameBase(projectName);
+			const displayName = projectName === UNTITLED_PROJECT_SENTINEL
+			? t('topbar.file.untitledProject')
+			: projectName;
+		const sanitizedName = getFilenameBase(displayName);
 			a.download = `${sanitizedName}-${Date.now()}.${ext}`;
 			a.click();
 			URL.revokeObjectURL(url);

@@ -19,8 +19,8 @@ export const en: Dictionary = {
 	// Mode switch
 	'topbar.mode.draw': 'Draw',
 	'topbar.mode.drawTooltip': 'Draw mode',
-	'topbar.mode.view': 'View',
-	'topbar.mode.viewTooltip': 'View mode',
+	'topbar.mode.view': 'Cinema',
+	'topbar.mode.viewTooltip': 'Cinema mode',
 	'topbar.mode.hideUi': 'Hide UI',
 
 	// Theme toggle

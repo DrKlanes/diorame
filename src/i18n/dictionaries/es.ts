@@ -17,8 +17,8 @@ export const es: Dictionary = {
 
 	'topbar.mode.draw': 'Dibujar',
 	'topbar.mode.drawTooltip': 'Modo dibujo',
-	'topbar.mode.view': 'Vista',
-	'topbar.mode.viewTooltip': 'Modo vista',
+	'topbar.mode.view': 'Cine',
+	'topbar.mode.viewTooltip': 'Modo cine',
 	'topbar.mode.hideUi': 'Ocultar interfaz',
 
 	'topbar.theme.light': 'Modo claro',
