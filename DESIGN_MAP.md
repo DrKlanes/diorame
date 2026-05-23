@@ -218,11 +218,11 @@ DiPill: [CameraPresetsZone] | tall-vsep | [CameraSpeedZone]
 **Estado collapsed/expanded:** persiste en `localStorage` key `'diorame-fx-expanded'`
 
 **Modo collapsed** — DiPill vertical (análogo a LayersPanel collapsed):
-- Ícono master FX toggle
+- `FXMasterBtn` (componente local en FXPanel.tsx): botón master 35×35 / icono sparkles 21px — visualmente mayor que los DiActionButton de FX individuales (30×30/18px). Background `T.purple10/T.purple20` cuando activo, gris sutil cuando OFF. `boxShadow inset` como outline: `rgba(154,15,249,0.40)` 1.5px cuando ON, `rgba(154,15,249,0.18)` 1px cuando OFF. Siempre visible, fuera del grupo de FX rows.
 - Expander
 
-**Modo expanded** — DiPanel width 248. **Responsive height**: panel con `max-height: calc(100vh - 80px)` + `overflow: hidden`; lista interna de FX (3 grupos con FXRows) en wrapper `.di-panel-scroll` con `max-height: calc(100vh - 141px)` y `overflow-y: auto` (mismo patrón que LayersPanel post-86dec45 — `maxHeight` directo en el hijo, sin `flex-grow`). Header + sparkles + chevron siempre visibles.
-- Header: "FX" + (cuando master OFF: etiqueta roja "· off") + `sparkles` (TOGGLE_FX_MASTER) + `chevron-right` (collapse)
+**Modo expanded** — DiPanel width 248. **Responsive height**: panel con `max-height: calc(100vh - 80px)` + `overflow: hidden`; lista interna de FX (3 grupos con FXRows) en wrapper `.di-panel-scroll` con `max-height: calc(100vh - 141px)` y `overflow-y: auto` (mismo patrón que LayersPanel post-86dec45 — `maxHeight` directo en el hijo, sin `flex-grow`). Header + FXMasterBtn + chevron siempre visibles.
+- Header: "FX" + (cuando master OFF: etiqueta roja "· off") + `FXMasterBtn` (TOGGLE_FX_MASTER) + `chevron-right` (collapse)
 - 3 grupos con `FXRow` por efecto:
 
 | Grupo | Efecto | Level | Control |

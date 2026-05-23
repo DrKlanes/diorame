@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useStrata, PostProcessingEnabled, PostProcessingSettings } from '../StrataContext';
-import { DiPill, DiPanel } from '../../../design-system';
-import { DiActionButton } from '../../../design-system';
+import { DiPill, DiPanel, DiActionButton, Ico } from '../../../design-system';
 import { T, TYPE, RADIUS, dk, SPACE } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
 import { FXRow } from './FXRow';
@@ -30,6 +29,43 @@ const ATMOSPHERE_FX: FXEntry[] = [
 	{ fxKey: 'wiggle',    iconName: 'fx-wiggle',    label: 'Stop Motion', level: 'discrete', valueKey: 'wiggle', discreteOptions: [{ label: 'Light', value: 0 }, { label: 'Medium', value: 0.5 }, { label: 'Heavy', value: 1 }] },
 	{ fxKey: 'pixelArt',  iconName: 'fx-pixel',     label: 'Pixel Art',   level: 'pixel' },
 ];
+
+// Local helper: master FX button — larger size + outline to distinguish from FX row icons
+function FXMasterBtn({ dark, active, onClick }: { dark: boolean; active: boolean; onClick: () => void }) {
+	const [hov, setHov] = useState(false);
+	const bg = active
+		? dk(dark, T.purple10, T.purple20)
+		: hov
+			? dk(dark, 'rgba(0,0,0,0.05)', 'rgba(255,255,255,0.09)')
+			: dk(dark, 'rgba(0,0,0,0.03)', 'rgba(255,255,255,0.05)');
+	const outline = active
+		? 'inset 0 0 0 1.5px rgba(154, 15, 249, 0.40)'
+		: 'inset 0 0 0 1px rgba(154, 15, 249, 0.18)';
+	return (
+		<button
+			onClick={onClick}
+			onPointerEnter={() => setHov(true)}
+			onPointerLeave={() => setHov(false)}
+			title="Toggle all FX"
+			style={{
+				width: 35,
+				height: 35,
+				borderRadius: RADIUS.iconBtn,
+				border: 'none',
+				background: bg as string,
+				boxShadow: outline,
+				cursor: 'pointer',
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+				transition: 'background 0.1s',
+				flexShrink: 0,
+			}}
+		>
+			<Ico name="sparkles" size={21} color={active ? dk(dark, T.purple, T.purpleLight) as string : dk(dark, T.muted, T.textDarkMuted) as string} />
+		</button>
+	);
+}
 
 export function FXPanel() {
 	const { state, dispatch } = useStrata();
@@ -121,7 +157,7 @@ export function FXPanel() {
 							</span>
 						)}
 						<div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-							<DiActionButton name="sparkles" onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} tooltip="Toggle all FX" />
+							<FXMasterBtn dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} />
 							<DiActionButton name="chevron-right" onClick={() => toggle(false)} dark={dark} tooltip="Collapse" />
 						</div>
 					</div>
@@ -174,7 +210,7 @@ export function FXPanel() {
 			<DiPill dark={dark} padding="8px 0" gap={2}
 				style={{ flexDirection: 'column', width: 40, height: 'auto' } as React.CSSProperties}
 			>
-				<DiActionButton name="sparkles" onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} tooltip="Toggle all FX" />
+				<FXMasterBtn dark={dark} active={fxMasterEnabled && Object.values(px).some(v => v)} onClick={() => dispatch({ type: 'TOGGLE_FX_MASTER' })} />
 				<PillHSep />
 				<DiActionButton name="chevron-left" onClick={() => toggle(true)} dark={dark} tooltip="Expand FX panel" />
 				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: 40, opacity: hasSnapshot ? 0.5 : 1 }}>
