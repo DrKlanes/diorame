@@ -1,5 +1,5 @@
 import React from 'react';
-import logoImg from 'figma:asset/41cbeec613d6de6fbe96a0b93ab21aceb0db707d.png';
+import logoImg from 'figma:asset/logo-symbol.png';
 import { Ico } from '../../../design-system';
 import { T } from '../../../design-system/tokens';
 

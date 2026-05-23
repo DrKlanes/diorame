@@ -303,7 +303,9 @@ El componente `ResetViewPill` retorna `null` cuando `mode !== 'drawing'`. **En V
 | Export Progress | Durante export en curso | `ExportProgressV2` |
 | Mobile Block | Viewport < threshold | `MobileBlockScreenV2` |
 
-**WelcomeModalV2 — footer:** Zona 5 añade un enlace discreto "Found a bug? Email me." (button nativo, 12px, color muted, underline on hover). Construye el `mailto:` en runtime con `['moises','dumaker.com'].join('@')` para evitar que el email quede concatenado en el bundle minificado (verificado post-build: `moises@dumaker.com` no aparece en los assets).
+**WelcomeModalV2 — estructura Zona 1 (Identidad):** Logo símbolo (`logo-symbol.png`, height 28px, `display:block`) encima del título "diorame™ v{APP_VERSION}". Alineación izquierda natural por ser block.
+
+**WelcomeModalV2 — footer (Zonas 3-4-5):** Recursos, créditos y bug report alineados a la **izquierda** (`textAlign: 'left'`). CTAs (Zona 2) mantienen `alignItems: 'stretch'`. Zona 5: "Found a bug? Email me." (button nativo, 12px, color muted, underline on hover). Construye el `mailto:` en runtime con `['moises','dumaker.com'].join('@')` para evitar que el email quede concatenado en el bundle minificado (verificado post-build: `moises@dumaker.com` no aparece en los assets).
 
 Todos importados desde `src/components/strata/modals/index.ts`.
 
@@ -367,6 +369,7 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 ## 9. Referencias
 
 - **Banco de iconos:** `src/design-system/icons.ts` — 112 iconos al cierre de 10.3-fix
+- **Assets renombrados (C12):** `src/assets/` — 3 en uso con nombres legibles: `logo-symbol.png` (MobileBlockScreenV2 + WelcomeModalV2), `texture-paper.png` (fondo canvas, StrataCanvas), `texture-grunge.png` (FX Grunge, StrataCanvas). Alias en `vite.config.ts` actualizados. 1 huérfano borrado (`cb8694f...`, 1.4 MB).
 - **Tokens design system v2:** `src/design-system/tokens.ts` — T, TYPE, SPACE, RADIUS, SHADOW, dk()
 - **Figma file key:** VYsPFnI7mE5XnCPpiak1fR (Diorame-UI)
 - **Capturas de referencia:** compartidas en chat del copiloto Claude.ai (DRAW + VIEW)

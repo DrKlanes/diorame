@@ -3,6 +3,7 @@ import { DiModal } from './index';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { APP_VERSION } from '../../../constants/version';
 import { getWelcomeIllustration } from './welcomeIllustrations';
+import logoImg from 'figma:asset/logo-symbol.png';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -100,6 +101,11 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 
 					{/* Zona 1 — Identidad */}
 					<div style={{ marginBottom: 28 }}>
+						<img
+							src={logoImg}
+							alt="Diorame logo"
+							style={{ height: 28, width: 'auto', marginBottom: 8, display: 'block' }}
+						/>
 						<div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
 							<span style={{
 								fontFamily: TYPE.panelHeader.family,
@@ -144,7 +150,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 
 					{/* Zona 3 — Recursos */}
 					<div style={{
-						textAlign: 'center',
+						textAlign: 'left',
 						fontFamily: TYPE.controlLabel.family,
 						fontWeight: TYPE.controlLabel.weight,
 						fontSize: TYPE.controlLabel.size,
@@ -161,7 +167,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 						display: 'flex',
 						flexDirection: 'column',
 						gap: 4,
-						textAlign: 'center',
+						textAlign: 'left',
 						fontFamily: TYPE.numericValue.family,
 						fontWeight: TYPE.numericValue.weight,
 						fontSize: TYPE.numericValue.size,
@@ -176,7 +182,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 					</div>
 
 					{/* Zona 5 — Footer bug report */}
-					<div style={{ marginTop: 12, textAlign: 'center' }}>
+					<div style={{ marginTop: 12, textAlign: 'left' }}>
 						<button
 							onClick={handleBugReport}
 							onMouseEnter={() => setIsBugHovered(true)}
