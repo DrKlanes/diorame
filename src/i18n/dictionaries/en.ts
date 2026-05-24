@@ -346,7 +346,7 @@ export const en: Dictionary = {
 	'modal.onboarding.header': 'Welcome to Diorame',
 	'modal.onboarding.tagline': 'Draw in 2D. And watch it come alive in 3D.',
 	'modal.onboarding.section.draw': 'DRAW',
-	'modal.onboarding.section.view': 'VIEW',
+	'modal.onboarding.section.view': 'CINEMA',
 
 	// Onboarding cards — DRAW
 	'modal.onboarding.card.blob.title': 'Blob',

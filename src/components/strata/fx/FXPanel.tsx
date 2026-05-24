@@ -5,6 +5,7 @@ import { T, TYPE, RADIUS, dk, SPACE } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
 import { useTranslation } from '../../../i18n';
 import { supportsCanvasFilter } from '../../../utils/browserCapabilities';
+import { toast } from 'sonner@2.0.3';
 import { FXRow } from './FXRow';
 
 const STORAGE_KEY = 'diorame-fx-expanded';
@@ -253,12 +254,12 @@ export function FXPanel() {
 				<DiActionButton name="fx-chroma"     onClick={fxClick('chromaticAberration')} dark={dark} active={snap ? snap.chromaticAberration : px.chromaticAberration} tooltip={t('fx.lens.chromaticAb.tooltip')} />
 				<DiActionButton name="fx-distortion" onClick={fxClick('distortion')} dark={dark} active={snap ? snap.distortion : px.distortion}          tooltip={t('fx.lens.distortion.tooltip')} />
 				<div style={{ position: 'relative' }}>
-					<DiActionButton name="fx-glow"       onClick={fxClick('glow')} dark={dark} active={snap ? snap.glow : px.glow}                tooltip={t('fx.lens.glow.tooltip')} />
-					{!supportsCanvasFilter() && <Ico name="info" size={8} color={dk(dark, T.warning, T.warningDark) as string} style={{ position: 'absolute', top: 3, right: 3, pointerEvents: 'none' }} />}
+					<DiActionButton name="fx-glow"       onClick={() => { if (!hasSnapshot && !px.glow && !supportsCanvasFilter()) { toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); } fxClick('glow')(); }} dark={dark} active={snap ? snap.glow : px.glow}                tooltip={t('fx.lens.glow.tooltip')} />
+					{!supportsCanvasFilter() && <button onClick={e => { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); }} aria-label={t('fx.common.browserUnsupported')} style={{ position: 'absolute', top: 3, right: 3, pointerEvents: 'auto', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }}><Ico name="info" size={8} color={dk(dark, T.warning, T.warningDark) as string} /></button>}
 				</div>
 				<div style={{ position: 'relative' }}>
-					<DiActionButton name="fx-dof"        onClick={fxClick('dof')} dark={dark} active={snap ? snap.dof : px.dof}                 tooltip={t('fx.lens.dof.tooltip')} />
-					{!supportsCanvasFilter() && <Ico name="info" size={8} color={dk(dark, T.warning, T.warningDark) as string} style={{ position: 'absolute', top: 3, right: 3, pointerEvents: 'none' }} />}
+					<DiActionButton name="fx-dof"        onClick={() => { if (!hasSnapshot && !px.dof && !supportsCanvasFilter()) { toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); } fxClick('dof')(); }} dark={dark} active={snap ? snap.dof : px.dof}                 tooltip={t('fx.lens.dof.tooltip')} />
+					{!supportsCanvasFilter() && <button onClick={e => { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); }} aria-label={t('fx.common.browserUnsupported')} style={{ position: 'absolute', top: 3, right: 3, pointerEvents: 'auto', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }}><Ico name="info" size={8} color={dk(dark, T.warning, T.warningDark) as string} /></button>}
 				</div>
 				<PillHSep />
 				<DiActionButton name="fx-fog"       onClick={fxClick('fog')} dark={dark} active={snap ? snap.fog : px.fog}       tooltip={t('fx.atmosphere.fog.tooltip')} />

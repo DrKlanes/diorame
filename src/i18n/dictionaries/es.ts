@@ -315,7 +315,7 @@ export const es: Dictionary = {
 	'modal.onboarding.header': 'Bienvenido a Diorame',
 	'modal.onboarding.tagline': 'Dibuja en 2D. Y mira cómo cobra vida en 3D.',
 	'modal.onboarding.section.draw': 'DIBUJAR',
-	'modal.onboarding.section.view': 'VISTA',
+	'modal.onboarding.section.view': 'CINE',
 
 	'modal.onboarding.card.blob.title': 'Blob',
 	'modal.onboarding.card.blob.desc': 'Formas orgánicas tipo aerosol',
