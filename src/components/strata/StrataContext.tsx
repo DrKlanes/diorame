@@ -743,6 +743,11 @@ function appReducer(state: AppState, action: Action): AppState {
       const safeIsHandheldEnabled = typeof action.payload.isHandheldEnabled === 'boolean' ? action.payload.isHandheldEnabled : state.isHandheldEnabled;
       const safeHandheldIntensity = (typeof action.payload.handheldIntensity === 'string' && ['low', 'medium', 'high'].includes(action.payload.handheldIntensity as string)) ? action.payload.handheldIntensity as HandheldIntensity : state.handheldIntensity;
       const safeFxMasterEnabled = typeof action.payload.fxMasterEnabled === 'boolean' ? action.payload.fxMasterEnabled : true;
+      const safePaletteApplyToAllActive = typeof (action.payload as any).paletteApplyToAllActive === 'boolean'
+          ? (action.payload as any).paletteApplyToAllActive : false;
+      const safePaletteApplyToAllSnapshot = ((action.payload as any).paletteApplyToAllSnapshot &&
+          typeof (action.payload as any).paletteApplyToAllSnapshot === 'object')
+          ? (action.payload as any).paletteApplyToAllSnapshot : null;
 
       // Create initial history snapshot with loaded state
       const initialSnapshot: HistorySnapshot = {
@@ -794,8 +799,8 @@ function appReducer(state: AppState, action: Action): AppState {
           handheldIntensity: safeHandheldIntensity,
           shouldFitToView: true,
           isDrawing: false,
-          paletteApplyToAllActive: false,
-          paletteApplyToAllSnapshot: null,
+          paletteApplyToAllActive: safePaletteApplyToAllActive,
+          paletteApplyToAllSnapshot: safePaletteApplyToAllSnapshot,
       };
     case 'COMPLETE_FIT_TO_VIEW':
         return { ...state, shouldFitToView: false };

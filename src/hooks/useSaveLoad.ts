@@ -21,6 +21,8 @@ export function useSaveLoad() {
 			focalLength: state.focalLength, viewZoomOffset: state.viewZoomOffset,
 			layerSpacingFactor: state.layerSpacingFactor, cinematicSpeed: state.cinematicSpeed,
 			isHandheldEnabled: state.isHandheldEnabled, handheldIntensity: state.handheldIntensity,
+			paletteApplyToAllActive: state.paletteApplyToAllActive,
+			paletteApplyToAllSnapshot: state.paletteApplyToAllSnapshot,
 		};
 		const displayName = state.projectName === UNTITLED_PROJECT_SENTINEL
 			? t('topbar.file.untitledProject')
