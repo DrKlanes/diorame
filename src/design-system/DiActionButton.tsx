@@ -3,7 +3,7 @@ import { Ico } from './Ico';
 import { T, TYPE, RADIUS, dk } from './tokens';
 import { hasFinePointer, formatShortcut } from '../utils/keyboardShortcuts';
 
-export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, label, tooltip, shortcut, disabled = false, danger = false, minWidth }: {
+export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, label, labelSize, tooltip, shortcut, disabled = false, danger = false, minWidth }: {
 	name: string;
 	onClick: () => void;
 	dark: boolean;
@@ -12,6 +12,7 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 	iconWeight?: 'normal' | 'secondary';
 	iconSize?: number;
 	label?: string;
+	labelSize?: number;
 	tooltip?: string;
 	shortcut?: string;
 	disabled?: boolean;
@@ -73,7 +74,7 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 			{label && (
 				<span style={{
 					fontFamily: TYPE.controlLabel.family,
-					fontSize: TYPE.controlLabel.size,
+					fontSize: labelSize ?? TYPE.controlLabel.size,
 					fontWeight: active ? 600 : 400,
 					color: iconColor as string,
 					letterSpacing: '0.01em',

@@ -219,6 +219,8 @@ export const en: Dictionary = {
 	'palette.segment.flat': 'Flat',
 	'palette.segment.gradient': 'Gradient',
 	'palette.segment.fade': 'Fade',
+	'palette.applyToAll.label': 'Apply to all',
+	'palette.applyToAll.tooltip': 'Apply mode to all layers',
 
 	// Color names (primary palette) — visibles solo en hover
 	'palette.color.black': 'Black',

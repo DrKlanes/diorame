@@ -198,6 +198,8 @@ export const es: Dictionary = {
 	'palette.segment.flat': 'Plano',
 	'palette.segment.gradient': 'Degradado',
 	'palette.segment.fade': 'Fade',
+	'palette.applyToAll.label': 'Aplicar a todas',
+	'palette.applyToAll.tooltip': 'Aplicar modo a todas las capas',
 
 	'palette.color.black': 'Negro',
 	'palette.color.charcoal': 'Carbón',

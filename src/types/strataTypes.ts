@@ -128,6 +128,11 @@ export interface AppState {
   paletteMode: 'flat' | 'grad'; // New: Palette Rendering Mode
   layerRenderModes: Record<number, 'flat' | 'grad'>; // New: Per-layer render mode
   layerGradParams: Record<number, LayerGradParams>; // New: Per-layer gradient params
+  paletteApplyToAllActive: boolean; // New: Propagate current layer palette config to all layers
+  paletteApplyToAllSnapshot: {
+    layerRenderModes: Record<number, 'flat' | 'grad'>;
+    layerGradParams: Record<number, LayerGradParams>;
+  } | null; // Transient: snapshot for apply-to-all restore
   layerBrushSettings: Record<number, { thickness: number; mode: LineMode }>; // New: Per-layer brush settings
   pointOfInterest: { x: number; y: number; z: number } | null; // New: Point of Interest for camera focus
   cinematicSpeed: number; // New: Speed multiplier for cinematic moves (0.1 to 1.0)

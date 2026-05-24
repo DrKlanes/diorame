@@ -100,7 +100,8 @@ type Action =
   | { type: 'DISMISS_ONBOARDING' }
   | { type: 'SET_ACTIVE_PALETTE'; payload: 'primary' | 'alternative' }
   | { type: 'COMPLETE_FIT_TO_VIEW' }
-  | { type: 'FLIP_LAYER'; payload: { layerIndex: number; direction: 'horizontal' | 'vertical'; centerX: number; centerY: number } };
+  | { type: 'FLIP_LAYER'; payload: { layerIndex: number; direction: 'horizontal' | 'vertical'; centerX: number; centerY: number } }
+  | { type: 'TOGGLE_PALETTE_APPLY_TO_ALL' };
 
 // --- Initial State ---
 
@@ -201,6 +202,8 @@ const initialState: AppState = {
   handheldIntensity: 'medium',
   lineMode: 'tapered',
   projectName: UNTITLED_PROJECT_SENTINEL, // Default project name (sentinel; resolved via t() at render time)
+  paletteApplyToAllActive: false,
+  paletteApplyToAllSnapshot: null,
   shouldFitToView: false
 };
 
@@ -283,43 +286,58 @@ function appReducer(state: AppState, action: Action): AppState {
         blobSmoothing: !state.blobSmoothing,
         isOrganicMode: state.blobSmoothing ? state.isOrganicMode : false
       };
-    case 'SET_PALETTE_MODE':
-      return { 
-          ...state, 
+    case 'SET_PALETTE_MODE': {
+      if (state.paletteApplyToAllActive) {
+          const allModes: Record<number, 'flat' | 'grad'> = {};
+          for (let i = 0; i < state.totalLayers; i++) allModes[i] = action.payload;
+          return { ...state, paletteMode: action.payload, layerRenderModes: allModes };
+      }
+      return {
+          ...state,
           paletteMode: action.payload,
-          layerRenderModes: {
-              ...state.layerRenderModes,
-              [state.currentLayerIndex]: action.payload
-          }
+          layerRenderModes: { ...state.layerRenderModes, [state.currentLayerIndex]: action.payload }
       };
+    }
     case 'SET_PALETTE_GRADIENT_ANGLE': {
       const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
-      return { 
-          ...state, 
-          layerGradParams: {
-              ...state.layerGradParams,
-              [state.currentLayerIndex]: { ...currentParams, angle: action.payload }
+      if (state.paletteApplyToAllActive) {
+          const allParams: Record<number, LayerGradParams> = {};
+          for (let i = 0; i < state.totalLayers; i++) {
+              allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), angle: action.payload };
           }
+          return { ...state, layerGradParams: allParams };
+      }
+      return {
+          ...state,
+          layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, angle: action.payload } }
       };
     }
     case 'SET_PALETTE_GRADIENT_INTENSITY': {
       const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
-      return { 
-          ...state, 
-          layerGradParams: {
-              ...state.layerGradParams,
-              [state.currentLayerIndex]: { ...currentParams, intensity: action.payload }
+      if (state.paletteApplyToAllActive) {
+          const allParams: Record<number, LayerGradParams> = {};
+          for (let i = 0; i < state.totalLayers; i++) {
+              allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), intensity: action.payload };
           }
+          return { ...state, layerGradParams: allParams };
+      }
+      return {
+          ...state,
+          layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, intensity: action.payload } }
       };
     }
     case 'SET_PALETTE_GRADIENT_TYPE': {
       const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
+      if (state.paletteApplyToAllActive) {
+          const allParams: Record<number, LayerGradParams> = {};
+          for (let i = 0; i < state.totalLayers; i++) {
+              allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), gradType: action.payload };
+          }
+          return { ...state, layerGradParams: allParams };
+      }
       return {
           ...state,
-          layerGradParams: {
-              ...state.layerGradParams,
-              [state.currentLayerIndex]: { ...currentParams, gradType: action.payload }
-          }
+          layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, gradType: action.payload } }
       };
     }
     case 'RESET_DRAWING_VIEW':
@@ -584,6 +602,46 @@ function appReducer(state: AppState, action: Action): AppState {
           return state;
       }
     }
+    case 'TOGGLE_PALETTE_APPLY_TO_ALL': {
+      if (!state.paletteApplyToAllActive) {
+          const activeMode = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
+          const activeParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
+          const allModes: Record<number, 'flat' | 'grad'> = {};
+          const allParams: Record<number, LayerGradParams> = {};
+          for (let i = 0; i < state.totalLayers; i++) {
+              allModes[i] = activeMode;
+              allParams[i] = { ...activeParams };
+          }
+          return {
+              ...state,
+              paletteApplyToAllActive: true,
+              paletteApplyToAllSnapshot: {
+                  layerRenderModes: { ...state.layerRenderModes },
+                  layerGradParams: { ...state.layerGradParams },
+              },
+              layerRenderModes: allModes,
+              layerGradParams: allParams,
+          };
+      } else {
+          const snap = state.paletteApplyToAllSnapshot!;
+          const restoredModes = {
+              ...snap.layerRenderModes,
+              [state.currentLayerIndex]: state.layerRenderModes[state.currentLayerIndex],
+          };
+          const restoredParams = {
+              ...snap.layerGradParams,
+              [state.currentLayerIndex]: state.layerGradParams[state.currentLayerIndex],
+          };
+          return {
+              ...state,
+              paletteApplyToAllActive: false,
+              paletteApplyToAllSnapshot: null,
+              layerRenderModes: restoredModes,
+              layerGradParams: restoredParams,
+              paletteMode: state.layerRenderModes[state.currentLayerIndex] ?? 'flat',
+          };
+      }
+    }
     case 'REQUEST_EXPORT':
       return { ...state, exportRequest: action.payload, isExporting: true };
     case 'FINISH_EXPORT':
@@ -627,6 +685,8 @@ function appReducer(state: AppState, action: Action): AppState {
           postProcessingEnabled: initialState.postProcessingEnabled,
           fxMasterEnabled: initialState.fxMasterEnabled,
           postProcessingSnapshot: null,
+          paletteApplyToAllActive: false,
+          paletteApplyToAllSnapshot: null,
       }
     case 'LOAD_PROJECT':
       // Ensure we merge postProcessing settings correctly to avoid undefined values
@@ -733,7 +793,9 @@ function appReducer(state: AppState, action: Action): AppState {
           isHandheldEnabled: safeIsHandheldEnabled,
           handheldIntensity: safeHandheldIntensity,
           shouldFitToView: true,
-          isDrawing: false
+          isDrawing: false,
+          paletteApplyToAllActive: false,
+          paletteApplyToAllSnapshot: null,
       };
     case 'COMPLETE_FIT_TO_VIEW':
         return { ...state, shouldFitToView: false };
