@@ -122,7 +122,6 @@ export const en: Dictionary = {
 	'fx.atmosphere.particles.label': 'Particles',
 	'fx.atmosphere.particles.tooltip': 'Particles',
 	'fx.atmosphere.stopMotion.label': 'Stop Motion',
-	'fx.atmosphere.stopMotion.tooltip': 'Stop Motion',
 	'fx.atmosphere.pixelArt.label': 'Pixel Art',
 	'fx.atmosphere.pixelArt.tooltip': 'Pixel Art',
 
@@ -305,14 +304,13 @@ export const en: Dictionary = {
 	'modal.welcome.tagline': 'Draw in 2D. And watch it come alive in 3D.',
 	'modal.welcome.tutorial': 'Watch tutorial',
 	'modal.welcome.dumaker': 'by @dumaker',
-	'modal.welcome.kofi': 'Support on Ko-fi 🤍',
+	'modal.welcome.kofi': 'Support on Ko-fi 💜',
 	'modal.welcome.graintouch': 'Inspired by Graintouch',
 	'modal.welcome.bugReport.link': 'Found a bug? Email me.',
 	'modal.welcome.shortcuts': 'Keyboard shortcuts',
 	'modal.welcome.cta.primary': 'Start drawing',
 	'modal.welcome.cta.secondary': 'Load example scene',
 	'modal.welcome.cta.loading': 'Loading…',
-	'modal.welcome.gotIt': 'Got it',
 
 	// Bug report email (dinámico)
 	'modal.welcome.bugReport.subject': 'Diorame bug report — v{version}',
@@ -435,8 +433,6 @@ export const en: Dictionary = {
 	// ═══════════════════════════════════════════════
 
 	'common.close': 'Close',
-	'common.cancel': 'Cancel',
-	'common.done': 'Done',
 	'common.off': 'off',
 	'common.loading': 'Loading…',
 	'common.pleaseRetry': 'Please try again',

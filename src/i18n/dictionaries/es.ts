@@ -111,7 +111,6 @@ export const es: Dictionary = {
 	'fx.atmosphere.particles.label': 'Partículas',
 	'fx.atmosphere.particles.tooltip': 'Partículas',
 	'fx.atmosphere.stopMotion.label': 'Stop Motion',
-	'fx.atmosphere.stopMotion.tooltip': 'Stop Motion',
 	'fx.atmosphere.pixelArt.label': 'Pixel Art',
 	'fx.atmosphere.pixelArt.tooltip': 'Pixel Art',
 
@@ -280,14 +279,13 @@ export const es: Dictionary = {
 	'modal.welcome.tagline': 'Dibuja en 2D. Y mira cómo cobra vida en 3D.',
 	'modal.welcome.tutorial': 'Ver tutorial',
 	'modal.welcome.dumaker': 'por @dumaker',
-	'modal.welcome.kofi': 'Apóyame en Ko-fi 🤍',
+	'modal.welcome.kofi': 'Apóyame en Ko-fi 💜',
 	'modal.welcome.graintouch': 'Inspirado en Graintouch',
 	'modal.welcome.bugReport.link': '¿Encontraste un error? Escríbeme.',
 	'modal.welcome.shortcuts': 'Atajos de teclado',
 	'modal.welcome.cta.primary': 'Empezar a dibujar',
 	'modal.welcome.cta.secondary': 'Cargar escena de ejemplo',
 	'modal.welcome.cta.loading': 'Cargando…',
-	'modal.welcome.gotIt': 'Entendido',
 
 	'modal.welcome.bugReport.subject': 'Reporte de error en Diorame — v{version}',
 	'modal.welcome.bugReport.body': 'Qué esperaba:\n\n\nQué ocurrió:\n\n\nPasos para reproducirlo:\n\n\n---\nNavegador:\nSO:',
@@ -397,8 +395,6 @@ export const es: Dictionary = {
 	// ═══════════════════════════════════════════════
 
 	'common.close': 'Cerrar',
-	'common.cancel': 'Cancelar',
-	'common.done': 'Listo',
 	'common.off': 'apagado',
 	'common.loading': 'Cargando…',
 	'common.pleaseRetry': 'Inténtalo de nuevo',

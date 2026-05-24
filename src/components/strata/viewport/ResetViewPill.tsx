@@ -11,7 +11,7 @@ import { useTranslation } from '../../../i18n';
  * filters all live in the shared ViewPills wrapper inside ControlsV2.
  */
 export function ResetViewPill() {
-	const { state, dispatch } = useStrata();
+	const { dispatch } = useStrata();
 	const { dark } = useTheme();
 	const { t } = useTranslation();
 
