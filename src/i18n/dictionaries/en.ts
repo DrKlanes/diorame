@@ -180,6 +180,9 @@ export const en: Dictionary = {
 	// Dynamic labels
 	'fx.dof.layerDynamic': 'Layer {n}',
 
+	// Browser capability warnings
+	'fx.common.browserUnsupported': 'This effect is not supported by your browser',
+
 	// ═══════════════════════════════════════════════
 	// LAYERS
 	// ═══════════════════════════════════════════════

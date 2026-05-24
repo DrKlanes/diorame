@@ -4,6 +4,7 @@ import { Ico, DiMiniSlider, DiSegmentControl } from '../../../design-system';
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 import { DiActionButton } from '../../../design-system';
 import { useTranslation } from '../../../i18n';
+import { supportsCanvasFilter } from '../../../utils/browserCapabilities';
 
 // ── Pixel Art depth mapping ──────────────────────────────────────────
 // Values are i18n keys, resolved via t() at render time.
@@ -92,9 +93,10 @@ interface FXRowProps {
 	valueKey?: keyof PostProcessingSettings;
 	discreteOptions?: DiscreteOption[];
 	compositeOptions?: CompositeOption[];
+	browserUnsupported?: boolean;
 }
 
-export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, level = 'special', valueKey, discreteOptions, compositeOptions }: FXRowProps) {
+export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, level = 'special', valueKey, discreteOptions, compositeOptions, browserUnsupported = false }: FXRowProps) {
 	const { state, dispatch } = useStrata();
 	const { t } = useTranslation();
 	const sliderValue = (level === 1 && valueKey) ? (state.postProcessing[valueKey] as number) : 0;
@@ -140,6 +142,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(sliderValue * 100)}
 						</span>
+						{browserUnsupported && !supportsCanvasFilter() && <Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} title={t('fx.common.browserUnsupported')} />}
 					</div>
 					<div onPointerDown={stopProp} onClick={stopProp}>
 						<DiMiniSlider dark={dark} value={sliderValue} min={0} max={1} step={0.01}
@@ -164,6 +167,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{formatBipolar(bv)}
 						</span>
+						{browserUnsupported && !supportsCanvasFilter() && <Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} title={t('fx.common.browserUnsupported')} />}
 					</div>
 					<div onPointerDown={stopProp} onClick={stopProp} style={{ position: 'relative' }}>
 						<DiMiniSlider dark={dark} value={bv} min={-1} max={1} step={0.01}
@@ -188,6 +192,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						<span style={{ fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: accentColor }}>
 							{label}
 						</span>
+						{browserUnsupported && !supportsCanvasFilter() && <Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} title={t('fx.common.browserUnsupported')} />}
 					</div>
 					<div onPointerDown={stopProp} onClick={stopProp} style={{ borderRadius: RADIUS.segmentSmall + 2, overflow: 'hidden', background: dk(dark, T.white, T.panelDarkOpaque) }}>
 						<DiSegmentControl<number>
@@ -219,6 +224,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(cv * 100)}
 						</span>
+						{browserUnsupported && !supportsCanvasFilter() && <Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} title={t('fx.common.browserUnsupported')} />}
 					</div>
 					<div onPointerDown={stopProp} onClick={stopProp}>
 						<DiMiniSlider dark={dark} value={cv} min={0} max={1} step={0.01}
@@ -254,6 +260,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: accentColor }}>
 							{label}
 						</span>
+						{browserUnsupported && !supportsCanvasFilter() && <Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} title={t('fx.common.browserUnsupported')} />}
 					</div>
 					<SubControlBlock accentColor={accentColor} label={t('fx.subcontrol.size')} value={`${sz}px`} dark={dark}>
 						<div onPointerDown={stopProp} onClick={stopProp}>
@@ -301,6 +308,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(dofIntensity * 100)}
 						</span>
+						{browserUnsupported && !supportsCanvasFilter() && <Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} title={t('fx.common.browserUnsupported')} />}
 					</div>
 					<div onPointerDown={stopProp} onClick={stopProp}>
 						<DiMiniSlider dark={dark} value={dofIntensity} min={0} max={1} step={0.01}
@@ -378,6 +386,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 			}}>
 				{label}
 			</span>
+			{browserUnsupported && !supportsCanvasFilter() && <Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} title={t('fx.common.browserUnsupported')} />}
 		</button>
 	);
 }

@@ -161,6 +161,9 @@ export const es: Dictionary = {
 
 	'fx.dof.layerDynamic': 'Capa {n}',
 
+	// Advertencias de compatibilidad del navegador
+	'fx.common.browserUnsupported': 'Este efecto no está soportado por tu navegador',
+
 	// ═══════════════════════════════════════════════
 	// LAYERS
 	// ═══════════════════════════════════════════════

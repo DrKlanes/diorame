@@ -4,6 +4,7 @@ import { DiPill, DiPanel, DiActionButton, Ico } from '../../../design-system';
 import { T, TYPE, RADIUS, dk, SPACE } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
 import { useTranslation } from '../../../i18n';
+import { supportsCanvasFilter } from '../../../utils/browserCapabilities';
 import { FXRow } from './FXRow';
 
 const STORAGE_KEY = 'diorame-fx-expanded';
@@ -23,6 +24,7 @@ type FXEntry = {
 	valueKey?: keyof PostProcessingSettings;
 	discreteOptions?: DiscreteOption[];
 	compositeOptions?: CompositeOption[];
+	browserUnsupported?: true;
 };
 
 const TEXTURE_FX: FXEntry[] = [
@@ -39,8 +41,8 @@ const LENS_FX: FXEntry[] = [
 	{ fxKey: 'vignette',            iconName: 'fx-vignette',   labelKey: 'fx.lens.vignette.label',      level: 1,         valueKey: 'vignette' },
 	{ fxKey: 'chromaticAberration', iconName: 'fx-chroma',     labelKey: 'fx.lens.chromaticAb.label',   level: 1,         valueKey: 'chromaticAberration' },
 	{ fxKey: 'distortion',          iconName: 'fx-distortion', labelKey: 'fx.lens.distortion.label',    level: 'bipolar', valueKey: 'distortion' },
-	{ fxKey: 'glow',                iconName: 'fx-glow',       labelKey: 'fx.lens.glow.label',          level: 1,         valueKey: 'glow' },
-	{ fxKey: 'dof',                 iconName: 'fx-dof',        labelKey: 'fx.lens.dof.label',           level: 'dof',     valueKey: 'dof' },
+	{ fxKey: 'glow',                iconName: 'fx-glow',       labelKey: 'fx.lens.glow.label',          level: 1,         valueKey: 'glow',  browserUnsupported: true },
+	{ fxKey: 'dof',                 iconName: 'fx-dof',        labelKey: 'fx.lens.dof.label',           level: 'dof',     valueKey: 'dof',   browserUnsupported: true },
 ];
 
 const ATMOSPHERE_FX: FXEntry[] = [
@@ -194,36 +196,36 @@ export function FXPanel() {
 					{/* Texture */}
 					<GroupLabel label={t('fx.group.texture')} />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{TEXTURE_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions }) => (
+						{TEXTURE_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions, browserUnsupported }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} labelKey={labelKey}
 								isActive={px[fxKey]} dark={dark}
 								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
 								level={level} valueKey={valueKey}
-								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
+								discreteOptions={discreteOptions} compositeOptions={compositeOptions} browserUnsupported={browserUnsupported} />
 						))}
 					</div>
 					<PanelHSep />
 					{/* Lens */}
 					<GroupLabel label={t('fx.group.lens')} />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{LENS_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions }) => (
+						{LENS_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions, browserUnsupported }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} labelKey={labelKey}
 								isActive={px[fxKey]} dark={dark}
 								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
 								level={level} valueKey={valueKey}
-								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
+								discreteOptions={discreteOptions} compositeOptions={compositeOptions} browserUnsupported={browserUnsupported} />
 						))}
 					</div>
 					<PanelHSep />
 					{/* Atmosphere */}
 					<GroupLabel label={t('fx.group.atmosphere')} />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{ATMOSPHERE_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions }) => (
+						{ATMOSPHERE_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions, browserUnsupported }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} labelKey={labelKey}
 								isActive={px[fxKey]} dark={dark}
 								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
 								level={level} valueKey={valueKey}
-								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
+								discreteOptions={discreteOptions} compositeOptions={compositeOptions} browserUnsupported={browserUnsupported} />
 						))}
 					</div>
 					</div>
@@ -250,8 +252,14 @@ export function FXPanel() {
 				<DiActionButton name="fx-vignette"   onClick={fxClick('vignette')} dark={dark} active={snap ? snap.vignette : px.vignette}            tooltip={t('fx.lens.vignette.tooltip')} />
 				<DiActionButton name="fx-chroma"     onClick={fxClick('chromaticAberration')} dark={dark} active={snap ? snap.chromaticAberration : px.chromaticAberration} tooltip={t('fx.lens.chromaticAb.tooltip')} />
 				<DiActionButton name="fx-distortion" onClick={fxClick('distortion')} dark={dark} active={snap ? snap.distortion : px.distortion}          tooltip={t('fx.lens.distortion.tooltip')} />
-				<DiActionButton name="fx-glow"       onClick={fxClick('glow')} dark={dark} active={snap ? snap.glow : px.glow}                tooltip={t('fx.lens.glow.tooltip')} />
-				<DiActionButton name="fx-dof"        onClick={fxClick('dof')} dark={dark} active={snap ? snap.dof : px.dof}                 tooltip={t('fx.lens.dof.tooltip')} />
+				<div style={{ position: 'relative' }}>
+					<DiActionButton name="fx-glow"       onClick={fxClick('glow')} dark={dark} active={snap ? snap.glow : px.glow}                tooltip={t('fx.lens.glow.tooltip')} />
+					{!supportsCanvasFilter() && <Ico name="info" size={8} color={dk(dark, T.warning, T.warningDark) as string} style={{ position: 'absolute', top: 3, right: 3, pointerEvents: 'none' }} />}
+				</div>
+				<div style={{ position: 'relative' }}>
+					<DiActionButton name="fx-dof"        onClick={fxClick('dof')} dark={dark} active={snap ? snap.dof : px.dof}                 tooltip={t('fx.lens.dof.tooltip')} />
+					{!supportsCanvasFilter() && <Ico name="info" size={8} color={dk(dark, T.warning, T.warningDark) as string} style={{ position: 'absolute', top: 3, right: 3, pointerEvents: 'none' }} />}
+				</div>
 				<PillHSep />
 				<DiActionButton name="fx-fog"       onClick={fxClick('fog')} dark={dark} active={snap ? snap.fog : px.fog}       tooltip={t('fx.atmosphere.fog.tooltip')} />
 				<DiActionButton name="fx-particles" onClick={fxClick('particles')} dark={dark} active={snap ? snap.particles : px.particles} tooltip={t('fx.atmosphere.particles.tooltip')} />
