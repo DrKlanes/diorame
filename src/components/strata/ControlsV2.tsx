@@ -4,7 +4,7 @@ import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
 import { useSaveLoad } from '../../hooks/useSaveLoad';
 import { useExportFlow } from '../../hooks/useExportFlow';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
-import { DiActionButton, DiPill } from '../../design-system';
+import { DiPill } from '../../design-system';
 import { useTranslation } from '../../i18n';
 import { TopBar } from './topbar/TopBar';
 import { BottomBar } from './bottombar/BottomBar';
@@ -15,6 +15,7 @@ import { GridTogglePill } from './viewport/GridTogglePill';
 import { FXPanel } from './fx/FXPanel';
 import { ToolOptionsPanel } from './drawing/ToolOptionsPanel';
 import { TextSessionPanel } from './text/TextSessionPanel';
+import { ShowUIButton } from './viewport/ShowUIButton';
 
 // Overlay panels float above DrawingToolbar:
 // BottomBar sits at bottom:12; toolbar height = 40px; gap = 8px → bottom: 60
@@ -137,27 +138,7 @@ export function ControlsV2() {
 			)}
 
 			{/* Persistent mini-button — only visible when UI is hidden, allows reactivation */}
-			{state.isUIHidden && (
-				<div
-					style={{
-						position: 'fixed',
-						bottom: 16,
-						right: 16,
-						zIndex: 100,
-						opacity: 0.25,
-						transition: 'opacity 0.2s ease',
-					}}
-					onPointerEnter={e => { (e.currentTarget as HTMLDivElement).style.opacity = '1'; }}
-					onPointerLeave={e => { (e.currentTarget as HTMLDivElement).style.opacity = '0.25'; }}
-				>
-					<DiActionButton
-						name="eye"
-						onClick={() => dispatch({ type: 'TOGGLE_UI' })}
-						dark={dark}
-						tooltip={t('viewport.showUi')}
-					/>
-				</div>
-			)}
+			{state.isUIHidden && <ShowUIButton />}
 		</>
 	);
 }
