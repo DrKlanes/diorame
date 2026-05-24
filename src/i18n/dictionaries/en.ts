@@ -320,6 +320,7 @@ export const en: Dictionary = {
 	'modal.welcome.cta.primary': 'Start drawing',
 	'modal.welcome.cta.secondary': 'Load example scene',
 	'modal.welcome.cta.loading': 'Loading…',
+	'modal.welcome.cta.restore': 'Continue previous work',
 
 	// Bug report email (dinámico)
 	'modal.welcome.bugReport.subject': 'Diorame bug report — v{version}',

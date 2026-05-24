@@ -1,8 +1,10 @@
 import { useRef, useCallback } from 'react';
 import { toast } from 'sonner@2.0.3';
+import { del } from 'idb-keyval';
 import { useStrata } from '../components/strata/StrataContext';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../constants/project';
 import { useTranslation } from '../i18n';
+import { AUTOSAVE_KEY } from './useAutoSave';
 
 export function useSaveLoad() {
 	const { state, dispatch } = useStrata();
@@ -42,6 +44,7 @@ export function useSaveLoad() {
 				link.click();
 				toast.success(t('toast.save.successTitle'), { description: t('toast.save.successDesc', { filename: sanitized }), duration: 2000 });
 				dispatch({ type: 'MARK_CLEAN' });
+				del(AUTOSAVE_KEY).catch(() => {});
 			} catch (err) {
 				toast.error(t('toast.save.errorTitle'), { description: t('common.pleaseRetry') });
 			} finally {

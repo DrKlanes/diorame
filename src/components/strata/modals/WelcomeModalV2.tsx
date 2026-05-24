@@ -35,13 +35,14 @@ function ResourceLink({ href, children, mutedColor }: { href: string; children: 
 // ── WelcomeModalV2 ────────────────────────────────────────────────────────────
 
 interface WelcomeModalV2Props {
-	open:          boolean;
-	onClose:       () => void;
-	onLoadExample: () => Promise<void>;
-	dark:          boolean;
+	open:               boolean;
+	onClose:            () => void;
+	onLoadExample:      () => Promise<void>;
+	dark:               boolean;
+	onRestoreAutosave?: () => void;
 }
 
-export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeModalV2Props) {
+export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAutosave }: WelcomeModalV2Props) {
 	const { t } = useTranslation();
 	const [isLoadingExample, setIsLoadingExample] = useState(false);
 	const [shortcutsExpanded, setShortcutsExpanded] = useState(false);
@@ -166,11 +167,22 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 						</p>
 					</div>
 
-					{/* Zona 2 — Acciones (PrimaryActionLg arriba, Secondary abajo) */}
+					{/* Zona 2 — Acciones */}
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch', marginBottom: 28 }}>
-						<DiModal.PrimaryActionLg onClick={onClose}>
-							{t('modal.welcome.cta.primary')}
-						</DiModal.PrimaryActionLg>
+						{onRestoreAutosave && (
+							<DiModal.PrimaryActionLg onClick={onRestoreAutosave}>
+								{t('modal.welcome.cta.restore')}
+							</DiModal.PrimaryActionLg>
+						)}
+						{onRestoreAutosave ? (
+							<DiModal.SecondaryActionLg onClick={onClose}>
+								{t('modal.welcome.cta.primary')}
+							</DiModal.SecondaryActionLg>
+						) : (
+							<DiModal.PrimaryActionLg onClick={onClose}>
+								{t('modal.welcome.cta.primary')}
+							</DiModal.PrimaryActionLg>
+						)}
 						<DiModal.SecondaryAction onClick={handleLoadExample} disabled={isLoadingExample}>
 							{isLoadingExample ? t('modal.welcome.cta.loading') : t('modal.welcome.cta.secondary')}
 						</DiModal.SecondaryAction>
