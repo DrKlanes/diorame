@@ -84,6 +84,26 @@ lines = open('archivo.tsx', encoding='utf-8').readlines()
 print(repr(lines[782]))  # ver tabs exactos
 ```
 
+### Atomic write per file en operaciones multi-archivo
+
+Cuando un script Python escribe en múltiples archivos en una sola invocación, aplicar:
+
+1. **Atomic write per file** — cada archivo se completa íntegramente (read → modify → write) antes de pasar al siguiente. Nunca acumular cambios en memoria para volcar al final.
+2. **View inmediato tras cada archivo** — verificar el resultado con `view` antes de continuar con el siguiente.
+3. **No batch tácito** — si el script aborta a la mitad, los archivos ya escritos quedan en estado válido; los pendientes, intactos.
+
+**Por qué importa:** scripts que abortan tras modificaciones parciales dejan código sintácticamente roto pero invisible al build. TypeScript no detecta variables no declaradas dentro de JSX (`{displayedName}` sin declarar pasa `npm run build`). El error solo aparece en runtime o en revisión visual.
+
+**Cuándo aplica:**
+- Refactors masivos (renames, extracción de constantes, normalización de imports)
+- Migraciones de tokens, tipos o nombres de props
+- Cualquier loop que toque >3 archivos en un solo script
+
+**Cuándo NO aplica:**
+- Edits manuales de 1-2 archivos
+- `str_replace` único e idempotente
+- Operaciones de solo lectura (audits, diagnósticos)
+
 ### Tablet como consideración sistemática
 
 Diorame soporta desktop y tablet. Cualquier cambio que toque interacción debe contemplar input táctil sin teclado físico:
