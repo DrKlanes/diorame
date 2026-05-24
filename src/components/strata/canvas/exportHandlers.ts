@@ -1,4 +1,5 @@
 import { toast } from 'sonner@2.0.3';
+import { playSound } from '../../../utils/soundManager';
 import { Shape } from '../../../types/strataTypes';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
@@ -55,6 +56,7 @@ export const exportAsPNG = (
 			description: t('toast.export.snapshot.successDesc'),
 			duration: 2000,
 		});
+		playSound('success');
 	} catch (e) {
 		console.error("Export PNG failed", e);
 		toast.error(t('toast.export.snapshot.errorTitle'), {
@@ -351,6 +353,7 @@ export const exportAsSVG = async (
 			description: isCompressed ? t('toast.export.vector.successDescSvgz') : t('toast.export.vector.successDescSvg'),
 			duration: 2000,
 		});
+		playSound('success');
 	} catch (e) {
 		console.error("Export SVG failed", e);
 		toast.error(t('toast.export.vector.errorTitle'), {
@@ -403,6 +406,7 @@ export const exportAsMP4 = (
 				description: t('toast.export.animation.successDesc'),
 				duration: 2000,
 			});
+			playSound('success');
 			onFinish();
 		};
 		recorder.start();

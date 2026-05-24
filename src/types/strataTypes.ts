@@ -147,5 +147,6 @@ export interface AppState {
   lineMode: LineMode; // New: Line mode (tapered or uniform)
   projectName: string; // New: Project name for saving
   isDirty: boolean; // true when there are unsaved changes since last save
+  soundsEnabled: boolean;
   shouldFitToView?: boolean; // New: Trigger fit-to-view on load
 }

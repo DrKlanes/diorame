@@ -29,6 +29,12 @@ import {
 	generateTaperedStroke, generateUniformStroke, generateInkStroke, generateStrokeForMode,
 } from '../../utils/strokeGenerators';
 
+import {
+	setSoundsEnabled as setSoundsManagerEnabled,
+	persistSoundsPreference,
+	playSound,
+} from '../../utils/soundManager';
+
 export {
 	generateTaperedStroke, generateUniformStroke, generateInkStroke, generateStrokeForMode,
 };
@@ -102,7 +108,8 @@ type Action =
   | { type: 'COMPLETE_FIT_TO_VIEW' }
   | { type: 'FLIP_LAYER'; payload: { layerIndex: number; direction: 'horizontal' | 'vertical'; centerX: number; centerY: number } }
   | { type: 'TOGGLE_PALETTE_APPLY_TO_ALL' }
-  | { type: 'MARK_CLEAN' };
+  | { type: 'MARK_CLEAN' }
+  | { type: 'SET_SOUNDS_ENABLED'; payload: boolean };
 
 // --- Initial State ---
 
@@ -206,6 +213,7 @@ const initialState: AppState = {
   paletteApplyToAllActive: false,
   paletteApplyToAllSnapshot: null,
   isDirty: false,
+  soundsEnabled: false,
   shouldFitToView: false
 };
 
@@ -251,7 +259,12 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, isWelcomeModalOpen: !state.isWelcomeModalOpen };
     case 'MARK_CLEAN':
       return { ...state, isDirty: false };
+    case 'SET_SOUNDS_ENABLED':
+      setSoundsManagerEnabled(action.payload);
+      persistSoundsPreference(action.payload);
+      return { ...state, soundsEnabled: action.payload };
     case 'TOGGLE_UI':
+      playSound('click');
       return { ...state, isUIHidden: !state.isUIHidden };
     case 'SET_DRAWING_ACTIVE':
       return { ...state, isDrawing: action.payload };
@@ -291,6 +304,7 @@ function appReducer(state: AppState, action: Action): AppState {
         isOrganicMode: state.blobSmoothing ? state.isOrganicMode : false
       };
     case 'SET_PALETTE_MODE': {
+      playSound('click');
       if (state.paletteApplyToAllActive) {
           const allModes: Record<number, 'flat' | 'grad'> = {};
           for (let i = 0; i < state.totalLayers; i++) allModes[i] = action.payload;
@@ -347,6 +361,7 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'RESET_DRAWING_VIEW':
       return { ...state, drawingZoom: 1, drawingPan: { x: 0, y: 0 } };
     case 'ADD_SHAPE': {
+      if (state.tool === 'brush' || state.tool === 'line') playSound('brushStroke');
       const newShapes = [...state.shapes, action.payload];
       const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
       
@@ -359,6 +374,7 @@ function appReducer(state: AppState, action: Action): AppState {
       };
     }
     case 'ADD_SHAPES': {
+        if (state.tool === 'brush' || state.tool === 'line') playSound('brushStroke');
         const newShapes = [...state.shapes, ...action.payload];
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         
@@ -433,6 +449,7 @@ function appReducer(state: AppState, action: Action): AppState {
       };
     }
     case 'SET_MODE':
+      playSound('modeSwitch');
       if (action.payload === 'cinematic') {
           return {
               ...state,
@@ -442,6 +459,7 @@ function appReducer(state: AppState, action: Action): AppState {
       }
       return { ...state, mode: action.payload };
     case 'SET_TOOL':
+      playSound('click');
       if (action.payload === 'move') {
           return {
               ...state,
@@ -460,6 +478,7 @@ function appReducer(state: AppState, action: Action): AppState {
         isOrganicMode: action.payload === 'line' ? false : state.isOrganicMode
       };
     case 'SET_CINEMATIC_TYPE':
+      playSound('click');
       return { ...state, cinematicType: action.payload };
     case 'SET_COLOR_INDEX':
       return { ...state, currentColorIndex: action.payload };
@@ -532,6 +551,7 @@ function appReducer(state: AppState, action: Action): AppState {
         const targetIndex = action.payload;
         if (targetIndex === state.currentLayerIndex) return state;
         if (targetIndex < 0 || targetIndex >= state.totalLayers) return state;
+        playSound('click');
         const newZ = targetIndex * -BASE_DEPTH_STEP;
         const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
         const targetBrush = state.layerBrushSettings[targetIndex] || { thickness: state.currentLineThickness, mode: state.lineMode };
@@ -557,6 +577,7 @@ function appReducer(state: AppState, action: Action): AppState {
           drawingPan: action.payload.pan || state.drawingPan
       };
     case 'TOGGLE_DARK_MODE':
+      playSound('click');
       return { ...state, isDarkMode: !state.isDarkMode };
     case 'SET_FX_INTENSITY':
       return {
@@ -575,6 +596,7 @@ function appReducer(state: AppState, action: Action): AppState {
           }
       };
     case 'TOGGLE_FX':
+      playSound('click');
       return {
           ...state,
           postProcessingEnabled: {
@@ -585,6 +607,7 @@ function appReducer(state: AppState, action: Action): AppState {
           fxMasterEnabled: true,
       };
     case 'TOGGLE_FX_MASTER': {
+      playSound('click');
       const px = state.postProcessingEnabled;
       const hasActiveEffects = Object.values(px).some(v => v);
       if (hasActiveEffects && state.postProcessingSnapshot === null) {
@@ -609,6 +632,7 @@ function appReducer(state: AppState, action: Action): AppState {
       }
     }
     case 'TOGGLE_PALETTE_APPLY_TO_ALL': {
+      playSound('click');
       if (!state.paletteApplyToAllActive) {
           const activeMode = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
           const activeParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
@@ -813,6 +837,7 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'COMPLETE_FIT_TO_VIEW':
         return { ...state, shouldFitToView: false };
     case 'TOGGLE_LAYER_VISIBILITY': {
+        playSound('click');
         const layerIndex = action.payload;
         const isHidden = state.hiddenLayers.includes(layerIndex);
         return {
@@ -823,6 +848,7 @@ function appReducer(state: AppState, action: Action): AppState {
         };
     }
     case 'TOGGLE_3D_LOCK': {
+        playSound('click');
         const layerIndex = action.payload;
         const isLocked = state.locked3DLayers.includes(layerIndex);
         return {
@@ -1106,6 +1132,7 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'SET_POINT_OF_INTEREST':
         return { ...state, pointOfInterest: action.payload };
     case 'CLEAR_POINT_OF_INTEREST':
+        playSound('click');
         return { ...state, pointOfInterest: null };
     case 'SET_CINEMATIC_SPEED':
         return { ...state, cinematicSpeed: action.payload };
@@ -1162,6 +1189,7 @@ function appReducer(state: AppState, action: Action): AppState {
         return { ...state, lineThicknessBeforePreview: null };
     }
     case 'TOGGLE_HANDHELD':
+        playSound('click');
         return { ...state, isHandheldEnabled: !state.isHandheldEnabled };
     case 'SET_HANDHELD_INTENSITY':
         return { ...state, handheldIntensity: action.payload };
@@ -1449,6 +1477,7 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'DISMISS_ONBOARDING':
         return { ...state, isOnboardingVisible: false };
     case 'SET_ACTIVE_PALETTE': {
+        playSound('click');
         const newId = action.payload;
         if (newId === state.activePaletteId) return state;
         

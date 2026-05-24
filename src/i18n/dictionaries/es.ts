@@ -296,6 +296,9 @@ export const es: Dictionary = {
 	'modal.welcome.cta.secondary': 'Cargar escena de ejemplo',
 	'modal.welcome.cta.loading': 'Cargando…',
 	'modal.welcome.cta.restore': 'Continuar trabajo anterior',
+	'modal.welcome.sounds.toggle': 'Activar sonidos',
+	'modal.welcome.sounds.creditPrefix': 'Sonidos por',
+	'modal.welcome.sounds.creditSuffix': '(Pixabay)',
 
 	'modal.welcome.bugReport.subject': 'Reporte de error en Diorame — v{version}',
 	'modal.welcome.bugReport.body': 'Qué esperaba:\n\n\nQué ocurrió:\n\n\nPasos para reproducirlo:\n\n\n---\nNavegador:\nSO:',

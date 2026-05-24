@@ -321,6 +321,9 @@ export const en: Dictionary = {
 	'modal.welcome.cta.secondary': 'Load example scene',
 	'modal.welcome.cta.loading': 'Loading…',
 	'modal.welcome.cta.restore': 'Continue previous work',
+	'modal.welcome.sounds.toggle': 'Enable UI sounds',
+	'modal.welcome.sounds.creditPrefix': 'Sounds by',
+	'modal.welcome.sounds.creditSuffix': '(Pixabay)',
 
 	// Bug report email (dinámico)
 	'modal.welcome.bugReport.subject': 'Diorame bug report — v{version}',

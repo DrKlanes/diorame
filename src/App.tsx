@@ -10,6 +10,7 @@ import { MobileBlockScreenV2, ExportProgressV2, WelcomeModalV2 } from './compone
 import { ToastProvider } from './components/ui/toast-provider';
 import { PreviewPage } from './preview/PreviewPage';
 import { useAutoSave, AUTOSAVE_KEY } from './hooks/useAutoSave';
+import { initSoundsFromStorage } from './utils/soundManager';
 
 function AppContent() {
   const { state, dispatch } = useStrata();
@@ -21,6 +22,12 @@ function AppContent() {
     get(AUTOSAVE_KEY)
       .then(data => { if (data) setAutosaveData(data); })
       .catch(() => {});
+  }, []);
+
+  // Sincronizar preferencia de sonidos desde localStorage al state
+  useEffect(() => {
+    const enabled = initSoundsFromStorage();
+    if (enabled) dispatch({ type: 'SET_SOUNDS_ENABLED', payload: true });
   }, []);
 
   // Mantener el autosave actualizado cada 30s cuando isDirty

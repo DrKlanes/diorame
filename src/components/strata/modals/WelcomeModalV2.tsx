@@ -9,6 +9,7 @@ import logoImg from 'figma:asset/logo-symbol.png';
 import { hasFinePointer, formatShortcut, SHORTCUTS_GROUPS } from '../../../utils/keyboardShortcuts';
 import { useTranslation } from '../../../i18n';
 import { LanguageToggle } from '../../../design-system/LanguageToggle';
+import { useStrata } from '../StrataContext';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -44,6 +45,7 @@ interface WelcomeModalV2Props {
 
 export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAutosave }: WelcomeModalV2Props) {
 	const { t } = useTranslation();
+	const { state, dispatch } = useStrata();
 	const [isLoadingExample, setIsLoadingExample] = useState(false);
 	const [shortcutsExpanded, setShortcutsExpanded] = useState(false);
 	const WELCOME_VIDEOS = [
@@ -289,7 +291,27 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 							</div>
 						)}
 
-						<div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 16 }}>
+						<div style={{ marginTop: 10 }}>
+							<label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+								<input
+									type="checkbox"
+									checked={state.soundsEnabled}
+									onChange={e => dispatch({ type: 'SET_SOUNDS_ENABLED', payload: e.target.checked })}
+									style={{ cursor: 'pointer', accentColor: '#7c5cbf', margin: 0 }}
+								/>
+								<span>{t('modal.welcome.sounds.toggle')}</span>
+							</label>
+						</div>
+						<div style={{ marginTop: 6 }}>
+							{t('modal.welcome.sounds.creditPrefix')}{' '}
+							<ResourceLink href="https://pixabay.com/es/users/juniorsoundays-19205462/" mutedColor={muted}>Juniorsoundays</ResourceLink>
+							{', '}
+							<ResourceLink href="https://pixabay.com/es/users/freesound_community-46691455/" mutedColor={muted}>freesound_community</ResourceLink>
+							{' & '}
+							<ResourceLink href="https://pixabay.com/es/users/photoqueiros-44078343/" mutedColor={muted}>Photoqueiros</ResourceLink>
+							{' '}{t('modal.welcome.sounds.creditSuffix')}
+						</div>
+						<div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 10 }}>
 							<LanguageToggle />
 						</div>
 					</div>

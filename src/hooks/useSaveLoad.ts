@@ -1,6 +1,7 @@
 import { useRef, useCallback } from 'react';
 import { toast } from 'sonner@2.0.3';
 import { del } from 'idb-keyval';
+import { playSound } from '../utils/soundManager';
 import { useStrata } from '../components/strata/StrataContext';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../constants/project';
 import { useTranslation } from '../i18n';
@@ -43,6 +44,7 @@ export function useSaveLoad() {
 				document.body.appendChild(link);
 				link.click();
 				toast.success(t('toast.save.successTitle'), { description: t('toast.save.successDesc', { filename: sanitized }), duration: 2000 });
+				playSound('success');
 				dispatch({ type: 'MARK_CLEAN' });
 				del(AUTOSAVE_KEY).catch(() => {});
 			} catch (err) {
