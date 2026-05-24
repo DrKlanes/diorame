@@ -2,14 +2,14 @@ import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import {
 	Point, Shape, AppMode, ToolType, CinematicType, ExportType, LineMode,
 	PostProcessingSettings, PostProcessingEnabled, HandheldIntensity,
-	TextSession, HistorySnapshot, AppState,
+	TextSession, HistorySnapshot, AppState, LayerGradParams,
 } from '../../types/strataTypes';
 import { UNTITLED_PROJECT_SENTINEL } from '../../constants/project';
 
 export type {
 	Point, Shape, AppMode, ToolType, CinematicType, ExportType, LineMode,
 	PostProcessingSettings, PostProcessingEnabled, HandheldIntensity,
-	TextSession, HistorySnapshot, AppState,
+	TextSession, HistorySnapshot, AppState, LayerGradParams,
 };
 
 // --- Constants ---
@@ -189,9 +189,6 @@ const initialState: AppState = {
   layerRenderModes: {},
   layerGradParams: {},
   layerBrushSettings: {},
-  paletteGradientAngle: 90, // Default Vertical
-  paletteGradientIntensity: 0.2,
-  paletteGradientType: 'solid',
   pointOfInterest: null,
   cinematicSpeed: 1.0, // Default Normal Speed
   isDrawBehind: false,
@@ -299,7 +296,6 @@ function appReducer(state: AppState, action: Action): AppState {
       const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
       return { 
           ...state, 
-          paletteGradientAngle: action.payload,
           layerGradParams: {
               ...state.layerGradParams,
               [state.currentLayerIndex]: { ...currentParams, angle: action.payload }
@@ -310,7 +306,6 @@ function appReducer(state: AppState, action: Action): AppState {
       const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
       return { 
           ...state, 
-          paletteGradientIntensity: action.payload,
           layerGradParams: {
               ...state.layerGradParams,
               [state.currentLayerIndex]: { ...currentParams, intensity: action.payload }
@@ -321,7 +316,6 @@ function appReducer(state: AppState, action: Action): AppState {
       const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
       return {
           ...state,
-          paletteGradientType: action.payload,
           layerGradParams: {
               ...state.layerGradParams,
               [state.currentLayerIndex]: { ...currentParams, gradType: action.payload }
@@ -378,7 +372,6 @@ function appReducer(state: AppState, action: Action): AppState {
         layerRenderModes: snapshot.layerRenderModes,
         layerGradParams: snapshot.layerGradParams,
         layerBrushSettings: snapshot.layerBrushSettings,
-        paletteGradientType: (snapshot.layerGradParams?.[layerIndexToUse]?.gradType) || 'solid',
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -410,7 +403,6 @@ function appReducer(state: AppState, action: Action): AppState {
         layerRenderModes: snapshot.layerRenderModes,
         layerGradParams: snapshot.layerGradParams,
         layerBrushSettings: snapshot.layerBrushSettings,
-        paletteGradientType: (snapshot.layerGradParams?.[layerIndexToUse]?.gradType) || 'solid',
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -455,7 +447,6 @@ function appReducer(state: AppState, action: Action): AppState {
           const nextIndex = state.currentLayerIndex + 1;
           const newZ = nextIndex * -BASE_DEPTH_STEP;
           const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-          const nextParams = state.layerGradParams[nextIndex] || GRADIENT_DEFAULTS;
           const nextBrush = state.layerBrushSettings[nextIndex] || { thickness: state.currentLineThickness, mode: state.lineMode };
           return {
               ...state,
@@ -464,9 +455,6 @@ function appReducer(state: AppState, action: Action): AppState {
               isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
               isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
               paletteMode: state.layerRenderModes[nextIndex] || 'flat',
-              paletteGradientAngle: nextParams.angle,
-              paletteGradientIntensity: nextParams.intensity,
-              paletteGradientType: nextParams.gradType || 'solid',
               currentLineThickness: nextBrush.thickness,
               lineMode: nextBrush.mode
           };
@@ -483,9 +471,6 @@ function appReducer(state: AppState, action: Action): AppState {
               isDrawInside: false,
               isDrawBehind: false,
               paletteMode: 'flat',
-              paletteGradientAngle: 90,
-              paletteGradientIntensity: 0.2,
-              paletteGradientType: 'solid',
               currentLineThickness: state.currentLineThickness,
               lineMode: state.lineMode
           };
@@ -505,7 +490,6 @@ function appReducer(state: AppState, action: Action): AppState {
             const prevIndex = state.currentLayerIndex - 1;
             const newZ = prevIndex * -BASE_DEPTH_STEP;
             const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-            const prevParams = state.layerGradParams[prevIndex] || GRADIENT_DEFAULTS;
             const prevBrush = state.layerBrushSettings[prevIndex] || { thickness: state.currentLineThickness, mode: state.lineMode };
             return {
                 ...state,
@@ -514,9 +498,6 @@ function appReducer(state: AppState, action: Action): AppState {
                 isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
                 isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
                 paletteMode: state.layerRenderModes[prevIndex] || 'flat',
-                paletteGradientAngle: prevParams.angle,
-                paletteGradientIntensity: prevParams.intensity,
-                paletteGradientType: prevParams.gradType || 'solid',
                 currentLineThickness: prevBrush.thickness,
                 lineMode: prevBrush.mode
             };
@@ -529,7 +510,6 @@ function appReducer(state: AppState, action: Action): AppState {
         if (targetIndex < 0 || targetIndex >= state.totalLayers) return state;
         const newZ = targetIndex * -BASE_DEPTH_STEP;
         const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-        const targetParams = state.layerGradParams[targetIndex] || GRADIENT_DEFAULTS;
         const targetBrush = state.layerBrushSettings[targetIndex] || { thickness: state.currentLineThickness, mode: state.lineMode };
         return {
             ...state,
@@ -538,9 +518,6 @@ function appReducer(state: AppState, action: Action): AppState {
             isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
             isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
             paletteMode: state.layerRenderModes[targetIndex] || 'flat',
-            paletteGradientAngle: targetParams.angle,
-            paletteGradientIntensity: targetParams.intensity,
-            paletteGradientType: targetParams.gradType || 'solid',
             currentLineThickness: targetBrush.thickness,
             lineMode: targetBrush.mode
         };
@@ -639,9 +616,6 @@ function appReducer(state: AppState, action: Action): AppState {
           layerGradParams: {},
           layerBrushSettings: {},
           paletteMode: 'flat',
-          paletteGradientAngle: 90,
-          paletteGradientIntensity: 0.2,
-          paletteGradientType: 'solid',
           focalLength: initialState.focalLength,
           viewZoomOffset: initialState.viewZoomOffset,
           layerSpacingFactor: initialState.layerSpacingFactor,
@@ -673,9 +647,11 @@ function appReducer(state: AppState, action: Action): AppState {
       delete (mergedPostProcessingEnabled as any).grungeOverlay;
       
       const loadedLayerRenderModes = action.payload.layerRenderModes || {};
-      const loadedLayerGradParams = action.payload.layerGradParams || {};
+      const rawGradParams = action.payload.layerGradParams || {};
+      const loadedLayerGradParams = Object.fromEntries(
+          Object.entries(rawGradParams).map(([k, v]: [string, any]) => [k, { ...GRADIENT_DEFAULTS, ...v }])
+      ) as Record<number, LayerGradParams>;
       const loadedLayerBrushSettings = action.payload.layerBrushSettings || {};
-      const firstLayerParams = loadedLayerGradParams[0] || GRADIENT_DEFAULTS;
       
       const loadedPaletteId = action.payload.activePaletteId || 'primary';
       const loadedPalette = loadedPaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
@@ -746,9 +722,6 @@ function appReducer(state: AppState, action: Action): AppState {
           layerGradParams: loadedLayerGradParams,
           layerBrushSettings: loadedLayerBrushSettings,
           paletteMode: loadedLayerRenderModes[0] || 'flat',
-          paletteGradientAngle: firstLayerParams.angle,
-          paletteGradientIntensity: firstLayerParams.intensity,
-          paletteGradientType: firstLayerParams.gradType || 'solid',
           currentLineThickness: safeLineThickness,
           lineMode: safeLineMode,
           activePaletteId: loadedPaletteId,
@@ -974,7 +947,6 @@ function appReducer(state: AppState, action: Action): AppState {
         
         // Sync global settings with new current layer
         const nextBrush = newBrushSettings[newCurrentLayer] || { thickness: state.currentLineThickness, mode: state.lineMode };
-        const nextGradP = newGradParams[newCurrentLayer] || GRADIENT_DEFAULTS;
         
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         
@@ -990,9 +962,6 @@ function appReducer(state: AppState, action: Action): AppState {
             layerGradParams: newGradParams,
             layerBrushSettings: newBrushSettings,
             paletteMode: newRenderModes[newCurrentLayer] || 'flat',
-            paletteGradientAngle: nextGradP.angle,
-            paletteGradientIntensity: nextGradP.intensity,
-            paletteGradientType: nextGradP.gradType || 'solid',
             currentLineThickness: nextBrush.thickness,
             lineMode: nextBrush.mode,
             history,

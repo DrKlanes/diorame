@@ -1,5 +1,5 @@
 import React from 'react';
-import { useStrata } from '../StrataContext';
+import { useStrata, GRADIENT_DEFAULTS } from '../StrataContext';
 import { DiSegmentControl } from '../../../design-system';
 import { useTranslation } from '../../../i18n';
 
@@ -16,9 +16,10 @@ export function PaletteHeader({ dark }: PaletteHeaderProps) {
 	};
 
 	// Map 3-state (flat / grad+solid / grad+fade) to segment value
+	const currentGradType = state.layerGradParams[state.currentLayerIndex]?.gradType ?? GRADIENT_DEFAULTS.gradType;
 	const modeValue: PaletteSegmentMode =
 		state.paletteMode === 'flat' ? 'flat' :
-		state.paletteGradientType === 'fade' ? 'fade' : 'gradient';
+		currentGradType === 'fade' ? 'fade' : 'gradient';
 
 	const handleModeChange = (v: PaletteSegmentMode) => {
 		if (v === 'flat') {

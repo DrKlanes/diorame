@@ -28,6 +28,12 @@ export type CinematicType = 'forward' | 'spiral' | 'yoyo' | 'pulse' | 'twist' | 
 export type ExportType = 'png' | 'mp4' | 'svg' | 'svgz';
 export type LineMode = 'tapered' | 'uniform' | 'ink';
 
+export type LayerGradParams = {
+    angle: number;
+    intensity: number;
+    gradType: 'solid' | 'fade';
+};
+
 export type PostProcessingSettings = {
     grain: number;      // 0 to 1
     vignette: number;   // 0 to 1
@@ -121,11 +127,8 @@ export interface AppState {
   gridEnabled: boolean; // Composition guide overlay (3x3 dot grid). Persisted in localStorage. NOT serialized in .dior.
   paletteMode: 'flat' | 'grad'; // New: Palette Rendering Mode
   layerRenderModes: Record<number, 'flat' | 'grad'>; // New: Per-layer render mode
-  layerGradParams: Record<number, { angle: number; intensity: number; gradType?: 'solid' | 'fade' }>; // New: Per-layer gradient params
+  layerGradParams: Record<number, LayerGradParams>; // New: Per-layer gradient params
   layerBrushSettings: Record<number, { thickness: number; mode: LineMode }>; // New: Per-layer brush settings
-  paletteGradientAngle: number; // New: Gradient Angle in degrees
-  paletteGradientIntensity: number; // New: Gradient Intensity (0 to 1)
-  paletteGradientType: 'solid' | 'fade'; // New: Gradient type (solid-to-solid vs solid-to-transparent)
   pointOfInterest: { x: number; y: number; z: number } | null; // New: Point of Interest for camera focus
   cinematicSpeed: number; // New: Speed multiplier for cinematic moves (0.1 to 1.0)
   isDrawBehind: boolean; // New: Draw Behind mode
