@@ -16,6 +16,7 @@ import { FXPanel } from './fx/FXPanel';
 import { ToolOptionsPanel } from './drawing/ToolOptionsPanel';
 import { TextSessionPanel } from './text/TextSessionPanel';
 import { ShowUIButton } from './viewport/ShowUIButton';
+import { useBeforeUnload } from '../../hooks/useBeforeUnload';
 
 // Overlay panels float above DrawingToolbar:
 // BottomBar sits at bottom:12; toolbar height = 40px; gap = 8px → bottom: 60
@@ -43,6 +44,9 @@ export function ControlsV2() {
 	const { dark } = useTheme();
 	const { state, dispatch } = useStrata();
 	const { t } = useTranslation();
+
+	// Side-effect 0: warn on unsaved changes (registers/unregisters with isDirty)
+	useBeforeUnload();
 
 	// Side-effect 1: global keyboard shortcuts
 	const { handleSaveProject } = useSaveLoad();

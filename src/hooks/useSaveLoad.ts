@@ -41,6 +41,7 @@ export function useSaveLoad() {
 				document.body.appendChild(link);
 				link.click();
 				toast.success(t('toast.save.successTitle'), { description: t('toast.save.successDesc', { filename: sanitized }), duration: 2000 });
+				dispatch({ type: 'MARK_CLEAN' });
 			} catch (err) {
 				toast.error(t('toast.save.errorTitle'), { description: t('common.pleaseRetry') });
 			} finally {

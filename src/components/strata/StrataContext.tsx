@@ -101,7 +101,8 @@ type Action =
   | { type: 'SET_ACTIVE_PALETTE'; payload: 'primary' | 'alternative' }
   | { type: 'COMPLETE_FIT_TO_VIEW' }
   | { type: 'FLIP_LAYER'; payload: { layerIndex: number; direction: 'horizontal' | 'vertical'; centerX: number; centerY: number } }
-  | { type: 'TOGGLE_PALETTE_APPLY_TO_ALL' };
+  | { type: 'TOGGLE_PALETTE_APPLY_TO_ALL' }
+  | { type: 'MARK_CLEAN' };
 
 // --- Initial State ---
 
@@ -204,6 +205,7 @@ const initialState: AppState = {
   projectName: UNTITLED_PROJECT_SENTINEL, // Default project name (sentinel; resolved via t() at render time)
   paletteApplyToAllActive: false,
   paletteApplyToAllSnapshot: null,
+  isDirty: false,
   shouldFitToView: false
 };
 
@@ -247,6 +249,8 @@ function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'TOGGLE_WELCOME_MODAL':
       return { ...state, isWelcomeModalOpen: !state.isWelcomeModalOpen };
+    case 'MARK_CLEAN':
+      return { ...state, isDirty: false };
     case 'TOGGLE_UI':
       return { ...state, isUIHidden: !state.isUIHidden };
     case 'SET_DRAWING_ACTIVE':
@@ -351,6 +355,7 @@ function appReducer(state: AppState, action: Action): AppState {
         shapes: newShapes,
         history,
         historyIndex: index,
+        isDirty: true,
       };
     }
     case 'ADD_SHAPES': {
@@ -362,6 +367,7 @@ function appReducer(state: AppState, action: Action): AppState {
           shapes: newShapes,
           history,
           historyIndex: index,
+          isDirty: true,
         };
       }
     case 'UNDO': {
@@ -687,6 +693,7 @@ function appReducer(state: AppState, action: Action): AppState {
           postProcessingSnapshot: null,
           paletteApplyToAllActive: false,
           paletteApplyToAllSnapshot: null,
+          isDirty: false,
       }
     case 'LOAD_PROJECT':
       // Ensure we merge postProcessing settings correctly to avoid undefined values
@@ -801,6 +808,7 @@ function appReducer(state: AppState, action: Action): AppState {
           isDrawing: false,
           paletteApplyToAllActive: safePaletteApplyToAllActive,
           paletteApplyToAllSnapshot: safePaletteApplyToAllSnapshot,
+          isDirty: false,
       };
     case 'COMPLETE_FIT_TO_VIEW':
         return { ...state, shouldFitToView: false };
@@ -853,7 +861,8 @@ function appReducer(state: AppState, action: Action): AppState {
             ...state,
             shapes: newShapes,
             history,
-            historyIndex: index
+            historyIndex: index,
+            isDirty: true,
         };
     }
     case 'TRANSFORM_LAYER': {
@@ -909,7 +918,8 @@ function appReducer(state: AppState, action: Action): AppState {
             ...state,
             shapes: newShapes,
             history,
-            historyIndex: index
+            historyIndex: index,
+            isDirty: true,
         };
     }
     case 'FLIP_LAYER': {
@@ -956,7 +966,8 @@ function appReducer(state: AppState, action: Action): AppState {
             ...state,
             shapes: newShapes,
             history,
-            historyIndex: index
+            historyIndex: index,
+            isDirty: true,
         };
     }
     case 'DELETE_CURRENT_LAYER': {
@@ -1032,7 +1043,8 @@ function appReducer(state: AppState, action: Action): AppState {
             currentLineThickness: nextBrush.thickness,
             lineMode: nextBrush.mode,
             history,
-            historyIndex: index
+            historyIndex: index,
+            isDirty: true,
         };
     }
     case 'START_TEXT_SESSION':
@@ -1083,7 +1095,8 @@ function appReducer(state: AppState, action: Action): AppState {
             shapes: shapesWithText,
             history: textHistory,
             historyIndex: textIndex,
-            textSession: { ...state.textSession, isActive: false, content: '' }
+            textSession: { ...state.textSession, isActive: false, content: '' },
+            isDirty: true,
         };
     case 'CANCEL_TEXT_SESSION':
         return {
@@ -1262,7 +1275,8 @@ function appReducer(state: AppState, action: Action): AppState {
         return {
             ...newState,
             history,
-            historyIndex: index
+            historyIndex: index,
+            isDirty: true,
         };
     }
     case 'MOVE_LAYER_TO': {
@@ -1351,7 +1365,8 @@ function appReducer(state: AppState, action: Action): AppState {
         return {
             ...newState,
             history,
-            historyIndex: index
+            historyIndex: index,
+            isDirty: true,
         };
     }
     case 'DUPLICATE_LAYER': {
@@ -1427,7 +1442,8 @@ function appReducer(state: AppState, action: Action): AppState {
         return {
             ...newState,
             history,
-            historyIndex: index
+            historyIndex: index,
+            isDirty: true,
         };
     }
     case 'DISMISS_ONBOARDING':
