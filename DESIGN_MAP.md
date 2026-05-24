@@ -380,9 +380,9 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 | G1 | ✅ RESUELTO (10.5 c3 + 10.5-fix-final c5) — `FileControlsPill` botón "New" abre `ClearCanvasAlertV2`, limpia sessionStorage y resetea `projectName` a "Untitled Project" | `topbar/FileControlsPill.tsx` | — |
 | G2 | ✅ RESUELTO (10.5 commit 4) — `FileControlsPill` undo/redo con disabled states basados en `historyIndex` | `topbar/FileControlsPill.tsx` | — |
 | G_fx | ✅ RESUELTO (10.5-fix-final c1) — `TOGGLE_FX_MASTER` como snapshot/restore: apaga todos + guarda snapshot; restaura desde snapshot. `postProcessingSnapshot: PostProcessingEnabled | null` en AppState. `TOGGLE_FX` invalida el snapshot. | `StrataContext.tsx`, `strataTypes.ts`, `fx/FXPanel.tsx` | — |
-| G3 | POSPUESTO A 2.1 — refactor `paletteGradient*` mirrors a `layerGradParams` directo en `GradientControls`. No bloquea release. | `colorpalette/GradientControls.tsx` | — |
+| G3 | ✅ Resuelto en 2.1.0 — refactor `paletteGradient*` mirrors a `layerGradParams` directo en `GradientControls`. No bloquea release. | `colorpalette/GradientControls.tsx` | — |
 | G4 | ✅ RESUELTO (10.5 c5) — `ControlsV2` posiciona ambos paneles como overlays absolutos `bottom:60 left:50%` sobre DrawingToolbar | ambos | — |
-| G5 | POSPUESTO A 2.1 — ResetViewPill es draw-only por diseño. VIEW camera reset via CameraBar presets. | `viewport/ResetViewPill.tsx` | — |
+| G5 | ✅ Resuelto (ya operativo) — ResetViewPill es draw-only por diseño. VIEW camera reset via CameraBar presets. | `viewport/ResetViewPill.tsx` | — |
 | G6 | ✅ RESUELTO (10.6 c6) — `T.warning`/`T.warningDark` añadidos a tokens.ts. TextSessionPanel usa `dk(dark, T.warning, T.warningDark)`. | `design-system/tokens.ts` | — |
 | G7 | ✅ RESUELTO (10.6 c7) — 6 tooltips traducidos al inglés (New, Open, Save, Export SVG, Undo, Redo). | `topbar/FileControlsPill.tsx` | — |
 
@@ -395,5 +395,5 @@ Todos importados desde `src/components/strata/modals/index.ts`.
 - **Tokens design system v2:** `src/design-system/tokens.ts` — T, TYPE, SPACE, RADIUS, SHADOW, dk()
 - **Figma file key:** VYsPFnI7mE5XnCPpiak1fR (Diorame-UI)
 - **Capturas de referencia:** compartidas en chat del copiloto Claude.ai (DRAW + VIEW)
-- **APP_VERSION al cierre de esta fase:** 1.16.0 (en `src/constants/version.ts`)
+- **APP_VERSION al cierre de esta fase:** 2.1.0 (en `src/constants/version.ts`)
 - **Rama activa:** `feat/ui-redesign-v2`

@@ -492,7 +492,25 @@ APP_VERSION = "1.14.0"          // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 -> 1.15.1)
+## Appendix C: Changelog Highlights (1.7.3 -> 2.1.0)
+
+### 2.1.0 — 2026-05-24
+
+Internationalization release. EN/ES bilingual support shipped, with several architectural refactors and visual polish.
+
+**Key changes:**
+- **i18n system**: full EN/ES support with browser-based auto-detection, localStorage persistence, and EN|ES toggle in WelcomeModal (bottom-left corner). Custom solution without external i18n libraries.
+- **Product renames**: `Orbit → Free` (EN) / `Libre` (ES), `View → Cinema` (EN) / `Cine` (ES), `Tapered → Fluido` (ES only, Brush type). `Handheld → Pocket` (EN/ES) to avoid trademark associations.
+- **Tagline updated**: “Draw in 2D. And watch it come alive in 3D.” / “Dibuja en 2D. Y mira cómo cobra vida en 3D.”
+- **G3 resolved**: `paletteGradient*` UI-mirror fields removed from AppState. New named type `LayerGradParams` (canonical, `gradType` required). `GradientControls` and `PaletteHeader` now read directly from `layerGradParams[currentLayerIndex]`. Reducer simplified — no more bidirectional sync between mirror and canonical state.
+- **Architectural refactors during i18n**: `DiSegmentControl` decoupled from string values via `{value, label}[]` API (i18n-safe by construction). Sentinel pattern for `Untitled Project` with Unicode normalization (NFD + diacritics strip). `Wordmark` component unified across the design system.
+- **WelcomeModal visual polish**: width expanded 440px → 580px to let the tagline breathe. Footer links unified into a single row with middot separators (`tutorial · @dumaker · Ko-fi 💜`). Ko-fi heart emoji changed from 🤍 to 💜 for brand consistency.
+- **Surgical exception to StrataCanvas (frozen zone)**: `t` translation function passed to pure export functions (1 import + 1 hook + 5 call sites + dependency array). Second authorized modification to the frozen zone, after careful review.
+- **Cleanup**: 4 orphan i18n keys removed (`fx.atmosphere.stopMotion.tooltip`, `modal.welcome.gotIt`, `common.cancel`, `common.done`). Unused `state` destructuring removed from `ResetViewPill`. New atomic write protocol added to CLAUDE.md.
+- **G5 reclassified**: ResetViewPill draw-only behavior was already operational in production — no actual work required, gap recategorized in DESIGN_MAP.
+
+**Discarded (not deferred)**:
+- **Symmetry dual axis**: evaluated and consciously discarded. Current vertical symmetry (horizontal mirror) covers real use cases; the risk of modifying StrataCanvas (frozen zone, two surgical exceptions already spent) does not justify the marginal value. Out of backlog.
 
 ---
 
