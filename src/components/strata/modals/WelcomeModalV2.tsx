@@ -190,6 +190,8 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 							<ResourceLink href="https://www.instagram.com/dumaker/">{t('modal.welcome.dumaker')}</ResourceLink>
 							<span style={{ color: muted, margin: '0 6px' }}>·</span>
 							<ResourceLink href="https://ko-fi.com/dumaker">{t('modal.welcome.kofi')}</ResourceLink>
+							<span style={{ color: muted, margin: '0 6px' }}>·</span>
+							<span style={{ color: muted, fontSize: 10 }}>v{APP_VERSION}</span>
 						</div>
 					</div>
 
