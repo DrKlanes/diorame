@@ -299,6 +299,8 @@ export const en: Dictionary = {
 	'viewport.showUi': 'Show UI',
 	'viewport.flipHorizontal': 'Flip Horizontal',
 	'viewport.flipVertical': 'Flip Vertical',
+	'viewport.cinema.doubleTapHint': 'Double tap to focus',
+	'viewport.cinema.resetPoi': 'Reset focus',
 
 	// ═══════════════════════════════════════════════
 	// MODALS

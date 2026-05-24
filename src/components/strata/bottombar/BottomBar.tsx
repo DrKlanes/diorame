@@ -3,6 +3,7 @@ import { useStrata } from '../StrataContext';
 import { useTheme } from '../../../design-system/useTheme';
 import { DrawingToolbar } from './DrawingToolbar';
 import { CameraBar } from './CameraBar';
+import { POIPill } from '../viewport/POIPill';
 
 export function BottomBar() {
 	const { state } = useStrata();
@@ -17,7 +18,14 @@ export function BottomBar() {
 			transform: 'translateX(-50%)',
 			zIndex: 50,
 		}}>
-			{mode === 'drawing' ? <DrawingToolbar dark={dark} /> : <CameraBar dark={dark} />}
+			{mode === 'cinematic' ? (
+				<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+					<CameraBar dark={dark} />
+					<POIPill />
+				</div>
+			) : (
+				<DrawingToolbar dark={dark} />
+			)}
 		</div>
 	);
 }

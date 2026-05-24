@@ -275,6 +275,8 @@ export const es: Dictionary = {
 	'viewport.showUi': 'Mostrar interfaz',
 	'viewport.flipHorizontal': 'Voltear horizontal',
 	'viewport.flipVertical': 'Voltear vertical',
+	'viewport.cinema.doubleTapHint': 'Doble tap para centrar',
+	'viewport.cinema.resetPoi': 'Quitar punto',
 
 	// ═══════════════════════════════════════════════
 	// MODALS
