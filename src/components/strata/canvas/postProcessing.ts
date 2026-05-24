@@ -1,5 +1,61 @@
 import { FOG_DENSITY_FACTOR } from '../../../constants/renderConstants';
 
+// ─── Riso+ PNG texture singleton ─────────────────────────────────────
+// Lazy-loaded grayscale texture for organic paper wear.
+// On load: pre-processes the texture with a levels curve for high contrast.
+// Whites become alpha-opaque (will erase ink via destination-out).
+// Blacks become alpha-zero (leave ink intact).
+const RISO_PLUS_URL = '/textures/texture-riso_plus.png';
+const RISO_PLUS_LEVELS_LOW = 50;    // below this → forced to alpha 0 (no erase)
+const RISO_PLUS_LEVELS_HIGH = 170;  // above this → forced to alpha 255 (full erase)
+let _risoPlusCanvas: HTMLCanvasElement | null = null;
+let _risoPlusLoading = false;
+
+function getRisoPlusTexture(): HTMLCanvasElement | null {
+	if (_risoPlusCanvas) return _risoPlusCanvas;
+	if (_risoPlusLoading || typeof window === 'undefined') return null;
+	_risoPlusLoading = true;
+	const img = new Image();
+	img.src = RISO_PLUS_URL;
+	img.onload = () => {
+		try {
+			const canvas = document.createElement('canvas');
+			canvas.width = img.naturalWidth;
+			canvas.height = img.naturalHeight;
+			const ctx = canvas.getContext('2d');
+			if (!ctx) {
+				_risoPlusLoading = false;
+				return;
+			}
+			ctx.drawImage(img, 0, 0);
+			const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+			const data = imageData.data;
+			const range = RISO_PLUS_LEVELS_HIGH - RISO_PLUS_LEVELS_LOW;
+			for (let i = 0; i < data.length; i += 4) {
+				const v = data[i]; // grayscale: R≈G≈B
+				let out: number;
+				if (v <= RISO_PLUS_LEVELS_LOW) {
+					out = 0;
+				} else if (v >= RISO_PLUS_LEVELS_HIGH) {
+					out = 255;
+				} else {
+					out = Math.round(((v - RISO_PLUS_LEVELS_LOW) / range) * 255);
+				}
+				data[i] = out;
+				data[i + 1] = out;
+				data[i + 2] = out;
+				data[i + 3] = out; // alpha matches luminance for destination-out
+			}
+			ctx.putImageData(imageData, 0, 0);
+			_risoPlusCanvas = canvas;
+		} catch (e) {
+			_risoPlusLoading = false;
+		}
+	};
+	img.onerror = () => { _risoPlusLoading = false; };
+	return null;
+}
+
 // ─── Per-layer effects (called inside the layer render loop) ─────────────────
 
 /**
@@ -163,6 +219,14 @@ export const applyRisoV2 = (
 	offCtx.globalCompositeOperation = 'destination-out';
 	offCtx.globalAlpha = intensity * 0.6;
 	offCtx.drawImage(cachedGrainCanvas, 0, 0, w, h);
+	// ─── Pass 1.5 — PNG paper wear (organic destination-out mask) ──
+	// Pre-processed texture with extreme contrast. Alpha is linear with intensity, full range.
+	const risoPlus = getRisoPlusTexture();
+	if (risoPlus) {
+		offCtx.globalCompositeOperation = 'destination-out';
+		offCtx.globalAlpha = intensity;
+		offCtx.drawImage(risoPlus, 0, 0, w, h);
+	}
 	// Snapshot post-grain into helper for passes 2 & 3
 	helperCtx.clearRect(0, 0, w, h);
 	helperCtx.drawImage(offCtx.canvas, 0, 0);
