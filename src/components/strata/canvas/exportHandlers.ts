@@ -3,6 +3,14 @@ import { Shape } from '../../../types/strataTypes';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
 
+// ─── PNG Export quality singleton ────────────────────────────────────────────────────────
+// Set from UI before triggering REQUEST_EXPORT. Reset to 'device' after each export.
+let _nextPNGQuality: 'device' | 'hq' = 'device';
+
+export function setNextPNGQuality(quality: 'device' | 'hq'): void {
+	_nextPNGQuality = quality;
+}
+
 /**
  * t function signature. Passed from the caller (a React component that has
  * access to useTranslation) so toast messages translate with the current UI language.
@@ -19,14 +27,29 @@ export const exportAsPNG = (
 	onFinish: () => void,
 	t: TFunction,
 ): void => {
+	const quality = _nextPNGQuality;
+	_nextPNGQuality = 'device';
 	try {
+		const dpr = window.devicePixelRatio || 1;
+		const multiplier = quality === 'hq' ? dpr * 2 : dpr;
+		const MAX_DIMENSION = 8192;
+		const targetW = Math.min(Math.round(canvas.width * multiplier), MAX_DIMENSION);
+		const targetH = Math.min(Math.round(canvas.height * multiplier), MAX_DIMENSION);
+		let src: HTMLCanvasElement = canvas;
+		if (targetW !== canvas.width || targetH !== canvas.height) {
+			const off = document.createElement('canvas');
+			off.width = targetW;
+			off.height = targetH;
+			off.getContext('2d')!.drawImage(canvas, 0, 0, targetW, targetH);
+			src = off;
+		}
 		const link = document.createElement('a');
 		const displayName = projectName === UNTITLED_PROJECT_SENTINEL
 			? t('topbar.file.untitledProject')
 			: projectName;
 		const sanitizedName = getFilenameBase(displayName);
 		link.download = `${sanitizedName}-${Date.now()}.png`;
-		link.href = canvas.toDataURL('image/png', 1.0);
+		link.href = src.toDataURL('image/png', 1.0);
 		link.click();
 		toast.success(t('toast.export.snapshot.successTitle'), {
 			description: t('toast.export.snapshot.successDesc'),

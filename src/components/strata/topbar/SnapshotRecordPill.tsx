@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { DiPill, DiVSep, Ico } from '../../../design-system';
 import { T, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { DiActionButton } from '../../../design-system';
 import { InfoButton } from './InfoButton';
+import { DiSelectorPopover, DiSelectorOption } from '../popovers';
+import { setNextPNGQuality } from '../canvas/exportHandlers';
 import { useTranslation } from '../../../i18n';
 
 interface SnapshotRecordPillProps { dark: boolean; }
@@ -12,17 +14,40 @@ export function SnapshotRecordPill({ dark }: SnapshotRecordPillProps) {
 	const { state, dispatch } = useStrata();
 	const { t } = useTranslation();
 	const recording = state.isExporting && state.exportRequest === 'mp4';
+	const [snapshotMenuOpen, setSnapshotMenuOpen] = useState(false);
+	const snapshotBtnRef = useRef<HTMLDivElement>(null);
 
 	const handleSnapshot = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
 	const handleRecord   = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'mp4' });
 
 	return (
-		<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
-			<InfoButton dark={dark} />
-			<DiVSep dark={dark} />
-			<DiActionButton name="snapshot" onClick={handleSnapshot} dark={dark} tooltip={t('topbar.snapshot.png')} />
-			<RecordBtn recording={recording} onClick={handleRecord} dark={dark} />
-		</DiPill>
+		<>
+			<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
+				<InfoButton dark={dark} />
+				<DiVSep dark={dark} />
+				<div ref={snapshotBtnRef}>
+					<DiActionButton name="snapshot" onClick={() => setSnapshotMenuOpen(v => !v)} dark={dark} tooltip={t('topbar.snapshot.png')} />
+				</div>
+				<RecordBtn recording={recording} onClick={handleRecord} dark={dark} />
+			</DiPill>
+			<DiSelectorPopover
+				anchorRef={snapshotBtnRef}
+				open={snapshotMenuOpen}
+				onClose={() => setSnapshotMenuOpen(false)}
+				dark={dark}
+				placement="auto"
+				align="start"
+			>
+				<DiSelectorOption
+					title={t('topbar.snapshot.deviceSize')}
+					onSelect={() => { setNextPNGQuality('device'); handleSnapshot(); setSnapshotMenuOpen(false); }}
+				/>
+				<DiSelectorOption
+					title={t('topbar.snapshot.highQuality')}
+					onSelect={() => { setNextPNGQuality('hq'); handleSnapshot(); setSnapshotMenuOpen(false); }}
+				/>
+			</DiSelectorPopover>
+		</>
 	);
 }
 

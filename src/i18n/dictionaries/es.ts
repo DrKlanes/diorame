@@ -25,6 +25,8 @@ export const es: Dictionary = {
 	'topbar.theme.dark': 'Modo oscuro',
 
 	'topbar.snapshot.png': 'Captura PNG',
+	'topbar.snapshot.deviceSize': 'Resolución de pantalla',
+	'topbar.snapshot.highQuality': 'Alta calidad',
 	'topbar.record.start': 'Grabar MP4',
 	'topbar.record.stop': 'Detener grabación',
 	'topbar.record.badge': 'REC',

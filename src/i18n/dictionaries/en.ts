@@ -29,6 +29,8 @@ export const en: Dictionary = {
 
 	// Snapshot/Record
 	'topbar.snapshot.png': 'Snapshot PNG',
+	'topbar.snapshot.deviceSize': 'Screen resolution',
+	'topbar.snapshot.highQuality': 'High quality',
 	'topbar.record.start': 'Record MP4',
 	'topbar.record.stop': 'Stop recording',
 	'topbar.record.badge': 'REC',
