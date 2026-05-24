@@ -12,7 +12,7 @@ export function BottomBar() {
 	return (
 		<div style={{
 			position: 'absolute',
-			bottom: 12,
+			bottom: 'max(12px, calc(env(safe-area-inset-bottom, 0px) + 12px))',
 			left: '50%',
 			transform: 'translateX(-50%)',
 			zIndex: 50,

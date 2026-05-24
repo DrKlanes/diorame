@@ -46,7 +46,7 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 	return (
 		<button
 			onClick={onClick}
-			onPointerEnter={() => setHov(true)}
+			onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHov(true); }}
 			onPointerLeave={() => setHov(false)}
 			title={titleText}
 			style={{
