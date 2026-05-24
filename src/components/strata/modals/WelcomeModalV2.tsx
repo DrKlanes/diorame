@@ -45,6 +45,17 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 	const { t } = useTranslation();
 	const [isLoadingExample, setIsLoadingExample] = useState(false);
 	const [shortcutsExpanded, setShortcutsExpanded] = useState(false);
+	const WELCOME_VIDEOS = [
+		'/welcome-videos/1.mp4',
+		'/welcome-videos/2.mp4',
+		'/welcome-videos/3.mp4',
+		'/welcome-videos/4.mp4',
+		'/welcome-videos/5.mp4',
+		'/welcome-videos/6.mp4',
+		'/welcome-videos/7.mp4',
+	];
+	const [videoIndex] = useState(() => Math.floor(Math.random() * WELCOME_VIDEOS.length));
+	const [videoFailed, setVideoFailed] = useState(false);
 
 	const handleLoadExample = async () => {
 		setIsLoadingExample(true);
@@ -68,19 +79,39 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 
 				{/* ── Left: full-bleed illustration ────────────────────────── */}
 				<div style={{ width: 250, flexShrink: 0, position: 'relative' }}>
-					<img
-						src={getWelcomeIllustration(APP_VERSION)}
-						alt=""
-						loading="eager"
-						style={{
-							position: 'absolute',
-							inset: 0,
-							width: '100%',
-							height: '100%',
-							objectFit: 'cover',
-							display: 'block',
-						}}
-					/>
+					{!videoFailed ? (
+						<video
+							src={WELCOME_VIDEOS[videoIndex]}
+							autoPlay
+							muted
+							loop
+							playsInline
+							preload="auto"
+							onError={() => setVideoFailed(true)}
+							style={{
+								position: 'absolute',
+								inset: 0,
+								width: '100%',
+								height: '100%',
+								objectFit: 'cover',
+								display: 'block',
+							}}
+						/>
+					) : (
+						<img
+							src={getWelcomeIllustration(APP_VERSION)}
+							alt=""
+							loading="eager"
+							style={{
+								position: 'absolute',
+								inset: 0,
+								width: '100%',
+								height: '100%',
+								objectFit: 'cover',
+								display: 'block',
+							}}
+						/>
+					)}
 				</div>
 
 				{/* ── Right: content ───────────────────────────────────────── */}
