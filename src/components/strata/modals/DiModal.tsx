@@ -38,16 +38,17 @@ type DiModalRootProps = {
 	onClose: () => void;
 	variant?: DiModalVariant;
 	size?: DiModalSize;
+	width?: number;
 	dark: boolean;
 	children: React.ReactNode;
 };
 
-function DiModalRoot({ open, onClose, variant = 'dialog', size = 'md', dark, children }: DiModalRootProps) {
+function DiModalRoot({ open, onClose, variant = 'dialog', size = 'md', width: widthOverride, dark, children }: DiModalRootProps) {
 	const panelRef = useRef<HTMLDivElement>(null);
 	useModalBehavior({ isOpen: open, onClose, variant, modalRef: panelRef });
 
 	const isBanner = variant === 'banner';
-	const width = SIZE_MAP[size];
+	const width = widthOverride ?? SIZE_MAP[size];
 	const bg = dk(dark, T.white, T.panelDarkOpaque) as string;
 	const shadow = dk(dark, SHADOW.modal, SHADOW.modalDark) as string;
 	const border = dark ? `1px solid ${T.borderDark}` : 'none';

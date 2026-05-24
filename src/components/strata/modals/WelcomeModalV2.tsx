@@ -63,11 +63,11 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 	const muted = dk(dark, T.muted, T.textDarkMuted) as string;
 
 	return (
-		<DiModal open={open} onClose={onClose} dark={dark} variant="dialog" size="md">
+		<DiModal open={open} onClose={onClose} dark={dark} variant="dialog" size="md" width={580}>
 			<div style={{ display: 'flex', minHeight: 280 }}>
 
 				{/* ── Left: full-bleed illustration ────────────────────────── */}
-				<div style={{ width: 160, flexShrink: 0, position: 'relative' }}>
+				<div style={{ width: 250, flexShrink: 0, position: 'relative' }}>
 					<img
 						src={getWelcomeIllustration(APP_VERSION)}
 						alt=""
@@ -157,8 +157,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark }: WelcomeMo
 							<ResourceLink href="https://www.youtube.com/watch?v=Ieb280ncEfA">{t('modal.welcome.tutorial')}</ResourceLink>
 							<span style={{ color: muted, margin: '0 6px' }}>·</span>
 							<ResourceLink href="https://www.instagram.com/dumaker/">{t('modal.welcome.dumaker')}</ResourceLink>
-						</div>
-						<div>
+							<span style={{ color: muted, margin: '0 6px' }}>·</span>
 							<ResourceLink href="https://ko-fi.com/dumaker">{t('modal.welcome.kofi')}</ResourceLink>
 						</div>
 					</div>
