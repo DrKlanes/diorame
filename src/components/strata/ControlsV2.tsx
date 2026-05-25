@@ -19,8 +19,12 @@ import { ShowUIButton } from './viewport/ShowUIButton';
 import { useBeforeUnload } from '../../hooks/useBeforeUnload';
 
 // Overlay panels float above DrawingToolbar:
-// BottomBar sits at bottom:12; toolbar height = 40px; gap = 8px → bottom: 60
-const OVERLAY_BOTTOM = 60;
+// BottomBar bottom = max(12px, env(safe-area-inset-bottom, 0px) + 12px)
+// Overlay = BottomBar bottom + 40px (toolbar height) + 8px (gap)
+//         = env(safe-area-inset-bottom, 0px) + 60px
+// On desktop env() resolves to 0px → equivalent to previous 60px.
+// On iPad it adds the home-indicator inset so overlays stay above the bar.
+const OVERLAY_BOTTOM = 'calc(env(safe-area-inset-bottom, 0px) + 60px)';
 
 /**
  * V2 controls root — assembles all atoms for both DRAW and VIEW modes.
