@@ -1980,7 +1980,20 @@ export const StrataCanvas = () => {
                   const mirrorAverageScale = mirPoints.length > 0 ? mirrorTotalScale / mirPoints.length : viewZoom;
                   
                   if (mirPoints.length > 1) {
-                      if (currentState.tool === 'brush') {
+                      if (currentState.tool === 'eraser') {
+                          layerCtx.globalCompositeOperation = 'destination-out';
+                          layerCtx.fillStyle = '#000000';
+                          drawSmoothLine(layerCtx, mirPoints);
+                          layerCtx.fill();
+                          layerCtx.globalCompositeOperation = 'source-over';
+                          layerCtx.strokeStyle = 'rgba(255,255,255,0.8)';
+                          layerCtx.lineWidth = 1 * viewZoom;
+                          layerCtx.setLineDash([5*viewZoom, 5*viewZoom]);
+                          layerCtx.stroke();
+                          layerCtx.setLineDash([]);
+                      } else if (currentState.tool === 'brush') {
+                          if (currentState.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
+                          else layerCtx.globalCompositeOperation = currentState.isDrawInside ? 'source-atop' : 'source-over';
                           layerCtx.strokeStyle = currentState.palette[currentState.currentColorIndex];
                           layerCtx.lineWidth = currentState.currentBrushThickness * mirrorAverageScale;
                           layerCtx.lineCap = 'round';
@@ -1988,10 +2001,13 @@ export const StrataCanvas = () => {
                           drawSmoothLine(layerCtx, mirPoints);
                           layerCtx.stroke();
                       } else {
+                          if (currentState.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
+                          else layerCtx.globalCompositeOperation = currentState.isDrawInside ? 'source-atop' : 'source-over';
                           layerCtx.fillStyle = currentState.palette[currentState.currentColorIndex];
                           drawSmoothLine(layerCtx, mirPoints);
                           layerCtx.fill();
                       }
+                      layerCtx.globalCompositeOperation = 'source-over';
                   }
               }
           }
