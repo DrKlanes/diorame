@@ -506,6 +506,23 @@ function appReducer(state: AppState, action: Action): AppState {
           const nextIndex = state.currentLayerIndex + 1;
           const newZ = nextIndex * -BASE_DEPTH_STEP;
           
+          const propagatedMode = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
+          const propagatedParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
+          const newPaletteMode = state.paletteApplyToAllActive ? propagatedMode : 'flat';
+          const newGradP = state.paletteApplyToAllActive ? propagatedParams : GRADIENT_DEFAULTS;
+          const newLayerRenderModes = state.paletteApplyToAllActive
+              ? { ...state.layerRenderModes, [nextIndex]: propagatedMode }
+              : state.layerRenderModes;
+          const newLayerGradParams = state.paletteApplyToAllActive
+              ? { ...state.layerGradParams, [nextIndex]: { ...propagatedParams } }
+              : state.layerGradParams;
+          const newApplySnapshot = state.paletteApplyToAllActive && state.paletteApplyToAllSnapshot
+              ? {
+                  layerRenderModes: { ...state.paletteApplyToAllSnapshot.layerRenderModes, [nextIndex]: 'flat' as const },
+                  layerGradParams: { ...state.paletteApplyToAllSnapshot.layerGradParams, [nextIndex]: { ...GRADIENT_DEFAULTS } },
+              }
+              : state.paletteApplyToAllSnapshot;
+          
           const newState = {
               ...state,
               currentLayerIndex: nextIndex,
@@ -513,7 +530,13 @@ function appReducer(state: AppState, action: Action): AppState {
               camera: { ...state.camera, z: newZ, rotation: 0 },
               isDrawInside: false,
               isDrawBehind: false,
-              paletteMode: 'flat',
+              paletteMode: newPaletteMode,
+              layerRenderModes: newLayerRenderModes,
+              layerGradParams: newLayerGradParams,
+              paletteApplyToAllSnapshot: newApplySnapshot,
+              paletteGradientAngle: newGradP.angle,
+              paletteGradientIntensity: newGradP.intensity,
+              paletteGradientType: newGradP.gradType || 'solid',
               currentLineThickness: state.currentLineThickness,
               lineMode: state.lineMode
           };
@@ -1446,6 +1469,20 @@ function appReducer(state: AppState, action: Action): AppState {
         const nextBrush = newBrushSettings[newLayerIndex];
         const nextGradP = newGradParams[newLayerIndex] || GRADIENT_DEFAULTS;
 
+        // Update paletteApplyToAllSnapshot if active
+        let newApplySnapshot = state.paletteApplyToAllSnapshot;
+        if (state.paletteApplyToAllActive && state.paletteApplyToAllSnapshot) {
+            const snapModes = { ...state.paletteApplyToAllSnapshot.layerRenderModes };
+            const snapParams = { ...state.paletteApplyToAllSnapshot.layerGradParams };
+            for (let i = state.totalLayers - 1; i >= newLayerIndex; i--) {
+                snapModes[i+1] = snapModes[i];
+                snapParams[i+1] = snapParams[i];
+            }
+            snapModes[newLayerIndex] = snapModes[layerIndex];
+            snapParams[newLayerIndex] = snapParams[layerIndex] ? { ...snapParams[layerIndex] } : { ...GRADIENT_DEFAULTS };
+            newApplySnapshot = { layerRenderModes: snapModes, layerGradParams: snapParams };
+        }
+
         const newState = {
             ...state,
             shapes: [...newShapes, ...clonedShapes],
@@ -1457,6 +1494,7 @@ function appReducer(state: AppState, action: Action): AppState {
             layerRenderModes: newRenderModes,
             layerGradParams: newGradParams,
             layerBrushSettings: newBrushSettings,
+            paletteApplyToAllSnapshot: newApplySnapshot,
             paletteMode: newRenderModes[newLayerIndex] || 'flat',
             paletteGradientAngle: nextGradP.angle,
             paletteGradientIntensity: nextGradP.intensity,
