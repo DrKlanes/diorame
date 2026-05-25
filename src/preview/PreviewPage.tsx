@@ -587,8 +587,8 @@ const LAYER_SEED_STATE: Partial<AppState> = {
 	],
 	layerRenderModes: { 0: 'grad', 1: 'grad', 2: 'flat' },
 	layerGradParams: {
-		0: { angle: 90, intensity: 50, gradType: 'fade' },
-		1: { angle: 45, intensity: 70, gradType: 'solid' },
+		0: { angle: 90, intensity: 0.5, gradType: 'fade' },
+		1: { angle: 45, intensity: 0.7, gradType: 'solid' },
 	},
 };
 
@@ -806,7 +806,7 @@ const INTEGRATED_SEED_STATE: Partial<AppState> = {
 		{ id: 'int-1', points: [], color: '#384fbc', zIndex: -150 },
 	],
 	layerRenderModes: { 0: 'grad', 1: 'flat' },
-	layerGradParams: { 0: { angle: 90, intensity: 50, gradType: 'fade' } },
+	layerGradParams: { 0: { angle: 90, intensity: 0.5, gradType: 'fade' } },
 };
 
 function IntegratedUIPreviewSection({ dark, subtleColor, sectionBg, sectionBorder }: {
