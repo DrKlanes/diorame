@@ -2,7 +2,7 @@ import React from 'react';
 import { useStrata } from '../StrataContext';
 import { DiPill, DiVSep } from '../../../design-system';
 import { DiActionButton } from '../../../design-system';
-import { ToolBtn, LineModeButton } from './_shared';
+import { ToolBtn, BrushModeButton } from './_shared';
 import type { ToolType } from '../StrataContext';
 import { useTranslation } from '../../../i18n';
 
@@ -25,14 +25,14 @@ type ModifierFields = {
 };
 
 const MODIFIERS_BY_TOOL: Record<ToolType, ModifierConfig[]> = {
-	'brush': [
+	'blob': [
 		{ iconName: 'symmetry',    field: 'isSymmetryEnabled', actionType: 'TOGGLE_SYMMETRY',       tooltipKey: 'bottombar.draw.mod.symmetry' },
 		{ iconName: 'draw-inside', field: 'isDrawInside',      actionType: 'TOGGLE_DRAW_INSIDE',    tooltipKey: 'bottombar.draw.mod.drawInside' },
 		{ iconName: 'draw-behind', field: 'isDrawBehind',      actionType: 'TOGGLE_DRAW_BEHIND',    tooltipKey: 'bottombar.draw.mod.drawBehind' },
 		{ iconName: 'organic',     field: 'isOrganicMode',     actionType: 'TOGGLE_ORGANIC_MODE',   tooltipKey: 'bottombar.draw.mod.organic' },
 		{ iconName: 'smooth',      field: 'blobSmoothing',     actionType: 'TOGGLE_BLOB_SMOOTHING', tooltipKey: 'bottombar.draw.mod.smooth' },
 	],
-	'line': [
+	'brush': [
 		{ iconName: 'symmetry',    field: 'isSymmetryEnabled', actionType: 'TOGGLE_SYMMETRY',    tooltipKey: 'bottombar.draw.mod.symmetry' },
 		{ iconName: 'draw-inside', field: 'isDrawInside',      actionType: 'TOGGLE_DRAW_INSIDE', tooltipKey: 'bottombar.draw.mod.drawInside' },
 		{ iconName: 'draw-behind', field: 'isDrawBehind',      actionType: 'TOGGLE_DRAW_BEHIND', tooltipKey: 'bottombar.draw.mod.drawBehind' },
@@ -45,7 +45,7 @@ const MODIFIERS_BY_TOOL: Record<ToolType, ModifierConfig[]> = {
 	'move': [],
 };
 
-const TOOLS_WITH_DOT: ToolType[] = ['brush', 'line', 'text'];
+const TOOLS_WITH_DOT: ToolType[] = ['blob', 'brush', 'text'];
 
 export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 	const { state, dispatch } = useStrata();
@@ -72,14 +72,14 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 			{/* Block 1: Tool buttons — fixed position, never shifts */}
 			<div style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
 				<ToolBtn
-					name="blob" onClick={() => setTool('brush')} dark={dark}
-					active={tool === 'brush'} tooltip={t('bottombar.draw.tool.blob')} shortcut="B"
-					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('brush')}
+					name="blob" onClick={() => setTool('blob')} dark={dark}
+					active={tool === 'blob'} tooltip={t('bottombar.draw.tool.blob')} shortcut="B"
+					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('blob')}
 				/>
 				<ToolBtn
-					name="brush" onClick={() => setTool('line')} dark={dark}
-					active={tool === 'line'} tooltip={t('bottombar.draw.tool.brush')} shortcut="L"
-					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('line')}
+					name="brush" onClick={() => setTool('brush')} dark={dark}
+					active={tool === 'brush'} tooltip={t('bottombar.draw.tool.brush')} shortcut="L"
+					paletteColor={paletteColor} showDot={TOOLS_WITH_DOT.includes('brush')}
 				/>
 				<ToolBtn
 					name="eraser" onClick={() => setTool('eraser')} dark={dark}
@@ -111,7 +111,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 						tooltip={t(mod.tooltipKey)}
 					/>
 				))}
-				{tool === 'line' && <><DiVSep dark={dark} /><LineModeButton dark={dark} /></>}
+				{tool === 'brush' && <><DiVSep dark={dark} /><BrushModeButton dark={dark} /></>}
 			</div>
 		</DiPill>
 	);

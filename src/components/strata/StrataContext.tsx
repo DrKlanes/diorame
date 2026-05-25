@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import {
-	Point, Shape, AppMode, ToolType, CinematicType, ExportType, LineMode,
+	Point, Shape, AppMode, ToolType, CinematicType, ExportType, BrushMode,
 	PostProcessingSettings, PostProcessingEnabled, HandheldIntensity,
 	TextSession, HistorySnapshot, AppState, LayerGradParams,
 } from '../../types/strataTypes';
 import { UNTITLED_PROJECT_SENTINEL } from '../../constants/project';
 
 export type {
-	Point, Shape, AppMode, ToolType, CinematicType, ExportType, LineMode,
+	Point, Shape, AppMode, ToolType, CinematicType, ExportType, BrushMode,
 	PostProcessingSettings, PostProcessingEnabled, HandheldIntensity,
 	TextSession, HistorySnapshot, AppState, LayerGradParams,
 };
@@ -92,12 +92,12 @@ type Action =
   | { type: 'TOGGLE_DRAW_INSIDE' }
   | { type: 'TOGGLE_ORGANIC_MODE' }
   | { type: 'TOGGLE_BLOB_SMOOTHING' }
-  | { type: 'SET_LINE_THICKNESS'; payload: number }
-  | { type: 'SET_LINE_THICKNESS_PREVIEW'; payload: number }
-  | { type: 'COMMIT_LINE_THICKNESS' }
+  | { type: 'SET_BRUSH_THICKNESS'; payload: number }
+  | { type: 'SET_BRUSH_THICKNESS_PREVIEW'; payload: number }
+  | { type: 'COMMIT_BRUSH_THICKNESS' }
   | { type: 'TOGGLE_HANDHELD' }
   | { type: 'SET_HANDHELD_INTENSITY'; payload: HandheldIntensity }
-  | { type: 'SET_LINE_MODE'; payload: LineMode }
+  | { type: 'SET_BRUSH_MODE'; payload: BrushMode }
   | { type: 'SET_LAYER_SPACING_FACTOR'; payload: number }
   | { type: 'SET_PROJECT_NAME'; payload: string }
   | { type: 'REORDER_LAYERS'; payload: { fromIndex: number; toIndex: number } }
@@ -119,7 +119,7 @@ const initialState: AppState = {
   activePaletteId: 'primary',
   currentColorIndex: 0,
   mode: 'drawing',
-  tool: 'brush',
+  tool: 'blob',
   textSession: {
       isActive: false,
       x: 0,
@@ -204,11 +204,11 @@ const initialState: AppState = {
   isDrawInside: false,
   isOrganicMode: false,
   blobSmoothing: false,
-  currentLineThickness: 25,
-  lineThicknessBeforePreview: null,
+  currentBrushThickness: 25,
+  brushThicknessBeforePreview: null,
   isHandheldEnabled: false,
   handheldIntensity: 'medium',
-  lineMode: 'tapered',
+  brushMode: 'tapered',
   projectName: UNTITLED_PROJECT_SENTINEL, // Default project name (sentinel; resolved via t() at render time)
   paletteApplyToAllActive: false,
   paletteApplyToAllSnapshot: null,
@@ -361,7 +361,7 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'RESET_DRAWING_VIEW':
       return { ...state, drawingZoom: 1, drawingPan: { x: 0, y: 0 } };
     case 'ADD_SHAPE': {
-      if (state.tool === 'brush' || state.tool === 'line') playSound('brushStroke');
+      if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
       const newShapes = [...state.shapes, action.payload];
       const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
       
@@ -374,7 +374,7 @@ function appReducer(state: AppState, action: Action): AppState {
       };
     }
     case 'ADD_SHAPES': {
-        if (state.tool === 'brush' || state.tool === 'line') playSound('brushStroke');
+        if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
         const newShapes = [...state.shapes, ...action.payload];
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         
@@ -454,7 +454,7 @@ function appReducer(state: AppState, action: Action): AppState {
           return {
               ...state,
               mode: action.payload,
-              tool: 'brush', // Reset tool when entering cinematic
+              tool: 'blob', // Reset tool when entering cinematic
           };
       }
       return { ...state, mode: action.payload };
@@ -475,7 +475,7 @@ function appReducer(state: AppState, action: Action): AppState {
         tool: action.payload,
         isDrawBehind: action.payload === 'eraser' ? false : state.isDrawBehind,
         isDrawInside: action.payload === 'eraser' ? false : state.isDrawInside,
-        isOrganicMode: action.payload === 'line' ? false : state.isOrganicMode
+        isOrganicMode: action.payload === 'brush' ? false : state.isOrganicMode
       };
     case 'SET_CINEMATIC_TYPE':
       playSound('click');
@@ -490,7 +490,7 @@ function appReducer(state: AppState, action: Action): AppState {
           const nextIndex = state.currentLayerIndex + 1;
           const newZ = nextIndex * -BASE_DEPTH_STEP;
           const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-          const nextBrush = state.layerBrushSettings[nextIndex] || { thickness: state.currentLineThickness, mode: state.lineMode };
+          const nextBrush = state.layerBrushSettings[nextIndex] || { thickness: state.currentBrushThickness, mode: state.brushMode };
           return {
               ...state,
               currentLayerIndex: nextIndex,
@@ -498,8 +498,8 @@ function appReducer(state: AppState, action: Action): AppState {
               isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
               isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
               paletteMode: state.layerRenderModes[nextIndex] || 'flat',
-              currentLineThickness: nextBrush.thickness,
-              lineMode: nextBrush.mode
+              currentBrushThickness: nextBrush.thickness,
+              brushMode: nextBrush.mode
           };
       } else if (state.totalLayers < MAX_LAYERS) {
           // Create new layer (always empty) - Save to history
@@ -537,8 +537,8 @@ function appReducer(state: AppState, action: Action): AppState {
               paletteGradientAngle: newGradP.angle,
               paletteGradientIntensity: newGradP.intensity,
               paletteGradientType: newGradP.gradType || 'solid',
-              currentLineThickness: state.currentLineThickness,
-              lineMode: state.lineMode
+              currentBrushThickness: state.currentBrushThickness,
+              brushMode: state.brushMode
           };
           
           const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
@@ -556,7 +556,7 @@ function appReducer(state: AppState, action: Action): AppState {
             const prevIndex = state.currentLayerIndex - 1;
             const newZ = prevIndex * -BASE_DEPTH_STEP;
             const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-            const prevBrush = state.layerBrushSettings[prevIndex] || { thickness: state.currentLineThickness, mode: state.lineMode };
+            const prevBrush = state.layerBrushSettings[prevIndex] || { thickness: state.currentBrushThickness, mode: state.brushMode };
             return {
                 ...state,
                 currentLayerIndex: prevIndex,
@@ -564,8 +564,8 @@ function appReducer(state: AppState, action: Action): AppState {
                 isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
                 isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
                 paletteMode: state.layerRenderModes[prevIndex] || 'flat',
-                currentLineThickness: prevBrush.thickness,
-                lineMode: prevBrush.mode
+                currentBrushThickness: prevBrush.thickness,
+                brushMode: prevBrush.mode
             };
         }
         return state;
@@ -577,7 +577,7 @@ function appReducer(state: AppState, action: Action): AppState {
         playSound('click');
         const newZ = targetIndex * -BASE_DEPTH_STEP;
         const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-        const targetBrush = state.layerBrushSettings[targetIndex] || { thickness: state.currentLineThickness, mode: state.lineMode };
+        const targetBrush = state.layerBrushSettings[targetIndex] || { thickness: state.currentBrushThickness, mode: state.brushMode };
         return {
             ...state,
             currentLayerIndex: targetIndex,
@@ -585,8 +585,8 @@ function appReducer(state: AppState, action: Action): AppState {
             isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
             isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
             paletteMode: state.layerRenderModes[targetIndex] || 'flat',
-            currentLineThickness: targetBrush.thickness,
-            lineMode: targetBrush.mode
+            currentBrushThickness: targetBrush.thickness,
+            brushMode: targetBrush.mode
         };
     }
     case 'SET_FOCAL_LENGTH':
@@ -771,17 +771,39 @@ function appReducer(state: AppState, action: Action): AppState {
       const loadedPalette = loadedPaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
 
       // ── Whitelist validation: only accept known keys with type guards ──
-      const safeShapes = Array.isArray(action.payload.shapes) ? action.payload.shapes : [];
+      // Per-shape migration: map legacy lineMode/lineThickness → brushMode/brushThickness
+      const rawShapes = Array.isArray(action.payload.shapes) ? action.payload.shapes : [];
+      const safeShapes: Shape[] = rawShapes.map((shape: any) => {
+          if (!shape || typeof shape !== 'object') return shape;
+          const brushMode = shape.brushMode ?? shape.lineMode;
+          const brushThickness = shape.brushThickness ?? shape.lineThickness;
+          const { lineMode: _lm, lineThickness: _lt, ...rest } = shape;
+          const result: any = { ...rest };
+          if (brushMode !== undefined) result.brushMode = brushMode;
+          if (brushThickness !== undefined) result.brushThickness = brushThickness;
+          return result as Shape;
+      });
       const safeTotalLayers = (typeof action.payload.totalLayers === 'number' && action.payload.totalLayers > 0)
           ? Math.min(action.payload.totalLayers, MAX_LAYERS) : 1;
       const safeHiddenLayers = Array.isArray(action.payload.hiddenLayers) ? action.payload.hiddenLayers : [];
       const safeLocked3DLayers = Array.isArray(action.payload.locked3DLayers) ? action.payload.locked3DLayers : [];
-      const safeTool = (typeof action.payload.tool === 'string' && ['brush', 'eraser', 'line', 'move', 'lasso'].includes(action.payload.tool))
-          ? action.payload.tool : 'brush';
-      const safeLineMode = (typeof action.payload.lineMode === 'string' && ['tapered', 'uniform', 'ink'].includes(action.payload.lineMode))
-          ? action.payload.lineMode : 'tapered';
-      const safeLineThickness = (typeof action.payload.currentLineThickness === 'number' && action.payload.currentLineThickness > 0)
-          ? action.payload.currentLineThickness : 25;
+      // Tool-value backward compat: 'brush' (old blob) → 'blob', 'line' (old brush) → 'brush'
+      let rawTool = action.payload.tool;
+      if (rawTool === 'brush') rawTool = 'blob';
+      else if (rawTool === 'line') rawTool = 'brush';
+      const safeTool = (typeof rawTool === 'string' && ['blob', 'eraser', 'brush', 'move', 'text'].includes(rawTool))
+          ? rawTool : 'blob';
+      // brushMode with fallback to legacy lineMode
+      const rawBrushMode = action.payload.brushMode ?? action.payload.lineMode;
+      const safeBrushMode = (typeof rawBrushMode === 'string' && ['tapered', 'uniform', 'ink'].includes(rawBrushMode))
+          ? rawBrushMode : 'tapered';
+      // currentBrushThickness with fallback to legacy currentLineThickness
+      const rawBrushThickness = (typeof action.payload.currentBrushThickness === 'number' && action.payload.currentBrushThickness > 0)
+          ? action.payload.currentBrushThickness
+          : (typeof action.payload.currentLineThickness === 'number' && action.payload.currentLineThickness > 0)
+              ? action.payload.currentLineThickness
+              : 25;
+      const safeBrushThickness = rawBrushThickness;
       const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : state.isDarkMode;
       const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom'].includes(action.payload.cinematicType))
           ? action.payload.cinematicType as CinematicType : state.cinematicType;
@@ -841,8 +863,8 @@ function appReducer(state: AppState, action: Action): AppState {
           layerGradParams: loadedLayerGradParams,
           layerBrushSettings: loadedLayerBrushSettings,
           paletteMode: loadedLayerRenderModes[0] || 'flat',
-          currentLineThickness: safeLineThickness,
-          lineMode: safeLineMode,
+          currentBrushThickness: safeBrushThickness,
+          brushMode: safeBrushMode,
           activePaletteId: loadedPaletteId,
           palette: loadedPalette,
           focalLength: safeFocalLength,
@@ -1073,7 +1095,7 @@ function appReducer(state: AppState, action: Action): AppState {
         const newCurrentLayer = Math.min(state.currentLayerIndex, state.totalLayers - 2);
         
         // Sync global settings with new current layer
-        const nextBrush = newBrushSettings[newCurrentLayer] || { thickness: state.currentLineThickness, mode: state.lineMode };
+        const nextBrush = newBrushSettings[newCurrentLayer] || { thickness: state.currentBrushThickness, mode: state.brushMode };
         
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         
@@ -1089,8 +1111,8 @@ function appReducer(state: AppState, action: Action): AppState {
             layerGradParams: newGradParams,
             layerBrushSettings: newBrushSettings,
             paletteMode: newRenderModes[newCurrentLayer] || 'flat',
-            currentLineThickness: nextBrush.thickness,
-            lineMode: nextBrush.mode,
+            currentBrushThickness: nextBrush.thickness,
+            brushMode: nextBrush.mode,
             history,
             historyIndex: index,
             isDirty: true,
@@ -1159,37 +1181,37 @@ function appReducer(state: AppState, action: Action): AppState {
         return { ...state, pointOfInterest: null };
     case 'SET_CINEMATIC_SPEED':
         return { ...state, cinematicSpeed: action.payload };
-    case 'SET_LINE_THICKNESS': {
+    case 'SET_BRUSH_THICKNESS': {
         const thickness = action.payload;
         const layerIdx = state.currentLayerIndex;
-        const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.lineMode, thickness: state.currentLineThickness };
+        const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
         const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, thickness } };
         
         // Also update shapes immediately (for onChange events)
         const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
         const newShapes = state.shapes.map(s => {
              if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
-                 const effectiveMode = s.lineMode || currentSettings.mode;
+                 const effectiveMode = s.brushMode || currentSettings.mode;
                  const newPoints = generateStrokeForMode(effectiveMode, s.originalPoints, thickness);
-                 return { ...s, lineThickness: thickness, lineMode: effectiveMode, points: newPoints };
+                 return { ...s, brushThickness: thickness, brushMode: effectiveMode, points: newPoints };
              }
              return s;
         });
 
-        return { ...state, currentLineThickness: thickness, layerBrushSettings: newLayerSettings, shapes: newShapes };
+        return { ...state, currentBrushThickness: thickness, layerBrushSettings: newLayerSettings, shapes: newShapes };
     }
-    case 'SET_LINE_THICKNESS_PREVIEW': {
+    case 'SET_BRUSH_THICKNESS_PREVIEW': {
         const thickness = action.payload;
         const layerIdx = state.currentLayerIndex;
-        const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.lineMode, thickness: state.currentLineThickness };
+        const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
         const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, thickness } };
         
         const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
         const newShapes = state.shapes.map(s => {
              if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
-                 const effectiveMode = s.lineMode || currentSettings.mode;
+                 const effectiveMode = s.brushMode || currentSettings.mode;
                  const newPoints = generateStrokeForMode(effectiveMode, s.originalPoints, thickness);
-                 return { ...s, lineThickness: thickness, lineMode: effectiveMode, points: newPoints };
+                 return { ...s, brushThickness: thickness, brushMode: effectiveMode, points: newPoints };
              }
              return s;
         });
@@ -1197,29 +1219,29 @@ function appReducer(state: AppState, action: Action): AppState {
         // Store current shapes state if not already stored
         return { 
             ...state, 
-            currentLineThickness: thickness,
+            currentBrushThickness: thickness,
             layerBrushSettings: newLayerSettings,
-            lineThicknessBeforePreview: state.lineThicknessBeforePreview || state.shapes,
+            brushThicknessBeforePreview: state.brushThicknessBeforePreview || state.shapes,
             shapes: newShapes
         };
     }
-    case 'COMMIT_LINE_THICKNESS': {
-        const prevShapes = state.lineThicknessBeforePreview;
+    case 'COMMIT_BRUSH_THICKNESS': {
+        const prevShapes = state.brushThicknessBeforePreview;
         if (prevShapes) {
              const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
-             return { ...state, lineThicknessBeforePreview: null, history, historyIndex: index };
+             return { ...state, brushThicknessBeforePreview: null, history, historyIndex: index };
         }
-        return { ...state, lineThicknessBeforePreview: null };
+        return { ...state, brushThicknessBeforePreview: null };
     }
     case 'TOGGLE_HANDHELD':
         playSound('click');
         return { ...state, isHandheldEnabled: !state.isHandheldEnabled };
     case 'SET_HANDHELD_INTENSITY':
         return { ...state, handheldIntensity: action.payload };
-    case 'SET_LINE_MODE': {
+    case 'SET_BRUSH_MODE': {
         const mode = action.payload;
         const layerIdx = state.currentLayerIndex;
-        const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.lineMode, thickness: state.currentLineThickness };
+        const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
         const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, mode } };
         const thickness = currentSettings.thickness;
 
@@ -1228,7 +1250,7 @@ function appReducer(state: AppState, action: Action): AppState {
              if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
                  let newPoints: Point[] = [];
                  newPoints = generateStrokeForMode(mode, s.originalPoints, thickness);
-                 return { ...s, lineThickness: thickness, lineMode: mode, points: newPoints };
+                 return { ...s, brushThickness: thickness, brushMode: mode, points: newPoints };
              }
              return s;
         });
@@ -1237,7 +1259,7 @@ function appReducer(state: AppState, action: Action): AppState {
         
         return { 
             ...state, 
-            lineMode: mode, 
+            brushMode: mode, 
             layerBrushSettings: newLayerSettings,
             shapes: newShapes,
             history, 
@@ -1463,7 +1485,7 @@ function appReducer(state: AppState, action: Action): AppState {
         // Copy props to new layer
         newRenderModes[newLayerIndex] = newRenderModes[layerIndex];
         newGradParams[newLayerIndex] = newGradParams[layerIndex];
-        newBrushSettings[newLayerIndex] = newBrushSettings[layerIndex] ? { ...newBrushSettings[layerIndex] } : { thickness: state.currentLineThickness, mode: state.lineMode };
+        newBrushSettings[newLayerIndex] = newBrushSettings[layerIndex] ? { ...newBrushSettings[layerIndex] } : { thickness: state.currentBrushThickness, mode: state.brushMode };
 
         // Sync global
         const nextBrush = newBrushSettings[newLayerIndex];
@@ -1499,8 +1521,8 @@ function appReducer(state: AppState, action: Action): AppState {
             paletteGradientAngle: nextGradP.angle,
             paletteGradientIntensity: nextGradP.intensity,
             paletteGradientType: nextGradP.gradType || 'solid',
-            currentLineThickness: nextBrush.thickness,
-            lineMode: nextBrush.mode
+            currentBrushThickness: nextBrush.thickness,
+            brushMode: nextBrush.mode
         };
         
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));

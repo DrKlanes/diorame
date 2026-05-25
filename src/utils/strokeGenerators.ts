@@ -1,4 +1,4 @@
-import { LineMode } from '../types/strataTypes';
+import { BrushMode } from '../types/strataTypes';
 
 export const generateTaperedStroke = (points: {x:number, y:number}[], maxThickness: number = 20) => {
     if (points.length < 2) return points;
@@ -282,9 +282,9 @@ export const generateInkStroke = (points: {x:number,y:number}[], thickness: numb
 	return [...startCap, ...leftSide, ...endCap, ...rightSide.reverse()];
 };
 
-/** Route to the correct stroke generator based on LineMode. */
+/** Route to the correct stroke generator based on BrushMode. */
 export const generateStrokeForMode = (
-    mode: LineMode,
+    mode: BrushMode,
     points: {x:number, y:number}[],
     thickness: number,
 ): {x:number, y:number}[] => {

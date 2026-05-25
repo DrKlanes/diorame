@@ -909,7 +909,7 @@ export const StrataCanvas = () => {
         let finalX = worldX;
         let finalY = worldY;
 
-        if (state.isOrganicMode && (state.tool === 'brush' || state.tool === 'eraser')) {
+        if (state.isOrganicMode && (state.tool === 'blob' || state.tool === 'eraser')) {
              const rawDist = Math.hypot(worldX - lastPoint.x, worldY - lastPoint.y);
              organicPhaseRef.current += rawDist * 0.25; // Increased frequency for more "nervous" line
              
@@ -1018,9 +1018,9 @@ export const StrataCanvas = () => {
              }
              // Ensure visibility for small shapes (dots/lines) since fill() requires area
             let finalPoints = [...currentPointsRef.current];
-            const isLineTool = state.tool === 'line';
+            const isBrushTool = state.tool === 'brush';
 
-            if ((state.tool === 'brush' || state.tool === 'eraser') && state.blobSmoothing && finalPoints.length >= 4) {
+            if ((state.tool === 'blob' || state.tool === 'eraser') && state.blobSmoothing && finalPoints.length >= 4) {
                 const decimate = (pts: Point[], n: number): Point[] => {
                     if (pts.length <= 4) return pts;
                     const result: Point[] = [pts[0]];
@@ -1053,14 +1053,14 @@ export const StrataCanvas = () => {
 
             let originalPoints: Point[] = [];
 
-            if (isLineTool) {
+            if (isBrushTool) {
                 if (finalPoints.length === 1) {
                     const p = finalPoints[0];
                     finalPoints.push({ ...p, x: p.x + 0.1, y: p.y + 0.1 });
                 }
                 originalPoints = [...finalPoints];
-                const thicknessVal = state.currentLineThickness;
-                finalPoints = generateStrokeForMode(state.lineMode, finalPoints, thicknessVal);
+                const thicknessVal = state.currentBrushThickness;
+                finalPoints = generateStrokeForMode(state.brushMode, finalPoints, thicknessVal);
             } else if (finalPoints.length < 3) {
                 const offset = 1.5 / (state.drawingZoom || 1);
                 const last = finalPoints[finalPoints.length - 1];
@@ -1076,7 +1076,7 @@ export const StrataCanvas = () => {
             const newZ = getActiveZ(state.currentLayerIndex);
             const isEraserTool = state.tool === 'eraser';
             const eraserPolygon = isEraserTool
-                ? generateStrokeForMode('tapered', finalPoints, state.currentLineThickness)
+                ? generateStrokeForMode('tapered', finalPoints, state.currentBrushThickness)
                 : undefined;
             const shapeProps = {
                 color: state.palette[state.currentColorIndex],
@@ -1084,9 +1084,9 @@ export const StrataCanvas = () => {
                 isEraser: isEraserTool,
                 isDrawInside: state.isDrawInside,
                 isDrawBehind: state.isDrawBehind,
-                originalPoints: isLineTool ? originalPoints : undefined,
-                lineThickness: (isLineTool || isEraserTool) ? state.currentLineThickness : undefined,
-                lineMode: isLineTool ? state.lineMode : undefined,
+                originalPoints: isBrushTool ? originalPoints : undefined,
+                brushThickness: (isBrushTool || isEraserTool) ? state.currentBrushThickness : undefined,
+                brushMode: isBrushTool ? state.brushMode : undefined,
                 eraserPolygon: isEraserTool ? eraserPolygon : undefined,
             };
             const shapeOriginal: Shape = {
@@ -1099,10 +1099,10 @@ export const StrataCanvas = () => {
                 // For lines, we mirror the original points and then regenerate the taper
                 let shapeMirrored: Shape;
                 
-                if (isLineTool) {
+                if (isBrushTool) {
                      const mirroredOriginals = originalPoints.map(p => ({ ...p, x: -p.x }));
-                     const thicknessVal = state.currentLineThickness;
-                     const mirroredFinals = generateStrokeForMode(state.lineMode, mirroredOriginals, thicknessVal);
+                     const thicknessVal = state.currentBrushThickness;
+                     const mirroredFinals = generateStrokeForMode(state.brushMode, mirroredOriginals, thicknessVal);
                      shapeMirrored = {
                         id: crypto.randomUUID(),
                         points: mirroredFinals,
@@ -1719,7 +1719,7 @@ export const StrataCanvas = () => {
                   let useStraightLines = false;
                   
                   // Early detection of brush type to identify "taps"
-                  const isUniformLine = shape.originalPoints && shape.originalPoints.length > 0 && shape.lineMode === 'uniform';
+                  const isUniformLine = shape.originalPoints && shape.originalPoints.length > 0 && shape.brushMode === 'uniform';
                   const isBrushTap = isPixelArt && !isUniformLine && !shape.isEraser && shape.points.length <= 3 && projectedPoints.length > 0;
                   
                   if (isPixelArt) {
@@ -1764,7 +1764,7 @@ export const StrataCanvas = () => {
                            else layerCtx.globalCompositeOperation = shape.isDrawInside ? 'source-atop' : 'source-over';
                            
                            layerCtx.fillStyle = shape.color;
-                           const size = Math.max(pSize, Math.round(((shape.lineThickness || 20) * proj.scale) / pSize) * pSize);
+                           const size = Math.max(pSize, Math.round(((shape.brushThickness || 20) * proj.scale) / pSize) * pSize);
                            layerCtx.fillRect(px - size/2, py - size/2, size, size);
                       } else {
                           // For uniform lines, render the original spine with stroke
@@ -1827,7 +1827,7 @@ export const StrataCanvas = () => {
                       } else {
                           layerCtx.strokeStyle = shape.color;
                       }
-                      const baseThickness = (shape.lineThickness || 20) * averageScale;
+                      const baseThickness = (shape.brushThickness || 20) * averageScale;
                       layerCtx.lineWidth = isPixelArt ? Math.max(baseThickness, currentState.postProcessing.pixelArtSize || 4) : baseThickness;
                       layerCtx.lineCap = isPixelArt ? 'butt' : 'round';
                       layerCtx.lineJoin = isPixelArt ? 'miter' : 'round';
@@ -1945,12 +1945,12 @@ export const StrataCanvas = () => {
                       layerCtx.setLineDash([5*viewZoom, 5*viewZoom]);
                       layerCtx.stroke();
                       layerCtx.setLineDash([]);
-                  } else if (currentState.tool === 'line') {
+                  } else if (currentState.tool === 'brush') {
                       if (currentState.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
                       else layerCtx.globalCompositeOperation = currentState.isDrawInside ? 'source-atop' : 'source-over';
                       
                       layerCtx.strokeStyle = currentState.palette[currentState.currentColorIndex];
-                      layerCtx.lineWidth = currentState.currentLineThickness * averageScale;
+                      layerCtx.lineWidth = currentState.currentBrushThickness * averageScale;
                       layerCtx.lineCap = 'round';
                       layerCtx.lineJoin = 'round';
                       
@@ -1980,9 +1980,9 @@ export const StrataCanvas = () => {
                   const mirrorAverageScale = mirPoints.length > 0 ? mirrorTotalScale / mirPoints.length : viewZoom;
                   
                   if (mirPoints.length > 1) {
-                      if (currentState.tool === 'line') {
+                      if (currentState.tool === 'brush') {
                           layerCtx.strokeStyle = currentState.palette[currentState.currentColorIndex];
-                          layerCtx.lineWidth = currentState.currentLineThickness * mirrorAverageScale;
+                          layerCtx.lineWidth = currentState.currentBrushThickness * mirrorAverageScale;
                           layerCtx.lineCap = 'round';
                           layerCtx.lineJoin = 'round';
                           drawSmoothLine(layerCtx, mirPoints);

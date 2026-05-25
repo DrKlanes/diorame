@@ -17,16 +17,16 @@ export interface Shape {
   fontSize?: number;
   rotation?: number;
   originalPoints?: Point[]; // Store spine for re-generation
-  lineThickness?: number; // Store thickness value
-  lineMode?: LineMode; // Store line mode (tapered or uniform)
+  brushThickness?: number; // Store thickness value
+  brushMode?: BrushMode; // Store brush mode (tapered or uniform)
   eraserPolygon?: Point[]; // Expanded polygon for SVG mask export
 }
 
 export type AppMode = 'drawing' | 'cinematic';
-export type ToolType = 'brush' | 'eraser' | 'text' | 'move' | 'line';
+export type ToolType = 'blob' | 'eraser' | 'text' | 'move' | 'brush';
 export type CinematicType = 'forward' | 'spiral' | 'yoyo' | 'pulse' | 'twist' | 'arc' | 'crane' | 'truck' | 'orbit' | 'zoom';
 export type ExportType = 'png' | 'mp4' | 'svg' | 'svgz';
-export type LineMode = 'tapered' | 'uniform' | 'ink';
+export type BrushMode = 'tapered' | 'uniform' | 'ink';
 
 export type LayerGradParams = {
     angle: number;
@@ -88,7 +88,7 @@ export type HistorySnapshot = {
     locked3DLayers: number[];
     layerRenderModes: Record<number, 'flat' | 'grad'>;
     layerGradParams: Record<number, { angle: number; intensity: number; gradType?: 'solid' | 'fade' }>;
-    layerBrushSettings: Record<number, { thickness: number; mode: LineMode }>;
+    layerBrushSettings: Record<number, { thickness: number; mode: BrushMode }>;
 };
 
 export interface AppState {
@@ -133,18 +133,18 @@ export interface AppState {
     layerRenderModes: Record<number, 'flat' | 'grad'>;
     layerGradParams: Record<number, LayerGradParams>;
   } | null; // Transient: snapshot for apply-to-all restore
-  layerBrushSettings: Record<number, { thickness: number; mode: LineMode }>; // New: Per-layer brush settings
+  layerBrushSettings: Record<number, { thickness: number; mode: BrushMode }>; // New: Per-layer brush settings
   pointOfInterest: { x: number; y: number; z: number } | null; // New: Point of Interest for camera focus
   cinematicSpeed: number; // New: Speed multiplier for cinematic moves (0.1 to 1.0)
   isDrawBehind: boolean; // New: Draw Behind mode
   isDrawInside: boolean; // New: Draw Inside (Alpha Lock) mode
   isOrganicMode: boolean; // New: Organic/Fluid line mode
   blobSmoothing: boolean;
-  currentLineThickness: number; // New: Line Thickness (continuous value)
-  lineThicknessBeforePreview: Shape[] | null; // Store shapes before thickness preview
+  currentBrushThickness: number; // New: Brush Thickness (continuous value)
+  brushThicknessBeforePreview: Shape[] | null; // Store shapes before thickness preview
   isHandheldEnabled: boolean; // New: Handheld camera shake
   handheldIntensity: HandheldIntensity; // New: Handheld shake intensity
-  lineMode: LineMode; // New: Line mode (tapered or uniform)
+  brushMode: BrushMode; // New: Brush mode (tapered or uniform)
   projectName: string; // New: Project name for saving
   isDirty: boolean; // true when there are unsaved changes since last save
   soundsEnabled: boolean;

@@ -798,7 +798,7 @@ function TextSessionPreviewSectionContent({ parentDark, subtleColor, sectionBg, 
 
 const INTEGRATED_SEED_STATE: Partial<AppState> = {
 	mode: 'drawing',
-	tool: 'brush',
+	tool: 'blob',
 	totalLayers: 3,
 	currentLayerIndex: 1,
 	shapes: [

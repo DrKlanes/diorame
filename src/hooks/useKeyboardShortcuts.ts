@@ -63,8 +63,8 @@ export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject }:
 
 			if (!cmd && !shift) {
 				switch (e.key.toLowerCase()) {
-					case 'b': dispatch({ type: 'SET_TOOL', payload: 'brush' }); return;
-					case 'l': dispatch({ type: 'SET_TOOL', payload: 'line' }); return;
+					case 'b': dispatch({ type: 'SET_TOOL', payload: 'blob' }); return;
+					case 'l': dispatch({ type: 'SET_TOOL', payload: 'brush' }); return;
 					case 'e': dispatch({ type: 'SET_TOOL', payload: 'eraser' }); return;
 					case 't': dispatch({ type: 'SET_TOOL', payload: 'text' }); return;
 					case 'm': dispatch({ type: 'SET_TOOL', payload: 'move' }); return;

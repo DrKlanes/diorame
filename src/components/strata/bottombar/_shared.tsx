@@ -48,28 +48,28 @@ export function ToolBtn({
 	);
 }
 
-const LINE_MODE_ORDER: Array<'tapered' | 'uniform' | 'ink'> = ['tapered', 'uniform', 'ink'];
-const LINE_MODE_ICONS: Record<string, string> = {
+const BRUSH_MODE_ORDER: Array<'tapered' | 'uniform' | 'ink'> = ['tapered', 'uniform', 'ink'];
+const BRUSH_MODE_ICONS: Record<string, string> = {
 	tapered: 'line-tapered',
 	uniform: 'line-uniform',
 	ink: 'line-ink',
 };
-const LINE_MODE_NEXT: Record<string, string> = {
+const BRUSH_MODE_NEXT: Record<string, string> = {
 	tapered: 'uniform',
 	uniform: 'ink',
 	ink: 'tapered',
 };
 
-interface LineModeButtonProps { dark: boolean; }
+interface BrushModeButtonProps { dark: boolean; }
 
-export function LineModeButton({ dark }: LineModeButtonProps) {
+export function BrushModeButton({ dark }: BrushModeButtonProps) {
 	const { state, dispatch } = useStrata();
 	const { t } = useTranslation();
-	const currentMode = state.lineMode ?? 'tapered';
-	const currentIndex = LINE_MODE_ORDER.indexOf(currentMode as any);
+	const currentMode = state.brushMode ?? 'tapered';
+	const currentIndex = BRUSH_MODE_ORDER.indexOf(currentMode as any);
 
 	const handleClick = () => {
-		dispatch({ type: 'SET_LINE_MODE', payload: LINE_MODE_NEXT[currentMode] } as any);
+		dispatch({ type: 'SET_BRUSH_MODE', payload: BRUSH_MODE_NEXT[currentMode] } as any);
 	};
 
 	const iconColor = dk(dark, T.purple, T.purpleLight) as string;
@@ -100,7 +100,7 @@ export function LineModeButton({ dark }: LineModeButtonProps) {
 				flexShrink: 0,
 			}}
 		>
-			<Ico name={LINE_MODE_ICONS[currentMode]} size={14} color={iconColor} />
+			<Ico name={BRUSH_MODE_ICONS[currentMode]} size={14} color={iconColor} />
 			<div style={{ marginTop: 2, display: 'flex', gap: 1.5, alignItems: 'center' }}>
 				{[0, 1, 2].map(i => (
 					<div
