@@ -1850,9 +1850,6 @@ export const StrataCanvas = () => {
                       const shapeLayerIndex = Math.round(Math.abs(shape.zIndex / BASE_DEPTH_STEP));
                       const renderMode = currentState.layerRenderModes?.[shapeLayerIndex] || 'flat';
                       
-                      let isFadeGrad = false;
-                      let fadeBounds = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
-                      
                       if (renderMode === 'grad' && !shape.isEraser) {
                           // Gradient logic simplified
                           let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -1878,8 +1875,6 @@ export const StrataCanvas = () => {
                               const endAlpha = Math.max(0, 1 - (0.2 + ints * 0.8));
                               grad.addColorStop(0, hexToRgba(c, 1));
                               grad.addColorStop(1, hexToRgba(c, endAlpha));
-                              isFadeGrad = true;
-                              fadeBounds = { minX, minY, maxX, maxY };
                           } else {
                               // Solid gradient: light variant → color → dark variant (default)
                               grad.addColorStop(0, getVibrantVariant(c, ints, 'light'));
@@ -1894,23 +1889,7 @@ export const StrataCanvas = () => {
                       if (useStraightLines) drawStraightLine(layerCtx, renderPoints);
                       else drawSmoothLine(layerCtx, renderPoints);
                       layerCtx.fill();
-                      
-                      
-                      /* Dead code removed: synthetic grain (11 lines)
-                          layerCtx.save();
-                          layerCtx.clip(); // Clip grain to current stroke path
-                          layerCtx.globalCompositeOperation = 'source-over';
-                          layerCtx.globalAlpha = 0.14;
-                          const gw = Math.ceil(fadeBounds.maxX - fadeBounds.minX) + 2;
-                          const gh = Math.ceil(fadeBounds.maxY - fadeBounds.minY) + 2;
-                          const grainTex = null; // createFadeGrain removed
-                          if (grainTex) layerCtx.drawImage(grainTex, fadeBounds.minX - 1, fadeBounds.minY - 1, gw, gh);
-                           layerCtx.restore();
-                       } end of dead grain block
-                           layerCtx.restore();
-                       } */ if (false) { // orphaned dead lines
-                          layerCtx.restore();
-                      }
+
                   }
                   
                   layerCtx.globalCompositeOperation = 'source-over';
