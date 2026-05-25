@@ -41,9 +41,10 @@ interface WelcomeModalV2Props {
 	onLoadExample:      () => Promise<void>;
 	dark:               boolean;
 	onRestoreAutosave?: () => void;
+	isMidSession?:      boolean;
 }
 
-export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAutosave }: WelcomeModalV2Props) {
+export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAutosave, isMidSession }: WelcomeModalV2Props) {
 	const { t } = useTranslation();
 	const { state, dispatch } = useStrata();
 	const [isLoadingExample, setIsLoadingExample] = useState(false);
@@ -171,23 +172,31 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 
 					{/* Zona 2 — Acciones */}
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch', marginBottom: 28 }}>
-						{onRestoreAutosave && (
-							<DiModal.PrimaryActionLg onClick={onRestoreAutosave}>
-								{t('modal.welcome.cta.restore')}
-							</DiModal.PrimaryActionLg>
-						)}
-						{onRestoreAutosave ? (
-							<DiModal.SecondaryActionLg onClick={onClose}>
-								{t('modal.welcome.cta.primary')}
-							</DiModal.SecondaryActionLg>
-						) : (
+						{isMidSession ? (
 							<DiModal.PrimaryActionLg onClick={onClose}>
-								{t('modal.welcome.cta.primary')}
+								{t('modal.welcome.cta.backToDrawing')}
 							</DiModal.PrimaryActionLg>
+						) : (
+							<>
+								{onRestoreAutosave && (
+									<DiModal.PrimaryActionLg onClick={onRestoreAutosave}>
+										{t('modal.welcome.cta.restore')}
+									</DiModal.PrimaryActionLg>
+								)}
+								{onRestoreAutosave ? (
+									<DiModal.SecondaryActionLg onClick={onClose}>
+										{t('modal.welcome.cta.primary')}
+									</DiModal.SecondaryActionLg>
+								) : (
+									<DiModal.PrimaryActionLg onClick={onClose}>
+										{t('modal.welcome.cta.primary')}
+									</DiModal.PrimaryActionLg>
+								)}
+								<DiModal.SecondaryAction onClick={handleLoadExample} disabled={isLoadingExample}>
+									{isLoadingExample ? t('modal.welcome.cta.loading') : t('modal.welcome.cta.secondary')}
+								</DiModal.SecondaryAction>
+							</>
 						)}
-						<DiModal.SecondaryAction onClick={handleLoadExample} disabled={isLoadingExample}>
-							{isLoadingExample ? t('modal.welcome.cta.loading') : t('modal.welcome.cta.secondary')}
-						</DiModal.SecondaryAction>
 					</div>
 
 					{/* NIVEL 1 — morado, peso 500, sin underline (C22) */}

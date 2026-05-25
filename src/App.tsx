@@ -83,6 +83,7 @@ function AppContent() {
         }}
         onLoadExample={handleLoadExample}
         onRestoreAutosave={autosaveData ? handleRestoreAutosave : undefined}
+        isMidSession={state.shapes.length > 0}
         dark={state.isDarkMode}
       />
       <ExportProgressV2
