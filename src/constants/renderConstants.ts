@@ -20,3 +20,10 @@ export const DOUBLE_CLICK_DELAY = 300;
 
 /** Minimum ms between render frames while drawing (~120 fps cap) */
 export const RENDER_THROTTLE_MS = 8;
+
+/**
+ * Focal length used for the 2D drawing-mode projection (gizmo, layer
+ * scale calc, etc.). Higher value = flatter perspective. 5000 is the
+ * value originally hardcoded in StrataCanvas as a local constant.
+ */
+export const DRAW_FOCAL_LENGTH = 5000;

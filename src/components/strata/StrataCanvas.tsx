@@ -11,13 +11,15 @@ import { processPixelArt } from './canvas/PixelArtProcessor';
 import { applyFog, applyGlow, applyDoFBlur, applyRisoV2, generateRisoGrain, applyChromaticAberration, applyVignette, applyGrain, applyGrunge } from './canvas/postProcessing';
 import { hexToHSL, hslToHex, getVibrantVariant, hexToRgba } from '../../utils/colorUtils';
 import { createNoise, drawSmoothLine, drawStraightLine } from '../../utils/canvasUtils';
-import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS } from '../../constants/renderConstants';
+import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS, DRAW_FOCAL_LENGTH } from '../../constants/renderConstants';
 import { computeCinematicTick, CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
 import { drawBackground } from './canvas/drawBackground';
+import { drawGizmo } from './canvas/drawGizmo';
 import { drawSymmetryAxis } from './canvas/drawSymmetryAxis';
 import { exportAsPNG, exportAsSVG, exportAsMP4 } from './canvas/exportHandlers';
 import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
+import { quantizePixelArtCamera } from './canvas/quantizePixelArtCamera';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -27,7 +29,6 @@ export const StrataCanvas = () => {
   const { t } = useTranslation();
 
   // --- Constants ---
-  const DRAW_FOCAL_LENGTH = 5000;
   const NEAR_CLIP = 50;
   const MAX_PAN = 1500;
 
@@ -1208,68 +1209,18 @@ export const StrataCanvas = () => {
       let currentCamera = { ...cameraRef.current };
       let viewZoomOffset = currentState.viewZoomOffset;
 
-      if (isPixelArt) {
-          // Anchor-Based Snapping
-          // To eliminate micro-jolts, we snap everything relative to a stable "Anchor Point" (POI or Center).
-          // This ensures that when the grid resizes (zoom changes), the center of attention remains fixed 
-          // and doesn't "beat" or jitter against a global 0,0 grid.
-          
-          const screenW = containerRef.current?.clientWidth || canvas.width;
-          
-          // Determine Anchor (World Space)
-          const anchorX = currentState.pointOfInterest ? currentState.pointOfInterest.x : 0;
-          const anchorY = currentState.pointOfInterest ? currentState.pointOfInterest.y : 0;
-          const anchorZ = currentState.pointOfInterest ? currentState.pointOfInterest.z : getActiveZ(currentState.currentLayerIndex);
-
-          const fl = currentState.focalLength;
-          
-          // 1. Quantize Z (Zoom) Relative to Anchor
-          // We calculate the snapped Z depth such that the anchor remains stable.
-          const rawTotalZ = currentCamera.z + (isCinematic ? viewZoomOffset : 0);
-          
-          // Dynamic Z-Step: Scaling resolution should match pixel resolution
-          const rawDist = Math.max(10, fl + (anchorZ - rawTotalZ));
-          
-          // zStep: amount of depth change required to alter scale by ~0.5 screen pixels at the edge
-          // This ensures zoom steps are perceptible but small pixel-perfect increments
-          const zStep = Math.max(5, Math.floor(rawDist * (pSize / (screenW * 0.55))));
-          
-          // Snap Total Z relative to AnchorZ
-          // snappedZ = anchorZ + k * zStep
-          const snappedTotalZ = anchorZ + Math.round((rawTotalZ - anchorZ) / zStep) * zStep;
-          
-          // Apply Snapped Z to camera components
-          const zDiff = snappedTotalZ - rawTotalZ;
-          if (isCinematic) {
-               viewZoomOffset += zDiff;
-          } else {
-               currentCamera.z += zDiff;
-          }
-
-          // 2. Quantize X / Y Relative to Anchor
-          // Recompute camera position so the Anchor remains fixed at a snapped screen coordinate.
-          // This eliminates jitter by ensuring the reference point is always pixel-aligned.
-          const snappedDist = fl + (anchorZ - snappedTotalZ);
-          
-          if (snappedDist > 10) {
-              const rawScale = fl / Math.max(10, fl + (anchorZ - rawTotalZ));
-              const snappedScale = fl / snappedDist;
-              
-              if (Number.isFinite(rawScale) && Number.isFinite(snappedScale) && Math.abs(snappedScale) > 0.00001) {
-                  // Project Anchor to Screen Space (relative to center) using RAW parameters
-                  const rawProjX = (anchorX - currentCamera.x) * rawScale;
-                  const rawProjY = (anchorY - currentCamera.y) * rawScale;
-
-                  // Snap the projected position to nearest integer pixel
-                  const snappedProjX = Math.round(rawProjX / pSize) * pSize;
-                  const snappedProjY = Math.round(rawProjY / pSize) * pSize;
-
-                  // Back-solve for Camera X/Y to enforce this snapped screen position with the new scale
-                  currentCamera.x = anchorX - (snappedProjX / snappedScale);
-                  currentCamera.y = anchorY - (snappedProjY / snappedScale);
-              }
-          }
-      }
+      viewZoomOffset = quantizePixelArtCamera(
+          currentCamera,
+          viewZoomOffset,
+          isPixelArt,
+          isCinematic,
+          currentState.pointOfInterest,
+          currentState.currentLayerIndex,
+          currentState.focalLength,
+          pSize,
+          containerRef.current?.clientWidth || canvas.width,
+          getActiveZ,
+      ).viewZoomOffset;
       
       const effectiveCameraZ = currentCamera.z + (isCinematic ? viewZoomOffset : 0);
       let FL = currentState.focalLength;
@@ -2054,111 +2005,18 @@ export const StrataCanvas = () => {
       }
 
       // --- Gizmo Drawing ---
-      if (currentState.mode === 'drawing' && currentState.tool === 'move' && transformRef.current.layerBB) {
-           const tr = transformRef.current;
-           const bb = tr.layerBB;
-           const t = tr.isActive ? tr.currentTransform : { x: 0, y: 0, scale: 1, rotation: 0 };
-           const cx = tr.centerX;
-           const cy = tr.centerY;
-           const sin = Math.sin(t.rotation);
-           const cos = Math.cos(t.rotation);
-           
-           const activeZ = currentState.currentLayerIndex * -BASE_DEPTH_STEP;
-           const dDraw = activeZ - currentCamera.z;
-           const sDraw = DRAW_FOCAL_LENGTH / (DRAW_FOCAL_LENGTH + dDraw); 
-           
-           const project = (wx: number, wy: number) => {
-               // World Transform
-               const ox = wx - cx;
-               const oy = wy - cy;
-               const rx = (ox * cos - oy * sin) * t.scale;
-               const ry = (ox * sin + oy * cos) * t.scale;
-               const finalX = rx + cx + t.x;
-               const finalY = ry + cy + t.y;
-               
-               // Screen Projection (Drawing Mode)
-               const sx = finalX * sDraw;
-               const sy = finalY * sDraw;
-               const screenX = (w/2) + (sx * (currentState.drawingZoom || 1)) + (currentState.drawingPan?.x || 0);
-               const screenY = (h/2) + (sy * (currentState.drawingZoom || 1)) + (currentState.drawingPan?.y || 0);
-               return { x: screenX, y: screenY };
-           };
-
-           const pTL = project(bb.minX, bb.minY);
-           const pTR = project(bb.maxX, bb.minY);
-           const pBR = project(bb.maxX, bb.maxY);
-           const pBL = project(bb.minX, bb.maxY);
-           
-           // Rotate handle above top edge
-           // Project unrotated top-mid point, but moved up in unrotated Y
-           // Actually, simpler: take projected TL and TR, find midpoint, then extend perpendicular.
-           // OR project a point that is (cx, minY - offset) in LOCAL space.
-           // Let's do Local Space projection logic properly.
-           // Point in Local Space: (0, -offset) relative to (0,0) center? No.
-           // Relative to center (cx, cy):
-           // Top Edge Mid: (0, minY - cy).
-           // Handle: (0, minY - cy - offset).
-           
-           const offset = 120 / sDraw / (currentState.drawingZoom || 1); // constant screen size offset
-           const pRot = project(cx, bb.minY - offset);
-           const pCenter = project(bb.cx, bb.cy);
-
-           // Update Hit Handles
-           transformHandlesRef.current = {
-               tl: pTL, tr: pTR, br: pBR, bl: pBL,
-               rotate: pRot, center: pCenter
-           };
-
-           // Draw
-           ctx.setTransform(1, 0, 0, 1, 0, 0); 
-           ctx.lineWidth = 2;
-           ctx.strokeStyle = '#3b82f6'; 
-           ctx.beginPath();
-           ctx.moveTo(pTL.x, pTL.y);
-           ctx.lineTo(pTR.x, pTR.y);
-           ctx.lineTo(pBR.x, pBR.y);
-           ctx.lineTo(pBL.x, pBL.y);
-           ctx.closePath();
-           ctx.stroke();
-           
-           // Rotate Line
-           const topMid = { x: (pTL.x+pTR.x)/2, y: (pTL.y+pTR.y)/2 };
-           ctx.beginPath();
-           ctx.moveTo(topMid.x, topMid.y);
-           ctx.lineTo(pRot.x, pRot.y);
-           ctx.stroke();
-
-           // Handles
-           ctx.fillStyle = '#ffffff';
-           ctx.lineWidth = 1.5;
-           const drawHandle = (p: {x:number,y:number}, type: string) => {
-               ctx.beginPath();
-               ctx.arc(p.x, p.y, type === 'rotate' ? 5 : 6, 0, Math.PI*2);
-               ctx.fill();
-               ctx.stroke();
-           };
-
-           drawHandle(pTL, 'scale');
-           drawHandle(pTR, 'scale');
-           drawHandle(pBR, 'scale');
-           drawHandle(pBL, 'scale');
-           ctx.fillStyle = '#3b82f6';
-           drawHandle(pRot, 'rotate');
-
-           // Position flip buttons overlay below bounding box
-           if (flipButtonsRef.current) {
-               const bottomMid = { x: (pBL.x + pBR.x) / 2, y: (pBL.y + pBR.y) / 2 };
-               flipButtonsRef.current.style.transform = `translate(${bottomMid.x}px, ${bottomMid.y + 16}px) translate(-50%, 0)`;
-               flipButtonsRef.current.style.opacity = tr.isActive ? '0' : '1';
-               flipButtonsRef.current.style.pointerEvents = tr.isActive ? 'none' : 'auto';
-           }
-      } else {
-           // Hide flip buttons when gizmo is not visible
-           if (flipButtonsRef.current) {
-               flipButtonsRef.current.style.opacity = '0';
-               flipButtonsRef.current.style.pointerEvents = 'none';
-           }
-      }
+      transformHandlesRef.current = drawGizmo(
+          ctx, w, h,
+          currentState.mode,
+          currentState.tool,
+          transformRef.current,
+          currentState.currentLayerIndex,
+          currentState.drawingZoom,
+          currentState.drawingPan,
+          currentCamera.z,
+          flipButtonsRef.current,
+          BASE_DEPTH_STEP,
+      );
 
       // --- Symmetry Axis Guide ---
       if (currentState.mode === 'drawing' && currentState.isSymmetryEnabled) {
