@@ -13,6 +13,8 @@ import { hexToHSL, hslToHex, getVibrantVariant, hexToRgba } from '../../utils/co
 import { createNoise, drawSmoothLine, drawStraightLine } from '../../utils/canvasUtils';
 import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS } from '../../constants/renderConstants';
 import { computeCinematicTick, CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
+import { drawBackground } from './canvas/drawBackground';
+import { drawSymmetryAxis } from './canvas/drawSymmetryAxis';
 import { exportAsPNG, exportAsSVG, exportAsMP4 } from './canvas/exportHandlers';
 import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
@@ -1328,15 +1330,9 @@ export const StrataCanvas = () => {
       const offCtx = offscreenCanvasRef.current!.getContext('2d')!;
 
       // --- 1. Background ---
-      ctx.globalAlpha = 1.0;
-      ctx.setTransform(1, 0, 0, 1, 0, 0); 
-      ctx.filter = 'none';
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = currentState.isDarkMode 
-        ? (isPixelArt ? '#000000' : '#050505') 
-        : (isPixelArt ? '#ffffff' : '#f8f9fa'); 
-      ctx.fillRect(0, 0, w, h);
+      drawBackground(ctx, w, h, currentState.isDarkMode, isPixelArt, paperImgRef.current);
 
+      // viewport calc — feeds layer loop and gizmo
       const viewZoom = currentState.mode === 'drawing' ? currentState.drawingZoom : 1;
       let viewPan = currentState.mode === 'drawing' ? currentState.drawingPan : { x: 0, y: 0 };
 
@@ -1359,21 +1355,6 @@ export const StrataCanvas = () => {
 
       const centerXScreen = w / 2;
       const centerYScreen = h / 2;
-
-      // Paper Texture
-      if (paperImgRef.current && !isPixelArt) {
-         const img = paperImgRef.current;
-         const ratio = Math.max(w / img.width, h / img.height);
-         const cx = (w - img.width * ratio) / 2;
-         const cy = (h - img.height * ratio) / 2;
-         ctx.drawImage(img, 0, 0, img.width, img.height, cx, cy, img.width * ratio, img.height * ratio);
-         if (currentState.isDarkMode) {
-             ctx.globalCompositeOperation = 'multiply';
-             ctx.fillStyle = 'rgba(5, 5, 5, 0.9)';
-             ctx.fillRect(0, 0, w, h);
-             ctx.globalCompositeOperation = 'source-over';
-         }
-      }
 
       // processPixelArt moved to canvas/PixelArtProcessor.ts
 
@@ -2181,19 +2162,7 @@ export const StrataCanvas = () => {
 
       // --- Symmetry Axis Guide ---
       if (currentState.mode === 'drawing' && currentState.isSymmetryEnabled) {
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.strokeStyle = 'rgba(59, 130, 246, 0.3)'; // Subtle blue
-          ctx.lineWidth = 1;
-          ctx.setLineDash([5, 5]); // Dashed line
-          
-          // Center line accounting for pan
-          const centerX = (w / 2) + (currentState.drawingPan?.x || 0);
-          
-          ctx.beginPath();
-          ctx.moveTo(centerX, 0);
-          ctx.lineTo(centerX, h);
-          ctx.stroke();
-          ctx.setLineDash([]); // Reset line dash
+          drawSymmetryAxis(ctx, w, h, currentState.drawingPan?.x || 0);
       }
 
       // --- Animation Tick ---
