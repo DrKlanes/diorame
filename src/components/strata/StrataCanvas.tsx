@@ -21,6 +21,7 @@ import { useTranslation } from '../../i18n';
 import { createTransformPoint } from './canvas/transformPoint';
 import { getLayerBoundingBox } from './canvas/transformUtils';
 import { quantizePixelArtCamera } from './canvas/quantizePixelArtCamera';
+import { renderParticles } from './canvas/renderParticles';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1401,49 +1402,19 @@ export const StrataCanvas = () => {
               },
           );
 
-          // Draw Particles
+          // Draw Particles — extracted to canvas/renderParticles.ts
           if (fxEnabled && currentState.postProcessingEnabled.particles && currentState.postProcessing.particles > 0.01) {
-             const pIntensity = currentState.postProcessing.particles;
-             const pType = currentState.postProcessing.particleType;
-             particlesRef.current.forEach(p => {
-                 p.x += p.vx; p.y += p.vy; p.rotation += p.rotationSpeed;
-                 if (p.x > 1500) p.x = -1500; else if (p.x < -1500) p.x = 1500;
-                 if (p.y > 1000) p.y = -1000; else if (p.y < -1000) p.y = 1000;
-
-                 if (p.z <= z + 50 && p.z > z - BASE_DEPTH_STEP + 50) {
-                     // Reuse projection logic
-                     const proj = transformPoint(p.x, p.y); // Particles share layer Z roughly
-                     if (proj.opacity > 0.01) {
-                         const alpha = Math.min(1, (pIntensity * 1.5) * proj.opacity);
-                         const colorVal = p.shade < 0.5 ? Math.floor(p.shade * 120) : 195 + Math.floor((p.shade - 0.5) * 120);
-                         layerCtx.fillStyle = `rgba(${colorVal}, ${colorVal}, ${colorVal}, ${alpha})`;
-                         
-                         if (pType === 'circle') {
-                             layerCtx.beginPath();
-                             layerCtx.arc(proj.x, proj.y, p.r * proj.scale, 0, Math.PI * 2);
-                             layerCtx.fill();
-                         } else {
-                             layerCtx.save();
-                             layerCtx.translate(proj.x, proj.y);
-                             layerCtx.rotate(p.rotation);
-                             if (pType === 'square') {
-                                const s = p.r * proj.scale * 2;
-                                layerCtx.fillRect(-s/2, -s/2, s, s);
-                             } else {
-                                const s = p.r * proj.scale;
-                                layerCtx.beginPath();
-                                if (p.strokeShape.length) {
-                                    layerCtx.moveTo(p.strokeShape[0].x * s, p.strokeShape[0].y * s);
-                                    for(let i=1; i<p.strokeShape.length; i++) layerCtx.lineTo(p.strokeShape[i].x * s, p.strokeShape[i].y * s);
-                                }
-                                layerCtx.fill();
-                             }
-                             layerCtx.restore();
-                         }
-                         hasContent = true;
-                     }
-                 }
-             });
+              const particlesHadContent = renderParticles(
+                  layerCtx,
+                  particlesRef.current,
+                  transformPoint,
+                  {
+                      z,
+                      intensity: currentState.postProcessing.particles,
+                      type: currentState.postProcessing.particleType,
+                  },
+              );
+              if (particlesHadContent) hasContent = true;
           }
 
           // Draw Shapes
