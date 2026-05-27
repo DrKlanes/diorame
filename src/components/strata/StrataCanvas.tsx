@@ -22,6 +22,7 @@ import { createTransformPoint } from './canvas/transformPoint';
 import { getLayerBoundingBox } from './canvas/transformUtils';
 import { quantizePixelArtCamera } from './canvas/quantizePixelArtCamera';
 import { renderParticles } from './canvas/renderParticles';
+import { renderLiveStroke } from './canvas/renderLiveStroke';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1780,96 +1781,24 @@ export const StrataCanvas = () => {
 
           });
 
-          // Draw Current Stroke
+          // Draw Current Stroke — extracted to canvas/renderLiveStroke.ts
           if (isDrawing && currentPoints.length > 0 && z === activeZ) {
-              let totalScale = 0;
-              const projPoints = currentPoints.map(p => {
-                  const t = transformPoint(p.x, p.y);
-                  totalScale += t.scale;
-                  return { x: t.x, y: t.y };
-              });
-              
-              // Calculate average scale for perspective-correct preview thickness
-              const averageScale = projPoints.length > 0 ? totalScale / projPoints.length : viewZoom;
-              
-              if (projPoints.length > 1) {
-                  hasContent = true;
-                  if (currentState.tool === 'eraser') {
-                      layerCtx.globalCompositeOperation = 'destination-out';
-                      layerCtx.fillStyle = '#000000';
-                      drawSmoothLine(layerCtx, projPoints);
-                      layerCtx.fill();
-                      layerCtx.globalCompositeOperation = 'source-over';
-                      layerCtx.strokeStyle = 'rgba(255,255,255,0.8)';
-                      layerCtx.lineWidth = 1 * viewZoom;
-                      layerCtx.setLineDash([5*viewZoom, 5*viewZoom]);
-                      layerCtx.stroke();
-                      layerCtx.setLineDash([]);
-                  } else if (currentState.tool === 'brush') {
-                      if (currentState.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
-                      else layerCtx.globalCompositeOperation = currentState.isDrawInside ? 'source-atop' : 'source-over';
-                      
-                      layerCtx.strokeStyle = currentState.palette[currentState.currentColorIndex];
-                      layerCtx.lineWidth = currentState.currentBrushThickness * averageScale;
-                      layerCtx.lineCap = 'round';
-                      layerCtx.lineJoin = 'round';
-                      
-                      drawSmoothLine(layerCtx, projPoints);
-                      layerCtx.stroke();
-                  } else {
-                      if (currentState.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
-                      else layerCtx.globalCompositeOperation = currentState.isDrawInside ? 'source-atop' : 'source-over';
-                      
-                      layerCtx.fillStyle = currentState.palette[currentState.currentColorIndex]; /* Redundant ternary removed — both branches identical
-                        ? currentState.palette[currentState.currentColorIndex] // Color for live drawing (gradient not applied during stroke for perf) both branches were identical
-                        : currentState.palette[currentState.currentColorIndex]; */
-                        
-                      drawSmoothLine(layerCtx, projPoints);
-                      layerCtx.fill();
-                  }
-                  layerCtx.globalCompositeOperation = 'source-over';
-              }
-              // Mirror Stroke
-              if (currentState.isSymmetryEnabled) {
-                  let mirrorTotalScale = 0;
-                  const mirPoints = currentPoints.map(p => {
-                      const t = transformPoint(-p.x, p.y);
-                      mirrorTotalScale += t.scale;
-                      return { x: t.x, y: t.y };
-                  });
-                  const mirrorAverageScale = mirPoints.length > 0 ? mirrorTotalScale / mirPoints.length : viewZoom;
-                  
-                  if (mirPoints.length > 1) {
-                      if (currentState.tool === 'eraser') {
-                          layerCtx.globalCompositeOperation = 'destination-out';
-                          layerCtx.fillStyle = '#000000';
-                          drawSmoothLine(layerCtx, mirPoints);
-                          layerCtx.fill();
-                          layerCtx.globalCompositeOperation = 'source-over';
-                          layerCtx.strokeStyle = 'rgba(255,255,255,0.8)';
-                          layerCtx.lineWidth = 1 * viewZoom;
-                          layerCtx.setLineDash([5*viewZoom, 5*viewZoom]);
-                          layerCtx.stroke();
-                          layerCtx.setLineDash([]);
-                      } else if (currentState.tool === 'brush') {
-                          if (currentState.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
-                          else layerCtx.globalCompositeOperation = currentState.isDrawInside ? 'source-atop' : 'source-over';
-                          layerCtx.strokeStyle = currentState.palette[currentState.currentColorIndex];
-                          layerCtx.lineWidth = currentState.currentBrushThickness * mirrorAverageScale;
-                          layerCtx.lineCap = 'round';
-                          layerCtx.lineJoin = 'round';
-                          drawSmoothLine(layerCtx, mirPoints);
-                          layerCtx.stroke();
-                      } else {
-                          if (currentState.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
-                          else layerCtx.globalCompositeOperation = currentState.isDrawInside ? 'source-atop' : 'source-over';
-                          layerCtx.fillStyle = currentState.palette[currentState.currentColorIndex];
-                          drawSmoothLine(layerCtx, mirPoints);
-                          layerCtx.fill();
-                      }
-                      layerCtx.globalCompositeOperation = 'source-over';
-                  }
-              }
+              const liveStrokeHadContent = renderLiveStroke(
+                  layerCtx,
+                  currentPoints,
+                  transformPoint,
+                  {
+                      tool: currentState.tool,
+                      palette: currentState.palette,
+                      currentColorIndex: currentState.currentColorIndex,
+                      currentBrushThickness: currentState.currentBrushThickness,
+                      isDrawBehind: currentState.isDrawBehind,
+                      isDrawInside: currentState.isDrawInside,
+                      isSymmetryEnabled: currentState.isSymmetryEnabled,
+                      viewZoom,
+                  },
+              );
+              if (liveStrokeHadContent) hasContent = true;
           }
 
           if (hasContent) {
