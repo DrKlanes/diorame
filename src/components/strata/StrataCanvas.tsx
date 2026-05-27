@@ -7,8 +7,7 @@ import grungeTexture from "figma:asset/texture-grunge.png";
 import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOverlayConnected';
-import { processPixelArt } from './canvas/PixelArtProcessor';
-import { applyFog, applyGlow, applyDoFBlur, applyRisoV2, generateRisoGrain, applyChromaticAberration, applyVignette, applyGrain, applyGrunge } from './canvas/postProcessing';
+import { applyRisoV2, generateRisoGrain, applyChromaticAberration, applyVignette, applyGrain, applyGrunge } from './canvas/postProcessing';
 import { hexToHSL, hslToHex, getVibrantVariant, hexToRgba } from '../../utils/colorUtils';
 import { createNoise, drawSmoothLine, drawStraightLine } from '../../utils/canvasUtils';
 import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS, DRAW_FOCAL_LENGTH } from '../../constants/renderConstants';
@@ -23,6 +22,7 @@ import { getLayerBoundingBox } from './canvas/transformUtils';
 import { quantizePixelArtCamera } from './canvas/quantizePixelArtCamera';
 import { renderParticles } from './canvas/renderParticles';
 import { renderLiveStroke } from './canvas/renderLiveStroke';
+import { composeLayer } from './canvas/composeLayer';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1802,42 +1802,44 @@ export const StrataCanvas = () => {
           }
 
           if (hasContent) {
-             // Pattern Overlay (Optimized)
-             if (shapePattern && !isPixelArt) {
-                 layerCtx.globalCompositeOperation = 'source-atop';
-                 layerCtx.fillStyle = shapePattern;
-                 layerCtx.fillRect(0,0,w,h);
-                 layerCtx.globalCompositeOperation = 'source-over';
-             }
+              // Per-layer composition — extracted to canvas/composeLayer.ts
+              // Caller-side prep of pixelCanvas (was ensureCanvas inline in v2.7.1)
+              const pSizeForCompose = Math.max(2, currentState.postProcessing.pixelArtSize || 4);
+              const pixelCanvas = isPixelArt
+                  ? ensureCanvas(pixelCanvasRef, Math.ceil(w / pSizeForCompose), Math.ceil(h / pSizeForCompose))
+                  : null;
 
-             // Fog
-             if (fxEnabled && currentState.postProcessingEnabled.fog) {
-                 applyFog(layerCtx, w, h, currentState.postProcessing.fog, currentState.isDarkMode, FL + layerAvgZ);
-             }
-
-             // Composition to Offscreen
-             // Apply Pixel Art per-layer to support smooth DoF on top
-             if (isPixelArt) {
-                 const pSize = Math.max(2, currentState.postProcessing.pixelArtSize || 4);
-                 const pixelCanvas = ensureCanvas(pixelCanvasRef, Math.ceil(w / pSize), Math.ceil(h / pSize));
-                 processPixelArt(
-                     layerCtx, w, h, pixelCanvas,
-                     currentState.postProcessing.pixelArtDepth ?? 4,
-                     currentState.postProcessing.pixelArtDither ?? 0,
-                     currentState.palette
-                 );
-             }
-
-             const glowInt = currentState.postProcessing.glow;
-             const dofBlur = (fxEnabled && currentState.postProcessingEnabled.dof)
-                 ? Math.min((Math.abs(layerAvgZ - fxFocusDist)/1000)*(FL/400)*4, 30*currentState.postProcessing.dof)
-                 : 0;
-
-             if (fxEnabled && currentState.postProcessingEnabled.glow && glowInt > 0.01) {
-                 applyGlow(offCtx, helperCanvasRef.current!, glowInt, dofBlur, currentState.isDarkMode);
-             }
-
-             applyDoFBlur(offCtx, helperCanvasRef.current!, dofBlur);
+              composeLayer(
+                  layerCtx,
+                  offCtx,
+                  helperCanvasRef.current!,
+                  pixelCanvas,
+                  {
+                      w,
+                      h,
+                      shapePattern,
+                      isPixelArt,
+                      fxEnabled,
+                      FL,
+                      layerAvgZ,
+                      fxFocusDist,
+                      isDarkMode: currentState.isDarkMode,
+                      palette: currentState.palette,
+                      postProcessing: {
+                          fog: currentState.postProcessing.fog,
+                          pixelArtSize: currentState.postProcessing.pixelArtSize,
+                          pixelArtDepth: currentState.postProcessing.pixelArtDepth,
+                          pixelArtDither: currentState.postProcessing.pixelArtDither,
+                          glow: currentState.postProcessing.glow,
+                          dof: currentState.postProcessing.dof,
+                      },
+                      postProcessingEnabled: {
+                          fog: currentState.postProcessingEnabled.fog,
+                          glow: currentState.postProcessingEnabled.glow,
+                          dof: currentState.postProcessingEnabled.dof,
+                      },
+                  },
+              );
           }
       }); // End Layer Loop
 
