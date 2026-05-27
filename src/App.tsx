@@ -95,24 +95,23 @@ function AppContent() {
   );
 }
 
+function AppContentWithMobileGate() {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileBlockScreenV2 />;
+  return <AppContent />;
+}
+
 export default function App() {
   // Preview mode: dev only, activated via ?preview=true
   if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'true') {
     return <PreviewPage />;
   }
 
-  const isMobile = useIsMobile();
-
-  // If mobile, show only the block screen (no app initialization)
-  if (isMobile) {
-    return <MobileBlockScreenV2 />;
-  }
-
-  // If tablet/desktop, render the full app
+  // StrataProvider lives outside the mobile gate so state survives breakpoint crossings.
   return (
     <StrataProvider>
       <ToastProvider />
-      <AppContent />
+      <AppContentWithMobileGate />
     </StrataProvider>
   );
 }
