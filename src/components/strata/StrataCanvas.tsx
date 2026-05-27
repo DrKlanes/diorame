@@ -18,6 +18,7 @@ import { drawGizmo } from './canvas/drawGizmo';
 import { drawSymmetryAxis } from './canvas/drawSymmetryAxis';
 import { exportAsPNG, exportAsSVG, exportAsMP4 } from './canvas/exportHandlers';
 import { useTranslation } from '../../i18n';
+import { createTransformPoint } from './canvas/transformPoint';
 import { getLayerBoundingBox } from './canvas/transformUtils';
 import { quantizePixelArtCamera } from './canvas/quantizePixelArtCamera';
 
@@ -1370,58 +1371,35 @@ export const StrataCanvas = () => {
           let hasContent = false;
           let layerAvgZ = dz; 
 
-          // Transform Helper Function
-          const transformPoint = (x: number, y: number) => {
-             // Drawing Mode Parallax
-             if (!isCinematic) {
-                 const dDraw = z - currentCamera.z;
-                 const sDraw = DRAW_FOCAL_LENGTH / (DRAW_FOCAL_LENGTH + dDraw);
-                 const sx = x * sDraw;
-                 const sy = y * sDraw;
-                 return { 
-                     x: centerXScreen + (sx * viewZoom) + viewPan.x, 
-                     y: centerYScreen + (sy * viewZoom) + viewPan.y, 
-                     scale: sDraw * viewZoom, 
-                     opacity: 1, 
-                     dist: 1 
-                 };
-             }
-
-             // Cinematic 3D
-             let sx = (x - camX) * layerScale;
-             let sy = (y - camY) * layerScale;
-
-             if (!isLocked3D && camRot !== 0) {
-                 const rx = sx * cosR - sy * sinR;
-                 const ry = sx * sinR + sy * cosR;
-                 sx = rx; sy = ry;
-             }
-             if (isArcOrOrbit && !isLocked3D) {
-                 const shake = lastShakeRef.current;
-                 const idealCamX = currentCamera.x - shake.x;
-                 const idealCamY = currentCamera.y - shake.y;
-                 
-                 sx += (idealCamX - poiX) * arcPivotScale;
-                 if (currentState.cinematicType === 'orbit') sy += (idealCamY - poiY) * arcPivotScale;
-             }
-
-             let distFactor = 1;
-             if (distortionK !== 0 && !isLocked3D) {
-                 const nx = sx / centerXScreen;
-                 const ny = sy / centerYScreen;
-                 const r2 = nx*nx + ny*ny;
-                 distFactor = 1 + distortionK * r2;
-                 sx *= distFactor; sy *= distFactor;
-             }
-
-             return {
-                 x: centerXScreen + (sx * viewZoom) + viewPan.x,
-                 y: centerYScreen + (sy * viewZoom) + viewPan.y,
-                 scale: layerScale * viewZoom,
-                 opacity: layerOpacity,
-                 dist: distFactor
-             };
-          };
+          // Transform Helper Function — extracted to canvas/transformPoint.ts
+          const transformPoint = createTransformPoint(
+              {
+                  z,
+                  isLocked3D,
+                  camX,
+                  camY,
+                  layerScale,
+                  layerOpacity,
+              },
+              {
+                  isCinematic,
+                  camera: currentCamera,
+                  viewZoom,
+                  viewPan,
+                  centerXScreen,
+                  centerYScreen,
+                  camRot,
+                  cosR,
+                  sinR,
+                  poiX,
+                  poiY,
+                  isArcOrOrbit,
+                  arcPivotScale,
+                  distortionK,
+                  cinematicType: currentState.cinematicType,
+                  shake: lastShakeRef.current,
+              },
+          );
 
           // Draw Particles
           if (fxEnabled && currentState.postProcessingEnabled.particles && currentState.postProcessing.particles > 0.01) {
