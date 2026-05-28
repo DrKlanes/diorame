@@ -133,7 +133,7 @@ export function LayersPanel() {
 						dark={dark} tooltip={t('layers.action.moveDown')} disabled={isAtBottom} />
 					<HSep />
 					<DiActionButton name="plus"
-						onClick={() => dispatch({ type: 'NEXT_LAYER' } as any)}
+						onClick={() => dispatch({ type: 'ADD_LAYER' } as any)}
 						dark={dark} tooltip={t('layers.action.add')} disabled={!canAdd} />
 				</DiPill>
 				<LayerDotsRail inline />
@@ -190,7 +190,7 @@ export function LayersPanel() {
 						{totalLayers}/10
 					</span>
 					<DiActionButton name="plus"
-						onClick={() => dispatch({ type: 'NEXT_LAYER' } as any)}
+						onClick={() => dispatch({ type: 'ADD_LAYER' } as any)}
 						dark={dark} tooltip={t('layers.action.add')} disabled={!canAdd} />
 					<DiActionButton name="chevron-right"
 						onClick={() => toggle(false)}

@@ -53,6 +53,7 @@ type Action =
   | { type: 'UPDATE_CAMERA'; payload: { x?: number; y?: number; z?: number; rotation?: number } }
   | { type: 'NEXT_LAYER' }
   | { type: 'PREV_LAYER' }
+  | { type: 'ADD_LAYER' }
   | { type: 'SET_CURRENT_LAYER'; payload: number }
   | { type: 'SET_FOCAL_LENGTH'; payload: number }
   | { type: 'SET_VIEW_ZOOM_OFFSET'; payload: number }
@@ -569,6 +570,79 @@ function appReducer(state: AppState, action: Action): AppState {
             };
         }
         return state;
+    }
+    case 'ADD_LAYER': {
+        if (state.totalLayers >= MAX_LAYERS) return state;
+
+        const newLayerIndex = state.currentLayerIndex + 1;
+        const newZ = newLayerIndex * -BASE_DEPTH_STEP;
+
+        // Shift shapes: layers at index >= newLayerIndex move one slot farther
+        const newShapes = state.shapes.map(s =>
+            s.zIndex <= newZ ? { ...s, zIndex: s.zIndex - BASE_DEPTH_STEP } : s
+        );
+
+        // Shift hidden/locked index arrays
+        const newHidden = state.hiddenLayers.map(i => i >= newLayerIndex ? i + 1 : i);
+        const newLocked = state.locked3DLayers.map(i => i >= newLayerIndex ? i + 1 : i);
+
+        // Shift per-layer dicts
+        const newRenderModes   = { ...state.layerRenderModes };
+        const newGradParams    = { ...state.layerGradParams };
+        const newBrushSettings = { ...state.layerBrushSettings };
+        for (let i = state.totalLayers - 1; i >= newLayerIndex; i--) {
+            newRenderModes[i + 1]   = newRenderModes[i];
+            newGradParams[i + 1]    = newGradParams[i];
+            newBrushSettings[i + 1] = newBrushSettings[i];
+        }
+
+        // New slot: propagate from current layer (paletteApplyToAllActive-aware)
+        const propagatedMode   = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
+        const propagatedParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
+        const newPaletteMode = state.paletteApplyToAllActive ? propagatedMode : 'flat';
+        const newGradP       = state.paletteApplyToAllActive ? propagatedParams : GRADIENT_DEFAULTS;
+        newRenderModes[newLayerIndex] = newPaletteMode;
+        newGradParams[newLayerIndex]  = { ...newGradP };
+        // newBrushSettings[newLayerIndex] not set — new empty layer uses current brush as fallback
+
+        // Shift paletteApplyToAllSnapshot (if active)
+        let newApplySnapshot = state.paletteApplyToAllSnapshot;
+        if (state.paletteApplyToAllActive && state.paletteApplyToAllSnapshot) {
+            const snapModes  = { ...state.paletteApplyToAllSnapshot.layerRenderModes };
+            const snapParams = { ...state.paletteApplyToAllSnapshot.layerGradParams };
+            for (let i = state.totalLayers - 1; i >= newLayerIndex; i--) {
+                snapModes[i + 1]  = snapModes[i];
+                snapParams[i + 1] = snapParams[i];
+            }
+            snapModes[newLayerIndex]  = 'flat' as const;
+            snapParams[newLayerIndex] = { ...GRADIENT_DEFAULTS };
+            newApplySnapshot = { layerRenderModes: snapModes, layerGradParams: snapParams };
+        }
+
+        const newState = {
+            ...state,
+            shapes: newShapes,
+            totalLayers: state.totalLayers + 1,
+            currentLayerIndex: newLayerIndex,
+            camera: { ...state.camera, z: newZ, rotation: 0 },
+            hiddenLayers: newHidden,
+            locked3DLayers: newLocked,
+            layerRenderModes: newRenderModes,
+            layerGradParams: newGradParams,
+            layerBrushSettings: newBrushSettings,
+            paletteApplyToAllSnapshot: newApplySnapshot,
+            isDrawInside: false,
+            isDrawBehind: false,
+            paletteMode: newPaletteMode,
+            paletteGradientAngle: newGradP.angle,
+            paletteGradientIntensity: newGradP.intensity,
+            paletteGradientType: newGradP.gradType || 'solid',
+            currentBrushThickness: state.currentBrushThickness,
+            brushMode: state.brushMode,
+        };
+
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
+        return { ...newState, history, historyIndex: index };
     }
     case 'SET_CURRENT_LAYER': {
         const targetIndex = action.payload;
