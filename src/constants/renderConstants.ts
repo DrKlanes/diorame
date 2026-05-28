@@ -27,3 +27,6 @@ export const RENDER_THROTTLE_MS = 8;
  * value originally hardcoded in StrataCanvas as a local constant.
  */
 export const DRAW_FOCAL_LENGTH = 5000;
+
+/** Near clipping plane distance — layers closer than this are invisible */
+export const NEAR_CLIP = 50;

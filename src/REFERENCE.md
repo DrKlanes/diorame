@@ -438,6 +438,13 @@ This section is critical. These actions are **forbidden**:
 - **Max 400 lines per file**: Split before exceeding
 - **Tabs for indentation**: Never mix spaces
 
+### Architectural Exceptions (400-line rule)
+
+| File | Lines | Reason |
+|---|---|---|
+| `src/components/strata/StrataCanvas.tsx` | ~1290 | Legacy monolith — subject of ongoing extraction (Plan C). Never add to it. |
+| `src/components/strata/canvas/renderPipeline.ts` | ~476 | Frame orchestrator. Accepted oversize: its purpose is to sequence all render sub-modules in the correct order. Splitting into smaller files would fragment the orchestration logic without reducing real complexity. |
+
 ---
 
 ## Appendix A: Technical Constants

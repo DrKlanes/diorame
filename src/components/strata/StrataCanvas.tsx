@@ -1,31 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
-import { generateTaperedStroke, generateUniformStroke, generateStrokeForMode } from '../../utils/strokeGenerators';
+import { generateStrokeForMode } from '../../utils/strokeGenerators';
 import { Shape, Point } from '../../types/strataTypes';
 import paperTexture from "figma:asset/texture-paper.png";
 import grungeTexture from "figma:asset/texture-grunge.png";
 import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOverlayConnected';
-import { applyRisoV2, generateRisoGrain, applyChromaticAberration, applyVignette, applyGrain, applyGrunge } from './canvas/postProcessing';
-import { createNoise, drawSmoothLine, drawStraightLine } from '../../utils/canvasUtils';
-import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS, DRAW_FOCAL_LENGTH } from '../../constants/renderConstants';
-import { computeCinematicTick, CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
-import { drawBackground } from './canvas/drawBackground';
-import { drawGizmo } from './canvas/drawGizmo';
-import { drawSymmetryAxis } from './canvas/drawSymmetryAxis';
+import { generateRisoGrain } from './canvas/postProcessing';
+import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY } from '../../constants/renderConstants';
 import { exportAsPNG, exportAsSVG, exportAsMP4 } from './canvas/exportHandlers';
 import { useTranslation } from '../../i18n';
-import { createTransformPoint } from './canvas/transformPoint';
 import { getLayerBoundingBox } from './canvas/transformUtils';
-import { quantizePixelArtCamera } from './canvas/quantizePixelArtCamera';
-import { renderParticles } from './canvas/renderParticles';
-import { renderLiveStroke } from './canvas/renderLiveStroke';
-import { composeLayer } from './canvas/composeLayer';
-import { renderTextShape } from './canvas/renderTextShape';
-import { renderEraserShape } from './canvas/renderEraserShape';
-import { renderUniformLineShape } from './canvas/renderUniformLineShape';
-import { renderRegularFillShape } from './canvas/renderRegularFillShape';
+import { renderFrame, type RenderContext } from './canvas/renderPipeline';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -35,7 +22,6 @@ export const StrataCanvas = () => {
   const { t } = useTranslation();
 
   // --- Constants ---
-  const NEAR_CLIP = 50;
   const MAX_PAN = 1500;
 
   // --- Refs ---
@@ -138,7 +124,13 @@ export const StrataCanvas = () => {
 
   // Throttle state for drawing performance
   const lastRenderTimeRef = useRef(0);
-  // RENDER_THROTTLE_MS moved to src/constants/renderConstants.ts
+
+  // Frame-persistent state (was let vars inside render useEffect, migrated for renderPipeline extraction)
+  const accumulatedTimeRef = useRef(0);
+  const accumulatedHandheldTimeRef = useRef(0);
+  const lastTimeRef = useRef(Date.now());
+  const wiggleFrameRef = useRef(0);
+  const shapePatternRef = useRef<CanvasPattern | null>(null);
 
   // Transform Tool State
   const transformRef = useRef<{
@@ -1175,561 +1167,48 @@ export const StrataCanvas = () => {
     canvas.addEventListener('contextrestored', handleContextRestored);
 
     let animationFrameId: number;
-    let accumulatedTime = 0;
-    let accumulatedHandheldTime = 0;
-    let lastTime = Date.now();
-    let wiggleFrame = 0; 
-    let shapePattern: CanvasPattern | null = null;
 
-    // Helper to init reusable canvases
-    const ensureCanvas = (ref: React.MutableRefObject<HTMLCanvasElement | null>, w: number, h: number) => {
-        if (!ref.current) ref.current = document.createElement('canvas');
-        if (ref.current.width !== w || ref.current.height !== h) {
-            ref.current.width = w; ref.current.height = h;
-        }
-        return ref.current;
-    };
+    // Render loop — body extracted to canvas/renderPipeline.ts (v3.0.0)
+    const buildRenderContext = (): RenderContext => ({
+      state: stateRef.current,
+      isDrawing: isDrawingRef.current,
+      currentPoints: currentPointsRef.current,
+      shapesByZ: shapesByZRef.current,
+      sortedZs: sortedZsRef.current,
+      transformState: transformRef.current,
+      cameraRef,
+      lastShakeRef,
+      transformHandlesRef,
+      lastRenderTimeRef,
+      orbitRef,
+      accumulatedTimeRef,
+      accumulatedHandheldTimeRef,
+      lastTimeRef,
+      wiggleFrameRef,
+      shapePatternRef,
+      offscreenCanvasRef,
+      helperCanvasRef,
+      compositionCanvasRef,
+      pixelCanvasRef,
+      tempCanvasRef,
+      noiseCanvasRef,
+      paperImg: paperImgRef.current,
+      risoGrain: risoGrainRef.current,
+      grungeImg: grungeImgRef.current,
+      particles: particlesRef.current,
+      flipButtonsEl: flipButtonsRef.current,
+      w: containerRef.current?.clientWidth ?? 0,
+      h: containerRef.current?.clientHeight ?? 0,
+      getActiveZ,
+    });
 
     const render = () => {
       try {
-      const currentState = stateRef.current;
-      const isDrawing = isDrawingRef.current;
-      const currentPoints = currentPointsRef.current;
-      const isCinematic = currentState.mode === 'cinematic';
-      const fxEnabled = isCinematic && currentState.fxMasterEnabled;
-      const isPixelArt = fxEnabled && currentState.postProcessingEnabled.pixelArt;
-      
-      // Throttle rendering during drawing for better performance
-      const renderTime = performance.now();
-      const timeSinceLastRender = renderTime - lastRenderTimeRef.current;
-      if (isDrawing && currentState.mode === 'drawing' && timeSinceLastRender < RENDER_THROTTLE_MS) {
-          requestAnimationFrame(render);
-          return;
-      }
-      lastRenderTimeRef.current = renderTime;
-      
-      // Quantization Logic for Pixel Art
-      // Derived from Pixel Art Size to ensure 1:1 pixel stability
-      const pSize = (isPixelArt) ? Math.max(2, currentState.postProcessing.pixelArtSize || 4) : 1;
-      
-      let currentCamera = { ...cameraRef.current };
-      let viewZoomOffset = currentState.viewZoomOffset;
-
-      viewZoomOffset = quantizePixelArtCamera(
-          currentCamera,
-          viewZoomOffset,
-          isPixelArt,
-          isCinematic,
-          currentState.pointOfInterest,
-          currentState.currentLayerIndex,
-          currentState.focalLength,
-          pSize,
-          containerRef.current?.clientWidth || canvas.width,
-          getActiveZ,
-      ).viewZoomOffset;
-      
-      const effectiveCameraZ = currentCamera.z + (isCinematic ? viewZoomOffset : 0);
-      let FL = currentState.focalLength;
-
-      if (isCinematic && currentState.cinematicType === 'zoom') {
-          // Exponential Zoom for smooth visual flow
-          // Range: ~78mm (1250) to ~2500mm (40000)
-          const minFL = 1250;
-          const maxFL = 40000;
-          const ratio = maxFL / minFL;
-          const sineNorm = (Math.sin(accumulatedTime * 0.4) + 1) / 2;
-          FL = minFL * Math.pow(ratio, sineNorm);
-      }
-
-      // Dynamic Focus Logic
-      let fxFocusDist = isCinematic ? currentState.postProcessing.focusDist : 800;
-      
-      if (isCinematic && currentState.postProcessing.focusTargetLayer !== undefined && currentState.postProcessing.focusTargetLayer !== -1) {
-          const targetIdx = currentState.postProcessing.focusTargetLayer;
-          if (targetIdx >= 0 && targetIdx < currentState.totalLayers) {
-             const z = targetIdx * -BASE_DEPTH_STEP;
-             const baseZ = z * currentState.layerSpacingFactor;
-             const isLocked3D = currentState.locked3DLayers.includes(targetIdx);
-             const shapeZ = (!isCinematic || isLocked3D) ? baseZ : baseZ * CINEMATIC_DEPTH_MULTIPLIER;
-             const camZ = isLocked3D ? 0 : effectiveCameraZ;
-             // Calculate distance from camera to target layer
-             fxFocusDist = shapeZ - camZ;
-          }
-      }
-
-      // --- Resize Handling ---
-      const w = containerRef.current?.clientWidth || canvas.width;
-      const h = containerRef.current?.clientHeight || canvas.height;
-      if (canvas.width !== w || canvas.height !== h) {
-          canvas.width = w; canvas.height = h;
-          // Re-init noise
-          const nc = createNoise(w, h);
-          if (nc) noiseCanvasRef.current = nc;
-          
-          const patC = createNoise(256, 256, 15, 1, 0.3);
-          if (patC) shapePattern = ctx.createPattern(patC, 'repeat');
-      }
-
-      // Ensure Buffers
-      ensureCanvas(offscreenCanvasRef, w, h);
-      ensureCanvas(helperCanvasRef, w, h);
-      ensureCanvas(compositionCanvasRef, w, h);
-
-      ensureCanvas(tempCanvasRef, w, h); 
-      ensureCanvas(pixelCanvasRef, Math.ceil(w / 4), Math.ceil(h / 4)); // Init small, resize later if needed
-
-      if (!noiseCanvasRef.current) noiseCanvasRef.current = createNoise(w, h);
-      if (!shapePattern) {
-          const patC = createNoise(256, 256, 15, 1, 0.3);
-          if (patC) shapePattern = ctx.createPattern(patC, 'repeat');
-      }
-
-      const offCtx = offscreenCanvasRef.current!.getContext('2d')!;
-
-      // --- 1. Background ---
-      drawBackground(ctx, w, h, currentState.isDarkMode, isPixelArt, paperImgRef.current);
-
-      // viewport calc — feeds layer loop and gizmo
-      const viewZoom = currentState.mode === 'drawing' ? currentState.drawingZoom : 1;
-      let viewPan = currentState.mode === 'drawing' ? currentState.drawingPan : { x: 0, y: 0 };
-
-      // Ensure viewPan exists
-      if (!viewPan) viewPan = { x: 0, y: 0 };
-
-      if (currentState.mode === 'cinematic' && currentState.cinematicType === 'arc') {
-          // Extremely subtle sway for Arc shot
-          // Reduced amplitude (50 -> 15) and speed (0.3 -> 0.2) to avoid distracting from the focused layer
-          viewPan = { x: Math.sin(accumulatedTime * 0.2) * 15, y: 0 };
-      }
-
-      // Quantize View Pan (Screen Space)
-      if (isPixelArt) {
-          viewPan = {
-              x: Math.round(viewPan.x / pSize) * pSize,
-              y: Math.round(viewPan.y / pSize) * pSize
-          };
-      }
-
-      const centerXScreen = w / 2;
-      const centerYScreen = h / 2;
-
-      // processPixelArt moved to canvas/PixelArtProcessor.ts
-
-      // --- 2. Render Layers ---
-      offCtx.setTransform(1, 0, 0, 1, 0, 0);
-      offCtx.clearRect(0, 0, w, h);
-
-      // Use cached shapes map for better performance
-      const currentShapesByZ = shapesByZRef.current;
-      const currentSortedZs = sortedZsRef.current;
-
-      const activeZ = getActiveZ(currentState.currentLayerIndex);
-      let renderZs = currentSortedZs;
-      // Inject current active Z if drawing and not yet in list
-      if (isDrawing && currentPoints.length > 0 && !currentShapesByZ.has(activeZ)) {
-           renderZs = [...renderZs, activeZ].sort((a, b) => b - a);
-      }
-
-      const camRot = currentCamera.rotation || 0;
-      const cosR = camRot !== 0 ? Math.cos(camRot) : 1;
-      const sinR = camRot !== 0 ? Math.sin(camRot) : 0;
-
-      const poi = currentState.pointOfInterest;
-      const poiX = poi ? poi.x : 0;
-      const poiY = poi ? poi.y : 0;
-      const centerZ = poi ? poi.z * CINEMATIC_DEPTH_MULTIPLIER : ((currentState.totalLayers - 1) / 2) * -BASE_DEPTH_STEP * CINEMATIC_DEPTH_MULTIPLIER;
-      
-      const isArcOrOrbit = (currentState.cinematicType === 'arc' || currentState.cinematicType === 'orbit') && isCinematic;
-      const dzCenter = isArcOrOrbit ? centerZ - effectiveCameraZ : 0;
-      const arcPivotScale = isArcOrOrbit ? FL / (FL + dzCenter) : 0;
-
-      const fxDistortion = (fxEnabled && currentState.postProcessingEnabled.distortion) ? currentState.postProcessing.distortion : 0;
-      const distortionK = Math.abs(fxDistortion) > 0.01 ? (fxDistortion * -0.8) * (500 / FL) : 0;
-
-      renderZs.forEach(z => {
-          const layerIndex = Math.round(Math.abs(z / BASE_DEPTH_STEP));
-          if (currentState.hiddenLayers.includes(layerIndex)) return;
-          
-          const isLocked3D = isCinematic && currentState.locked3DLayers.includes(layerIndex);
-          const shapes = currentShapesByZ.get(z) || [];
-          
-          // Pre-calculate Layer Projection Constants
-          // FIX: Only apply Cinematic Multiplier if in Cinematic Mode!
-          // Apply layer spacing factor to control depth separation
-          const baseZ = z * currentState.layerSpacingFactor;
-          const shapeZ = (!isCinematic || isLocked3D) ? baseZ : baseZ * CINEMATIC_DEPTH_MULTIPLIER;
-          const camX = isLocked3D ? 0 : currentCamera.x;
-          const camY = isLocked3D ? 0 : currentCamera.y;
-          const camZ = isLocked3D ? 0 : effectiveCameraZ;
-          const dz = shapeZ - camZ;
-          
-          const activeFL = (!isCinematic) ? DRAW_FOCAL_LENGTH : FL;
-
-          if (activeFL + dz <= NEAR_CLIP) return; // Clip behind camera
-          const layerScale = activeFL / (activeFL + dz);
-          const layerOpacity = (activeFL + dz < 250) ? Math.max(0, ((activeFL + dz) - NEAR_CLIP) / 200) : 1;
-          
-          if (layerOpacity <= 0) return;
-
-          const layerCtx = helperCanvasRef.current!.getContext('2d')!;
-          layerCtx.clearRect(0, 0, w, h);
-          let hasContent = false;
-          let layerAvgZ = dz; 
-
-          // Transform Helper Function — extracted to canvas/transformPoint.ts
-          const transformPoint = createTransformPoint(
-              {
-                  z,
-                  isLocked3D,
-                  camX,
-                  camY,
-                  layerScale,
-                  layerOpacity,
-              },
-              {
-                  isCinematic,
-                  camera: currentCamera,
-                  viewZoom,
-                  viewPan,
-                  centerXScreen,
-                  centerYScreen,
-                  camRot,
-                  cosR,
-                  sinR,
-                  poiX,
-                  poiY,
-                  isArcOrOrbit,
-                  arcPivotScale,
-                  distortionK,
-                  cinematicType: currentState.cinematicType,
-                  shake: lastShakeRef.current,
-              },
-          );
-
-          // Draw Particles — extracted to canvas/renderParticles.ts
-          if (fxEnabled && currentState.postProcessingEnabled.particles && currentState.postProcessing.particles > 0.01) {
-              const particlesHadContent = renderParticles(
-                  layerCtx,
-                  particlesRef.current,
-                  transformPoint,
-                  {
-                      z,
-                      intensity: currentState.postProcessing.particles,
-                      type: currentState.postProcessing.particleType,
-                  },
-              );
-              if (particlesHadContent) hasContent = true;
-          }
-
-          // Draw Shapes
-          shapes.forEach(shape => {
-              if (shape.points.length === 0) return;
-              let wiggleX = 0, wiggleY = 0;
-              if (fxEnabled && currentState.postProcessingEnabled.wiggle) {
-                  const seed = shape.id.charCodeAt(0) + (shape.id.charCodeAt(1) || 0);
-                  const noiseValX = Math.sin(seed + wiggleFrame * 12.9898) * 43758.5453;
-                  const noiseValY = Math.cos(seed + wiggleFrame * 78.233) * 43758.5453;
-                  const amp = currentState.postProcessing.wiggle <= 0.2 ? 2 : (currentState.postProcessing.wiggle >= 0.8 ? 8 : 4);
-                  wiggleX = (noiseValX - Math.floor(noiseValX)) * amp - amp/2;
-                  wiggleY = (noiseValY - Math.floor(noiseValY)) * amp - amp/2;
-
-                  if (isPixelArt) {
-                      wiggleX = Math.round(wiggleX / pSize) * pSize;
-                      wiggleY = Math.round(wiggleY / pSize) * pSize;
-                  }
-              }
-
-              // Transform Preview
-              let currentPoints = shape.points;
-              if (currentState.mode === 'drawing' && currentState.tool === 'move' && transformRef.current.isActive && shape.zIndex === currentState.currentLayerIndex * -BASE_DEPTH_STEP) {
-                   const t = transformRef.current.currentTransform;
-                   const cx = transformRef.current.centerX;
-                   const cy = transformRef.current.centerY;
-                   const sin = Math.sin(t.rotation);
-                   const cos = Math.cos(t.rotation);
-                   
-                   currentPoints = currentPoints.map(p => {
-                       const ox = p.x - cx;
-                       const oy = p.y - cy;
-                       const rx = (ox * cos - oy * sin) * t.scale;
-                       const ry = (ox * sin + oy * cos) * t.scale;
-                       return {
-                           ...p,
-                           x: rx + cx + t.x,
-                           y: ry + cy + t.y
-                       };
-                   });
-              }
-
-              // Text Handling — extracted to canvas/renderTextShape.ts
-              if (shape.type === 'text' && shape.text) {
-                  const isThisShapeActive = (
-                      currentState.mode === 'drawing' &&
-                      currentState.tool === 'move' &&
-                      transformRef.current.isActive &&
-                      shape.zIndex === currentState.currentLayerIndex * -BASE_DEPTH_STEP
-                  );
-                  const t = transformRef.current.currentTransform;
-
-                  const textHadContent = renderTextShape(
-                      layerCtx,
-                      shape,
-                      currentPoints[0],
-                      transformPoint,
-                      wiggleX,
-                      wiggleY,
-                      {
-                          activeFontSizeScale: isThisShapeActive ? t.scale : 1.0,
-                          activeRotationDelta: isThisShapeActive ? t.rotation : 0.0,
-                          layerRenderModes: currentState.layerRenderModes,
-                          layerGradParams: currentState.layerGradParams,
-                      },
-                  );
-                  if (textHadContent) hasContent = true;
-                  return; // Sale del forEach callback al siguiente shape (NO cambia comportamiento)
-              }
-
-              // Path Handling
-              const projectedPoints: {x:number, y:number}[] = [];
-              let minOp = 1;
-              currentPoints.forEach(pt => {
-                  const proj = transformPoint(pt.x, pt.y);
-                  projectedPoints.push({ x: proj.x + wiggleX, y: proj.y + wiggleY });
-                  if (proj.opacity < minOp) minOp = proj.opacity;
-              });
-
-              if (projectedPoints.length > 1 && minOp > 0.01) {
-                  hasContent = true;
-                  layerCtx.globalAlpha = minOp;
-                  
-                  // Pixel Art Refinement: Snap Points & Use Straight Lines
-                  let renderPoints = projectedPoints;
-                  let useStraightLines = false;
-                  
-                  // Early detection of brush type to identify "taps"
-                  const isUniformLine = shape.originalPoints && shape.originalPoints.length > 0 && shape.brushMode === 'uniform';
-                  const isBrushTap = isPixelArt && !isUniformLine && !shape.isEraser && shape.points.length <= 3 && projectedPoints.length > 0;
-                  
-                  if (isPixelArt) {
-                      useStraightLines = true; 
-                      const pSize = Math.max(2, currentState.postProcessing.pixelArtSize || 4);
-                      
-                      if (isBrushTap) {
-                           return; // Option A: Skip tap strokes entirely in Pixel Art View Mode to avoid artifacts
-                      } 
-                      
-                      renderPoints = projectedPoints.map(p => ({
-                          x: Math.round(p.x / pSize) * pSize,
-                          y: Math.round(p.y / pSize) * pSize
-                      }));
-                      // Remove duplicate adjacent points
-                      renderPoints = renderPoints.filter((p, i) => 
-                          i === 0 || (p.x !== renderPoints[i-1].x || p.y !== renderPoints[i-1].y)
-                      );
-                      
-                      // Ensure at least 2 points
-                      if (renderPoints.length < 2 && projectedPoints.length >= 2) {
-                           renderPoints = [
-                               { x: Math.round(projectedPoints[0].x/pSize)*pSize, y: Math.round(projectedPoints[0].y/pSize)*pSize },
-                               { x: Math.round(projectedPoints[projectedPoints.length-1].x/pSize)*pSize, y: Math.round(projectedPoints[projectedPoints.length-1].y/pSize)*pSize }
-                           ];
-                      }
-                  }
-
-                  if (isUniformLine) {
-                      // Extracted to canvas/renderUniformLineShape.ts
-                      renderUniformLineShape(
-                          layerCtx,
-                          shape,
-                          transformPoint,
-                          useStraightLines,
-                          wiggleX,
-                          wiggleY,
-                          pSize,
-                          isPixelArt,
-                          viewZoom,
-                          {
-                              layerRenderModes: currentState.layerRenderModes,
-                              layerGradParams: currentState.layerGradParams,
-                              pixelArtSize: currentState.postProcessing.pixelArtSize,
-                          },
-                      );
-                  } else if (shape.isEraser) {
-                      // Extracted to canvas/renderEraserShape.ts
-                      renderEraserShape(layerCtx, renderPoints, useStraightLines);
-                  } else {
-                      // Extracted to canvas/renderRegularFillShape.ts
-                      renderRegularFillShape(
-                          layerCtx,
-                          shape,
-                          projectedPoints,
-                          renderPoints,
-                          useStraightLines,
-                          {
-                              layerRenderModes: currentState.layerRenderModes,
-                              layerGradParams: currentState.layerGradParams,
-                          },
-                      );
-                  }
-                  
-                  layerCtx.globalCompositeOperation = 'source-over';
-                  layerCtx.globalAlpha = 1.0;
-              }
-
-
-          });
-
-          // Draw Current Stroke — extracted to canvas/renderLiveStroke.ts
-          if (isDrawing && currentPoints.length > 0 && z === activeZ) {
-              const liveStrokeHadContent = renderLiveStroke(
-                  layerCtx,
-                  currentPoints,
-                  transformPoint,
-                  {
-                      tool: currentState.tool,
-                      palette: currentState.palette,
-                      currentColorIndex: currentState.currentColorIndex,
-                      currentBrushThickness: currentState.currentBrushThickness,
-                      isDrawBehind: currentState.isDrawBehind,
-                      isDrawInside: currentState.isDrawInside,
-                      isSymmetryEnabled: currentState.isSymmetryEnabled,
-                      viewZoom,
-                  },
-              );
-              if (liveStrokeHadContent) hasContent = true;
-          }
-
-          if (hasContent) {
-              // Per-layer composition — extracted to canvas/composeLayer.ts
-              // Caller-side prep of pixelCanvas (was ensureCanvas inline in v2.7.1)
-              const pSizeForCompose = Math.max(2, currentState.postProcessing.pixelArtSize || 4);
-              const pixelCanvas = isPixelArt
-                  ? ensureCanvas(pixelCanvasRef, Math.ceil(w / pSizeForCompose), Math.ceil(h / pSizeForCompose))
-                  : null;
-
-              composeLayer(
-                  layerCtx,
-                  offCtx,
-                  helperCanvasRef.current!,
-                  pixelCanvas,
-                  {
-                      w,
-                      h,
-                      shapePattern,
-                      isPixelArt,
-                      fxEnabled,
-                      FL,
-                      layerAvgZ,
-                      fxFocusDist,
-                      isDarkMode: currentState.isDarkMode,
-                      palette: currentState.palette,
-                      postProcessing: {
-                          fog: currentState.postProcessing.fog,
-                          pixelArtSize: currentState.postProcessing.pixelArtSize,
-                          pixelArtDepth: currentState.postProcessing.pixelArtDepth,
-                          pixelArtDither: currentState.postProcessing.pixelArtDither,
-                          glow: currentState.postProcessing.glow,
-                          dof: currentState.postProcessing.dof,
-                      },
-                      postProcessingEnabled: {
-                          fog: currentState.postProcessingEnabled.fog,
-                          glow: currentState.postProcessingEnabled.glow,
-                          dof: currentState.postProcessingEnabled.dof,
-                      },
-                  },
-              );
-          }
-      }); // End Layer Loop
-
-      // --- 3. Final Composition ---
-      
-      // RISO Texture
-      if (fxEnabled && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && risoGrainRef.current) {
-          applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, risoGrainRef.current, helperCanvasRef.current!.getContext('2d')!);
-      }
-
-      // Chromatic Aberration & Transfer to Main
-      const caInt = currentState.postProcessing.chromaticAberration;
-      const useCA = fxEnabled && currentState.postProcessingEnabled.chromaticAberration && caInt > 0.01;
-
-      ctx.globalCompositeOperation = currentState.isDarkMode ? 'source-over' : 'multiply';
-
-      if (useCA) {
-          applyChromaticAberration(
-              ctx, offscreenCanvasRef.current!, helperCanvasRef.current!,
-              compositionCanvasRef.current!, w, h, caInt, currentState.isDarkMode
-          );
-      } else {
-          ctx.drawImage(offscreenCanvasRef.current!, 0, 0);
-      }
-
-      // Global FX
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalCompositeOperation = 'source-over';
-      
-      if (fxEnabled && currentState.postProcessingEnabled.vignette) {
-          applyVignette(ctx, w, h, currentState.postProcessing.vignette);
-      }
-
-      const grain = (fxEnabled && currentState.postProcessingEnabled.grain) ? currentState.postProcessing.grain : 0;
-      if (grain > 0.01 && noiseCanvasRef.current) {
-          applyGrain(ctx, noiseCanvasRef.current, w, h, grain);
-      }
-
-
-      // --- Grunge Overlay (Animated) ---
-      if (fxEnabled && currentState.postProcessingEnabled.grunge && grungeImgRef.current) {
-          applyGrunge(ctx, grungeImgRef.current, w, h, currentState.postProcessing.grungeIntensity ?? 0.5);
-      }
-
-      // --- Gizmo Drawing ---
-      transformHandlesRef.current = drawGizmo(
-          ctx, w, h,
-          currentState.mode,
-          currentState.tool,
-          transformRef.current,
-          currentState.currentLayerIndex,
-          currentState.drawingZoom,
-          currentState.drawingPan,
-          currentCamera.z,
-          flipButtonsRef.current,
-          BASE_DEPTH_STEP,
-      );
-
-      // --- Symmetry Axis Guide ---
-      if (currentState.mode === 'drawing' && currentState.isSymmetryEnabled) {
-          drawSymmetryAxis(ctx, w, h, currentState.drawingPan?.x || 0);
-      }
-
-      // --- Animation Tick ---
-      const now = Date.now();
-      const dt = Math.min((now - lastTime)/1000, 0.1);
-      lastTime = now;
-      if (isCinematic) {
-          const cinematicResult = computeCinematicTick(
-              dt, now,
-              accumulatedTime, accumulatedHandheldTime,
-              currentState.cinematicSpeed ?? 1.0,
-              currentState.cinematicType,
-              currentState.camera,
-              currentState.totalLayers,
-              currentState.isHandheldEnabled,
-              currentState.handheldIntensity,
-              poiX, poiY, centerZ,
-              orbitRef.current
-          );
-          accumulatedTime = cinematicResult.accumulatedTime;
-          accumulatedHandheldTime = cinematicResult.accumulatedHandheldTime;
-          wiggleFrame = cinematicResult.wiggleFrame;
-          cameraRef.current = cinematicResult.newCamera;
-          lastShakeRef.current = cinematicResult.newShake;
-      }
-      
-      animationFrameId = requestAnimationFrame(render);
+        renderFrame(ctx, buildRenderContext());
       } catch (e) {
-         console.error("Render loop error", e);
-         animationFrameId = requestAnimationFrame(render);
+        console.error('Render loop error', e);
       }
+      animationFrameId = requestAnimationFrame(render);
     };
 
     animationFrameId = requestAnimationFrame(render);
