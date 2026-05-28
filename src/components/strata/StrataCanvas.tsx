@@ -8,7 +8,6 @@ import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOverlayConnected';
 import { applyRisoV2, generateRisoGrain, applyChromaticAberration, applyVignette, applyGrain, applyGrunge } from './canvas/postProcessing';
-import { hexToHSL, hslToHex, getVibrantVariant, hexToRgba } from '../../utils/colorUtils';
 import { createNoise, drawSmoothLine, drawStraightLine } from '../../utils/canvasUtils';
 import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, RENDER_THROTTLE_MS, DRAW_FOCAL_LENGTH } from '../../constants/renderConstants';
 import { computeCinematicTick, CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
@@ -26,6 +25,7 @@ import { composeLayer } from './canvas/composeLayer';
 import { renderTextShape } from './canvas/renderTextShape';
 import { renderEraserShape } from './canvas/renderEraserShape';
 import { renderUniformLineShape } from './canvas/renderUniformLineShape';
+import { renderRegularFillShape } from './canvas/renderRegularFillShape';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1558,52 +1558,18 @@ export const StrataCanvas = () => {
                       // Extracted to canvas/renderEraserShape.ts
                       renderEraserShape(layerCtx, renderPoints, useStraightLines);
                   } else {
-                      if (shape.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
-                      else layerCtx.globalCompositeOperation = shape.isDrawInside ? 'source-atop' : 'source-over';
-
-                      const shapeLayerIndex = Math.round(Math.abs(shape.zIndex / BASE_DEPTH_STEP));
-                      const renderMode = currentState.layerRenderModes?.[shapeLayerIndex] || 'flat';
-                      
-                      if (renderMode === 'grad' && !shape.isEraser) {
-                          // Gradient logic simplified
-                          let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-                          for(let k=0; k<projectedPoints.length; k++) {
-                              const px = projectedPoints[k].x, py = projectedPoints[k].y;
-                              if(px < minX) minX = px; if(px > maxX) maxX = px;
-                              if(py < minY) minY = py; if(py > maxY) maxY = py;
-                          }
-                          const cx = (minX + maxX)/2, cy = (minY + maxY)/2;
-                          
-                          // Use per-layer gradient params
-                          const gradParams = currentState.layerGradParams?.[shapeLayerIndex] || { angle: 90, intensity: 0.2 };
-                          const ang = (gradParams.angle * Math.PI) / 180;
-                          
-                          const r = Math.hypot(maxX-minX, maxY-minY)/2;
-                          const grad = layerCtx.createLinearGradient(
-                              cx - Math.cos(ang)*r, cy - Math.sin(ang)*r,
-                              cx + Math.cos(ang)*r, cy + Math.sin(ang)*r
-                          );
-                          const c = shape.color, ints = gradParams.intensity;
-                          if (gradParams.gradType === 'fade') {
-                              // Fade gradient: solid color → transparent
-                              const endAlpha = Math.max(0, 1 - (0.2 + ints * 0.8));
-                              grad.addColorStop(0, hexToRgba(c, 1));
-                              grad.addColorStop(1, hexToRgba(c, endAlpha));
-                          } else {
-                              // Solid gradient: light variant → color → dark variant (default)
-                              grad.addColorStop(0, getVibrantVariant(c, ints, 'light'));
-                              grad.addColorStop(0.5, c);
-                              grad.addColorStop(1, getVibrantVariant(c, ints, 'dark'));
-                          }
-                          layerCtx.fillStyle = grad;
-                      } else {
-                          layerCtx.fillStyle = shape.color;
-                      }
-                      
-                      if (useStraightLines) drawStraightLine(layerCtx, renderPoints);
-                      else drawSmoothLine(layerCtx, renderPoints);
-                      layerCtx.fill();
-
+                      // Extracted to canvas/renderRegularFillShape.ts
+                      renderRegularFillShape(
+                          layerCtx,
+                          shape,
+                          projectedPoints,
+                          renderPoints,
+                          useStraightLines,
+                          {
+                              layerRenderModes: currentState.layerRenderModes,
+                              layerGradParams: currentState.layerGradParams,
+                          },
+                      );
                   }
                   
                   layerCtx.globalCompositeOperation = 'source-over';
