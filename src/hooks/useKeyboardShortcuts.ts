@@ -13,9 +13,13 @@ export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject }:
 		const handleKeyDown = (e: KeyboardEvent) => {
 			// Guard 1: text session active
 			if (state.textSession.isActive) return;
-			// Guard 2: input/textarea focused
+			// Guard 2: input/textarea focused — sliders (type="range") are excluded intentionally
 			const activeEl = document.activeElement;
-			if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
+			const isTextEntry = activeEl && (
+				activeEl.tagName === 'TEXTAREA' ||
+				(activeEl instanceof HTMLInputElement && activeEl.type !== 'range')
+			);
+			if (isTextEntry) return;
 
 			const cmd = e.metaKey || e.ctrlKey;
 			const shift = e.shiftKey;
