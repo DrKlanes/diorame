@@ -24,6 +24,8 @@ import { renderParticles } from './canvas/renderParticles';
 import { renderLiveStroke } from './canvas/renderLiveStroke';
 import { composeLayer } from './canvas/composeLayer';
 import { renderTextShape } from './canvas/renderTextShape';
+import { renderEraserShape } from './canvas/renderEraserShape';
+import { renderUniformLineShape } from './canvas/renderUniformLineShape';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1535,100 +1537,26 @@ export const StrataCanvas = () => {
                   }
 
                   if (isUniformLine) {
-                      // Check for degenerate line (single-tap Dot) in Pixel Art mode
-                      // Fixes disappearing dots by rendering a deterministic primitive
-                      const pStart = shape.originalPoints![0];
-                      const pEnd = shape.originalPoints![shape.originalPoints!.length-1];
-                      const isDot = isPixelArt && Math.hypot(pStart.x - pEnd.x, pStart.y - pEnd.y) < 0.1;
-
-                      if (isDot) {
-                           const proj = transformPoint(pStart.x, pStart.y);
-                           const px = Math.round((proj.x + wiggleX) / pSize) * pSize;
-                           const py = Math.round((proj.y + wiggleY) / pSize) * pSize;
-                           
-                           if (shape.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
-                           else layerCtx.globalCompositeOperation = shape.isDrawInside ? 'source-atop' : 'source-over';
-                           
-                           layerCtx.fillStyle = shape.color;
-                           const size = Math.max(pSize, Math.round(((shape.brushThickness || 20) * proj.scale) / pSize) * pSize);
-                           layerCtx.fillRect(px - size/2, py - size/2, size, size);
-                      } else {
-                          // For uniform lines, render the original spine with stroke
-                          const projectedSpine: {x:number, y:number}[] = [];
-                      let totalScale = 0;
-                      shape.originalPoints!.forEach(pt => {
-                          const proj = transformPoint(pt.x, pt.y);
-                          let px = proj.x + wiggleX;
-                          let py = proj.y + wiggleY;
-                          if (isPixelArt) {
-                                const pSize = Math.max(2, currentState.postProcessing.pixelArtSize || 4);
-                                px = Math.round(px/pSize)*pSize;
-                                py = Math.round(py/pSize)*pSize;
-                          }
-                          projectedSpine.push({ x: px, y: py });
-                          totalScale += proj.scale;
-                      });
-                      
-                      let finalSpine = projectedSpine;
-                      if (isPixelArt) {
-                           finalSpine = finalSpine.filter((p, i) => 
-                              i === 0 || (p.x !== finalSpine[i-1].x || p.y !== finalSpine[i-1].y)
-                           );
-                      }
-
-                      // Calculate average scale for perspective-correct line thickness
-                      const averageScale = projectedSpine.length > 0 ? totalScale / projectedSpine.length : viewZoom;
-                      
-                      if (shape.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
-                      else layerCtx.globalCompositeOperation = shape.isDrawInside ? 'source-atop' : 'source-over';
-                      
-                      const shapeLayerIndex = Math.round(Math.abs(shape.zIndex / BASE_DEPTH_STEP));
-                      const renderMode = currentState.layerRenderModes?.[shapeLayerIndex] || 'flat';
-                      if (renderMode === 'grad') {
-                          let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-                          for (let k = 0; k < finalSpine.length; k++) {
-                              const px = finalSpine[k].x, py = finalSpine[k].y;
-                              if (px < minX) minX = px; if (px > maxX) maxX = px;
-                              if (py < minY) minY = py; if (py > maxY) maxY = py;
-                          }
-                          const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-                          const gradParams = currentState.layerGradParams?.[shapeLayerIndex] || { angle: 90, intensity: 0.2 };
-                          const ang = (gradParams.angle * Math.PI) / 180;
-                          const r = Math.hypot(maxX - minX, maxY - minY) / 2;
-                          const grad = layerCtx.createLinearGradient(
-                              cx - Math.cos(ang) * r, cy - Math.sin(ang) * r,
-                              cx + Math.cos(ang) * r, cy + Math.sin(ang) * r
-                          );
-                          const c = shape.color, ints = gradParams.intensity;
-                          if (gradParams.gradType === 'fade') {
-                              const endAlpha = Math.max(0, 1 - (0.2 + ints * 0.8));
-                              grad.addColorStop(0, hexToRgba(c, 1));
-                              grad.addColorStop(1, hexToRgba(c, endAlpha));
-                          } else {
-                              grad.addColorStop(0, getVibrantVariant(c, ints, 'light'));
-                              grad.addColorStop(0.5, c);
-                              grad.addColorStop(1, getVibrantVariant(c, ints, 'dark'));
-                          }
-                          layerCtx.strokeStyle = grad;
-                      } else {
-                          layerCtx.strokeStyle = shape.color;
-                      }
-                      const baseThickness = (shape.brushThickness || 20) * averageScale;
-                      layerCtx.lineWidth = isPixelArt ? Math.max(baseThickness, currentState.postProcessing.pixelArtSize || 4) : baseThickness;
-                      layerCtx.lineCap = isPixelArt ? 'butt' : 'round';
-                      layerCtx.lineJoin = isPixelArt ? 'miter' : 'round';
-                      
-                      if (useStraightLines) drawStraightLine(layerCtx, finalSpine);
-                      else drawSmoothLine(layerCtx, finalSpine);
-
-                      layerCtx.stroke();
-                      }
+                      // Extracted to canvas/renderUniformLineShape.ts
+                      renderUniformLineShape(
+                          layerCtx,
+                          shape,
+                          transformPoint,
+                          useStraightLines,
+                          wiggleX,
+                          wiggleY,
+                          pSize,
+                          isPixelArt,
+                          viewZoom,
+                          {
+                              layerRenderModes: currentState.layerRenderModes,
+                              layerGradParams: currentState.layerGradParams,
+                              pixelArtSize: currentState.postProcessing.pixelArtSize,
+                          },
+                      );
                   } else if (shape.isEraser) {
-                      layerCtx.globalCompositeOperation = 'destination-out';
-                      layerCtx.fillStyle = '#000000'; layerCtx.strokeStyle = '#000000';
-                      if (useStraightLines) drawStraightLine(layerCtx, renderPoints);
-                      else drawSmoothLine(layerCtx, renderPoints);
-                      layerCtx.fill();
+                      // Extracted to canvas/renderEraserShape.ts
+                      renderEraserShape(layerCtx, renderPoints, useStraightLines);
                   } else {
                       if (shape.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
                       else layerCtx.globalCompositeOperation = shape.isDrawInside ? 'source-atop' : 'source-over';
