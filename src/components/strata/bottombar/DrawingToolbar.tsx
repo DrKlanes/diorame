@@ -1,5 +1,5 @@
 import React from 'react';
-import { useStrata } from '../StrataContext';
+import { useStrata, BASE_DEPTH_STEP } from '../StrataContext';
 import { DiPill, DiVSep } from '../../../design-system';
 import { DiActionButton } from '../../../design-system';
 import { ToolBtn, BrushModeButton } from './_shared';
@@ -55,6 +55,9 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 
 	const setTool = (t: ToolType) => dispatch({ type: 'SET_TOOL', payload: t });
 
+	const activeLayerZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
+	const isLayerEmpty = !state.shapes.some(s => s.zIndex === activeLayerZ && !s.isEraser);
+
 	const modifiers = MODIFIERS_BY_TOOL[tool] ?? [];
 	const hasModifiers = modifiers.length > 0;
 
@@ -109,6 +112,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 						activeStyle="wash"
 						iconWeight="secondary"
 						tooltip={t(mod.tooltipKey)}
+						disabled={isLayerEmpty && (mod.field === 'isDrawInside' || mod.field === 'isDrawBehind')}
 					/>
 				))}
 				{tool === 'brush' && <><DiVSep dark={dark} /><BrushModeButton dark={dark} /></>}
