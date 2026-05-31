@@ -14,11 +14,19 @@ export type RenderUniformLineShapeOpts = {
  * Renders a uniform-line shape (a stroked path with constant or
  * perspective-scaled thickness). Two sub-modes:
  *
- * 1. isDot mode (pixel art + start == end): paints a single size×size
- *    fillRect at the projected start point (size depends on pSize).
+ * 1. isDot mode (pixel art + start ≈ end, distance < 0.15 world units):
+ *    paints a zero-length stroke with lineCap='round' (circle) at the
+ *    projected start point. After processPixelArt this becomes a round
+ *    pixelated dot, consistent with spine-mode round caps.
+ *    Threshold is 0.15 (not 0.1) to capture synthetic tap offsets of
+ *    {+0.1,+0.1} whose diagonal distance is 0.1×√2 ≈ 0.1414.
  * 2. spine mode (default): projects originalPoints through transformPoint,
  *    accumulates total scale for perspective-correct lineWidth, paints
- *    with optional linear gradient (flat / fade / solid).
+ *    with lineCap/lineJoin='round' and optional linear gradient.
+ *    lineCap and lineJoin are always 'round' — processPixelArt (a pixel-level
+ *    post-process) handles the grid quantization, so round caps are correct
+ *    in pixel art mode too. The original butt/miter in pixel art was a bug
+ *    preserved byte-perfect during the refactor; now corrected.
  *
  * The caller is responsible for:
  * - Setting globalAlpha = minOp before calling
@@ -52,11 +60,16 @@ export const renderUniformLineShape = (
 	viewZoom: number,
 	opts: RenderUniformLineShapeOpts,
 ): void => {
-	// Check for degenerate line (single-tap Dot) in Pixel Art mode
-	// Fixes disappearing dots by rendering a deterministic primitive
+	// Check for degenerate line (single-tap Dot) in Pixel Art mode.
+	// Renders a zero-length stroke (lineCap='round') — a circle that
+	// processPixelArt quantizes into a round pixelated dot.
+	// Threshold is 0.15, not 0.1: a synthetic tap offset of {+0.1, +0.1} has
+	// diagonal distance 0.1×√2 ≈ 0.1414, which exceeded the old 0.1 threshold
+	// and caused taps to fall into spine mode where snapping collapsed both
+	// points to the same grid cell (invisible).
 	const pStart = shape.originalPoints![0];
 	const pEnd = shape.originalPoints![shape.originalPoints!.length - 1];
-	const isDot = isPixelArt && Math.hypot(pStart.x - pEnd.x, pStart.y - pEnd.y) < 0.1;
+	const isDot = isPixelArt && Math.hypot(pStart.x - pEnd.x, pStart.y - pEnd.y) < 0.15;
 
 	if (isDot) {
 		const proj = transformPoint(pStart.x, pStart.y);
@@ -66,9 +79,14 @@ export const renderUniformLineShape = (
 		if (shape.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
 		else layerCtx.globalCompositeOperation = shape.isDrawInside ? 'source-atop' : 'source-over';
 
-		layerCtx.fillStyle = shape.color;
 		const size = Math.max(pSize, Math.round(((shape.brushThickness || 20) * proj.scale) / pSize) * pSize);
-		layerCtx.fillRect(px - size / 2, py - size / 2, size, size);
+		layerCtx.strokeStyle = shape.color;
+		layerCtx.lineWidth = size;
+		layerCtx.lineCap = 'round';
+		layerCtx.beginPath();
+		layerCtx.moveTo(px, py);
+		layerCtx.lineTo(px, py);
+		layerCtx.stroke();
 	} else {
 		// For uniform lines, render the original spine with stroke
 		const projectedSpine: { x: number; y: number }[] = [];
@@ -133,8 +151,8 @@ export const renderUniformLineShape = (
 		}
 		const baseThickness = (shape.brushThickness || 20) * averageScale;
 		layerCtx.lineWidth = isPixelArt ? Math.max(baseThickness, opts.pixelArtSize || 4) : baseThickness;
-		layerCtx.lineCap = isPixelArt ? 'butt' : 'round';
-		layerCtx.lineJoin = isPixelArt ? 'miter' : 'round';
+		layerCtx.lineCap = 'round';
+		layerCtx.lineJoin = 'round';
 
 		if (useStraightLines) drawStraightLine(layerCtx, finalSpine);
 		else drawSmoothLine(layerCtx, finalSpine);
