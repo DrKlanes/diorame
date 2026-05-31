@@ -12,7 +12,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 | | |
 |---|---|
-| **Versión** | 2.0.0 |
+| **Versión** | 3.0.1 |
 | **Stack** | React 18 + TypeScript + Vite 6 + Tailwind CSS 4 + Canvas 2D API |
 | **Dev** | `npm run dev` → puerto 3000 |
 | **Build** | `npm run build` — siempre verificar antes de hacer commit |
@@ -33,7 +33,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 ### Reglas doradas
 
 1. **StrataCanvas.tsx está congelado** — Solo extraer código de él; nunca agregar líneas nuevas.
-2. **Máximo 400 líneas por archivo** — Si un archivo nuevo se acerca al límite, dividirlo antes de continuar.
+2. **Máximo 400 líneas por archivo** — Si un archivo nuevo se acerca al límite, dividirlo antes de continuar. Excepción documentada: `renderPipeline.ts` (~476L) como orquestador de frame — aceptado en v3.0.0.
 3. **Tabs para indentación** — El codebase entero usa tabs. Nunca mezclar spaces.
 4. **No abstracciones especulativas** — Tres líneas similares son mejores que una abstracción prematura.
 
@@ -44,7 +44,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 | Constantes / datos puros | `src/constants/<name>.ts` |
 | Utilidades / helpers | `src/utils/<name>.ts` |
 | Lógica de canvas modular | `src/components/strata/canvas/<Name>.ts` |
-| Hooks React | `src/components/strata/hooks/use<Name>.ts` |
+| Hooks React | `src/hooks/use<Name>.ts` |
 | Sub-componentes UI | `src/components/strata/<Name>.tsx` |
 | Primitivas de Design System | `src/design-system/Di<Name>.tsx` |
 | Tipos compartidos | `src/types/strataTypes.ts` |
@@ -64,25 +64,11 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 4. Verificar que compila y el comportamiento es idéntico
 5. Dejar un comentario de una línea en el punto de extracción: `// Extracted to <filename>`
 
-### Editar archivos con tabs (StrataCanvas, ControlsDrawing, ControlsCinematic, etc.)
+### Editar archivos con tabs
 
-El tool `Edit` falla con indentación de tabs en bloques multilínea. Usar siempre Python:
+El tool `Edit` (str_replace nativo) funciona correctamente con indentación de tabs en todos los archivos del codebase. Usarlo directamente — no se necesita Python para ediciones de código.
 
-```python
-# Patrón estándar para reemplazos seguros
-content = open('ruta/archivo.tsx', encoding='utf-8').read()
-old = '...'  # cadena exacta incluyendo tabs
-new = '...'
-assert old in content, 'CADENA NO ENCONTRADA — verificar tabs'
-content = content.replace(old, new, 1)
-open('ruta/archivo.tsx', 'w', encoding='utf-8').write(content)
-```
-
-Para inspeccionar indentación exacta antes de escribir strings de reemplazo:
-```python
-lines = open('archivo.tsx', encoding='utf-8').readlines()
-print(repr(lines[782]))  # ver tabs exactos
-```
+**Cuándo usar Python:** solo para escritura completa de archivos o reemplazos masivos en loops (>3 archivos). En esos casos aplicar el patrón atomic write per file documentado abajo.
 
 ### Atomic write per file en operaciones multi-archivo
 
@@ -143,11 +129,11 @@ Si dudas si tu cambio es "swap de import" o algo más, asume que es más y escal
 
 | Archivo | Líneas | Rol |
 |---|---|---|
-| `StrataCanvas.tsx` | ~2300 | Render loop, event handlers, gestures. **CONGELADO.** |
-| `StrataContext.tsx` | ~1300 | React Context + useReducer, constantes, re-exports de tipos |
+| `StrataCanvas.tsx` | ~1289 | Thin React shell: render loop, event handlers, gestures. **CONGELADO.** |
+| `StrataContext.tsx` | ~1669 | React Context + useReducer, constantes, re-exports de tipos |
 | `ControlsV2.tsx` | ~150 | Root orquestador delgado para ambos modos. Side-effects globales (keyboard shortcuts, sessionStorage, mode-change camera reset). |
 
-**Átomos UI V2 (producción, v2.0.0):**
+**Átomos UI V2 (producción, v3.0.1):**
 
 | Directorio | Archivos clave |
 |---|---|
@@ -168,11 +154,57 @@ Si dudas si tu cambio es "swap de import" o algo más, asume que es más y escal
 
 | Archivo | Líneas | Propósito |
 |---|---|---|
-| `PixelArtProcessor.ts` | 173 | Downscale, quantización de paleta, dithering Bayer |
-| `postProcessing.ts` | 258 | 8 efectos: Fog, Glow, DoF, Riso, ChromAb, Vignette, Grain, Grunge |
 | `cinematicCamera.ts` | 150 | `computeCinematicTick`: 10 modos de cámara + handheld shake |
-| `exportHandlers.ts` | 323 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4` |
-| `transformUtils.ts` | 134 | `getLayerBoundingBox`: bounding box pixel-accurate para Move tool |
+| `composeLayer.ts` | 98 | Compositing de capa a offscreen buffer (pixel art + fog/glow/DoF) |
+| `drawBackground.ts` | 47 | Fondo del canvas (textura paper, dark mode) |
+| `drawGizmo.ts` | 179 | Gizmo handles del Move tool + botones flip overlay |
+| `drawSymmetryAxis.ts` | 31 | Renderizado del eje de simetría |
+| `exportHandlers.ts` | 422 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4` |
+| `PixelArtProcessor.ts` | 173 | Downscale, quantización de paleta, dithering Bayer |
+| `postProcessing.ts` | 409 | 8 efectos: Fog, Glow, DoF, RisoV2, ChromAb, Vignette, Grain, Grunge |
+| `quantizePixelArtCamera.ts` | 99 | Snaps cámara a pixel grid para modo pixel art |
+| `renderEraserShape.ts` | 30 | Renderizado de forma del eraser (compositing destination-out) |
+| `renderLayerBody.ts` | 380 | Renderer por capa: `renderLayer(z, rc, offCtx, pfc)` |
+| `renderLiveStroke.ts` | 151 | Renderizado del trazo en progreso (live stroke) |
+| `renderParticles.ts` | 98 | Renderizado de partículas flotantes cinemáticas |
+| `renderPipeline.ts` | 476 | Orquestador de frame: `renderFrame(ctx, rc: RenderContext)` ⚠️ excepción 400L |
+| `renderRegularFillShape.ts` | 95 | Formas de relleno regular (blob/tapered brush) |
+| `renderTextShape.ts` | 175 | Renderizado de texto con fuente + alineación |
+| `renderUniformLineShape.ts` | 144 | Renderizado de trazo brush en modo uniform |
+| `transformPoint.ts` | 124 | Factory `createTransformPoint` para proyección 3D |
+| `transformUtils.ts` | 134 | `getLayerBoundingBox` para Move tool |
+
+### Arquitectura del render pipeline
+
+**Patrón: "caller orquesta, módulos puros"**
+
+- `StrataCanvas.tsx` — gestiona el ciclo React y los refs. Llama a `renderFrame(ctx, buildRenderContext())` en cada frame.
+- `renderPipeline.ts` — orquestador puro. Recibe `RenderContext`, ejecuta las fases en orden, no toca refs de React.
+- Módulos `canvas/*.ts` — funciones puras que reciben parámetros tipados. Nunca acceden a refs de React ni a closures del componente.
+
+**Tipos centrales exportados por `renderPipeline.ts`:**
+
+| Tipo | Propósito |
+|---|---|
+| `RenderContext` | Bundle de todos los refs, snapshots de estado, refs frame-persistent, refs canvas y overrides |
+| `PerFrameComputed` | Valores computados una vez por frame y compartidos entre todas las llamadas de capa |
+| `TransformRefState` | Estado de transform por ref para el frame actual |
+
+**Overrides en RenderContext:**
+
+| Override | Efecto |
+|---|---|
+| `renderZsOverride?` | Fuerza un orden de capas alternativo (usado en Move tool) |
+| `skipLiveStroke?` | Omite el renderizado del trazo en progreso |
+| `skipCinematicOverlays?` | Omite partículas y overlays cinemáticos |
+
+**5 refs frame-persistent en StrataCanvas:**
+`accumulatedTimeRef`, `accumulatedHandheldTimeRef`, `lastTimeRef`, `wiggleFrameRef`, `shapePatternRef` — migrados de `let` en closure de useEffect a `useRef` en nivel de componente en v3.0.0.
+
+**Secuencia de fases en `renderFrame`:**
+throttle → quantize cam → FL/focus → buffers → background → viewport → loop de capas → post-processing → overlays → cinematic tick
+
+---
 
 ### Tipos — `src/types/`
 
@@ -192,14 +224,20 @@ Si dudas si tu cambio es "swap de import" o algo más, asume que es más y escal
 
 | Archivo | Propósito |
 |---|---|
-| `renderConstants.ts` | `PARTICLE_COUNT`, `RENDER_THROTTLE_MS`, `DOUBLE_CLICK_DELAY`, frecuencias de handheld |
+| `renderConstants.ts` | `PARTICLE_COUNT`, `RENDER_THROTTLE_MS`, `DOUBLE_CLICK_DELAY`, `DRAW_FOCAL_LENGTH`, `NEAR_CLIP`, `FOG_DENSITY_FACTOR`, frecuencias de handheld |
 | `palette.ts` | `PALETTE_PRIMARY`, `PALETTE_ALTERNATIVE` como `PaletteColor[]` con `{hex, name, isDark}`. `GRADIENT_DEFAULTS`. `DARK_COLORS` (Set derivado). **Fuente única de verdad del sistema de color.** |
 
-### Hooks — `src/components/strata/hooks/`
+### Hooks — `src/hooks/`
 
 | Archivo | Propósito |
 |---|---|
-| `useCanvasRecovery.ts` | Monitorea visibilidad/foco, resetea estado de pointer bloqueado, reenfoca canvas |
+| `useAutoSave.ts` | Auto-guardado periódico del proyecto |
+| `useBeforeUnload.ts` | Alerta al cerrar si hay cambios sin guardar |
+| `useExportFlow.ts` | Orquesta el flujo de exportación (PNG/SVG/MP4) |
+| `useIsMobile.ts` | Detección de dispositivo móvil |
+| `useKeyboardShortcuts.ts` | Todos los atajos de teclado globales y por modo |
+| `useLoadExampleScene.ts` | Carga la escena de ejemplo en primer uso |
+| `useSaveLoad.ts` | Guardar y cargar proyectos desde indexedDB |
 
 ---
 
@@ -244,16 +282,29 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 - **Clipping / pipeline de renderizado** — orden y composición de capas
 - **`hiddenLayers`** — excluido deliberadamente del undo/redo
 
+### Acciones del reducer: semántica crítica
+
+| Acción | Semántica |
+|---|---|
+| `ADD_LAYER` | Crea capa nueva **encima de la activa** con desplazamiento de índices. **No navega.** |
+| `NEXT_LAYER` | Navega a la capa siguiente; solo crea capa nueva si ya estamos en la última. |
+| `COMMIT_BRUSH_THICKNESS` | Consolida el grosor de brush al historial de undo (crea snapshot). |
+| `SET_BRUSH_THICKNESS_PREVIEW` | Preview temporal durante drag del slider — no genera snapshot de undo. |
+| `SET_BRUSH_THICKNESS` | Aplica valor final del slider — complementa COMMIT en el ciclo onChange/onPointerUp. |
+
 ---
 
 ## Constantes clave
 
 ```typescript
-APP_VERSION         = "2.0.0"    // en src/constants/version.ts — bump en cualquier cambio visible
+APP_VERSION         = "3.0.1"    // en src/constants/version.ts — bump en cualquier cambio visible
 BASE_DEPTH_STEP     = 150        // Z-units por capa
 MAX_LAYERS          = 10
 MAX_HISTORY_STEPS   = 50
 RENDER_THROTTLE_MS  = ~8         // ~120 fps máx durante dibujo
+DRAW_FOCAL_LENGTH   = 5000       // focal length del canvas 2D en drawing mode
+FOG_DENSITY_FACTOR  = 0.0004     // densidad base de niebla cinemática
+NEAR_CLIP           = 50         // clipping mínimo de capa en proyección 3D
 ```
 
 ---

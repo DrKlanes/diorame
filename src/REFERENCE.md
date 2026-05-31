@@ -1,7 +1,7 @@
 # Diorame — Project Reference Document
 
-**Version**: 2.0.0
-**Last Updated**: March 2026
+**Version**: 3.0.1
+**Last Updated**: Mayo 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
 For AI collaboration instructions (architecture rules, coding conventions, workflow), see **CLAUDE.md** in the repo root.
@@ -167,6 +167,15 @@ Constraints breed creativity. Fixed palettes force intentional color choices and
 - **Flip**: Mirror all shapes on a layer horizontally or vertically around the layer's bounding box center
 - **Per-Layer Settings**: Each layer stores its own render mode (flat/grad), gradient params, and brush settings (thickness + line mode)
 
+### Layer Creation Semantics (v2.9.3+)
+
+Two distinct actions create layers — they are **not** interchangeable:
+
+| Action | Trigger | Behavior |
+|---|---|---|
+| `ADD_LAYER` | "+" button in Layers Panel | Always creates a new layer **above the active layer**, shifting indices. Does not navigate. |
+| `NEXT_LAYER` | `]` key | Navigates to the next layer. Creates a new layer only when already on the last layer. |
+
 ### 3D Depth & Parallax
 - **DRAW Mode**: Orthographic, no parallax (camera at active layer Z)
 - **VIEW Mode**: Perspective projection, full parallax based on layer depth
@@ -292,14 +301,14 @@ Performance is a first-class concern. Any change that degrades performance is re
 
 ## 10. Architecture & File Structure
 
-The codebase has been modularized through a multi-phase refactoring (completed in v1.11.0). Code is organized into four layers: UI components, canvas pipeline modules, shared utilities, and the type system.
+The codebase has been modularized through a multi-phase refactoring (phases 1–5 in v1.11.0; Plan C render pipeline in v3.0.0). Code is organized into four layers: UI components, canvas pipeline modules, shared utilities, and the type system.
 
 ### Main Canvas (`src/components/strata/`)
 
 | File | Lines | Purpose |
 |---|---|---|
-| `StrataCanvas.tsx` | ~2300 | Main canvas renderer, render loop, event handlers, gesture input. **Frozen** — extract only, never add. |
-| `StrataContext.tsx` | ~1300 | React Context + useReducer: app reducer, constants, re-exports all types |
+| `StrataCanvas.tsx` | ~1289 | Thin React shell: render loop, event handlers, gesture input. **Frozen** — extract only, never add. |
+| `StrataContext.tsx` | ~1669 | React Context + useReducer: app reducer, constants, re-exports all types |
 | `ControlsV2.tsx` | ~150 | Thin root compositor for both modes. Mounts all UI atoms; enforces `isUIHidden`; hosts 3 global side-effects (keyboard shortcuts, sessionStorage cleanup, mode-change camera reset). |
 
 **Drawing mode atoms (`topbar/`, `bottombar/`, `layers/`, `colorpalette/`, `drawing/`, `viewport/`, `text/`):**
@@ -332,10 +341,24 @@ The codebase has been modularized through a multi-phase refactoring (completed i
 
 | File | Lines | Purpose |
 |---|---|---|
-| `PixelArtProcessor.ts` | 173 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
-| `postProcessing.ts` | 262 | 8 post-processing functions: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass: grain, ink spread, misregistration, ink blend), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge` |
 | `cinematicCamera.ts` | 150 | `computeCinematicTick`: all 10 camera modes + handheld shake, returns new camera state |
-| `exportHandlers.ts` | 323 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4`: all export logic |
+| `composeLayer.ts` | 98 | Layer compositing to offscreen buffer (pixel art + fog/glow/DoF) |
+| `drawBackground.ts` | 47 | Canvas background rendering (paper texture, dark mode) |
+| `drawGizmo.ts` | 179 | Move tool gizmo handles + flip overlay buttons |
+| `drawSymmetryAxis.ts` | 31 | Symmetry axis line rendering |
+| `exportHandlers.ts` | 422 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4`: all export logic |
+| `PixelArtProcessor.ts` | 173 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
+| `postProcessing.ts` | 409 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge` |
+| `quantizePixelArtCamera.ts` | 99 | Snaps camera to pixel grid for pixel art mode |
+| `renderEraserShape.ts` | 30 | Eraser shape rendering (destination-out compositing) |
+| `renderLayerBody.ts` | 380 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)` |
+| `renderLiveStroke.ts` | 151 | In-progress live stroke rendering |
+| `renderParticles.ts` | 98 | Floating cinematic particles rendering |
+| `renderPipeline.ts` | 476 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted 400L oversize (see §12) |
+| `renderRegularFillShape.ts` | 95 | Regular fill shapes (blob / tapered brush) |
+| `renderTextShape.ts` | 175 | Text shape rendering with font + alignment |
+| `renderUniformLineShape.ts` | 144 | Uniform-mode brush stroke rendering |
+| `transformPoint.ts` | 124 | `createTransformPoint` factory for 3D projection |
 | `transformUtils.ts` | 134 | `getLayerBoundingBox`: pixel-accurate bounding box for Move tool gizmo |
 
 ### Type System (`src/types/`)
@@ -356,13 +379,49 @@ The codebase has been modularized through a multi-phase refactoring (completed i
 
 | File | Lines | Purpose |
 |---|---|---|
-| `renderConstants.ts` | 22 | `PARTICLE_COUNT`, `MIN_TOUCH_STROKE_POINTS`, `HANDHELD_SWAY_FREQ`, `HANDHELD_TREMOR_FREQ`, `DOUBLE_CLICK_DELAY`, `RENDER_THROTTLE_MS` |
+| `renderConstants.ts` | 32 | `PARTICLE_COUNT`, `MIN_TOUCH_STROKE_POINTS`, `FOG_DENSITY_FACTOR`, `HANDHELD_SWAY_FREQ`, `HANDHELD_TREMOR_FREQ`, `DOUBLE_CLICK_DELAY`, `RENDER_THROTTLE_MS`, `DRAW_FOCAL_LENGTH`, `NEAR_CLIP` |
 
-### Hooks (`src/components/strata/hooks/`)
+### Hooks (`src/hooks/`)
 
 | File | Purpose |
 |---|---|
-| `useCanvasRecovery.ts` | Monitors visibility/focus changes, resets stuck pointer state, refocuses canvas |
+| `useAutoSave.ts` | Periodic auto-save of the project |
+| `useBeforeUnload.ts` | Warns before closing if there are unsaved changes |
+| `useExportFlow.ts` | Orchestrates the export flow (PNG / SVG / MP4) |
+| `useIsMobile.ts` | Mobile device detection via `matchMedia` |
+| `useKeyboardShortcuts.ts` | All global and drawing-mode keyboard shortcuts |
+| `useLoadExampleScene.ts` | Fetches, parses, and dispatches the example `.dior` scene |
+| `useSaveLoad.ts` | Save and load projects from IndexedDB (idb-keyval) |
+
+### Render Pipeline Architecture
+
+**Pattern: "caller orchestrates, modules are pure"**
+
+- `StrataCanvas.tsx` — manages the React lifecycle and refs. Calls `renderFrame(ctx, buildRenderContext())` on every animation frame.
+- `renderPipeline.ts` — pure orchestrator. Receives `RenderContext`, sequences all render phases, never touches React refs or closures directly.
+- `canvas/*.ts` modules — pure functions receiving typed parameters. Never import React hooks or access component state directly.
+
+**Core types exported by `renderPipeline.ts`:**
+
+| Type | Purpose |
+|---|---|
+| `RenderContext` | Bundle of all refs, state snapshots, frame-persistent refs, canvas refs, and overrides |
+| `PerFrameComputed` | Values computed once per frame and shared across all layer render calls |
+| `TransformRefState` | Per-ref transform state for the current frame |
+
+**RenderContext overrides:**
+
+| Override | Effect |
+|---|---|
+| `renderZsOverride?` | Forces an alternative layer order (used by Move tool) |
+| `skipLiveStroke?` | Omits live stroke rendering |
+| `skipCinematicOverlays?` | Omits particles and cinematic overlays |
+
+**5 frame-persistent refs in StrataCanvas:**
+`accumulatedTimeRef`, `accumulatedHandheldTimeRef`, `lastTimeRef`, `wiggleFrameRef`, `shapePatternRef` — migrated from `let` in useEffect closure to component-level `useRef` in v3.0.0.
+
+**`renderFrame` phase sequence:**
+throttle → quantize cam → FL/focus → buffers → background → viewport → layer loop → post-processing → overlays → cinematic tick
 
 ---
 
@@ -458,7 +517,7 @@ CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
 DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
-APP_VERSION = "1.14.0"          // Current release version
+APP_VERSION = "3.0.1"           // Current release version
 ```
 
 ### Post-Processing Effects
@@ -499,7 +558,67 @@ APP_VERSION = "1.14.0"          // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 -> 2.1.0)
+## Appendix C: Changelog Highlights (1.7.3 → 3.0.1)
+
+### 3.0.1 — 2026-05-31
+
+**fix — Cmd+Z works after touching brush thickness slider**
+
+- **Root cause**: Guard 2 in `useKeyboardShortcuts.ts` used `activeEl.tagName === 'INPUT'` to block shortcuts while typing. This incorrectly blocked Cmd+Z (and all other shortcuts) when `<input type="range">` (the brush thickness slider) had focus — which it held indefinitely on macOS and iPadOS after any interaction.
+- **Fix**: Exclude `type="range"` from Guard 2 — sliders are intentional shortcut targets. Changed to `activeEl instanceof HTMLInputElement && activeEl.type !== 'range'`.
+- **Files**: `src/hooks/useKeyboardShortcuts.ts` (1 file, 3-line diff). `src/constants/version.ts`, `package.json` (version bump).
+
+---
+
+### 3.0.0 — 2026-05-31
+
+**refactor — Render pipeline orchestrator (Plan C completion)**
+
+Extracted the remaining render logic from `StrataCanvas.tsx` into a dedicated pipeline module. StrataCanvas reduced from ~2326 to ~1289 lines (−44.6%).
+
+**Key changes:**
+- **`renderPipeline.ts`** — new frame orchestrator in `canvas/`. Exports `renderFrame(ctx, rc: RenderContext)`, `RenderContext`, `PerFrameComputed`, `TransformRefState`. Sequences all render sub-phases in order.
+- **`renderLayerBody.ts`** — new per-layer renderer extracted from StrataCanvas. Exports `renderLayer(z, rc, offCtx, pfc)`.
+- **`NEAR_CLIP = 50`** unified in `renderConstants.ts` — eliminated 3 local const declarations.
+- **5 frame-persistent `useRef`s** — migrated from `let` in useEffect closure to component-level refs: `accumulatedTimeRef`, `accumulatedHandheldTimeRef`, `lastTimeRef`, `wiggleFrameRef`, `shapePatternRef`.
+- **Render pipeline exception** — `renderPipeline.ts` (~476 lines) documented as accepted 400-line oversize in §12 Architectural Exceptions.
+- **Files**: `src/components/strata/canvas/renderPipeline.ts` (new), `src/components/strata/canvas/renderLayerBody.ts` (new), `src/constants/renderConstants.ts`, `src/components/strata/StrataCanvas.tsx`.
+
+---
+
+### 2.9.3 — 2026-05-xx
+
+**fix — ADD_LAYER: "+" button always creates a new layer**
+
+Prior behavior: the "+" button in LayersPanel dispatched `NEXT_LAYER`, which navigated to the next layer and only created a new one at the end. This was confusing — pressing "+" while in the middle of the stack navigated instead of creating.
+
+**Fix**: LayersPanel now dispatches `ADD_LAYER`, a new dedicated action that always inserts a new layer above the active one, shifts indices, and does not navigate. `NEXT_LAYER` retains its navigate-or-create-at-top semantics for the `]` keyboard shortcut.
+
+---
+
+### 2.9.2 — 2026-05-xx
+
+**refactor — renderShape decomposition complete (regular fill branch)**
+
+Extracted the regular fill / blob / tapered brush branch from the monolithic `renderShape` in StrataCanvas into `canvas/renderRegularFillShape.ts`. Combined with v2.9.0 and v2.9.1, the `renderShape` function is fully decomposed — all four shape-type branches now live in dedicated modules.
+
+---
+
+### 2.9.1 — 2026-05-xx
+
+**refactor — extract uniform-line and eraser branches**
+
+Extracted uniform-line stroke rendering into `canvas/renderUniformLineShape.ts` and eraser shape rendering into `canvas/renderEraserShape.ts`. Both modules are pure functions receiving typed parameters from the render context.
+
+---
+
+### 2.9.0 — 2026-05-xx
+
+**refactor — extract renderTextShape (text branch of renderShape)**
+
+First extraction from the monolithic `renderShape` function in StrataCanvas. Text rendering logic moved to `canvas/renderTextShape.ts` — pure function, no React imports, receives typed font/alignment params.
+
+---
 
 ### 2.1.0 — 2026-05-24
 
