@@ -93,11 +93,14 @@ export function renderLayer(
 	// Pre-calculate Layer Projection Constants
 	// FIX: Only apply Cinematic Multiplier if in Cinematic Mode!
 	// Apply layer spacing factor to control depth separation
-	const baseZ = z * currentState.layerSpacingFactor;
-	const shapeZ = (!isCinematic || isLocked3D) ? baseZ : baseZ * CINEMATIC_DEPTH_MULTIPLIER;
+	// In DRAW + animation mode, flatten all layers to z=0 projection (scale 1.0 exact).
+	// shapesByZ.get(z) above still uses the real z for shape lookup — only projection changes.
+	const isAnimFlat = !isCinematic && currentState.isAnimationMode;
+	const baseZ  = isAnimFlat ? 0 : z * currentState.layerSpacingFactor;
+	const shapeZ = isAnimFlat ? 0 : ((!isCinematic || isLocked3D) ? baseZ : baseZ * CINEMATIC_DEPTH_MULTIPLIER);
 	const camX = isLocked3D ? 0 : currentCamera.x;
 	const camY = isLocked3D ? 0 : currentCamera.y;
-	const camZ = isLocked3D ? 0 : effectiveCameraZ;
+	const camZ   = isAnimFlat ? 0 : (isLocked3D ? 0 : effectiveCameraZ);
 	const dz = shapeZ - camZ;
 
 	const activeFL = (!isCinematic) ? DRAW_FOCAL_LENGTH : FL;

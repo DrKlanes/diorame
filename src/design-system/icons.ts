@@ -299,6 +299,21 @@ export const ICONS: Record<string, string> = {
 		`<rect width="18" height="18" x="3" y="3" rx="2"/>` +
 		`<circle cx="9" cy="9" r="2"/>` +
 		`<path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>`,
+
+	// ─── Animation ───────────────────────────────────────────────────────
+	'play':
+		`<path d="M6 4.5L19.5 12L6 19.5V4.5Z" fill="currentColor" stroke="none"/>`,
+	'pause':
+		`<rect x="5" y="4" width="4.5" height="16" rx="1.5" fill="currentColor" stroke="none"/>` +
+		`<rect x="14.5" y="4" width="4.5" height="16" rx="1.5" fill="currentColor" stroke="none"/>`,
+	'film':
+		`<rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>` +
+		`<line x1="7" y1="4" x2="7" y2="20" stroke="currentColor" stroke-width="1.5"/>` +
+		`<line x1="17" y1="4" x2="17" y2="20" stroke="currentColor" stroke-width="1.5"/>` +
+		`<line x1="2" y1="9" x2="7" y2="9" stroke="currentColor" stroke-width="1.5"/>` +
+		`<line x1="17" y1="9" x2="22" y2="9" stroke="currentColor" stroke-width="1.5"/>` +
+		`<line x1="2" y1="15" x2="7" y2="15" stroke="currentColor" stroke-width="1.5"/>` +
+		`<line x1="17" y1="15" x2="22" y2="15" stroke="currentColor" stroke-width="1.5"/>`,
 };
 
 /**
@@ -321,4 +336,5 @@ export const ICON_SECTIONS: Record<string, string[]> = {
 	'File Operations':     ['new', 'open', 'save', 'export', 'undo', 'redo'],
 	'Layer Panel':         ['eye', 'eye-off', 'layers', 'duplicate', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal'],
 	'Custom Additions':    ['align-left', 'align-center', 'align-right', 'lock', 'unlock', 'pin', 'pin-off', 'flip-horizontal', 'maximize', 'minimize', 'cloud-fog', 'globe', 'scan-line', 'zoom-in', 'target', 'loader', 'monitor', 'tablet', 'sparkles', 'guide', 'info', 'check', 'x', 'plus', 'hand', 'move-vertical', 'move-horizontal', 'aperture', 'wand', 'tornado', 'image'],
+	'Animation':           ['play', 'pause', 'film'],
 };

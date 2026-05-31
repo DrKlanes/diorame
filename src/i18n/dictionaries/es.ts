@@ -56,6 +56,11 @@ export const es: Dictionary = {
 
 	'bottombar.draw.toolOptions.size': 'Tamaño',
 
+	// Animation player
+	'bottombar.anim.toggle': 'Modo animación',
+	'bottombar.anim.play':   'Reproducir',
+	'bottombar.anim.pause':  'Pausar',
+
 	// ═══════════════════════════════════════════════
 	// BOTTOMBAR — VIEW
 	// ═══════════════════════════════════════════════

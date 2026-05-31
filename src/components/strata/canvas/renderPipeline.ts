@@ -354,6 +354,13 @@ export function renderFrame(
 		renderZs = rc.renderZsOverride;
 	}
 
+	// In DRAW + animation mode: show only the current frame layer.
+	// Does not affect hiddenLayers (user-managed visibility state).
+	// Does not apply in CINEMA (sub-fase E handles that via renderZsOverride).
+	if (!isCinematic && currentState.isAnimationMode) {
+		renderZs = [currentState.currentLayerIndex * -BASE_DEPTH_STEP];
+	}
+
 	const camRot = currentCamera.rotation || 0;
 	const cosR = camRot !== 0 ? Math.cos(camRot) : 1;
 	const sinR = camRot !== 0 ? Math.sin(camRot) : 0;

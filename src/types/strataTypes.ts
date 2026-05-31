@@ -149,4 +149,11 @@ export interface AppState {
   isDirty: boolean; // true when there are unsaved changes since last save
   soundsEnabled: boolean;
   shouldFitToView?: boolean; // New: Trigger fit-to-view on load
+  // --- Animation ---
+  isAnimationMode: boolean;              // Animation toggle within DRAW mode
+  isAnimationPlaying: boolean;           // Playback play/pause state
+  animationFramerate: number;            // Active framerate preset (4 | 6 | 8 fps)
+  isOnionSkinEnabled: boolean;           // Onion skin overlay toggle
+  isAnimationFlatZ: boolean;             // Flatten layer Z depth for 2D-flat playback in CINEMA
+  layerIndexBeforeAnimation: number | null; // Layer active before entering animation mode — restored on exit
 }

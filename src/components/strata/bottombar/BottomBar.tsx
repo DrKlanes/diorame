@@ -4,6 +4,7 @@ import { useTheme } from '../../../design-system/useTheme';
 import { DrawingToolbar } from './DrawingToolbar';
 import { CameraBar } from './CameraBar';
 import { POIPill } from '../viewport/POIPill';
+import { AnimationPlayerUI } from './AnimationPlayerUI';
 
 export function BottomBar() {
 	const { state } = useStrata();
@@ -24,7 +25,10 @@ export function BottomBar() {
 					<POIPill />
 				</div>
 			) : (
-				<DrawingToolbar dark={dark} />
+				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+					<AnimationPlayerUI />
+					<DrawingToolbar dark={dark} />
+				</div>
 			)}
 		</div>
 	);

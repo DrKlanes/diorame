@@ -1,9 +1,10 @@
 import React from 'react';
-import { useStrata, BASE_DEPTH_STEP } from '../StrataContext';
+import { useStrata } from '../StrataContext';
 import { DiPill, DiVSep } from '../../../design-system';
 import { DiActionButton } from '../../../design-system';
 import { ToolBtn, BrushModeButton } from './_shared';
 import type { ToolType } from '../StrataContext';
+import { isLayerEmpty } from '../../../utils/animationFrames';
 import { useTranslation } from '../../../i18n';
 
 interface DrawingToolbarProps { dark: boolean; }
@@ -55,8 +56,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 
 	const setTool = (t: ToolType) => dispatch({ type: 'SET_TOOL', payload: t });
 
-	const activeLayerZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
-	const isLayerEmpty = !state.shapes.some(s => s.zIndex === activeLayerZ && !s.isEraser);
+	const layerIsEmpty = isLayerEmpty(state, state.currentLayerIndex);
 
 	const modifiers = MODIFIERS_BY_TOOL[tool] ?? [];
 	const hasModifiers = modifiers.length > 0;
@@ -112,7 +112,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 						activeStyle="wash"
 						iconWeight="secondary"
 						tooltip={t(mod.tooltipKey)}
-						disabled={isLayerEmpty && (mod.field === 'isDrawInside' || mod.field === 'isDrawBehind')}
+						disabled={layerIsEmpty && (mod.field === 'isDrawInside' || mod.field === 'isDrawBehind')}
 					/>
 				))}
 				{tool === 'brush' && <><DiVSep dark={dark} /><BrushModeButton dark={dark} /></>}

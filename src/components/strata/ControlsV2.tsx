@@ -17,6 +17,7 @@ import { ToolOptionsPanel } from './drawing/ToolOptionsPanel';
 import { TextSessionPanel } from './text/TextSessionPanel';
 import { ShowUIButton } from './viewport/ShowUIButton';
 import { useBeforeUnload } from '../../hooks/useBeforeUnload';
+import { useAnimationPlayback } from '../../hooks/useAnimationPlayback';
 
 // Overlay panels float above DrawingToolbar:
 // BottomBar bottom = max(12px, env(safe-area-inset-bottom, 0px) + 12px)
@@ -51,6 +52,9 @@ export function ControlsV2() {
 
 	// Side-effect 0: warn on unsaved changes (registers/unregisters with isDirty)
 	useBeforeUnload();
+
+	// Side-effect 0b: animation playback interval
+	useAnimationPlayback();
 
 	// Side-effect 1: global keyboard shortcuts
 	const { handleSaveProject } = useSaveLoad();

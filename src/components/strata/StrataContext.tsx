@@ -35,6 +35,8 @@ import {
 	playSound,
 } from '../../utils/soundManager';
 
+import { getAnimationFrames } from '../../utils/animationFrames';
+
 export {
 	generateTaperedStroke, generateUniformStroke, generateInkStroke, generateStrokeForMode,
 };
@@ -110,7 +112,13 @@ type Action =
   | { type: 'FLIP_LAYER'; payload: { layerIndex: number; direction: 'horizontal' | 'vertical'; centerX: number; centerY: number } }
   | { type: 'TOGGLE_PALETTE_APPLY_TO_ALL' }
   | { type: 'MARK_CLEAN' }
-  | { type: 'SET_SOUNDS_ENABLED'; payload: boolean };
+  | { type: 'SET_SOUNDS_ENABLED'; payload: boolean }
+  | { type: 'TOGGLE_ANIMATION_MODE' }
+  | { type: 'SET_ANIMATION_PLAYING'; payload: boolean }
+  | { type: 'SET_ANIMATION_FRAMERATE'; payload: number }
+  | { type: 'TOGGLE_ONION_SKIN' }
+  | { type: 'TOGGLE_ANIMATION_FLAT_Z' }
+  | { type: 'ADVANCE_ANIMATION_FRAME' };
 
 // --- Initial State ---
 
@@ -215,7 +223,13 @@ const initialState: AppState = {
   paletteApplyToAllSnapshot: null,
   isDirty: false,
   soundsEnabled: false,
-  shouldFitToView: false
+  shouldFitToView: false,
+  isAnimationMode: false,
+  isAnimationPlaying: false,
+  animationFramerate: 6,
+  isOnionSkinEnabled: false,
+  isAnimationFlatZ: false,
+  layerIndexBeforeAnimation: null,
 };
 
 // --- Helper: Push to History with Limit ---
@@ -1633,6 +1647,45 @@ function appReducer(state: AppState, action: Action): AppState {
             history,
             historyIndex: index
         };
+    }
+    case 'TOGGLE_ANIMATION_MODE': {
+      const entering = !state.isAnimationMode;
+      if (entering) {
+        return {
+          ...state,
+          isAnimationMode: true,
+          layerIndexBeforeAnimation: state.currentLayerIndex,
+        };
+      } else {
+        const restored = state.layerIndexBeforeAnimation;
+        const safeIndex = (restored != null && restored >= 0 && restored < state.totalLayers)
+          ? restored
+          : state.currentLayerIndex;
+        return {
+          ...state,
+          isAnimationMode: false,
+          isAnimationPlaying: false,
+          currentLayerIndex: safeIndex,
+          layerIndexBeforeAnimation: null,
+        };
+      }
+    }
+    case 'SET_ANIMATION_PLAYING':
+      return { ...state, isAnimationPlaying: action.payload };
+    case 'SET_ANIMATION_FRAMERATE':
+      return { ...state, animationFramerate: action.payload };
+    case 'TOGGLE_ONION_SKIN':
+      return { ...state, isOnionSkinEnabled: !state.isOnionSkinEnabled };
+    case 'TOGGLE_ANIMATION_FLAT_Z':
+      return { ...state, isAnimationFlatZ: !state.isAnimationFlatZ };
+    case 'ADVANCE_ANIMATION_FRAME': {
+      const frames = getAnimationFrames(state);
+      if (frames.length === 0) return state;
+      const currentPos = frames.indexOf(state.currentLayerIndex);
+      const nextIndex = currentPos === -1
+        ? frames[0]
+        : frames[(currentPos + 1) % frames.length];
+      return { ...state, currentLayerIndex: nextIndex };
     }
     default:
       return state;
