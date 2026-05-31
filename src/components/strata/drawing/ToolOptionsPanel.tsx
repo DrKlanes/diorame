@@ -13,6 +13,7 @@ export function ToolOptionsPanel({ dark }: ToolOptionsPanelProps) {
 	const { state, dispatch } = useStrata();
 	const { t } = useTranslation();
 
+	if (state.mode !== 'drawing') return null;
 	if (state.tool !== 'brush') return null;
 
 	const thickness = state.currentBrushThickness;

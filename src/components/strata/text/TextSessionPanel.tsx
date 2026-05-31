@@ -34,6 +34,7 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 		textareaRef.current?.focus();
 	}, [session.isActive]);
 
+	if (state.mode !== 'drawing') return null;
 	if (!session.isActive) return null;
 
 	const bgColor       = dk(dark, T.white, T.panelDarkOpaque);
