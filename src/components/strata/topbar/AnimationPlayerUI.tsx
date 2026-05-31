@@ -21,8 +21,7 @@ export function AnimationPlayerUI() {
 		setIsExpanded(state.isAnimationMode);
 	}, [state.isAnimationMode]);
 
-	// DRAW-only: animation controls not shown in CINEMA (sub-fase E will handle that)
-	if (state.mode !== 'drawing') return null;
+	const isCinematic = state.mode === 'cinematic';
 
 	const handleBounceClick = () => {
 		setIsExpanded(prev => !prev);
@@ -40,7 +39,7 @@ export function AnimationPlayerUI() {
 
 	return (
 		<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
-			{/* Bounce icon — toggle for expand/collapse + animation mode */}
+			{/* Bounce icon — toggle for expand/collapse + animation mode (DRAW + CINEMA) */}
 			<DiActionButton
 				name="bounce"
 				onClick={handleBounceClick}
@@ -117,6 +116,21 @@ export function AnimationPlayerUI() {
 						activeStyle="wash"
 						tooltip={isPingpong ? t('topbar.anim.playbackPingpong') : t('topbar.anim.playbackLoop')}
 					/>
+
+					{/* Depth toggle — CINEMA only: real depth (parallax) vs. flat (zero-Z) */}
+					{isCinematic && (
+						<>
+							<DiVSep dark={dark} />
+							<DiActionButton
+								name={state.isAnimationFlatZ ? 'depth-off' : 'depth-on'}
+								onClick={() => dispatch({ type: 'TOGGLE_ANIMATION_FLAT_Z' })}
+								dark={dark}
+								active={state.isAnimationFlatZ}
+								activeStyle="wash"
+								tooltip={t('topbar.anim.depthToggle')}
+							/>
+						</>
+					)}
 				</>
 			)}
 		</DiPill>

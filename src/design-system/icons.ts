@@ -327,6 +327,19 @@ export const ICONS: Record<string, string> = {
 		`<path d="M21 6H9C6.24 6 4 8.24 4 11C4 13.76 6.24 16 9 16H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'anim-pingpong':
 		`<path d="M4 12H20M7 7L2 12L7 17M17 7L22 12L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+
+	// ─── Depth ───────────────────────────────────────────────────────────
+	// depth-on: three cards in diagonal perspective stack → real 3D depth active
+	// Back+middle show only the peeking top/right edges; front card is full outline.
+	'depth-on':
+		`<path d="M11 5H19.5Q20.5 5 20.5 6V12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>` +
+		`<path d="M7.5 9H16Q17 9 17 10V16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>` +
+		`<rect x="4" y="13" width="9.5" height="7" rx="1.2" stroke="currentColor" stroke-width="1.5" fill="none"/>`,
+	// depth-off: three bars aligned flat → zero-Z / flat playback active
+	'depth-off':
+		`<rect x="6.5" y="6.5" width="11" height="3" rx="0.8" stroke="currentColor" stroke-width="1.5" fill="none"/>` +
+		`<rect x="6.5" y="11" width="11" height="3" rx="0.8" stroke="currentColor" stroke-width="1.5" fill="none"/>` +
+		`<rect x="6.5" y="15.5" width="11" height="3" rx="0.8" stroke="currentColor" stroke-width="1.5" fill="none"/>`,
 };
 
 /**
@@ -350,4 +363,5 @@ export const ICON_SECTIONS: Record<string, string[]> = {
 	'Layer Panel':         ['eye', 'eye-off', 'layers', 'duplicate', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal'],
 	'Custom Additions':    ['align-left', 'align-center', 'align-right', 'lock', 'unlock', 'pin', 'pin-off', 'flip-horizontal', 'maximize', 'minimize', 'cloud-fog', 'globe', 'scan-line', 'zoom-in', 'target', 'loader', 'monitor', 'tablet', 'sparkles', 'guide', 'info', 'check', 'x', 'plus', 'hand', 'move-vertical', 'move-horizontal', 'aperture', 'wand', 'tornado', 'image'],
 	'Animation':           ['play', 'pause', 'film', 'bounce', 'frame-back', 'frame-fwd', 'anim-loop', 'anim-pingpong'],
+	'Depth':               ['depth-on', 'depth-off'],
 };

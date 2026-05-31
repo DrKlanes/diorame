@@ -93,9 +93,12 @@ export function renderLayer(
 	// Pre-calculate Layer Projection Constants
 	// FIX: Only apply Cinematic Multiplier if in Cinematic Mode!
 	// Apply layer spacing factor to control depth separation
-	// In DRAW + animation mode, flatten all layers to z=0 projection (scale 1.0 exact).
+	// Flatten to z=0 projection (scale 1.0 exact) when:
+	//   - DRAW + animation mode (always flatten for flipbook feel), or
+	//   - CINEMA + animation mode + isAnimationFlatZ ON (user chose flat playback).
+	// CINEMA + animation mode + isAnimationFlatZ OFF → real depth, parallax lives.
 	// shapesByZ.get(z) above still uses the real z for shape lookup — only projection changes.
-	const isAnimFlat = !isCinematic && currentState.isAnimationMode;
+	const isAnimFlat = currentState.isAnimationMode && (!isCinematic || currentState.isAnimationFlatZ);
 	const baseZ  = isAnimFlat ? 0 : z * currentState.layerSpacingFactor;
 	const shapeZ = isAnimFlat ? 0 : ((!isCinematic || isLocked3D) ? baseZ : baseZ * CINEMATIC_DEPTH_MULTIPLIER);
 	const camX = isLocked3D ? 0 : currentCamera.x;

@@ -354,10 +354,11 @@ export function renderFrame(
 		renderZs = rc.renderZsOverride;
 	}
 
-	// In DRAW + animation mode: show only the current frame layer.
+	// In animation mode: show only the current frame layer (DRAW and CINEMA).
 	// Does not affect hiddenLayers (user-managed visibility state).
-	// Does not apply in CINEMA (sub-fase E handles that via renderZsOverride).
-	if (!isCinematic && currentState.isAnimationMode) {
+	// In CINEMA + anim + zero-Z OFF: single frame at real depth (parallax lives).
+	// In CINEMA + anim + zero-Z ON: single frame, flattened (renderLayerBody handles Z=0).
+	if (currentState.isAnimationMode) {
 		renderZs = [currentState.currentLayerIndex * -BASE_DEPTH_STEP];
 	}
 

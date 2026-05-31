@@ -67,6 +67,7 @@ export const es: Dictionary = {
 	'topbar.anim.frameForward':  'Frame siguiente',
 	'topbar.anim.playbackLoop':  'Bucle',
 	'topbar.anim.playbackPingpong': 'Ping-pong',
+	'topbar.anim.depthToggle':   'Profundidad (parallax)',
 
 	// ═══════════════════════════════════════════════
 	// BOTTOMBAR — VIEW
