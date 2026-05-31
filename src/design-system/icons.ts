@@ -314,6 +314,19 @@ export const ICONS: Record<string, string> = {
 		`<line x1="17" y1="9" x2="22" y2="9" stroke="currentColor" stroke-width="1.5"/>` +
 		`<line x1="2" y1="15" x2="7" y2="15" stroke="currentColor" stroke-width="1.5"/>` +
 		`<line x1="17" y1="15" x2="22" y2="15" stroke="currentColor" stroke-width="1.5"/>`,
+	'bounce':
+		`<path d="M4 10Q10 14 13 21Q15 14 17.5 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>` +
+		`<line x1="11" y1="22" x2="15" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>` +
+		`<circle cx="18.5" cy="8.5" r="3.4" stroke="currentColor" stroke-width="1.5" fill="none"/>`,
+	'frame-back':
+		`<path d="M5 4V20M19 4L9 12L19 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+	'frame-fwd':
+		`<path d="M19 4V20M5 4L15 12L5 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+	'anim-loop':
+		`<path d="M17 2L21 6L17 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>` +
+		`<path d="M21 6H9C6.24 6 4 8.24 4 11C4 13.76 6.24 16 9 16H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
+	'anim-pingpong':
+		`<path d="M4 12H20M7 7L2 12L7 17M17 7L22 12L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 };
 
 /**
@@ -336,5 +349,5 @@ export const ICON_SECTIONS: Record<string, string[]> = {
 	'File Operations':     ['new', 'open', 'save', 'export', 'undo', 'redo'],
 	'Layer Panel':         ['eye', 'eye-off', 'layers', 'duplicate', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal'],
 	'Custom Additions':    ['align-left', 'align-center', 'align-right', 'lock', 'unlock', 'pin', 'pin-off', 'flip-horizontal', 'maximize', 'minimize', 'cloud-fog', 'globe', 'scan-line', 'zoom-in', 'target', 'loader', 'monitor', 'tablet', 'sparkles', 'guide', 'info', 'check', 'x', 'plus', 'hand', 'move-vertical', 'move-horizontal', 'aperture', 'wand', 'tornado', 'image'],
-	'Animation':           ['play', 'pause', 'film'],
+	'Animation':           ['play', 'pause', 'film', 'bounce', 'frame-back', 'frame-fwd', 'anim-loop', 'anim-pingpong'],
 };

@@ -118,7 +118,8 @@ type Action =
   | { type: 'SET_ANIMATION_FRAMERATE'; payload: number }
   | { type: 'TOGGLE_ONION_SKIN' }
   | { type: 'TOGGLE_ANIMATION_FLAT_Z' }
-  | { type: 'ADVANCE_ANIMATION_FRAME' };
+  | { type: 'ADVANCE_ANIMATION_FRAME' }
+  | { type: 'TOGGLE_ANIMATION_PLAYBACK_MODE' };
 
 // --- Initial State ---
 
@@ -230,6 +231,8 @@ const initialState: AppState = {
   isOnionSkinEnabled: false,
   isAnimationFlatZ: false,
   layerIndexBeforeAnimation: null,
+  animationPlaybackMode: 'loop',
+  animationDirection: 1,
 };
 
 // --- Helper: Push to History with Limit ---
@@ -1682,11 +1685,33 @@ function appReducer(state: AppState, action: Action): AppState {
       const frames = getAnimationFrames(state);
       if (frames.length === 0) return state;
       const currentPos = frames.indexOf(state.currentLayerIndex);
-      const nextIndex = currentPos === -1
-        ? frames[0]
-        : frames[(currentPos + 1) % frames.length];
-      return { ...state, currentLayerIndex: nextIndex };
+      if (state.animationPlaybackMode !== 'pingpong' || frames.length < 2) {
+        // Loop mode (or single frame): always forward, wrap to start
+        const nextIndex = currentPos === -1
+          ? frames[0]
+          : frames[(currentPos + 1) % frames.length];
+        return { ...state, currentLayerIndex: nextIndex };
+      }
+      // Ping-pong mode: advance by current direction, reverse at extremities
+      const dir = state.animationDirection;
+      const pos = currentPos === -1 ? 0 : currentPos;
+      let nextPos = pos + dir;
+      let nextDir = dir;
+      if (nextPos >= frames.length) {
+        nextDir = -1;
+        nextPos = frames.length - 2; // skip back, don't replay last frame
+      } else if (nextPos < 0) {
+        nextDir = 1;
+        nextPos = 1; // skip forward, don't replay first frame
+      }
+      return { ...state, currentLayerIndex: frames[nextPos], animationDirection: nextDir as 1 | -1 };
     }
+    case 'TOGGLE_ANIMATION_PLAYBACK_MODE':
+      return {
+        ...state,
+        animationPlaybackMode: state.animationPlaybackMode === 'loop' ? 'pingpong' : 'loop',
+        animationDirection: 1, // reset direction when switching modes
+      };
     default:
       return state;
   }

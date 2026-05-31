@@ -5,6 +5,7 @@ import { FileControlsPill } from './FileControlsPill';
 import { SnapshotRecordPill } from './SnapshotRecordPill';
 import { ModeSwitchPill } from './ModeSwitchPill';
 import { ThemeTogglePill } from './ThemeTogglePill';
+import { AnimationPlayerUI } from './AnimationPlayerUI';
 
 export function TopBar() {
 	const { state } = useStrata();
@@ -21,9 +22,10 @@ export function TopBar() {
 				}
 			</div>
 
-			{/* Top-center: mode switch */}
-			<div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
+			{/* Top-center: mode switch + animation player (DRAW only, auto-hides in CINEMA via mode guard) */}
+			<div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', alignItems: 'center', gap: 8 }}>
 				<ModeSwitchPill dark={dark} />
+				<AnimationPlayerUI />
 			</div>
 
 			{/* Top-right: theme toggle */}

@@ -56,10 +56,17 @@ export const es: Dictionary = {
 
 	'bottombar.draw.toolOptions.size': 'Tamaño',
 
-	// Animation player
+	// Animation player (moved to topbar)
 	'bottombar.anim.toggle': 'Modo animación',
 	'bottombar.anim.play':   'Reproducir',
 	'bottombar.anim.pause':  'Pausar',
+	'topbar.anim.toggle':        'Modo animación',
+	'topbar.anim.play':          'Reproducir',
+	'topbar.anim.pause':         'Pausar',
+	'topbar.anim.frameBack':     'Frame anterior',
+	'topbar.anim.frameForward':  'Frame siguiente',
+	'topbar.anim.playbackLoop':  'Bucle',
+	'topbar.anim.playbackPingpong': 'Ping-pong',
 
 	// ═══════════════════════════════════════════════
 	// BOTTOMBAR — VIEW

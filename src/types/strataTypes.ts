@@ -156,4 +156,6 @@ export interface AppState {
   isOnionSkinEnabled: boolean;           // Onion skin overlay toggle
   isAnimationFlatZ: boolean;             // Flatten layer Z depth for 2D-flat playback in CINEMA
   layerIndexBeforeAnimation: number | null; // Layer active before entering animation mode — restored on exit
+  animationPlaybackMode: 'loop' | 'pingpong'; // Playback mode: loop forward or bounce back-and-forth
+  animationDirection: 1 | -1;           // Runtime direction for ping-pong (not persisted in save)
 }
