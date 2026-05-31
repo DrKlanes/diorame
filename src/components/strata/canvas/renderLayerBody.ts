@@ -246,6 +246,16 @@ export function renderLayer(
 			// Early detection of brush type to identify "taps"
 			const isUniformLine = shape.originalPoints && shape.originalPoints.length > 0 && shape.brushMode === 'uniform';
 			const isBrushTap = isPixelArt && !isUniformLine && !shape.isEraser && shape.points.length <= 3 && projectedPoints.length > 0;
+			// Tap de brush tapered: originalPoints casi coincidentes → polígono de área cero (invisible).
+			// generateTaperedStroke con 2 puntos da halfWidth=0 (sin(0)=sin(π)=0). Lo renderizamos como
+			// punto redondeado del grosor máximo, idéntico al isDot de renderUniformLineShape.
+			// Solo tapered: ink ya es visible (blob orgánico), uniform tiene su propio isDot.
+			const isTaperedDot = shape.brushMode === 'tapered' && !shape.isEraser
+				&& shape.originalPoints != null && shape.originalPoints.length >= 2
+				&& Math.hypot(
+					shape.originalPoints[0].x - shape.originalPoints[shape.originalPoints.length - 1].x,
+					shape.originalPoints[0].y - shape.originalPoints[shape.originalPoints.length - 1].y
+				) < 0.15;
 
 			if (isPixelArt) {
 				useStraightLines = true;
@@ -294,6 +304,28 @@ export function renderLayer(
 			} else if (shape.isEraser) {
 				// Extracted to canvas/renderEraserShape.ts
 				renderEraserShape(layerCtx, renderPoints, useStraightLines);
+			} else if (isTaperedDot) {
+				// Tapered tap: render as round dot — zero-length stroke with lineCap='round'.
+				// Same mechanism as renderUniformLineShape's isDot branch.
+				const proj = transformPoint(shape.originalPoints![0].x, shape.originalPoints![0].y);
+				let px = proj.x + wiggleX;
+				let py = proj.y + wiggleY;
+				if (isPixelArt) {
+					px = Math.round(px / pSize) * pSize;
+					py = Math.round(py / pSize) * pSize;
+				}
+				if (shape.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
+				else layerCtx.globalCompositeOperation = shape.isDrawInside ? 'source-atop' : 'source-over';
+				const size = isPixelArt
+					? Math.max(pSize, Math.round(((shape.brushThickness || 20) * proj.scale) / pSize) * pSize)
+					: (shape.brushThickness || 20) * proj.scale;
+				layerCtx.strokeStyle = shape.color;
+				layerCtx.lineWidth = size;
+				layerCtx.lineCap = 'round';
+				layerCtx.beginPath();
+				layerCtx.moveTo(px, py);
+				layerCtx.lineTo(px, py);
+				layerCtx.stroke();
 			} else {
 				// Extracted to canvas/renderRegularFillShape.ts
 				renderRegularFillShape(
