@@ -451,13 +451,6 @@ function appReducer(state: AppState, action: Action): AppState {
     }
     case 'SET_MODE':
       playSound('modeSwitch');
-      if (action.payload === 'cinematic') {
-          return {
-              ...state,
-              mode: action.payload,
-              tool: 'blob', // Reset tool when entering cinematic
-          };
-      }
       return { ...state, mode: action.payload };
     case 'SET_TOOL':
       playSound('click');
