@@ -1,7 +1,7 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.0.1
-**Last Updated**: Mayo 2026
+**Version**: 3.7.0
+**Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
 For AI collaboration instructions (architecture rules, coding conventions, workflow), see **CLAUDE.md** in the repo root.
@@ -315,9 +315,10 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Purpose |
 |---|---|
-| `topbar/TopBar.tsx` | Slot router: FileControlsPill (draw) / SnapshotRecordPill (view) + shared ModeSwitchPill + ThemeTogglePill |
+| `topbar/TopBar.tsx` | Slot router: FileControlsPill (draw) / SnapshotRecordPill (view) + shared AnimationPlayerUI + ModeSwitchPill + ThemeTogglePill |
 | `topbar/FileControlsPill.tsx` | new / open / save / export (SVG/SVGZ) + undo/redo + project name + info |
-| `topbar/SnapshotRecordPill.tsx` | PNG snapshot + MP4 record in VIEW mode |
+| `topbar/SnapshotRecordPill.tsx` | PNG snapshot + MP4 record + PNG-sequence + GIF export controls in CINEMA animation mode |
+| `topbar/AnimationPlayerUI.tsx` | Collapsible animation pill: bounce toggle + play/pause + frame nav + X/N counter + FPS (4/6/8) + loop/ping-pong + onion skin (DRAW) + zero-Z depth toggle (CINEMA) |
 | `topbar/ModeSwitchPill.tsx` | DRAW / VIEW / hide-UI mode toggle |
 | `topbar/ThemeTogglePill.tsx` | Light/dark paper toggle |
 | `bottombar/BottomBar.tsx` | Slot router: DrawingToolbar (draw) / CameraBar (view) |
@@ -360,6 +361,9 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `renderUniformLineShape.ts` | 144 | Uniform-mode brush stroke rendering |
 | `transformPoint.ts` | 124 | `createTransformPoint` factory for 3D projection |
 | `transformUtils.ts` | 134 | `getLayerBoundingBox`: pixel-accurate bounding box for Move tool gizmo |
+| `animationExportRender.ts` | 192 | `renderAnimationFrames`: shared frame-by-frame render infrastructure; builds fake `RenderContext` with dedicated canvases per frame, async yield between frames |
+| `pngSequenceHandler.ts` | 100 | `exportAsPNGSequence`: `ImageData[]` → PNG bytes → ZIP via `fflate`; files `{project}_frame_01.png`, ZIP `{project}_frames.zip` |
+| `gifHandler.ts` | 131 | `exportAsGIF`: `ImageData[]` → animated GIF via `gifenc`; per-frame palette quantization, scale presets 1/0.5/0.25, infinite native loop |
 
 ### Type System (`src/types/`)
 
@@ -374,6 +378,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `colorUtils.ts` | 33 | `hexToHSL`, `hslToHex`, `getVibrantVariant`, `hexToRgba` |
 | `canvasUtils.ts` | 32 | `createNoise`, `drawSmoothLine`, `drawStraightLine` |
 | `strokeGenerators.ts` | 294 | `generateTaperedStroke`, `generateUniformStroke`, `generateInkStroke`, `generateStrokeForMode` |
+| `animationFrames.ts` | 83 | `getAnimationFrames`, `isLayerEmpty`, `getOnionGhostZs` — animation frame logic shared by the render pipeline, playback, onion skin, and exports |
 
 ### Constants (`src/constants/`)
 
@@ -385,6 +390,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Purpose |
 |---|---|
+| `useAnimationPlayback.ts` | Drives animation playback: `setInterval` at `1000/animationFramerate` ms dispatching `ADVANCE_ANIMATION_FRAME`; invoked in `ControlsV2` |
 | `useAutoSave.ts` | Periodic auto-save of the project |
 | `useBeforeUnload.ts` | Warns before closing if there are unsaved changes |
 | `useExportFlow.ts` | Orchestrates the export flow (PNG / SVG / MP4) |
@@ -506,6 +512,129 @@ This section is critical. These actions are **forbidden**:
 
 ---
 
+## 13. Animation System
+
+**Added**: v3.1.0 (core in DRAW) → v3.7.0 (all four exports complete).
+
+### Conceptual Model
+
+Animation is a **toggle inside DRAW mode**, not a separate mode. Activating it via `TOGGLE_ANIMATION_MODE` enters a frame-by-frame session while remaining in DRAW.
+
+- **Frames** = non-empty, non-hidden layers. `getAnimationFrames(state)` is the canonical function: iterates `state.totalLayers`, returns indices where at least one non-eraser shape exists (`isLayerEmpty`) and the layer is not hidden.
+- Frame order = layer order: Layer 0 = Frame 1, ascending.
+- On entering animation mode, `layerIndexBeforeAnimation` stores the active layer. On exit: playback stops, that layer is restored (clamped to valid range).
+
+### Z Flattening
+
+Z depth is never erased — temporarily flattened in `renderLayerBody.ts` when:
+
+```
+isAnimFlat = isAnimationMode && (!isCinematic || isAnimationFlatZ)
+```
+
+When `isAnimFlat` is true, `baseZ + shapeZ + camZ` are all zeroed → exact scale 1.0 (`focalLength / focalLength`). When false, real Z depth is used (parallax and DoF as normal).
+
+> **Why all three zeroed, not just `baseZ`**: `camZ` derives from `cameraRef.current.z`, which retains the last cinematic camera value after visiting CINEMA mode. Zeroing only `baseZ` would leave a non-1.0 scale dependent on the user's CINEMA history. Zeroing all three guarantees `dz = 0` → exact scale 1.0 in every scenario.
+
+### CINEMA Animation — Three States
+
+| State | Condition | Render behavior |
+|---|---|---|
+| Animation OFF | `!isAnimationMode` | All layers in 3D, full parallax, cinematic camera (unchanged) |
+| Anim ON + zero-Z OFF | `isAnimationMode && !isAnimationFlatZ` | Current frame at its real Z depth — animation travels through 3D space |
+| Anim ON + zero-Z ON | `isAnimationMode && isAnimationFlatZ` | Current frame flattened (2D flipbook); camera and FX still apply |
+
+When `isAnimationFlatZ` is active, focal-length and layer-spacing sliders are disabled in `CameraSlidersZone.tsx` (no effect on a flat scene). Zoom slider remains active; under flat CINEMA `camZ = effectiveCameraZ − currentCamera.z` (= `viewZoomOffset`) gives a non-zero uniform `dz`, enabling the zoom slider to scale the plane (v3.5.1 fix).
+
+> **Why `camZ = viewZoomOffset` instead of 0 under zero-Z**: Setting `camZ = 0` kills the zoom — `dz = 0` → `layerScale = focalLength / focalLength = 1.0` fixed, the zoom slider does nothing. Using `camZ = viewZoomOffset` gives a uniform, non-zero `dz` across all layers (they remain flattened *relative to each other* since `shapeZ = 0` for all), while letting the zoom slider scale the whole plane. `camX`/`camY` are not flattened — the cinematic camera keeps moving in X/Y, which is intentional. Focal-length and layer-spacing are disabled in the UI because they have no effect without relative Z differences between layers; zoom (control distance) does, so it stays enabled.
+
+### Single-Frame Filter
+
+`renderPipeline.ts`: when animation mode is active, `renderZs` is filtered to include only the current frame's Z (the flipbook effect). `renderZsOverride` (Move tool) runs before this filter and is unaffected.
+
+### Playback
+
+- `useAnimationPlayback` hook (`src/hooks/useAnimationPlayback.ts`), invoked in `ControlsV2`: `setInterval` at `1000 / animationFramerate` ms → dispatches `ADVANCE_ANIMATION_FRAME`.
+- `ADVANCE_ANIMATION_FRAME` respects `animationPlaybackMode`:
+  - **Loop**: wraps last → first.
+  - **Ping-pong**: bounces without repeating extremes (1→2→3→2→1→2→3). Governed by `animationDirection (1 | -1)` runtime state.
+- Skips empty and hidden layers — only real frames advance.
+- `STEP_ANIMATION_FRAME` (payload ±1): used by pill buttons for manual navigation. Wraps circularly, never creates a layer. Intentionally diverges from `NEXT_LAYER`/`PREV_LAYER` (keyboard `[`/`]`) — button = navigate frames, shortcut = build layers.
+
+> **Why the divergence is intentional — do not unify**: The pill frame buttons are *viewing controls* (scroll through the animation, including in CINEMA where creating layers would be wrong). `]`/`[` are *construction tools* (build the frame sequence in DRAW, creating layers at the end up to `MAX_LAYERS`). Unifying them would either break CINEMA (if they created) or remove the ability to grow the animation beyond existing layers (if they never created). The shortcut hint was removed from the button tooltips to avoid implying they match.
+
+### Onion Skin (DRAW only)
+
+Enabled by `isOnionSkinEnabled`. Implemented in `renderPipeline.ts` as an additive pre-pass before painting the active frame:
+
+- `getOnionGhostZs(state)` (in `animationFrames.ts`) → `{ prev, next }` layer indices.
+  - Current layer IS a frame → sequence neighbors.
+  - Current layer is EMPTY → last frame below the index (prev), first frame above (next). Key use case: drawing a new blank frame while seeing adjacent frames as reference.
+- Opacities: `ONION_ALPHA_PREV = 0.40`, `ONION_ALPHA_NEXT = 0.22` (set via `offCtx.globalAlpha`; reset to 1.0 after each ghost). Real color, no tint.
+- Does NOT auto-disable during playback (auto-hiding while the toggle reads "on" would appear broken).
+- `renderLayerBody.ts` and `composeLayer.ts`: unmodified.
+
+### Animation Player UI
+
+`AnimationPlayerUI.tsx` (`topbar/`) — collapsible pill docked to the right of the mode switch in `TopBar`.
+
+- **Collapsed**: bounce icon only (primary toggle: expand/collapse + animation on/off).
+- **Expanded**: bounce · frame-back · play/pause · frame-fwd · X/N counter · FPS selector (4/6/8) · loop/ping-pong toggle · onion skin toggle (DRAW only) · zero-Z depth toggle (CINEMA only).
+- Secondary toggles (loop/ping-pong, onion, depth) use `iconWeight="secondary"` for visual hierarchy. All icons at `iconSize=16`.
+
+### Export Infrastructure
+
+All animation exports share `renderAnimationFrames`. Export `useEffect` branches are in `StrataCanvas.tsx`, following the existing export pattern.
+
+**`renderAnimationFrames` (`animationExportRender.ts`)**:
+- Dedicated offscreen canvases (main, offscreen, helper, composition, pixel) — no contact with the live RAF.
+- Fresh `cameraRef` per frame: the cinematic tick mutates `cameraRef.current`; per-frame fresh refs keep mutations local.
+- Renders each frame with the same mode / FX / `isAnimationFlatZ` as the current state. `skipLiveStroke + skipCinematicOverlays` suppress gizmo and particles.
+- Async with `setTimeout(0)` yield between frames (UI stays responsive). No RAF pause needed — dedicated canvases, JS single-threaded.
+
+**Video (exportAsMP4, `exportHandlers.ts`)** — when `isAnimationMode`:
+- Dynamic duration: `(1000 / framerate) × frameCount × animationExportLoops` (1 | 2 | 3).
+- 80ms pre-roll at `frame[0]` before `recorder.start`; stop just before the loop's wrap to avoid a duplicated frame.
+- Static 6s recording (`STATIC_RECORD_MS`) unchanged when `isAnimationMode` is false.
+
+**PNG Sequence (`pngSequenceHandler.ts`)**:
+- `ImageData[]` → PNG bytes (canvas `toDataURL`) → ZIP via `fflate`.
+- Files: `{project}_frame_01.png` (2-digit padding, up to 10 frames). ZIP: `{project}_frames.zip`.
+
+**GIF (`gifHandler.ts`)**:
+- `ImageData[]` → animated GIF via `gifenc` (`quantize + applyPalette` per frame).
+- `gifExportScale` (1 / 0.5 / 0.25): downscale via temp canvas before encoding.
+- GIF delay = `round(100 / framerate)` centiseconds. Infinite native loop (`repeat: 0`). `animationExportLoops` not used (GIF loop extension handles looping; embedding N cycles would balloon file size).
+
+### New Dependencies
+
+| Package | Purpose |
+|---|---|
+| `fflate` | ~8KB ESM — ZIP encoding for PNG sequence export |
+| `gifenc` | GIF encoder: `GIFEncoder`, `quantize`, `applyPalette` |
+
+### Animation State Fields
+
+| Field | Type | Default | Purpose |
+|---|---|---|---|
+| `isAnimationMode` | `boolean` | `false` | Animation toggle |
+| `isAnimationPlaying` | `boolean` | `false` | Playback active |
+| `animationFramerate` | `4 \| 6 \| 8` | `6` | Frames per second |
+| `animationPlaybackMode` | `'loop' \| 'pingpong'` | `'loop'` | Loop vs. bounce |
+| `animationDirection` | `1 \| -1` | `1` | Runtime ping-pong direction (not persisted) |
+| `isOnionSkinEnabled` | `boolean` | `false` | Ghost frames in DRAW |
+| `isAnimationFlatZ` | `boolean` | `false` | Flatten Z in CINEMA |
+| `layerIndexBeforeAnimation` | `number` | `0` | Layer restored on animation exit |
+| `animationExportLoops` | `1 \| 2 \| 3` | `1` | Video export loop count |
+| `gifExportScale` | `number` | `1` | GIF scale preset (1 / 0.5 / 0.25) |
+
+### StrataCanvas Modifications During the Sprint
+
+- **v3.1.0–v3.4.0**: `StrataCanvas.tsx` was **not modified** (empty diffs confirmed in all four commits).
+- **v3.5.0–v3.7.0**: Minimal additions — one `useEffect` export branch per format (MP4, PNG sequence, GIF), following the established export pattern. Render pipeline and event handlers were not touched.
+
+---
+
 ## Appendix A: Technical Constants
 
 ### Key Configuration Values
@@ -558,7 +687,130 @@ APP_VERSION = "3.0.1"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.0.1)
+## Appendix C: Changelog Highlights (1.7.3 → 3.7.0)
+
+### 3.7.0 — GIF export
+
+**feat — Animated GIF export (`gifenc`)**
+
+- `gifHandler.ts` (new): `exportAsGIF` — `ImageData[]` → animated GIF via `gifenc`. Per-frame palette quantization (`quantize + applyPalette`; trivial with the Riso ≤24-color palette). `gifExportScale` (1 / 0.5 / 0.25) downscales before encoding to control file size. GIF delay = `round(100 / framerate)` centiseconds. Infinite native loop (`repeat: 0`). `animationExportLoops` intentionally not used — the GIF loop extension handles it natively; embedding N cycles would balloon file size.
+- New state `gifExportScale` + `SET_GIF_EXPORT_SCALE`. `ExportType += 'gif'`.
+- `SnapshotRecordPill`: GIF button + scale control (CINEMA, animation on).
+- New dependency: `gifenc`.
+- `renderFrame / renderPipeline / renderLayerBody / animationExportRender`: untouched.
+- **Files**: `canvas/gifHandler.ts` (new), `StrataCanvas.tsx`, `topbar/SnapshotRecordPill.tsx`, `StrataContext.tsx`, `types/strataTypes.ts`, `i18n/dictionaries/{en,es}.ts`.
+
+---
+
+### 3.6.0 — Frame-by-frame export infrastructure + PNG sequence
+
+**feat — Shared animation export infrastructure + PNG sequence**
+
+- `animationExportRender.ts` (new): `renderAnimationFrames(options, onProgress)` — renders each real animation frame to dedicated offscreen canvases using a fake `RenderContext` (separate from the live RAF's refs). Fresh `cameraRef` per frame keeps cinematic tick mutations local. Async with `setTimeout(0)` yield between frames. Returns `ImageData[]`.
+- `pngSequenceHandler.ts` (new): `exportAsPNGSequence` — `ImageData[]` → PNG bytes (canvas `toDataURL`) → ZIP via `fflate`. Files: `{project}_frame_01.png` (2-digit padding). ZIP: `{project}_frames.zip`.
+- `ExportType += 'png-sequence'`. New dependency: `fflate`.
+- `StrataCanvas.tsx`: new export `useEffect` branch (minimal, follows existing pattern).
+- `renderFrame / renderPipeline / renderLayerBody`: untouched (called, not modified).
+- **Files**: `canvas/animationExportRender.ts` (new), `canvas/pngSequenceHandler.ts` (new), `StrataCanvas.tsx`, `topbar/SnapshotRecordPill.tsx`, `i18n/dictionaries/{en,es}.ts`.
+
+---
+
+### 3.5.2 — fix: pill frame buttons navigate with wrap, never create
+
+**fix — `STEP_ANIMATION_FRAME` for pill button frame navigation**
+
+New `STEP_ANIMATION_FRAME` reducer action (payload ±1): navigates the real frame sequence with circular wrap in both DRAW and CINEMA. Never creates a layer. Replicates the side effects of `NEXT/PREV_LAYER` (camera.z, draw-inside/behind, paletteMode, brushSettings) for consistent layer state on arrival. Pill buttons now dispatch `STEP_ANIMATION_FRAME`; keyboard shortcuts `[`/`]` remain `PREV/NEXT_LAYER` (navigate + create in DRAW) — button and shortcut diverge by design.
+- **Files**: `StrataContext.tsx`, `topbar/AnimationPlayerUI.tsx`.
+
+---
+
+### 3.5.1 — fix: zoom + focal/spacing disabled under zero-Z
+
+**fix — Functional zoom and disabled sliders when `isAnimationFlatZ` is active**
+
+- `renderLayerBody.ts`: under flat CINEMA, `camZ = effectiveCameraZ − currentCamera.z` (= `viewZoomOffset`) instead of 0, so the zoom (distance) slider produces visible scaling on the flat plane. The `!isAnimFlat` branch is byte-identical to before.
+- `CameraSlidersZone.tsx`: focal-length and layer-spacing sliders disabled (opacity 0.35 + `pointer-events: none`) when `isAnimationFlatZ` is active; zoom slider remains enabled.
+- **Files**: `canvas/renderLayerBody.ts`, `bottombar/CameraSlidersZone.tsx`.
+
+---
+
+### 3.5.0 — Video export with dynamic duration + loop control
+
+**feat — MP4/WebM records the real animation duration**
+
+- `exportAsMP4` gains optional `AnimationRecordOptions`. When present: `duration = (1000 / framerate) × frameCount × loops`. Orchestration inside `exportAsMP4`: stop prior playback, jump to `frame[0]`, 80ms pre-roll, `recorder.start`, start playback, stop after `durationMs`. Clean stop before the wrap to `frame[0]` — no duplicated frame at loop seams. Static 6s recording (`STATIC_RECORD_MS`) unchanged when `isAnimationMode` is false.
+- New state `animationExportLoops` (1 | 2 | 3) + `SET_ANIMATION_EXPORT_LOOPS`. x1/x2/x3 segment control in `SnapshotRecordPill` (CINEMA, animation on).
+- `StrataCanvas.tsx` diff minimal (one import + enriched mp4 branch, following existing export pattern).
+- **Files**: `canvas/exportHandlers.ts`, `StrataCanvas.tsx`, `topbar/SnapshotRecordPill.tsx`, `StrataContext.tsx`, `types/strataTypes.ts`.
+
+---
+
+### 3.4.1 — Animation pill icon polish
+
+**polish — Animation pill icons redesigned to match UI line-weight standard**
+
+All 10 animation icons (bounce, play, pause, frame-back, frame-fwd, anim-loop, anim-pingpong, onion, depth-on, depth-off) redesigned to stroke-only at 1.5pt, matching the system icon family. Secondary toggles (loop/ping-pong, onion, depth) use `iconWeight="secondary"` for visual hierarchy. All pill buttons at `iconSize=16`. No logic changes.
+- **Files**: `design-system/icons.ts`, `topbar/AnimationPlayerUI.tsx`.
+
+---
+
+### 3.4.0 — Onion skin in DRAW
+
+**feat — Ghost-frame overlay for frame-by-frame drawing reference**
+
+- `getOnionGhostZs` added to `animationFrames.ts`: returns `{ prev, next }` layer indices in the real frame sequence. Two branches: (1) current layer IS a frame → sequence neighbors; (2) current layer is EMPTY → last frame below index (prev), first frame above (next). The empty-layer branch is the primary use case: drawing a new blank frame while seeing adjacent frames as reference.
+- `renderPipeline.ts`: additive pre-pass before the active frame — sets `offCtx.globalAlpha` to `ONION_ALPHA_PREV = 0.40` (previous) and `ONION_ALPHA_NEXT = 0.22` (next), resets to 1.0 after each ghost. `renderLayerBody` and `composeLayer` unmodified. Real color, no tint. Does NOT auto-disable during playback.
+- DRAW-only toggle in expanded `AnimationPlayerUI` (mutually exclusive with CINEMA-only zero-Z toggle).
+- `renderLayerBody.ts` and `StrataCanvas.tsx`: untouched (empty diffs).
+- **Files**: `utils/animationFrames.ts`, `canvas/renderPipeline.ts`, `topbar/AnimationPlayerUI.tsx`.
+
+---
+
+### 3.3.0 — Animation playback in CINEMA with optional depth
+
+**feat — Three-state CINEMA animation**
+
+Animation mode extends into CINEMA mode. Depth behavior controlled by the `isAnimationFlatZ` toggle:
+
+1. **Animation OFF**: CINEMA as before — all layers in 3D, full parallax, cinematic camera.
+2. **Anim ON + zero-Z OFF**: only the current frame renders at its real Z depth. Animation travels through 3D space as it plays — time and depth as two independent axes.
+3. **Anim ON + zero-Z ON**: only the current frame, flattened to a single plane (2D flipbook). Camera and FX still apply.
+
+`renderLayerBody.ts`: Z-flatten condition becomes `isAnimFlat = isAnimationMode && (!isCinematic || isAnimationFlatZ)`. `renderPipeline.ts`: single-frame filter applies in CINEMA too (was DRAW-only). `AnimationPlayerUI` loses its DRAW-only guard; zero-Z toggle added (CINEMA-only). `StrataCanvas.tsx`: untouched (empty diff). Camera tick and playback interval are orthogonal — no conflict.
+- **Files**: `canvas/renderLayerBody.ts`, `canvas/renderPipeline.ts`, `topbar/AnimationPlayerUI.tsx`.
+
+---
+
+### 3.2.0 — Animation control redesign: collapsible pill + frame nav + ping-pong
+
+**feat — Collapsible pill in TopBar, frame navigation buttons, ping-pong playback**
+
+- `AnimationPlayerUI` relocated from `bottombar/` to `topbar/`, redesigned as a collapsible pill docked beside the mode switch. Collapsed = bounce icon; expanded = full controls rightward (no overlap with mode switch).
+- Frame back/forward buttons dispatch `PREV_LAYER`/`NEXT_LAYER` (later replaced by `STEP_ANIMATION_FRAME` in v3.5.2).
+- Ping-pong mode: `animationPlaybackMode ('loop' | 'pingpong')` + `animationDirection (1 | -1)`. `ADVANCE_ANIMATION_FRAME` bounces without repeating extremes (1→2→3→2→1→2→3). `TOGGLE_ANIMATION_PLAYBACK_MODE` action added.
+- `STEP_ANIMATION_FRAME` (added then superseded before shipping) removed.
+- New icons: bounce, frame-back, frame-fwd, anim-loop, anim-pingpong.
+- `StrataCanvas.tsx`: untouched (empty diff).
+- **Files**: `topbar/AnimationPlayerUI.tsx` (new), `StrataContext.tsx`, `topbar/TopBar.tsx`, `bottombar/BottomBar.tsx`, `types/strataTypes.ts`.
+
+---
+
+### 3.1.0 — Frame-by-frame animation core in DRAW mode
+
+**feat — Animation mode (first milestone)**
+
+Architecture: animation is a **toggle inside DRAW mode** (not a separate mode). Frames = layers with drawable content (non-empty, non-hidden). Layer 0 = Frame 1, ascending order.
+
+- **State**: `isAnimationMode`, `isAnimationPlaying`, `animationFramerate (4|6|8)`, `isOnionSkinEnabled`, `isAnimationFlatZ`, `layerIndexBeforeAnimation`.
+- **Reducer**: `TOGGLE_ANIMATION_MODE` (stores layer on enter, restores on exit, stops playback); `ADVANCE_ANIMATION_FRAME` (infinite loop, skips empty/hidden); `SET_ANIMATION_PLAYING`; `SET_ANIMATION_FRAMERATE`; `TOGGLE_ONION_SKIN`; `TOGGLE_ANIMATION_FLAT_Z`.
+- **`animationFrames.ts`** (new): `getAnimationFrames` + `isLayerEmpty`. Uses a local `BASE_DEPTH_STEP` constant to avoid circular import with `StrataContext`.
+- **`renderLayerBody.ts`**: when `isAnimationMode && !isCinematic`, zeros `baseZ + shapeZ + camZ` → exact scale 1.0 (`focalLength/focalLength`).
+- **`renderPipeline.ts`**: single-frame filter — renders only the current frame's Z when `isAnimationMode && !isCinematic` (flipbook effect). Does not touch `hiddenLayers`.
+- **`useAnimationPlayback.ts`** (new): `setInterval` hook invoked in `ControlsV2`.
+- **`StrataCanvas.tsx`**: untouched throughout — empty diff verified in commit.
+- **Files**: `utils/animationFrames.ts` (new), `hooks/useAnimationPlayback.ts` (new), `canvas/renderLayerBody.ts`, `canvas/renderPipeline.ts`, `StrataContext.tsx`, `types/strataTypes.ts`, `i18n/dictionaries/{en,es}.ts`.
+
+---
 
 ### 3.0.1 — 2026-05-31
 
