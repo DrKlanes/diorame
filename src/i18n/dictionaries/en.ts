@@ -38,6 +38,14 @@ export const en: Dictionary = {
 	'topbar.record.pngSequence': 'Export PNG sequence (ZIP)',
 	'topbar.record.gifScale': 'GIF resolution',
 	'topbar.record.gif': 'Export animated GIF',
+	'topbar.record.video':          'Video',
+	'topbar.record.pngSeq':         'PNG seq',
+	'topbar.record.videoLoop1Desc': '1 loop',
+	'topbar.record.videoLoop2Desc': '2 loops',
+	'topbar.record.videoLoop3Desc': '3 loops',
+	'topbar.record.gifFullDesc':    'Full size',
+	'topbar.record.gifHalfDesc':    'Half size',
+	'topbar.record.gifQuarterDesc': 'Quarter size',
 
 	// Info
 	'topbar.info.about': 'About Diorame',

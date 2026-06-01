@@ -687,7 +687,21 @@ APP_VERSION = "3.0.1"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.7.0)
+## Appendix C: Changelog Highlights (1.7.3 → 3.7.1)
+
+### 3.7.1 — GIF fixes + playback safety + export UI redesign
+
+**fix — GIF export FPS**: `gifHandler.ts` calculaba el delay en centisegundos (`100/fps`) pero `gifenc` espera milisegundos y divide entre 10 internamente → doble conversión → GIF ~10× acelerado. Fix: `delayMs = Math.round(1000 / framerate)`.
+
+**fix — GIF export ping-pong**: el export ignoraba `animationPlaybackMode`; el GIF salía siempre en loop clásico. GIF no tiene ping-pong nativo → solución: secuencia espejo `[1,2,3]→[1,2,3,2]` construida en `gifHandler` antes del encode. `StrataCanvas` solo transmite `playbackMode` como dato. PNG sequence permanece lineal por diseño.
+
+**fix — Playback safety lock (DRAW)**: durante playback en DRAW, todas las herramientas de edición siguen activas → estado indefinido. Fix: `isPlaybackLocked = isAnimationMode && isAnimationPlaying` deshabilita herramientas, modificadores, capas, paleta y cambio de modo. Input del canvas cortado con overlay `position:fixed z-index:1` en `ControlsV2` (StrataCanvas no modificado). Controles de animación permanecen activos. Atajos de teclado bloqueados vía guard en `useKeyboardShortcuts`.
+- **Files**: `ControlsV2.tsx`, `DrawingToolbar.tsx`, `ToolOptionsPanel.tsx`, `LayersPanel.tsx`, `ColorPalette.tsx`, `ModeSwitchPill.tsx`, `useKeyboardShortcuts.ts`.
+
+**feat — Rediseño UI export de animación**: controles sueltos (DiSegmentControl de loops y escala GIF, botones con iconos placeholder `bounce`/`film`) reemplazados por botones de texto `Vídeo`/`GIF`/`PNG seq` con `DiSelectorPopover` por formato. Opciones: Vídeo→loops (×1/×2/×3), GIF→escala (100%/50%/25%), PNG seq→acción directa. `RecordBtn` condicionado a `!isAnimationMode`; indicador REC separado solo durante grabación de vídeo. i18n ES: "onion skin" → "Papel cebolla".
+- **Files**: `SnapshotRecordPill.tsx`, `en.ts`, `es.ts`.
+
+---
 
 ### 3.7.0 — GIF export
 

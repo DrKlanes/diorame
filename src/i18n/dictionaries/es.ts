@@ -34,6 +34,14 @@ export const es: Dictionary = {
 	'topbar.record.pngSequence': 'Exportar secuencia PNG (ZIP)',
 	'topbar.record.gifScale': 'Resolución del GIF',
 	'topbar.record.gif': 'Exportar GIF animado',
+	'topbar.record.video':          'Vídeo',
+	'topbar.record.pngSeq':         'PNG seq',
+	'topbar.record.videoLoop1Desc': '1 bucle',
+	'topbar.record.videoLoop2Desc': '2 bucles',
+	'topbar.record.videoLoop3Desc': '3 bucles',
+	'topbar.record.gifFullDesc':    'Tamaño completo',
+	'topbar.record.gifHalfDesc':    'La mitad',
+	'topbar.record.gifQuarterDesc': 'Un cuarto',
 
 	'topbar.info.about': 'Acerca de Diorame',
 
@@ -72,7 +80,7 @@ export const es: Dictionary = {
 	'topbar.anim.playbackLoop':  'Bucle',
 	'topbar.anim.playbackPingpong': 'Ping-pong',
 	'topbar.anim.depthToggle':   'Profundidad (parallax)',
-	'topbar.anim.onionSkin':     'Onion skin',
+	'topbar.anim.onionSkin':     'Papel cebolla',
 
 	// ═══════════════════════════════════════════════
 	// BOTTOMBAR — VIEW
