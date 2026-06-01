@@ -12,10 +12,11 @@ export function ColorPalette() {
 
 	if (state.mode !== 'drawing') return null;
 
+	const isPlaybackLocked = state.isAnimationMode && state.isAnimationPlaying;
 	const isGradient = state.paletteMode === 'grad';
 
 	return (
-		<div style={{ position: 'absolute', bottom: 12, right: 12, zIndex: 50 }}>
+		<div style={{ position: 'absolute', bottom: 12, right: 12, zIndex: 50, opacity: isPlaybackLocked ? 0.3 : undefined, pointerEvents: isPlaybackLocked ? 'none' : undefined }}>
 			<DiPanel dark={dark} width={240} radius={20} padding="10px">
 				<PaletteHeader dark={dark} />
 				{isGradient && <GradientControls dark={dark} />}

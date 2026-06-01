@@ -10,6 +10,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 	const isDrawing    = state.mode === 'drawing';
 	const isCinematic  = state.mode === 'cinematic';
 	const uiHidden     = state.isUIHidden;
+	const isPlaybackLocked = state.isAnimationMode && state.isAnimationPlaying;
 
 	return (
 		<DiPill dark={dark} height={40} padding="0 6px" gap={6}>
@@ -21,6 +22,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				activeStyle="solid"
 				label={t('topbar.mode.draw')}
 				tooltip={t('topbar.mode.drawTooltip')}
+				disabled={isPlaybackLocked}
 			/>
 			<DiActionButton
 				name="view-mode"
@@ -30,6 +32,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				activeStyle="solid"
 				label={t('topbar.mode.view')}
 				tooltip={t('topbar.mode.viewTooltip')}
+				disabled={isPlaybackLocked}
 			/>
 			<DiVSep dark={dark} />
 			<DiActionButton
@@ -41,6 +44,7 @@ export function ModeSwitchPill({ dark }: { dark: boolean }) {
 				iconWeight="secondary"
 				iconSize={14}
 				tooltip={t('topbar.mode.hideUi')}
+				disabled={isPlaybackLocked}
 			/>
 		</DiPill>
 	);

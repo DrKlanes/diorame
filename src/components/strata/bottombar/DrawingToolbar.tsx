@@ -53,6 +53,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 	const { t } = useTranslation();
 	const tool = state.tool;
 	const paletteColor = state.palette?.[state.currentColorIndex] ?? null;
+	const isPlaybackLocked = state.isAnimationMode && state.isAnimationPlaying;
 
 	const setTool = (t: ToolType) => dispatch({ type: 'SET_TOOL', payload: t });
 
@@ -73,7 +74,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 	return (
 		<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
 			{/* Block 1: Tool buttons — fixed position, never shifts */}
-			<div style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
+			<div style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0, opacity: isPlaybackLocked ? 0.3 : undefined, pointerEvents: isPlaybackLocked ? 'none' : undefined }}>
 				<ToolBtn
 					name="blob" onClick={() => setTool('blob')} dark={dark}
 					active={tool === 'blob'} tooltip={t('bottombar.draw.tool.blob')} shortcut="B"
@@ -101,7 +102,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 			{/* VSep estructural: siempre visible, comunica que la zona derecha es expansible */}
 			<DiVSep dark={dark} />
 			{/* Block 2: Modifier zone — minWidth 158 = 5 mods x 30 + 4 gaps x 2 */}
-			<div style={{ display: 'flex', gap: 2, alignItems: 'center', minWidth: 158, flexShrink: 0 }}>
+			<div style={{ display: 'flex', gap: 2, alignItems: 'center', minWidth: 158, flexShrink: 0, opacity: isPlaybackLocked ? 0.3 : undefined, pointerEvents: isPlaybackLocked ? 'none' : undefined }}>
 				{hasModifiers && modifiers.map(mod => (
 					<DiActionButton
 						key={mod.field}
@@ -112,7 +113,7 @@ export function DrawingToolbar({ dark }: DrawingToolbarProps) {
 						activeStyle="wash"
 						iconWeight="secondary"
 						tooltip={t(mod.tooltipKey)}
-						disabled={layerIsEmpty && (mod.field === 'isDrawInside' || mod.field === 'isDrawBehind')}
+						disabled={isPlaybackLocked || (layerIsEmpty && (mod.field === 'isDrawInside' || mod.field === 'isDrawBehind'))}
 					/>
 				))}
 				{tool === 'brush' && <><DiVSep dark={dark} /><BrushModeButton dark={dark} /></>}

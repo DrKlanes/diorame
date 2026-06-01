@@ -40,6 +40,7 @@ export function LayersPanel() {
 	if (state.mode !== 'drawing') return null;
 	if (state.isUIHidden) return null;
 
+	const isPlaybackLocked = state.isAnimationMode && state.isAnimationPlaying;
 	const { totalLayers, currentLayerIndex, hiddenLayers } = state;
 	const currentZIndex = currentLayerIndex * -BASE_DEPTH_STEP;
 	const activeLayerEmpty = !state.shapes.some(s => s.zIndex === currentZIndex);
@@ -71,7 +72,7 @@ export function LayersPanel() {
 
 	if (!isExpanded) {
 		return (
-			<div style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50, display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+			<div style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50, display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', opacity: isPlaybackLocked ? 0.3 : undefined, pointerEvents: isPlaybackLocked ? 'none' : undefined }}>
 				<DiPill
 					dark={dark}
 					padding="8px 0"
@@ -109,7 +110,7 @@ export function LayersPanel() {
 					{/* Chevron expand — top position */}
 					<DiActionButton name="chevron-left"
 						onClick={() => toggle(true)}
-						dark={dark} tooltip={t('layers.panel.expand')} />
+						dark={dark} tooltip={t('layers.panel.expand')} disabled={isPlaybackLocked} />
 					<HSep />
 					<DiActionButton
 						name={isCurrentHidden ? 'eye-off' : 'eye'}
@@ -117,24 +118,25 @@ export function LayersPanel() {
 						dark={dark}
 						active={isCurrentHidden}
 						tooltip={t(isCurrentHidden ? 'layers.action.show' : 'layers.action.hide')}
+						disabled={isPlaybackLocked}
 					/>
 					<DiActionButton name="duplicate"
 						onClick={() => dispatch({ type: 'DUPLICATE_LAYER', payload: currentLayerIndex } as any)}
-						dark={dark} tooltip={t('layers.action.duplicate')} disabled={!canDuplicate} />
+						dark={dark} tooltip={t('layers.action.duplicate')} disabled={isPlaybackLocked || !canDuplicate} />
 					<DiActionButton name="trash"
 						onClick={() => dispatch({ type: 'DELETE_CURRENT_LAYER' } as any)}
-						dark={dark} tooltip={t('layers.action.delete')} disabled={!canDelete} danger={true} />
+						dark={dark} tooltip={t('layers.action.delete')} disabled={isPlaybackLocked || !canDelete} danger={true} />
 					<HSep />
 					<DiActionButton name="arrow-up"
 						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex + 1 } } as any)}
-						dark={dark} tooltip={t('layers.action.moveUp')} disabled={isAtTop} />
+						dark={dark} tooltip={t('layers.action.moveUp')} disabled={isPlaybackLocked || isAtTop} />
 					<DiActionButton name="arrow-down"
 						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex - 1 } } as any)}
-						dark={dark} tooltip={t('layers.action.moveDown')} disabled={isAtBottom} />
+						dark={dark} tooltip={t('layers.action.moveDown')} disabled={isPlaybackLocked || isAtBottom} />
 					<HSep />
 					<DiActionButton name="plus"
 						onClick={() => dispatch({ type: 'ADD_LAYER' } as any)}
-						dark={dark} tooltip={t('layers.action.add')} disabled={!canAdd} />
+						dark={dark} tooltip={t('layers.action.add')} disabled={isPlaybackLocked || !canAdd} />
 				</DiPill>
 				<LayerDotsRail inline />
 			</div>
@@ -166,7 +168,7 @@ export function LayersPanel() {
 	};
 
 	return (
-		<div style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50, display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+		<div style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50, display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', opacity: isPlaybackLocked ? 0.3 : undefined, pointerEvents: isPlaybackLocked ? 'none' : undefined }}>
 			<DiPanel dark={dark} width={220} radius={20} padding="10px" style={{ maxHeight: 'calc(100vh - 420px)', overflow: 'hidden' }}>
 				{/* Header — chevron-right always top right */}
 				<div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -191,10 +193,10 @@ export function LayersPanel() {
 					</span>
 					<DiActionButton name="plus"
 						onClick={() => dispatch({ type: 'ADD_LAYER' } as any)}
-						dark={dark} tooltip={t('layers.action.add')} disabled={!canAdd} />
+						dark={dark} tooltip={t('layers.action.add')} disabled={isPlaybackLocked || !canAdd} />
 					<DiActionButton name="chevron-right"
 						onClick={() => toggle(false)}
-						dark={dark} tooltip={t('layers.panel.collapse')} />
+						dark={dark} tooltip={t('layers.panel.collapse')} disabled={isPlaybackLocked} />
 				</div>
 
 				{/* Z-axis + Layer list */}
@@ -258,16 +260,16 @@ export function LayersPanel() {
 				}}>
 					<DiActionButton name="duplicate"
 						onClick={() => dispatch({ type: 'DUPLICATE_LAYER', payload: currentLayerIndex } as any)}
-						dark={dark} tooltip={t('layers.action.duplicate')} disabled={!canDuplicate} />
+						dark={dark} tooltip={t('layers.action.duplicate')} disabled={isPlaybackLocked || !canDuplicate} />
 					<DiActionButton name="arrow-up"
 						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex + 1 } } as any)}
-						dark={dark} tooltip={t('layers.action.moveUp')} disabled={isAtTop} />
+						dark={dark} tooltip={t('layers.action.moveUp')} disabled={isPlaybackLocked || isAtTop} />
 					<DiActionButton name="arrow-down"
 						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex - 1 } } as any)}
-						dark={dark} tooltip={t('layers.action.moveDown')} disabled={isAtBottom} />
+						dark={dark} tooltip={t('layers.action.moveDown')} disabled={isPlaybackLocked || isAtBottom} />
 					<DiActionButton name="trash"
 						onClick={() => dispatch({ type: 'DELETE_CURRENT_LAYER' } as any)}
-						dark={dark} tooltip={t('layers.action.delete')} disabled={!canDelete} danger={true} />
+						dark={dark} tooltip={t('layers.action.delete')} disabled={isPlaybackLocked || !canDelete} danger={true} />
 				</div>
 			</DiPanel>
 			<LayerDotsRail inline />

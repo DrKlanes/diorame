@@ -56,6 +56,8 @@ export function ControlsV2() {
 	// Side-effect 0b: animation playback interval
 	useAnimationPlayback();
 
+	const isPlaybackLocked = state.isAnimationMode && state.isAnimationPlaying;
+
 	// Side-effect 1: global keyboard shortcuts
 	const { handleSaveProject } = useSaveLoad();
 	const { handleExportRequest } = useExportFlow();
@@ -151,6 +153,12 @@ export function ControlsV2() {
 
 			{/* Persistent mini-button — only visible when UI is hidden, allows reactivation */}
 			{state.isUIHidden && <ShowUIButton />}
+
+			{/* Canvas input blocker during animation playback in DRAW mode.
+			    z-index 1: above canvas (auto), below all UI panels (≥50). */}
+			{isPlaybackLocked && state.mode === 'drawing' && (
+				<div style={{ position: 'fixed', inset: 0, zIndex: 1 }} aria-hidden="true" />
+			)}
 		</>
 	);
 }

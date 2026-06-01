@@ -20,6 +20,8 @@ export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject }:
 				(activeEl instanceof HTMLInputElement && activeEl.type !== 'range')
 			);
 			if (isTextEntry) return;
+			// Guard 3: animation playback active in DRAW mode — all shortcuts blocked
+			if (state.isAnimationMode && state.isAnimationPlaying && state.mode === 'drawing') return;
 
 			const cmd = e.metaKey || e.ctrlKey;
 			const shift = e.shiftKey;
@@ -81,5 +83,5 @@ export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject }:
 
 		window.addEventListener('keydown', handleKeyDown);
 		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, [handleExportRequest, handleSaveProject, dispatch, state.textSession.isActive, state.mode]);
+	}, [handleExportRequest, handleSaveProject, dispatch, state.textSession.isActive, state.mode, state.isAnimationMode, state.isAnimationPlaying]);
 }

@@ -16,11 +16,13 @@ export function ToolOptionsPanel({ dark }: ToolOptionsPanelProps) {
 	if (state.mode !== 'drawing') return null;
 	if (state.tool !== 'brush') return null;
 
+	const isPlaybackLocked = state.isAnimationMode && state.isAnimationPlaying;
 	const thickness = state.currentBrushThickness;
 	const labelColor = dk(dark, T.muted, T.textDarkMuted) as string;
 	const trackBg = dk(dark, T.border, T.trackDark) as string;
 
 	return (
+		<div style={{ opacity: isPlaybackLocked ? 0.3 : undefined, pointerEvents: isPlaybackLocked ? 'none' : undefined }}>
 		<DiPill dark={dark} height={40} padding="0 10px" gap={6}>
 			<BrushModeButton dark={dark} />
 			<DiVSep dark={dark} />
@@ -39,6 +41,7 @@ export function ToolOptionsPanel({ dark }: ToolOptionsPanelProps) {
 				max={100}
 				step={1}
 				value={thickness}
+				disabled={isPlaybackLocked}
 				onInput={(e) => dispatch({ type: 'SET_BRUSH_THICKNESS_PREVIEW', payload: parseInt((e.target as HTMLInputElement).value) })}
 				onChange={(e) => dispatch({ type: 'SET_BRUSH_THICKNESS', payload: parseInt(e.target.value) })}
 				onPointerUp={() => dispatch({ type: 'COMMIT_BRUSH_THICKNESS' })}
@@ -49,11 +52,12 @@ export function ToolOptionsPanel({ dark }: ToolOptionsPanelProps) {
 					WebkitAppearance: 'none',
 					background: trackBg,
 					borderRadius: RADIUS.pill,
-					cursor: 'pointer',
+					cursor: isPlaybackLocked ? 'default' : 'pointer',
 					outline: 'none',
 					border: 'none',
 					flexShrink: 0,
 					accentColor: T.purple,
+					opacity: isPlaybackLocked ? 0.3 : 1,
 				}}
 			/>
 			<span style={{
@@ -67,5 +71,6 @@ export function ToolOptionsPanel({ dark }: ToolOptionsPanelProps) {
 				{Math.round(thickness)}
 			</span>
 		</DiPill>
+		</div>
 	);
 }
