@@ -302,10 +302,9 @@ export const ICONS: Record<string, string> = {
 
 	// ─── Animation ───────────────────────────────────────────────────────
 	'play':
-		`<path d="M6 4.5L19.5 12L6 19.5V4.5Z" fill="currentColor" stroke="none"/>`,
+		`<path d="M8 6.5L18 12L8 17.5V6.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'pause':
-		`<rect x="5" y="4" width="4.5" height="16" rx="1.5" fill="currentColor" stroke="none"/>` +
-		`<rect x="14.5" y="4" width="4.5" height="16" rx="1.5" fill="currentColor" stroke="none"/>`,
+		`<path d="M9 6.5V17.5M15 6.5V17.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'film':
 		`<rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>` +
 		`<line x1="7" y1="4" x2="7" y2="20" stroke="currentColor" stroke-width="1.5"/>` +
@@ -315,38 +314,36 @@ export const ICONS: Record<string, string> = {
 		`<line x1="2" y1="15" x2="7" y2="15" stroke="currentColor" stroke-width="1.5"/>` +
 		`<line x1="17" y1="15" x2="22" y2="15" stroke="currentColor" stroke-width="1.5"/>`,
 	'bounce':
-		`<path d="M4 10Q10 14 13 21Q15 14 17.5 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>` +
-		`<line x1="11" y1="22" x2="15" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>` +
-		`<circle cx="18.5" cy="8.5" r="3.4" stroke="currentColor" stroke-width="1.5" fill="none"/>`,
+		`<path d="M5 19C5 19 6.5 9 9 9C11.5 9 11 16 13 16C15 16 16 5 19 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>` +
+		`<circle cx="5" cy="19" r="1" fill="currentColor"/>`,
 	'frame-back':
-		`<path d="M5 4V20M19 4L9 12L19 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+		`<path d="M16 6.5L8 12L16 17.5V6.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>` +
+		`<path d="M6 6V18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'frame-fwd':
-		`<path d="M19 4V20M5 4L15 12L5 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+		`<path d="M8 6.5L16 12L8 17.5V6.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>` +
+		`<path d="M18 6V18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'anim-loop':
-		`<path d="M17 2L21 6L17 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>` +
-		`<path d="M21 6H9C6.24 6 4 8.24 4 11C4 13.76 6.24 16 9 16H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
+		`<path d="M7 7H15C17.21 7 19 8.79 19 11C19 13.21 17.21 15 15 15H5M5 15L8 12M5 15L8 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'anim-pingpong':
-		`<path d="M4 12H20M7 7L2 12L7 17M17 7L22 12L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+		`<path d="M7 9L4 12L7 15M17 9L20 12L17 15M4 12H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 
 	// ─── Onion Skin ──────────────────────────────────────────────────────
-	// onion: film-strip metaphor — dashed side frames (ghosts) + solid center (active)
+	// onion: centre frame (solid) + ghost flanks (dashed vertical lines)
 	'onion':
-		`<rect x="3.5" y="9" width="5.5" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-dasharray="1.3 1.6"/>` +
-		`<rect x="15" y="9" width="5.5" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-dasharray="1.3 1.6"/>` +
-		`<rect x="9" y="7" width="6" height="10" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>`,
+		`<rect x="9.5" y="6" width="5" height="12" rx="1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>` +
+		`<path d="M6.5 7.5V16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5 2"/>` +
+		`<path d="M17.5 7.5V16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5 2"/>`,
 
 	// ─── Depth ───────────────────────────────────────────────────────────
-	// depth-on: three cards in diagonal perspective stack → real 3D depth active
-	// Back+middle show only the peeking top/right edges; front card is full outline.
+	// depth-on: isometric rhombus (top face) + bottom edge → real 3D depth active
 	'depth-on':
-		`<path d="M11 5H19.5Q20.5 5 20.5 6V12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>` +
-		`<path d="M7.5 9H16Q17 9 17 10V16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>` +
-		`<rect x="4" y="13" width="9.5" height="7" rx="1.2" stroke="currentColor" stroke-width="1.5" fill="none"/>`,
-	// depth-off: three bars aligned flat → zero-Z / flat playback active
+		`<path d="M12 4L20 8L12 12L4 8L12 4Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>` +
+		`<path d="M4 13L12 17L20 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+	// depth-off: flat rectangle with faint dividers → zero-Z / flat playback active
 	'depth-off':
-		`<rect x="6.5" y="6.5" width="11" height="3" rx="0.8" stroke="currentColor" stroke-width="1.5" fill="none"/>` +
-		`<rect x="6.5" y="11" width="11" height="3" rx="0.8" stroke="currentColor" stroke-width="1.5" fill="none"/>` +
-		`<rect x="6.5" y="15.5" width="11" height="3" rx="0.8" stroke="currentColor" stroke-width="1.5" fill="none"/>`,
+		`<rect x="5" y="8" width="14" height="8" rx="1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>` +
+		`<path d="M9 8V16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"/>` +
+		`<path d="M14 8V16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"/>`,
 };
 
 /**

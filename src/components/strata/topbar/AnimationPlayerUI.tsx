@@ -39,13 +39,14 @@ export function AnimationPlayerUI() {
 
 	return (
 		<DiPill dark={dark} height={40} padding="0 6px" gap={2}>
-			{/* Bounce icon — toggle for expand/collapse + animation mode (DRAW + CINEMA) */}
+			{/* Bounce icon — primary toggle: expand/collapse + animation mode (DRAW + CINEMA) */}
 			<DiActionButton
 				name="bounce"
 				onClick={handleBounceClick}
 				dark={dark}
 				active={state.isAnimationMode}
 				activeStyle="wash"
+				iconSize={16}
 				tooltip={t('topbar.anim.toggle')}
 			/>
 
@@ -53,30 +54,33 @@ export function AnimationPlayerUI() {
 				<>
 					<DiVSep dark={dark} />
 
-					{/* Frame back — same action as [ shortcut */}
+					{/* Frame back — primary action, same as [ shortcut */}
 					<DiActionButton
 						name="frame-back"
 						onClick={() => dispatch({ type: 'PREV_LAYER' })}
 						dark={dark}
+						iconSize={16}
 						tooltip={t('topbar.anim.frameBack')}
 						shortcut="["
 					/>
 
-					{/* Play / Pause */}
+					{/* Play / Pause — primary action */}
 					<DiActionButton
 						name={state.isAnimationPlaying ? 'pause' : 'play'}
 						onClick={() => dispatch({ type: 'SET_ANIMATION_PLAYING', payload: !state.isAnimationPlaying })}
 						dark={dark}
 						active={state.isAnimationPlaying}
 						activeStyle="wash"
+						iconSize={16}
 						tooltip={state.isAnimationPlaying ? t('topbar.anim.pause') : t('topbar.anim.play')}
 					/>
 
-					{/* Frame forward — same action as ] shortcut (creates layer at end if < 10) */}
+					{/* Frame forward — primary action, same as ] shortcut */}
 					<DiActionButton
 						name="frame-fwd"
 						onClick={() => dispatch({ type: 'NEXT_LAYER' })}
 						dark={dark}
+						iconSize={16}
 						tooltip={t('topbar.anim.frameForward')}
 						shortcut="]"
 					/>
@@ -107,17 +111,19 @@ export function AnimationPlayerUI() {
 
 					<DiVSep dark={dark} />
 
-					{/* Loop / Ping-pong toggle */}
+					{/* Loop / Ping-pong toggle — secondary: playback mode control */}
 					<DiActionButton
 						name={isPingpong ? 'anim-pingpong' : 'anim-loop'}
 						onClick={() => dispatch({ type: 'TOGGLE_ANIMATION_PLAYBACK_MODE' })}
 						dark={dark}
 						active={isPingpong}
 						activeStyle="wash"
+						iconWeight="secondary"
+						iconSize={16}
 						tooltip={isPingpong ? t('topbar.anim.playbackPingpong') : t('topbar.anim.playbackLoop')}
 					/>
 
-					{/* Onion skin toggle — DRAW only: show prev/next frames as ghost */}
+					{/* Onion skin toggle — DRAW only, secondary: visual overlay control */}
 					{!isCinematic && (
 						<>
 							<DiVSep dark={dark} />
@@ -127,12 +133,14 @@ export function AnimationPlayerUI() {
 								dark={dark}
 								active={state.isOnionSkinEnabled}
 								activeStyle="wash"
+								iconWeight="secondary"
+								iconSize={16}
 								tooltip={t('topbar.anim.onionSkin')}
 							/>
 						</>
 					)}
 
-					{/* Depth toggle — CINEMA only: real depth (parallax) vs. flat (zero-Z) */}
+					{/* Depth toggle — CINEMA only, secondary: render mode control */}
 					{isCinematic && (
 						<>
 							<DiVSep dark={dark} />
@@ -142,6 +150,8 @@ export function AnimationPlayerUI() {
 								dark={dark}
 								active={state.isAnimationFlatZ}
 								activeStyle="wash"
+								iconWeight="secondary"
+								iconSize={16}
 								tooltip={t('topbar.anim.depthToggle')}
 							/>
 						</>
