@@ -16,16 +16,26 @@ export function CameraSlidersZone({ dark }: CameraSlidersZoneProps) {
 
 	const iconColor = dk(dark, T.dark, T.textDark) as string;
 
+	// Zero-Z flat playback (CINEMA animation): focal + layer-spacing have no useful
+	// effect on a flattened scene, so they're disabled. Zoom (ctrl-distance) stays
+	// active — it still scales the flat plane.
+	const flatZMode = state.isAnimationMode && state.isAnimationFlatZ;
+	const disabledStyle: React.CSSProperties = flatZMode
+		? { opacity: 0.35, pointerEvents: 'none' }
+		: {};
+
 	return (
 		<div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 6px', flexShrink: 0 }}>
-			<SliderSlot
-				icon="ctrl-focal"
-				formattedValue={`${focalMm}mm`}
-				sliderValue={focalMm}
-				onSliderChange={v => dispatch({ type: 'SET_FOCAL_LENGTH', payload: mmToFl(v) } as any)}
-				min={24} max={300} step={1}
-				dark={dark} iconColor={iconColor}
-			/>
+			<div style={disabledStyle}>
+				<SliderSlot
+					icon="ctrl-focal"
+					formattedValue={`${focalMm}mm`}
+					sliderValue={focalMm}
+					onSliderChange={v => dispatch({ type: 'SET_FOCAL_LENGTH', payload: mmToFl(v) } as any)}
+					min={24} max={300} step={1}
+					dark={dark} iconColor={iconColor}
+				/>
+			</div>
 			<SliderSlot
 				icon="ctrl-distance"
 				formattedValue={offsetDisplay}
@@ -34,14 +44,16 @@ export function CameraSlidersZone({ dark }: CameraSlidersZoneProps) {
 				min={-5000} max={2000} step={10}
 				dark={dark} iconColor={iconColor}
 			/>
-			<SliderSlot
-				icon="ctrl-spacing"
-				formattedValue={spacingPct}
-				sliderValue={state.layerSpacingFactor ?? 1}
-				onSliderChange={v => dispatch({ type: 'SET_LAYER_SPACING_FACTOR', payload: v } as any)}
-				min={0} max={2.0} step={0.05}
-				dark={dark} iconColor={iconColor}
-			/>
+			<div style={disabledStyle}>
+				<SliderSlot
+					icon="ctrl-spacing"
+					formattedValue={spacingPct}
+					sliderValue={state.layerSpacingFactor ?? 1}
+					onSliderChange={v => dispatch({ type: 'SET_LAYER_SPACING_FACTOR', payload: v } as any)}
+					min={0} max={2.0} step={0.05}
+					dark={dark} iconColor={iconColor}
+				/>
+			</div>
 		</div>
 	);
 }

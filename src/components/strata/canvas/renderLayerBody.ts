@@ -103,7 +103,13 @@ export function renderLayer(
 	const shapeZ = isAnimFlat ? 0 : ((!isCinematic || isLocked3D) ? baseZ : baseZ * CINEMATIC_DEPTH_MULTIPLIER);
 	const camX = isLocked3D ? 0 : currentCamera.x;
 	const camY = isLocked3D ? 0 : currentCamera.y;
-	const camZ   = isAnimFlat ? 0 : (isLocked3D ? 0 : effectiveCameraZ);
+	// Flat CINEMA (zero-Z): use viewZoomOffset (= effectiveCameraZ - currentCamera.z)
+	// as the camera Z, so every layer shares a uniform NON-zero dz — they stay flat
+	// relative to each other, yet the zoom slider still scales the whole plane.
+	// Flat DRAW keeps camZ = 0 (no zoom there). Non-flat branch is unchanged.
+	const camZ   = isAnimFlat
+		? (isCinematic ? (effectiveCameraZ - currentCamera.z) : 0)
+		: (isLocked3D ? 0 : effectiveCameraZ);
 	const dz = shapeZ - camZ;
 
 	const activeFL = (!isCinematic) ? DRAW_FOCAL_LENGTH : FL;
