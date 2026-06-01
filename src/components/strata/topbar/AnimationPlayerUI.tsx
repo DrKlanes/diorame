@@ -117,6 +117,21 @@ export function AnimationPlayerUI() {
 						tooltip={isPingpong ? t('topbar.anim.playbackPingpong') : t('topbar.anim.playbackLoop')}
 					/>
 
+					{/* Onion skin toggle — DRAW only: show prev/next frames as ghost */}
+					{!isCinematic && (
+						<>
+							<DiVSep dark={dark} />
+							<DiActionButton
+								name="onion"
+								onClick={() => dispatch({ type: 'TOGGLE_ONION_SKIN' })}
+								dark={dark}
+								active={state.isOnionSkinEnabled}
+								activeStyle="wash"
+								tooltip={t('topbar.anim.onionSkin')}
+							/>
+						</>
+					)}
+
 					{/* Depth toggle — CINEMA only: real depth (parallax) vs. flat (zero-Z) */}
 					{isCinematic && (
 						<>

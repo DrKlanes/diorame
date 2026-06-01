@@ -68,6 +68,7 @@ export const es: Dictionary = {
 	'topbar.anim.playbackLoop':  'Bucle',
 	'topbar.anim.playbackPingpong': 'Ping-pong',
 	'topbar.anim.depthToggle':   'Profundidad (parallax)',
+	'topbar.anim.onionSkin':     'Onion skin',
 
 	// ═══════════════════════════════════════════════
 	// BOTTOMBAR — VIEW

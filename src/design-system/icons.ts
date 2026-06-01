@@ -328,6 +328,13 @@ export const ICONS: Record<string, string> = {
 	'anim-pingpong':
 		`<path d="M4 12H20M7 7L2 12L7 17M17 7L22 12L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 
+	// ─── Onion Skin ──────────────────────────────────────────────────────
+	// onion: film-strip metaphor — dashed side frames (ghosts) + solid center (active)
+	'onion':
+		`<rect x="3.5" y="9" width="5.5" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-dasharray="1.3 1.6"/>` +
+		`<rect x="15" y="9" width="5.5" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-dasharray="1.3 1.6"/>` +
+		`<rect x="9" y="7" width="6" height="10" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>`,
+
 	// ─── Depth ───────────────────────────────────────────────────────────
 	// depth-on: three cards in diagonal perspective stack → real 3D depth active
 	// Back+middle show only the peeking top/right edges; front card is full outline.
@@ -362,6 +369,6 @@ export const ICON_SECTIONS: Record<string, string[]> = {
 	'File Operations':     ['new', 'open', 'save', 'export', 'undo', 'redo'],
 	'Layer Panel':         ['eye', 'eye-off', 'layers', 'duplicate', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal'],
 	'Custom Additions':    ['align-left', 'align-center', 'align-right', 'lock', 'unlock', 'pin', 'pin-off', 'flip-horizontal', 'maximize', 'minimize', 'cloud-fog', 'globe', 'scan-line', 'zoom-in', 'target', 'loader', 'monitor', 'tablet', 'sparkles', 'guide', 'info', 'check', 'x', 'plus', 'hand', 'move-vertical', 'move-horizontal', 'aperture', 'wand', 'tornado', 'image'],
-	'Animation':           ['play', 'pause', 'film', 'bounce', 'frame-back', 'frame-fwd', 'anim-loop', 'anim-pingpong'],
+	'Animation':           ['play', 'pause', 'film', 'bounce', 'frame-back', 'frame-fwd', 'anim-loop', 'anim-pingpong', 'onion'],
 	'Depth':               ['depth-on', 'depth-off'],
 };

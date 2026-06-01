@@ -32,3 +32,51 @@ export function getAnimationFrames(state: AppState): number[] {
 	}
 	return frames;
 }
+
+/**
+ * Returns the previous and next frame indices relative to currentLayerIndex
+ * in the real animation sequence (non-empty, non-hidden layers).
+ *
+ * Used by the onion skin render pass in renderPipeline.ts.
+ *
+ * Two cases:
+ *   - Current layer IS a frame (has content): prev/next are the adjacent
+ *     frames in the sequence. Standard onion skin.
+ *   - Current layer is EMPTY (not a frame): prev/next are determined by
+ *     physical position — last frame with index < current, first frame with
+ *     index > current. This is the key use case: drawing a new frame while
+ *     seeing the surrounding frames as ghosts.
+ *
+ * Edge cases:
+ *   - No frames at all → both null.
+ *   - Empty layer before first frame → prev: null, next: first frame.
+ *   - Empty layer after last frame  → prev: last frame, next: null.
+ *   - Current layer is the only frame → prev/next both null.
+ */
+export function getOnionGhostZs(state: AppState): { prev: number | null; next: number | null } {
+	const frames = getAnimationFrames(state);
+	if (frames.length === 0) return { prev: null, next: null };
+
+	const current = state.currentLayerIndex;
+	const pos = frames.indexOf(current);
+
+	if (pos !== -1) {
+		// Current layer IS a frame: use sequence neighbors
+		return {
+			prev: pos > 0 ? frames[pos - 1] : null,
+			next: pos < frames.length - 1 ? frames[pos + 1] : null,
+		};
+	}
+
+	// Current layer is EMPTY: find neighbors by physical position.
+	// frames is ascending (getAnimationFrames iterates i = 0..totalLayers-1).
+	// Scan once: prev keeps updating to the last frame below current;
+	// next breaks on the first frame above current.
+	let prev: number | null = null;
+	let next: number | null = null;
+	for (const f of frames) {
+		if (f < current) prev = f;
+		else if (f > current) { next = f; break; }
+	}
+	return { prev, next };
+}

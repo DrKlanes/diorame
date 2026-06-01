@@ -19,6 +19,12 @@ import {
 	applyGrunge,
 } from './postProcessing';
 import { renderLayer } from './renderLayerBody';
+import { getOnionGhostZs } from '../../../utils/animationFrames';
+
+// Onion skin composite opacities. Prev (where you came from) is more visible.
+// These constants are intentionally named for easy visual tuning.
+const ONION_ALPHA_PREV = 0.40;
+const ONION_ALPHA_NEXT = 0.22;
 
 /**
  * Move tool's transform state (shape of transformRef.current in StrataCanvas L144).
@@ -390,6 +396,26 @@ export function renderFrame(
 		wiggleFrame: rc.wiggleFrameRef.current,
 		shapePattern: rc.shapePatternRef.current,
 	};
+
+	// Onion skin: render prev/next ghost frames at reduced opacity BEFORE the
+	// active frame so the active frame always composites on top at full opacity.
+	// Active in DRAW + animation mode + onion enabled (including during playback).
+	// In DRAW mode fxEnabled=false, so composeLayer reduces to a plain drawImage
+	// that respects the offCtx.globalAlpha we set here — no side effects.
+	if (!isCinematic && currentState.isAnimationMode
+			&& currentState.isOnionSkinEnabled) {
+		const ghosts = getOnionGhostZs(currentState);
+		if (ghosts.prev !== null) {
+			offCtx.globalAlpha = ONION_ALPHA_PREV;
+			renderLayer(ghosts.prev * -BASE_DEPTH_STEP, rc, offCtx, pfc);
+			offCtx.globalAlpha = 1.0;
+		}
+		if (ghosts.next !== null) {
+			offCtx.globalAlpha = ONION_ALPHA_NEXT;
+			renderLayer(ghosts.next * -BASE_DEPTH_STEP, rc, offCtx, pfc);
+			offCtx.globalAlpha = 1.0;
+		}
+	}
 
 	renderZs.forEach(z => {
 		renderLayer(z, rc, offCtx, pfc);
