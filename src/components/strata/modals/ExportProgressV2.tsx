@@ -15,6 +15,7 @@ const EXPORT_CONFIG: Record<ExportType, { icon: string; labelKey: string }> = {
 	svg:          { icon: 'export',  labelKey: 'modal.export.vector'       },
 	svgz:         { icon: 'export',  labelKey: 'modal.export.vector'       },
 	'png-sequence': { icon: 'film',  labelKey: 'modal.export.pngSequence'  },
+	'gif':          { icon: 'bounce', labelKey: 'modal.export.gif'         },
 };
 
 // ── ExportProgressV2 ──────────────────────────────────────────────────────────

@@ -15,6 +15,13 @@ const LOOP_OPTIONS: { value: number; label: string }[] = [
 	{ value: 3, label: '×3' },
 ];
 
+// GIF export resolution presets.
+const GIF_SCALE_OPTIONS: { value: number; label: string }[] = [
+	{ value: 1,    label: '100%' },
+	{ value: 0.5,  label: '50%'  },
+	{ value: 0.25, label: '25%'  },
+];
+
 interface SnapshotRecordPillProps { dark: boolean; }
 
 export function SnapshotRecordPill({ dark }: SnapshotRecordPillProps) {
@@ -27,6 +34,7 @@ export function SnapshotRecordPill({ dark }: SnapshotRecordPillProps) {
 	const handleSnapshot    = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
 	const handleRecord      = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'mp4' });
 	const handlePNGSequence = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'png-sequence' });
+	const handleGIF         = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'gif' });
 
 	return (
 		<>
@@ -55,6 +63,24 @@ export function SnapshotRecordPill({ dark }: SnapshotRecordPillProps) {
 							dark={dark}
 							iconSize={16}
 							tooltip={t('topbar.record.pngSequence')}
+							disabled={state.isExporting}
+						/>
+						<DiVSep dark={dark} />
+						<div title={t('topbar.record.gifScale')}>
+							<DiSegmentControl<number>
+								options={GIF_SCALE_OPTIONS}
+								value={state.gifExportScale}
+								onChange={(v) => dispatch({ type: 'SET_GIF_EXPORT_SCALE', payload: v })}
+								dark={dark}
+								small={true}
+							/>
+						</div>
+						<DiActionButton
+							name="bounce"
+							onClick={handleGIF}
+							dark={dark}
+							iconSize={16}
+							tooltip={t('topbar.record.gif')}
 							disabled={state.isExporting}
 						/>
 					</>

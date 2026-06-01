@@ -25,7 +25,7 @@ export interface Shape {
 export type AppMode = 'drawing' | 'cinematic';
 export type ToolType = 'blob' | 'eraser' | 'text' | 'move' | 'brush';
 export type CinematicType = 'forward' | 'spiral' | 'yoyo' | 'pulse' | 'twist' | 'arc' | 'crane' | 'truck' | 'orbit' | 'zoom';
-export type ExportType = 'png' | 'mp4' | 'svg' | 'svgz' | 'png-sequence';
+export type ExportType = 'png' | 'mp4' | 'svg' | 'svgz' | 'png-sequence' | 'gif';
 export type BrushMode = 'tapered' | 'uniform' | 'ink';
 
 export type LayerGradParams = {
@@ -159,4 +159,5 @@ export interface AppState {
   animationPlaybackMode: 'loop' | 'pingpong'; // Playback mode: loop forward or bounce back-and-forth
   animationDirection: 1 | -1;           // Runtime direction for ping-pong (not persisted in save)
   animationExportLoops: number;          // Number of complete loops to record in video export (1 | 2 | 3)
+  gifExportScale: number;                // GIF export resolution scale: 1 | 0.5 | 0.25
 }

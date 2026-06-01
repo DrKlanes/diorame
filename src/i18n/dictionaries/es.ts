@@ -32,6 +32,8 @@ export const es: Dictionary = {
 	'topbar.record.badge': 'REC',
 	'topbar.record.loops': 'Loops a grabar',
 	'topbar.record.pngSequence': 'Exportar secuencia PNG (ZIP)',
+	'topbar.record.gifScale': 'Resolución del GIF',
+	'topbar.record.gif': 'Exportar GIF animado',
 
 	'topbar.info.about': 'Acerca de Diorame',
 
@@ -335,6 +337,7 @@ export const es: Dictionary = {
 	'modal.export.animation': 'Renderizando animación…',
 	'modal.export.vector': 'Exportando vector…',
 	'modal.export.pngSequence': 'Renderizando frames…',
+	'modal.export.gif': 'Codificando GIF…',
 
 	'modal.mobile.alt': 'Diorame',
 	'modal.mobile.primary': 'Diorame está diseñado para tablet y escritorio.',
@@ -381,6 +384,9 @@ export const es: Dictionary = {
 	'toast.export.vector.errorTitle': 'Error al exportar el vector',
 	'toast.export.animation.errorTitle': 'Error al guardar la animación',
 	'toast.export.pngSequence.errorTitle': 'Error al exportar los frames',
+	'toast.export.gif.successTitle': '¡GIF exportado!',
+	'toast.export.gif.successDesc': 'GIF animado descargado',
+	'toast.export.gif.errorTitle': 'Error al exportar el GIF',
 
 	'toast.save.successTitle': 'Proyecto guardado',
 	'toast.save.successDesc': '{filename}.dior',

@@ -12,6 +12,7 @@ import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY } from '../
 import { exportAsPNG, exportAsSVG, exportAsMP4 } from './canvas/exportHandlers';
 import { renderAnimationFrames } from './canvas/animationExportRender';
 import { exportAsPNGSequence } from './canvas/pngSequenceHandler';
+import { exportAsGIF } from './canvas/gifHandler';
 import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
 import { getAnimationFrames } from '../../utils/animationFrames';
@@ -438,6 +439,31 @@ export const StrataCanvas = () => {
           };
           renderAnimationFrames(exportOptions).then(frames =>
               exportAsPNGSequence(frames, state.projectName, onFinish, t)
+          );
+      }
+      if (state.exportRequest === 'gif') {
+          // Same snapshot pattern as png-sequence; exportAsGIF uses the same infrastructure.
+          const exportOptions = {
+              state: stateRef.current,
+              shapesByZ: shapesByZRef.current,
+              sortedZs: sortedZsRef.current,
+              camera: { ...cameraRef.current },
+              w: containerRef.current?.clientWidth ?? canvas.width,
+              h: containerRef.current?.clientHeight ?? canvas.height,
+              paperImg: paperImgRef.current,
+              risoGrain: risoGrainRef.current,
+              grungeImg: grungeImgRef.current,
+              particles: particlesRef.current,
+              noiseCanvas: noiseCanvasRef.current,
+              shapePattern: shapePatternRef.current,
+              getActiveZ,
+          };
+          renderAnimationFrames(exportOptions).then(frames =>
+              exportAsGIF(frames, {
+                  framerate: state.animationFramerate,
+                  scale: state.gifExportScale,
+                  projectName: state.projectName,
+              }, onFinish, t)
           );
       }
   }, [state.exportRequest, dispatch, state.shapes, state.projectName, t]);
