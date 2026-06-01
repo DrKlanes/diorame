@@ -1,6 +1,6 @@
 # Diorame — Backlog técnico
 
-**Actualizado:** 2026-05-17 — Post Fase 8 (cutover UI redesign V2 completo)
+**Actualizado:** 2026-06-01 — Post sprint animación (v3.7.1)
 
 ---
 
@@ -31,12 +31,9 @@
 
 ## 🧹 Fase 9 (Cleanup post-merge)
 
-### Item 6 — ToolType rename
+### ~~Item 6 — ToolType rename~~ ✅ CERRADO
 
-**Categoría:** refactor
-**Riesgo:** high
-
-`state.tool === 'brush'` representa Blob (UI). `state.tool === 'line'` representa Brush (UI). Pendiente: renombrar `'brush'` → `'blob'` y `'line'` → `'brush'` en todo el codebase. Riesgo high por dispersión.
+Completado en commit `b2b9942`. `ToolType = 'blob' | 'eraser' | 'text' | 'move' | 'brush'` — naming coherente con la UI.
 
 ---
 
@@ -64,6 +61,8 @@ Aparece en la cadena `AnimatePresence → PresenceChild → PopChild → DiModal
 **Solución propuesta:** actualizar `framer-motion` a versión que ya haya parcheado el issue (verificar changelog del package), o cambiar el patrón de uso de `AnimatePresence` en `DiModal.Root` si no hay versión arreglada disponible.
 
 **Path:** `src/components/strata/modals/DiModal.tsx` líneas 45 aprox.
+
+**Nota (2026-06-01):** `framer-motion` v12.38.0 está instalado — verificar en consola si el warning persiste con esta versión antes de actuar.
 
 ---
 
@@ -102,6 +101,71 @@ DiActionButton actualmente usa `title` attr nativo para tooltips. EnhancedToolti
 **Path:** `src/design-system/tokens.ts`
 
 ---
+
+---
+
+## 🐛 Sprint animación — Issues abiertos (v3.7.1+)
+
+### Item DoF — Bug DoF con zero-Z en CINEMA
+
+**Categoría:** bug render
+**Riesgo:** medium
+
+Con `isAnimationFlatZ` activo en CINEMA, el Depth of Field sale todo desenfocado en lugar de quedar enfocado. Sin profundidad relativa entre capas no hay distancia que difuminar — el DoF debería ser neutro. El fix requiere detectar el caso flat en `applyDoFBlur` o en el cálculo de `fxFocusDist`.
+
+**Path:** `src/components/strata/canvas/postProcessing.ts`
+
+---
+
+### Item DRAW→CINEMA — Continuidad de animación al cambiar de modo
+
+**Categoría:** UX
+**Riesgo:** medium
+
+Al cambiar de DRAW a CINEMA durante playback, el comportamiento actual no está especificado. Diseño deseado: la animación continúa en CINEMA (pill desplegado, modo animado). Evaluar si `SET_MODE` mientras `isAnimationPlaying` debe trasladar el playback o detenerlo limpiamente.
+
+**Path:** `src/components/strata/ControlsV2.tsx` (Side-effect 3: mode-change camera reset)
+
+---
+
+### Item Undo palette — Cambios de paletteMode fuera del historial de undo
+
+**Categoría:** bug UX
+**Riesgo:** low-medium
+
+Cambiar el modo de color de una capa (plano/degradado/fade) o activar "aplicar a todas" no genera snapshot en el historial de undo/redo. El reducer debe crear historial en `SET_PALETTE_MODE` y acciones relacionadas.
+
+**Path:** `src/components/strata/StrataContext.tsx` (reducer)
+
+---
+
+### Item Tweening — Interpolación entre frames de animación
+
+**Categoría:** feature
+**Riesgo:** high (requiere nuevo modelo de datos)
+
+La animación es frame-a-frame sin interpolación. Tweening (interpolación automática posición/escala entre keyframes) requiere extender el modelo Shape/Layer. Sin agenda. Anotar para evaluación futura.
+
+---
+
+### Item PWA — Instalable (Progressive Web App)
+
+**Categoría:** feature infra
+**Riesgo:** low
+
+Diorame no tiene manifest ni service worker. Primer paso: PWA con `vite-plugin-pwa` para instalación en iOS/Android/desktop. Tauri (app nativa) sería el siguiente nivel. Track propio cuando sea prioritario.
+
+---
+
+### Item Onboarding-anim — Onboarding del sistema de animación
+
+**Categoría:** UX
+**Riesgo:** low
+
+El sistema de animación (v3.1.0+) no tiene flujo de descubrimiento. `OnboardingOverlayV2` cubre DRAW y CINEMA básico pero no la feature de animación. Evaluar: card de animación en el onboarding o tooltip contextual la primera vez que se activa el modo animación.
+
+**Path:** `src/components/strata/modals/OnboardingOverlayV2.tsx`
+
 
 ## 📦 Out of scope (anotado, sin agendar)
 
