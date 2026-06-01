@@ -12,6 +12,7 @@ import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY } from '../
 import { exportAsPNG, exportAsSVG, exportAsMP4 } from './canvas/exportHandlers';
 import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
+import { getAnimationFrames } from '../../utils/animationFrames';
 import { renderFrame, type RenderContext } from './canvas/renderPipeline';
 
 export const StrataCanvas = () => {
@@ -402,7 +403,19 @@ export const StrataCanvas = () => {
           exportAsSVG(state.exportRequest, state.shapes, state.projectName, onFinish, t);
       }
       if (state.exportRequest === 'mp4') {
-          exportAsMP4(canvas, state.projectName, recordedChunksRef, onFinish, t);
+          // In animation mode, record the live flipbook for the chosen loops.
+          // Otherwise keep the legacy fixed-length static-scene recording.
+          const animFrames = getAnimationFrames(state);
+          const animationOptions = (state.isAnimationMode && animFrames.length > 0)
+              ? {
+                  dispatch,
+                  framerate: state.animationFramerate,
+                  frameCount: animFrames.length,
+                  firstFrameIndex: animFrames[0],
+                  loops: state.animationExportLoops,
+              }
+              : undefined;
+          exportAsMP4(canvas, state.projectName, recordedChunksRef, onFinish, t, animationOptions);
       }
   }, [state.exportRequest, dispatch, state.shapes, state.projectName, t]);
 

@@ -158,4 +158,5 @@ export interface AppState {
   layerIndexBeforeAnimation: number | null; // Layer active before entering animation mode — restored on exit
   animationPlaybackMode: 'loop' | 'pingpong'; // Playback mode: loop forward or bounce back-and-forth
   animationDirection: 1 | -1;           // Runtime direction for ping-pong (not persisted in save)
+  animationExportLoops: number;          // Number of complete loops to record in video export (1 | 2 | 3)
 }

@@ -30,6 +30,7 @@ export const es: Dictionary = {
 	'topbar.record.start': 'Grabar MP4',
 	'topbar.record.stop': 'Detener grabación',
 	'topbar.record.badge': 'REC',
+	'topbar.record.loops': 'Loops a grabar',
 
 	'topbar.info.about': 'Acerca de Diorame',
 

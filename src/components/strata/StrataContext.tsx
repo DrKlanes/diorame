@@ -119,7 +119,8 @@ type Action =
   | { type: 'TOGGLE_ONION_SKIN' }
   | { type: 'TOGGLE_ANIMATION_FLAT_Z' }
   | { type: 'ADVANCE_ANIMATION_FRAME' }
-  | { type: 'TOGGLE_ANIMATION_PLAYBACK_MODE' };
+  | { type: 'TOGGLE_ANIMATION_PLAYBACK_MODE' }
+  | { type: 'SET_ANIMATION_EXPORT_LOOPS'; payload: number };
 
 // --- Initial State ---
 
@@ -228,6 +229,7 @@ const initialState: AppState = {
   isAnimationMode: false,
   isAnimationPlaying: false,
   animationFramerate: 6,
+  animationExportLoops: 1,
   isOnionSkinEnabled: false,
   isAnimationFlatZ: false,
   layerIndexBeforeAnimation: null,
@@ -1677,6 +1679,8 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, isAnimationPlaying: action.payload };
     case 'SET_ANIMATION_FRAMERATE':
       return { ...state, animationFramerate: action.payload };
+    case 'SET_ANIMATION_EXPORT_LOOPS':
+      return { ...state, animationExportLoops: action.payload };
     case 'TOGGLE_ONION_SKIN':
       return { ...state, isOnionSkinEnabled: !state.isOnionSkinEnabled };
     case 'TOGGLE_ANIMATION_FLAT_Z':

@@ -365,7 +365,49 @@ export const exportAsSVG = async (
 };
 
 /**
- * Records 6 seconds of canvas animation and downloads it as WebM or MP4.
+ * Static-scene recording duration when not exporting an animation.
+ */
+const STATIC_RECORD_MS = 6000;
+
+/**
+ * Pre-roll before recorder.start in animation mode. Lets React commit the
+ * reset-to-first-frame dispatch and the RAF repaint frame[0] before capture
+ * begins. This time is HARMLESS to per-frame timing because playback only
+ * starts AFTER recorder.start() — frame[0] is simply held static until then.
+ */
+const ANIMATION_SETTLE_MS = 80;
+
+/**
+ * Animation recording context. When provided, exportAsMP4 records the live
+ * flipbook for `loops` complete cycles instead of a fixed-length static clip.
+ * dispatch is kept loosely typed so this pure module stays decoupled from the
+ * reducer's Action union.
+ */
+export type AnimationRecordOptions = {
+	dispatch: (action: { type: string; payload?: unknown }) => void;
+	framerate: number;       // fps preset (4 | 6 | 8)
+	frameCount: number;      // number of real animation frames in the sequence
+	firstFrameIndex: number; // layer index of the first frame (for a clean loop start)
+	loops: number;           // complete loops to record (1 | 2 | 3)
+};
+
+/**
+ * Records the canvas and downloads it as WebM or MP4.
+ *
+ * Without `animation`: records a fixed STATIC_RECORD_MS clip of the live canvas
+ * (legacy behavior — cinematic scene, no flipbook).
+ *
+ * With `animation`: records exactly `loops` complete cycles of the flipbook.
+ * Timing sequence (see ANIMATION_SETTLE_MS for the pre-roll rationale):
+ *   1. Stop any current playback + jump to frame[0] (stable, clean loop start).
+ *   2. Wait ANIMATION_SETTLE_MS so frame[0] is committed + painted.
+ *   3. recorder.start() captures frame[0]; THEN start playback so frame[0]
+ *      gets its full period before the first ADVANCE.
+ *   4. Stop after durationMs = period × frameCount × loops — exactly when the
+ *      next wrap to frame[0] would occur, so loops are clean and we never
+ *      capture an extra frame.
+ *   5. recorder.onstop stops playback and downloads the blob.
+ *
  * onFinish is called inside recorder.onstop (async) and on error.
  */
 export const exportAsMP4 = (
@@ -374,6 +416,7 @@ export const exportAsMP4 = (
 	recordedChunksRef: { current: Blob[] },
 	onFinish: () => void,
 	t: TFunction,
+	animation?: AnimationRecordOptions,
 ): void => {
 	try {
 		const stream = canvas.captureStream(60);
@@ -391,6 +434,10 @@ export const exportAsMP4 = (
 			if (e.data.size > 0) recordedChunksRef.current.push(e.data);
 		};
 		recorder.onstop = () => {
+			// Stop the playback we started for the recording (animation mode only).
+			if (animation) {
+				animation.dispatch({ type: 'SET_ANIMATION_PLAYING', payload: false });
+			}
 			const blob = new Blob(recordedChunksRef.current, { type: mimeType });
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
@@ -409,10 +456,31 @@ export const exportAsMP4 = (
 			playSound('success');
 			onFinish();
 		};
-		recorder.start();
-		setTimeout(() => { recorder.stop(); }, 6000);
+
+		if (animation) {
+			const period = 1000 / animation.framerate;
+			const durationMs = period * animation.frameCount * animation.loops;
+			// 1. Stable start: stop any current playback, jump to frame[0].
+			animation.dispatch({ type: 'SET_ANIMATION_PLAYING', payload: false });
+			animation.dispatch({ type: 'SET_CURRENT_LAYER', payload: animation.firstFrameIndex });
+			// 2-4. Pre-roll, then record + start playback, then stop after `loops` cycles.
+			setTimeout(() => {
+				recorder.start();
+				// Start playback AFTER capture begins: the first ADVANCE fires one
+				// period later, so frame[0] is captured for its full period.
+				animation.dispatch({ type: 'SET_ANIMATION_PLAYING', payload: true });
+				setTimeout(() => { recorder.stop(); }, durationMs);
+			}, ANIMATION_SETTLE_MS);
+		} else {
+			recorder.start();
+			setTimeout(() => { recorder.stop(); }, STATIC_RECORD_MS);
+		}
 	} catch (e) {
 		console.error("Export MP4 failed", e);
+		// On error, ensure playback doesn't keep running.
+		if (animation) {
+			animation.dispatch({ type: 'SET_ANIMATION_PLAYING', payload: false });
+		}
 		toast.error(t('toast.export.animation.errorTitle'), {
 			description: t('common.pleaseRetry'),
 			duration: 3000,

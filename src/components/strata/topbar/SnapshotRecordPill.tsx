@@ -2,11 +2,18 @@ import React, { useState, useRef } from 'react';
 import { DiPill, DiVSep, Ico } from '../../../design-system';
 import { T, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
-import { DiActionButton } from '../../../design-system';
+import { DiActionButton, DiSegmentControl } from '../../../design-system';
 import { InfoButton } from './InfoButton';
 import { DiSelectorPopover, DiSelectorOption } from '../popovers';
 import { setNextPNGQuality } from '../canvas/exportHandlers';
 import { useTranslation } from '../../../i18n';
+
+// Loop count options for animation video export, shown as ×1 / ×2 / ×3.
+const LOOP_OPTIONS: { value: number; label: string }[] = [
+	{ value: 1, label: '×1' },
+	{ value: 2, label: '×2' },
+	{ value: 3, label: '×3' },
+];
 
 interface SnapshotRecordPillProps { dark: boolean; }
 
@@ -28,6 +35,21 @@ export function SnapshotRecordPill({ dark }: SnapshotRecordPillProps) {
 				<div ref={snapshotBtnRef}>
 					<DiActionButton name="snapshot" onClick={() => setSnapshotMenuOpen(v => !v)} dark={dark} tooltip={t('topbar.snapshot.png')} />
 				</div>
+				{/* Loops selector — only in animation mode: record records the flipbook for N loops */}
+				{state.isAnimationMode && (
+					<>
+						<DiVSep dark={dark} />
+						<div title={t('topbar.record.loops')}>
+							<DiSegmentControl<number>
+								options={LOOP_OPTIONS}
+								value={state.animationExportLoops}
+								onChange={(v) => dispatch({ type: 'SET_ANIMATION_EXPORT_LOOPS', payload: v })}
+								dark={dark}
+								small={true}
+							/>
+						</div>
+					</>
+				)}
 				<RecordBtn recording={recording} onClick={handleRecord} dark={dark} />
 			</DiPill>
 			<DiSelectorPopover
