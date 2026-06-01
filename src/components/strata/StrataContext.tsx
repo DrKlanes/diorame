@@ -119,6 +119,7 @@ type Action =
   | { type: 'TOGGLE_ONION_SKIN' }
   | { type: 'TOGGLE_ANIMATION_FLAT_Z' }
   | { type: 'ADVANCE_ANIMATION_FRAME' }
+  | { type: 'STEP_ANIMATION_FRAME'; payload: 1 | -1 }
   | { type: 'TOGGLE_ANIMATION_PLAYBACK_MODE' }
   | { type: 'SET_ANIMATION_EXPORT_LOOPS'; payload: number };
 
@@ -1709,6 +1710,33 @@ function appReducer(state: AppState, action: Action): AppState {
         nextPos = 1; // skip forward, don't replay first frame
       }
       return { ...state, currentLayerIndex: frames[nextPos], animationDirection: nextDir as 1 | -1 };
+    }
+    case 'STEP_ANIMATION_FRAME': {
+      // Navigate the real frame sequence with circular wrap, never creating layers.
+      // Used by the pill buttons (frame-back / frame-fwd).
+      // Keyboard shortcuts [/] keep PREV_LAYER/NEXT_LAYER (construct in DRAW).
+      const dir = action.payload;
+      const frames = getAnimationFrames(state);
+      if (frames.length === 0) return state;
+      const pos = frames.indexOf(state.currentLayerIndex);
+      // If current layer is empty/hidden (not in sequence): go to first or last frame
+      const nextPos = pos === -1
+        ? (dir > 0 ? 0 : frames.length - 1)
+        : (pos + dir + frames.length) % frames.length;
+      const nextIndex = frames[nextPos];
+      const newZ = nextIndex * -BASE_DEPTH_STEP;
+      const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
+      const nextBrush = state.layerBrushSettings[nextIndex] || { thickness: state.currentBrushThickness, mode: state.brushMode };
+      return {
+        ...state,
+        currentLayerIndex: nextIndex,
+        camera: { ...state.camera, z: newZ, rotation: 0 },
+        isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
+        isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
+        paletteMode: state.layerRenderModes[nextIndex] || 'flat',
+        currentBrushThickness: nextBrush.thickness,
+        brushMode: nextBrush.mode,
+      };
     }
     case 'TOGGLE_ANIMATION_PLAYBACK_MODE':
       return {

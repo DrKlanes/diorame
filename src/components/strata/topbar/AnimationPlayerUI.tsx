@@ -54,14 +54,13 @@ export function AnimationPlayerUI() {
 				<>
 					<DiVSep dark={dark} />
 
-					{/* Frame back — primary action, same as [ shortcut */}
+					{/* Frame back — wraps in animation sequence, no create (diverges from [ shortcut) */}
 					<DiActionButton
 						name="frame-back"
-						onClick={() => dispatch({ type: 'PREV_LAYER' })}
+						onClick={() => dispatch({ type: 'STEP_ANIMATION_FRAME', payload: -1 })}
 						dark={dark}
 						iconSize={16}
 						tooltip={t('topbar.anim.frameBack')}
-						shortcut="["
 					/>
 
 					{/* Play / Pause — primary action */}
@@ -75,14 +74,13 @@ export function AnimationPlayerUI() {
 						tooltip={state.isAnimationPlaying ? t('topbar.anim.pause') : t('topbar.anim.play')}
 					/>
 
-					{/* Frame forward — primary action, same as ] shortcut */}
+					{/* Frame forward — wraps in animation sequence, no create (diverges from ] shortcut) */}
 					<DiActionButton
 						name="frame-fwd"
-						onClick={() => dispatch({ type: 'NEXT_LAYER' })}
+						onClick={() => dispatch({ type: 'STEP_ANIMATION_FRAME', payload: 1 })}
 						dark={dark}
 						iconSize={16}
 						tooltip={t('topbar.anim.frameForward')}
-						shortcut="]"
 					/>
 
 					{/* Frame counter */}
