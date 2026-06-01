@@ -35,6 +35,7 @@ export const en: Dictionary = {
 	'topbar.record.stop': 'Stop recording',
 	'topbar.record.badge': 'REC',
 	'topbar.record.loops': 'Loops to record',
+	'topbar.record.pngSequence': 'Export PNG sequence (ZIP)',
 
 	// Info
 	'topbar.info.about': 'About Diorame',
@@ -362,6 +363,7 @@ export const en: Dictionary = {
 	'modal.export.snapshot': 'Capturing…',
 	'modal.export.animation': 'Rendering animation…',
 	'modal.export.vector': 'Exporting vector…',
+	'modal.export.pngSequence': 'Rendering frames…',
 
 	// Mobile block
 	'modal.mobile.alt': 'Diorame',
@@ -407,11 +409,14 @@ export const en: Dictionary = {
 	'toast.export.vector.successDescSvgz': 'SVGZ file downloaded successfully',
 	'toast.export.animation.successTitle': 'Animation saved!',
 	'toast.export.animation.successDesc': 'Video loop downloaded successfully',
+	'toast.export.pngSequence.successTitle': 'Frames exported!',
+	'toast.export.pngSequence.successDesc': 'ZIP with PNG frames downloaded',
 
 	// Export — error
 	'toast.export.snapshot.errorTitle': 'Failed to save snapshot',
 	'toast.export.vector.errorTitle': 'Failed to export vector',
 	'toast.export.animation.errorTitle': 'Failed to save animation',
+	'toast.export.pngSequence.errorTitle': 'Failed to export frames',
 
 	// Save/Load
 	'toast.save.successTitle': 'Project saved',

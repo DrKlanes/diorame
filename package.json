@@ -1,6 +1,6 @@
 {
   "name": "Diorame",
-  "version": "3.5.2",
+  "version": "3.6.0",
   "private": true,
   "type": "module",
   "dependencies": {
@@ -37,6 +37,7 @@
     "clsx": "*",
     "cmdk": "^1.1.1",
     "embla-carousel-react": "^8.6.0",
+    "fflate": "^0.8.3",
     "framer-motion": "^12.38.0",
     "idb-keyval": "^6.2.4",
     "input-otp": "^1.4.2",

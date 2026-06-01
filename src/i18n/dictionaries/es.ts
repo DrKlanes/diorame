@@ -31,6 +31,7 @@ export const es: Dictionary = {
 	'topbar.record.stop': 'Detener grabación',
 	'topbar.record.badge': 'REC',
 	'topbar.record.loops': 'Loops a grabar',
+	'topbar.record.pngSequence': 'Exportar secuencia PNG (ZIP)',
 
 	'topbar.info.about': 'Acerca de Diorame',
 
@@ -333,6 +334,7 @@ export const es: Dictionary = {
 	'modal.export.snapshot': 'Capturando…',
 	'modal.export.animation': 'Renderizando animación…',
 	'modal.export.vector': 'Exportando vector…',
+	'modal.export.pngSequence': 'Renderizando frames…',
 
 	'modal.mobile.alt': 'Diorame',
 	'modal.mobile.primary': 'Diorame está diseñado para tablet y escritorio.',
@@ -372,10 +374,13 @@ export const es: Dictionary = {
 	'toast.export.vector.successDescSvgz': 'Archivo SVGZ descargado correctamente',
 	'toast.export.animation.successTitle': '¡Animación guardada!',
 	'toast.export.animation.successDesc': 'Vídeo descargado correctamente',
+	'toast.export.pngSequence.successTitle': '¡Frames exportados!',
+	'toast.export.pngSequence.successDesc': 'ZIP con frames PNG descargado',
 
 	'toast.export.snapshot.errorTitle': 'Error al guardar la captura',
 	'toast.export.vector.errorTitle': 'Error al exportar el vector',
 	'toast.export.animation.errorTitle': 'Error al guardar la animación',
+	'toast.export.pngSequence.errorTitle': 'Error al exportar los frames',
 
 	'toast.save.successTitle': 'Proyecto guardado',
 	'toast.save.successDesc': '{filename}.dior',

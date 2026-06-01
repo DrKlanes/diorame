@@ -10,10 +10,11 @@ import type { ExportType } from '../../../types/strataTypes';
 // labelKey resolves to translated string via t() at render time.
 // Fallbacks: 'video' → 'record', 'code' → 'export' (not yet in ICONS — pre-Fase 8 task)
 const EXPORT_CONFIG: Record<ExportType, { icon: string; labelKey: string }> = {
-	png:  { icon: 'camera', labelKey: 'modal.export.snapshot'  },
-	mp4:  { icon: 'record', labelKey: 'modal.export.animation' },
-	svg:  { icon: 'export', labelKey: 'modal.export.vector'    },
-	svgz: { icon: 'export', labelKey: 'modal.export.vector'    },
+	png:          { icon: 'camera',  labelKey: 'modal.export.snapshot'     },
+	mp4:          { icon: 'record',  labelKey: 'modal.export.animation'    },
+	svg:          { icon: 'export',  labelKey: 'modal.export.vector'       },
+	svgz:         { icon: 'export',  labelKey: 'modal.export.vector'       },
+	'png-sequence': { icon: 'film',  labelKey: 'modal.export.pngSequence'  },
 };
 
 // ── ExportProgressV2 ──────────────────────────────────────────────────────────

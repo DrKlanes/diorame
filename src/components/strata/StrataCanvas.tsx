@@ -10,6 +10,8 @@ import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOve
 import { generateRisoGrain } from './canvas/postProcessing';
 import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY } from '../../constants/renderConstants';
 import { exportAsPNG, exportAsSVG, exportAsMP4 } from './canvas/exportHandlers';
+import { renderAnimationFrames } from './canvas/animationExportRender';
+import { exportAsPNGSequence } from './canvas/pngSequenceHandler';
 import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
 import { getAnimationFrames } from '../../utils/animationFrames';
@@ -416,6 +418,27 @@ export const StrataCanvas = () => {
               }
               : undefined;
           exportAsMP4(canvas, state.projectName, recordedChunksRef, onFinish, t, animationOptions);
+      }
+      if (state.exportRequest === 'png-sequence') {
+          // Snapshot all inputs so the frame-by-frame renderer is decoupled from the RAF.
+          const exportOptions = {
+              state: stateRef.current,
+              shapesByZ: shapesByZRef.current,
+              sortedZs: sortedZsRef.current,
+              camera: { ...cameraRef.current },
+              w: containerRef.current?.clientWidth ?? canvas.width,
+              h: containerRef.current?.clientHeight ?? canvas.height,
+              paperImg: paperImgRef.current,
+              risoGrain: risoGrainRef.current,
+              grungeImg: grungeImgRef.current,
+              particles: particlesRef.current,
+              noiseCanvas: noiseCanvasRef.current,
+              shapePattern: shapePatternRef.current,
+              getActiveZ,
+          };
+          renderAnimationFrames(exportOptions).then(frames =>
+              exportAsPNGSequence(frames, state.projectName, onFinish, t)
+          );
       }
   }, [state.exportRequest, dispatch, state.shapes, state.projectName, t]);
 

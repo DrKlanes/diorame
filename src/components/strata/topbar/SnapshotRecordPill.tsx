@@ -24,8 +24,9 @@ export function SnapshotRecordPill({ dark }: SnapshotRecordPillProps) {
 	const [snapshotMenuOpen, setSnapshotMenuOpen] = useState(false);
 	const snapshotBtnRef = useRef<HTMLDivElement>(null);
 
-	const handleSnapshot = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
-	const handleRecord   = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'mp4' });
+	const handleSnapshot    = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
+	const handleRecord      = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'mp4' });
+	const handlePNGSequence = () => dispatch({ type: 'REQUEST_EXPORT', payload: 'png-sequence' });
 
 	return (
 		<>
@@ -35,7 +36,7 @@ export function SnapshotRecordPill({ dark }: SnapshotRecordPillProps) {
 				<div ref={snapshotBtnRef}>
 					<DiActionButton name="snapshot" onClick={() => setSnapshotMenuOpen(v => !v)} dark={dark} tooltip={t('topbar.snapshot.png')} />
 				</div>
-				{/* Loops selector — only in animation mode: record records the flipbook for N loops */}
+				{/* Animation-mode controls: loops selector + PNG sequence export */}
 				{state.isAnimationMode && (
 					<>
 						<DiVSep dark={dark} />
@@ -48,6 +49,14 @@ export function SnapshotRecordPill({ dark }: SnapshotRecordPillProps) {
 								small={true}
 							/>
 						</div>
+						<DiActionButton
+							name="film"
+							onClick={handlePNGSequence}
+							dark={dark}
+							iconSize={16}
+							tooltip={t('topbar.record.pngSequence')}
+							disabled={state.isExporting}
+						/>
 					</>
 				)}
 				<RecordBtn recording={recording} onClick={handleRecord} dark={dark} />
