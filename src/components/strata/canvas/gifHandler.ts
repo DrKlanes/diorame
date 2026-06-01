@@ -10,6 +10,7 @@ export type GIFExportOptions = {
 	framerate: number;   // 4 | 6 | 8 fps — determines per-frame delay
 	scale: number;       // 1 | 0.5 | 0.25 — output resolution multiplier
 	projectName: string;
+	playbackMode?: 'loop' | 'pingpong';
 };
 
 /**
@@ -50,7 +51,7 @@ function scaleImageData(imageData: ImageData, scale: number): ImageData {
  *   - Per-frame palette (quantize + applyPalette per frame). With the Riso palette
  *     (≤24 colours), quantization is trivial and per-frame palettes guarantee
  *     accurate colour per frame even if frames differ in colour content.
- *   - GIF delay is in centiseconds (1/100 s). delay = Math.round(100 / framerate).
+ *   - GIF delay: gifenc expects milliseconds and divides by 10 to write centiseconds (1/100 s) to the GIF stream. delay = Math.round(1000 / framerate).
  *   - Scale applied before palette quantization to keep GIF small.
  *   - No transparency — the canvas uses alpha:false (opaque background).
  *
@@ -73,8 +74,8 @@ export async function exportAsGIF(
 
 		const { framerate, scale, projectName } = options;
 
-		// GIF delay is in centiseconds (1/100 s).
-		const delayCentiseconds = Math.round(100 / framerate);
+		// gifenc expects delay in milliseconds; it divides by 10 internally to write centiseconds (1/100 s) to the GIF stream.
+		const delayMs = Math.round(1000 / framerate);
 
 		const displayName = projectName === UNTITLED_PROJECT_SENTINEL
 			? t('topbar.file.untitledProject')
@@ -83,8 +84,15 @@ export async function exportAsGIF(
 
 		const gif = GIFEncoder();
 
-		for (let i = 0; i < frames.length; i++) {
-			const scaled = scaleImageData(frames[i], scale);
+		// In ping-pong mode, build the mirror sequence so the native GIF loop produces the bounce.
+		// [1,2,3] → [1,2,3,2]: the inner frames (slice(1,-1)) are reversed and appended.
+		// With only 1-2 frames, ping-pong and loop are equivalent — use frames as-is.
+		const encodeFrames = (options.playbackMode === 'pingpong' && frames.length > 2)
+			? [...frames, ...frames.slice(1, -1).reverse()]
+			: frames;
+
+		for (let i = 0; i < encodeFrames.length; i++) {
+			const scaled = scaleImageData(encodeFrames[i], scale);
 			const { data, width, height } = scaled;
 
 			// quantize expects a Uint8ClampedArray of RGBA pixels.
@@ -94,7 +102,7 @@ export async function exportAsGIF(
 
 			gif.writeFrame(index, width, height, {
 				palette,
-				delay: delayCentiseconds,
+				delay: delayMs,
 				// repeat: 0 = infinite loop (GIF native). Only set on first frame
 				// (gifenc reads it to write the Netscape loop extension).
 				repeat: 0,

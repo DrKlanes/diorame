@@ -463,6 +463,7 @@ export const StrataCanvas = () => {
                   framerate: state.animationFramerate,
                   scale: state.gifExportScale,
                   projectName: state.projectName,
+                  playbackMode: state.animationPlaybackMode,
               }, onFinish, t)
           );
       }
