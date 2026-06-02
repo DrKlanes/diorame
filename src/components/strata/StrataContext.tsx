@@ -270,7 +270,8 @@ function createSnapshot(state: AppState): HistorySnapshot {
         locked3DLayers: state.locked3DLayers,
         layerRenderModes: state.layerRenderModes,
         layerGradParams: state.layerGradParams,
-        layerBrushSettings: state.layerBrushSettings
+        layerBrushSettings: state.layerBrushSettings,
+        activePaletteId: state.activePaletteId
     };
 }
 
@@ -414,16 +415,18 @@ function appReducer(state: AppState, action: Action): AppState {
       if (state.historyIndex <= 0) return state;
       const newIndex = state.historyIndex - 1;
       const snapshot = state.history[newIndex];
-      
+
       // Preserve current layer UNLESS totalLayers changed (layer creation/deletion)
       // If totalLayers changed, clamp currentLayerIndex to valid range
       const layerIndexToUse = snapshot.totalLayers !== state.totalLayers
         ? Math.min(state.currentLayerIndex, snapshot.totalLayers - 1)
         : state.currentLayerIndex;
-      
+
       const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
       const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
-      
+      const restoredBrush = snapshot.layerBrushSettings[layerIndexToUse]
+        || { thickness: state.currentBrushThickness, mode: state.brushMode };
+
       // Restore snapshot WITHOUT changing active layer (unless layer count changed)
       return {
         ...state,
@@ -437,6 +440,10 @@ function appReducer(state: AppState, action: Action): AppState {
         paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
         layerGradParams: snapshot.layerGradParams,
         layerBrushSettings: snapshot.layerBrushSettings,
+        activePaletteId: snapshot.activePaletteId,
+        palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
+        currentBrushThickness: restoredBrush.thickness,
+        brushMode: restoredBrush.mode,
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -446,16 +453,18 @@ function appReducer(state: AppState, action: Action): AppState {
       if (state.historyIndex >= state.history.length - 1) return state;
       const newIndex = state.historyIndex + 1;
       const snapshot = state.history[newIndex];
-      
+
       // Preserve current layer UNLESS totalLayers changed (layer creation/deletion)
       // If totalLayers changed, clamp currentLayerIndex to valid range
       const layerIndexToUse = snapshot.totalLayers !== state.totalLayers
         ? Math.min(state.currentLayerIndex, snapshot.totalLayers - 1)
         : state.currentLayerIndex;
-      
+
       const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
       const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
-      
+      const restoredBrush = snapshot.layerBrushSettings[layerIndexToUse]
+        || { thickness: state.currentBrushThickness, mode: state.brushMode };
+
       // Restore snapshot WITHOUT changing active layer (unless layer count changed)
       return {
         ...state,
@@ -469,6 +478,10 @@ function appReducer(state: AppState, action: Action): AppState {
         paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
         layerGradParams: snapshot.layerGradParams,
         layerBrushSettings: snapshot.layerBrushSettings,
+        activePaletteId: snapshot.activePaletteId,
+        palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
+        currentBrushThickness: restoredBrush.thickness,
+        brushMode: restoredBrush.mode,
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -926,7 +939,8 @@ function appReducer(state: AppState, action: Action): AppState {
           locked3DLayers: safeLocked3DLayers,
           layerRenderModes: loadedLayerRenderModes,
           layerGradParams: loadedLayerGradParams,
-          layerBrushSettings: loadedLayerBrushSettings
+          layerBrushSettings: loadedLayerBrushSettings,
+          activePaletteId: loadedPaletteId
       };
 
       return {

@@ -89,6 +89,7 @@ export type HistorySnapshot = {
     layerRenderModes: Record<number, 'flat' | 'grad'>;
     layerGradParams: Record<number, { angle: number; intensity: number; gradType?: 'solid' | 'fade' }>;
     layerBrushSettings: Record<number, { thickness: number; mode: BrushMode }>;
+    activePaletteId: 'primary' | 'alternative';
 };
 
 export interface AppState {

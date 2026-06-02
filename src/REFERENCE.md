@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.7.2
+**Version**: 3.7.3
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -653,7 +653,7 @@ CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
 DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
-APP_VERSION = "3.7.2"           // Current release version
+APP_VERSION = "3.7.3"           // Current release version
 ```
 
 ### Post-Processing Effects
@@ -694,7 +694,16 @@ APP_VERSION = "3.7.2"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.7.2)
+## Appendix C: Changelog Highlights (1.7.3 → 3.7.3)
+
+### 3.7.3 — Sincronización de ajustes de dibujo tras undo
+
+**fix — Desincronización de ajustes de dibujo tras undo (patrón)**: el visual volvía atrás con undo pero el "ajuste activo" del próximo trazo quedaba pegado. Dos síntomas del mismo patrón:
+- **Paleta**: `activePaletteId` no se capturaba en el snapshot → tras undo las shapes recuperaban su color (hex embebido) pero la paleta activa y el próximo trazo quedaban en la paleta nueva. Fix: `activePaletteId` añadido a `HistorySnapshot` + `createSnapshot` + `initialSnapshot` (LOAD_PROJECT); `UNDO`/`REDO` restauran `activePaletteId` y derivan `palette`.
+- **Brush**: `currentBrushThickness`/`brushMode` no se re-derivaban en `UNDO`/`REDO` desde `layerBrushSettings` (que sí estaba en el snapshot) → próximo trazo con grosor/estilo viejo. Fix: derivar ambos del snapshot en `UNDO`/`REDO` (patrón idéntico a `paletteMode`).
+- **Files**: `strataTypes.ts`, `StrataContext.tsx`.
+
+---
 
 ### 3.7.2 — Undo de modo de color + DoF flat CINEMA
 
