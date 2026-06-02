@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.7.1
+**Version**: 3.7.2
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -653,7 +653,7 @@ CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
 DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
-APP_VERSION = "3.7.1"           // Current release version
+APP_VERSION = "3.7.2"           // Current release version
 ```
 
 ### Post-Processing Effects
@@ -694,7 +694,17 @@ APP_VERSION = "3.7.1"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.7.1)
+## Appendix C: Changelog Highlights (1.7.3 → 3.7.2)
+
+### 3.7.2 — Undo de modo de color + DoF flat CINEMA
+
+**fix — Undo de modo de color**: `SET_PALETTE_MODE` no pusheaba history → los cambios de modo (plano/degradado/fade, incluyendo "aplicar a todas") no se podían deshacer. Fix: `pushHistory` en ambas ramas del caso; `UNDO`/`REDO` derivan `paletteMode` de `snapshot.layerRenderModes[layerIndex]` al restaurar. El snapshot ya capturaba `layerRenderModes` — no hubo que ampliarlo.
+- **Files**: `StrataContext.tsx`.
+
+**fix — DoF enfocado en flat CINEMA**: con `isAnimationFlatZ` activo, todas las capas comparten el mismo `dz` extremo (`currentCamera.z − effectiveCameraZ`), muy lejano del `fxFocusDist` del slider → `dofBlur` máximo en todas las capas → escena completamente desenfocada. Fix: cuando `isCinematic && isAnimationMode && isAnimationFlatZ`, se fuerza `fxFocusDist = currentCamera.z − effectiveCameraZ` (= `dz` de las capas planas) → `Math.abs(layerAvgZ − fxFocusDist) = 0` → `dofBlur = 0` → todo enfocado. CINEMA con profundidad real (`isAnimationFlatZ` off) no se ve afectado.
+- **Files**: `canvas/renderPipeline.ts`.
+
+---
 
 ### 3.7.1 — GIF fixes + playback safety + export UI redesign
 

@@ -284,6 +284,14 @@ export function renderFrame(
 		}
 	}
 
+	// Flat CINEMA animation (isAnimationFlatZ): every layer shares the same dz =
+	// currentCamera.z - effectiveCameraZ (shapeZ=0, camZ=effectiveCameraZ-currentCamera.z).
+	// There is no depth separation to blur around, so DoF must be neutral (dofBlur = 0).
+	// Setting fxFocusDist = dz_flat ensures Math.abs(layerAvgZ - fxFocusDist) = 0 for all layers.
+	if (isCinematic && currentState.isAnimationMode && currentState.isAnimationFlatZ) {
+		fxFocusDist = currentCamera.z - effectiveCameraZ;
+	}
+
 	// --- Resize Handling ---
 	const w = rc.w || canvas.width;
 	const h = rc.h || canvas.height;
