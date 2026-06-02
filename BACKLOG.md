@@ -1,6 +1,6 @@
 # Diorame — Backlog técnico
 
-**Actualizado:** 2026-06-01 — Post sprint animación (v3.7.1)
+**Actualizado:** 2026-06-02 — Post v3.7.4
 
 ---
 
@@ -157,12 +157,24 @@ Diorame no tiene manifest ni service worker. Primer paso: PWA con `vite-plugin-p
 
 ---
 
-### Item Onboarding-anim — Onboarding del sistema de animación
+### Item Squash & Stretch — Gizmos de deformación no proporcional (Move tool)
 
-**Categoría:** UX
-**Riesgo:** low
+**Categoría:** feature estructural
+**Riesgo:** high — toca render, proyección 3D, SVG export y save/load
+**Origen:** expresividad UX + motivación animación
+**⚠️ Nota:** PROYECTO PROPIO. No mezclar con otros sprints. Requiere sesión dedicada, probablemente Opus.
 
-El sistema de animación (v3.1.0+) no tiene flujo de descubrimiento. `OnboardingOverlayV2` cubre DRAW y CINEMA básico pero no la feature de animación. Evaluar: card de animación en el onboarding o tooltip contextual la primera vez que se activa el modo animación.
+Gizmos situados en los puntos medios de cada lado del rectángulo de selección del Move tool que permiten reescalar de forma **no uniforme** (estirar/comprimir en X o en Y), deformando la forma. Motivación principal: expresividad artística y squash & stretch clásico de animación.
+
+Esta feature **NO es de animación** aunque la motive. Técnicamente modifica cómo se calculan render (trazos deformados no-uniformes), proyección 3D, SVG export (las formas deformadas cambian el cálculo de máscaras y paths) y save/load (el modelo Shape necesita capturar la deformación). Es una intervención estructural, no cosmética. No agendar hasta tener un sprint dedicado con análisis previo completo.
+
+**Path:** `src/components/strata/canvas/drawGizmo.ts`, `renderLayerBody.ts`, `exportHandlers.ts`, `strataTypes.ts`
+
+---
+
+### ~~Item Onboarding-anim — Onboarding del sistema de animación~~ ✅ CERRADO
+
+Resuelto en v3.7.4 (commit `fb88c33`): nueva sección "Animate/Animar" añadida al onboarding didáctico. Card centrada con icono `bounce` y badge NEW/NUEVO en púrpura de marca. i18n EN/ES.
 
 **Path:** `src/components/strata/modals/OnboardingOverlayV2.tsx`
 
