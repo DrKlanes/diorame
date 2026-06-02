@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.7.3
+**Version**: 3.7.4
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -653,7 +653,7 @@ CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
 DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
-APP_VERSION = "3.7.3"           // Current release version
+APP_VERSION = "3.7.4"           // Current release version
 ```
 
 ### Post-Processing Effects
@@ -694,7 +694,14 @@ APP_VERSION = "3.7.3"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.7.3)
+## Appendix C: Changelog Highlights (1.7.3 → 3.7.4)
+
+### 3.7.4 — Onboarding: sección Animation
+
+**feat — Onboarding didáctico: nueva sección "Animate/Animar"** (tras Draw y Cinema) que presenta la función de animación a quien entra por primera vez. Una card centrada (icono `bounce`) con badge "NEW/NUEVO" en púrpura de marca. Card del mismo ancho que las del grid 3-col para cierre visual coherente. i18n EN/ES.
+- **Files**: `OnboardingOverlayV2.tsx`, `en.ts`, `es.ts`.
+
+---
 
 ### 3.7.3 — Sincronización de ajustes de dibujo tras undo
 

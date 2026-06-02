@@ -370,6 +370,12 @@ export const es: Dictionary = {
 	'modal.onboarding.card.depth.title': 'Profundidad',
 	'modal.onboarding.card.depth.desc': 'Espaciado de capas y paralaje',
 
+	// Onboarding cards — ANIMATE
+	'modal.onboarding.section.animate': 'ANIMAR',
+	'modal.onboarding.card.animation.title': 'Animación',
+	'modal.onboarding.card.animation.desc': 'Convierte tus capas en fotogramas y dales vida',
+	'modal.onboarding.card.animation.badge': 'NUEVO',
+
 	'modal.onboarding.cta.example': 'Cargar escena de ejemplo',
 	'modal.onboarding.cta.exampleLoading': 'Cargando…',
 	'modal.onboarding.cta.start': 'Empezar a dibujar',

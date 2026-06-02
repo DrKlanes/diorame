@@ -403,6 +403,12 @@ export const en: Dictionary = {
 	'modal.onboarding.card.depth.title': 'Depth',
 	'modal.onboarding.card.depth.desc': 'Layer spacing and parallax',
 
+	// Onboarding cards — ANIMATE
+	'modal.onboarding.section.animate': 'Animate',
+	'modal.onboarding.card.animation.title': 'Animation',
+	'modal.onboarding.card.animation.desc': 'Turn your layers into frames and bring them to life',
+	'modal.onboarding.card.animation.badge': 'NEW',
+
 	// Onboarding CTAs
 	'modal.onboarding.cta.example': 'Load example scene',
 	'modal.onboarding.cta.exampleLoading': 'Loading…',

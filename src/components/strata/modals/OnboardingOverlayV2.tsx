@@ -32,6 +32,10 @@ const VIEW_CARDS: CardData[] = [
 	{ icon: 'depth-far', titleKey: 'modal.onboarding.card.depth.title',   descKey: 'modal.onboarding.card.depth.desc'   },
 ];
 
+const ANIMATE_CARDS: CardData[] = [
+	{ icon: 'bounce', titleKey: 'modal.onboarding.card.animation.title', descKey: 'modal.onboarding.card.animation.desc' },
+];
+
 // ── Animation variants ────────────────────────────────────────────────────────
 
 const overlayVariants = {
@@ -74,28 +78,60 @@ function OnboardingCard({ icon, titleKey, descKey, dark }: CardData & { dark: bo
 	);
 }
 
-function CardSection({ labelKey, cards, dark }: { labelKey: string; cards: CardData[]; dark: boolean }) {
+function CardSection({ labelKey, cards, dark, badgeKey, centered }: {
+	labelKey: string;
+	cards: CardData[];
+	dark: boolean;
+	badgeKey?: string;
+	centered?: boolean;
+}) {
 	const { t } = useTranslation();
 	return (
 		<div>
-			<div style={{
-				fontFamily:    TYPE.panelHeader.family,
-				fontWeight:    TYPE.panelHeader.weight,
-				fontSize:      TYPE.panelHeader.size,
-				letterSpacing: TYPE.panelHeader.letterSpacing,
-				textTransform: TYPE.panelHeader.textTransform,
-				color:         dk(dark, T.muted, T.textDarkMuted) as string,
-				marginBottom:  12,
-			}}>
-				{t(labelKey)}
+			<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+				<span style={{
+					fontFamily:    TYPE.panelHeader.family,
+					fontWeight:    TYPE.panelHeader.weight,
+					fontSize:      TYPE.panelHeader.size,
+					letterSpacing: TYPE.panelHeader.letterSpacing,
+					textTransform: TYPE.panelHeader.textTransform,
+					color:         dk(dark, T.muted, T.textDarkMuted) as string,
+				}}>
+					{t(labelKey)}
+				</span>
+				{badgeKey && (
+					<span style={{
+						background:    T.purple20,
+						color:         T.purple,
+						borderRadius:  4,
+						padding:       '2px 6px',
+						fontFamily:    TYPE.badge.family,
+						fontWeight:    TYPE.badge.weight,
+						fontSize:      TYPE.badge.size,
+						letterSpacing: '0.08em',
+						textTransform: 'uppercase' as const,
+					}}>
+						{t(badgeKey)}
+					</span>
+				)}
 			</div>
-			<div style={{
+			<div style={centered ? {
+				display:        'flex',
+				justifyContent: 'center',
+				gap:            12,
+			} : {
 				display:             'grid',
 				gridTemplateColumns: '1fr 1fr 1fr',
 				gap:                 12,
 			}}>
 				{cards.map(card => (
-					<OnboardingCard key={card.titleKey} {...card} dark={dark} />
+					centered
+						? (
+							<div key={card.titleKey} style={{ width: 'calc((100% - 24px) / 3)' }}>
+								<OnboardingCard {...card} dark={dark} />
+							</div>
+						)
+						: <OnboardingCard key={card.titleKey} {...card} dark={dark} />
 				))}
 			</div>
 		</div>
@@ -166,10 +202,17 @@ export function OnboardingOverlayV2({ open, onClose, onLoadExample, dark }: Onbo
 							</p>
 						</div>
 
-						{/* DRAW + VIEW card sections */}
+						{/* DRAW + VIEW + ANIMATE card sections */}
 						<div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
 							<CardSection labelKey="modal.onboarding.section.draw" cards={DRAW_CARDS} dark={dark} />
 							<CardSection labelKey="modal.onboarding.section.view" cards={VIEW_CARDS} dark={dark} />
+							<CardSection
+								labelKey="modal.onboarding.section.animate"
+								cards={ANIMATE_CARDS}
+								dark={dark}
+								badgeKey="modal.onboarding.card.animation.badge"
+								centered
+							/>
 						</div>
 
 						{/* CTAs — DiModalContext.Provider supplies dark mode to Action sub-components */}
