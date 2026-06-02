@@ -331,13 +331,14 @@ function appReducer(state: AppState, action: Action): AppState {
       if (state.paletteApplyToAllActive) {
           const allModes: Record<number, 'flat' | 'grad'> = {};
           for (let i = 0; i < state.totalLayers; i++) allModes[i] = action.payload;
-          return { ...state, paletteMode: action.payload, layerRenderModes: allModes };
+          const nextState = { ...state, paletteMode: action.payload, layerRenderModes: allModes };
+          const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(nextState));
+          return { ...nextState, history, historyIndex: index };
       }
-      return {
-          ...state,
-          paletteMode: action.payload,
-          layerRenderModes: { ...state.layerRenderModes, [state.currentLayerIndex]: action.payload }
-      };
+      const nextLayerRenderModes = { ...state.layerRenderModes, [state.currentLayerIndex]: action.payload };
+      const nextState = { ...state, paletteMode: action.payload, layerRenderModes: nextLayerRenderModes };
+      const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(nextState));
+      return { ...nextState, history, historyIndex: index };
     }
     case 'SET_PALETTE_GRADIENT_ANGLE': {
       const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
@@ -433,6 +434,7 @@ function appReducer(state: AppState, action: Action): AppState {
         hiddenLayers: state.hiddenLayers, // Preserve current visibility (view-only, not undoable)
         locked3DLayers: snapshot.locked3DLayers,
         layerRenderModes: snapshot.layerRenderModes,
+        paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
         layerGradParams: snapshot.layerGradParams,
         layerBrushSettings: snapshot.layerBrushSettings,
         historyIndex: newIndex,
@@ -464,6 +466,7 @@ function appReducer(state: AppState, action: Action): AppState {
         hiddenLayers: state.hiddenLayers, // Preserve current visibility (view-only, not undoable)
         locked3DLayers: snapshot.locked3DLayers,
         layerRenderModes: snapshot.layerRenderModes,
+        paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
         layerGradParams: snapshot.layerGradParams,
         layerBrushSettings: snapshot.layerBrushSettings,
         historyIndex: newIndex,
