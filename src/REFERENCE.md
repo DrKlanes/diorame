@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.7.4
+**Version**: 3.8.0
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -653,7 +653,7 @@ CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
 DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
-APP_VERSION = "3.7.4"           // Current release version
+APP_VERSION = "3.8.0"           // Current release version
 ```
 
 ### Post-Processing Effects
@@ -694,7 +694,17 @@ APP_VERSION = "3.7.4"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.7.4)
+## Appendix C: Changelog Highlights (1.7.3 → 3.8.0)
+
+### 3.8.0 — Capas ancladas como fondo/overlay persistente en animación
+
+**feat — Capas ancladas (pin / `isLocked3D`) como fondo/overlay persistente en animación**: una capa con pin deja de contar como frame del flipbook (excluida de `getAnimationFrames`) y se pinta FIJA en todos los fotogramas, respetando su orden de pila: debajo de los frames = fondo persistente, encima = overlay persistente. Ideal para fondos fijos con sujeto animado. Funciona en DRAW y CINEMA (en CINEMA la capa anclada queda clavada en pantalla vía el comportamiento `isLocked3D` existente, mientras los frames responden a la cámara). El export (vídeo/GIF/PNG seq) hereda el comportamiento automáticamente. Implementación: filtro sobre `renderZs` (frame activo + zs de capas ancladas) en lugar de un único z. Preserva el orden back-to-front de `sortedZs`.
+- **Files**: `animationFrames.ts`, `renderPipeline.ts`.
+
+**fix — Live stroke en animación**: al introducir lo anterior, el trazo en vivo dejaba de verse en capas-frame vacías (el filtro leía `currentSortedZs` en vez de `renderZs`, ignorando la inyección de `activeZ` del injection block). Corregido filtrando sobre `renderZs`.
+- **Files**: `renderPipeline.ts`.
+
+---
 
 ### 3.7.4 — Onboarding: sección Animation
 

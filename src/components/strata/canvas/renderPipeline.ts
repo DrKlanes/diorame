@@ -368,12 +368,16 @@ export function renderFrame(
 		renderZs = rc.renderZsOverride;
 	}
 
-	// In animation mode: show only the current frame layer (DRAW and CINEMA).
-	// Does not affect hiddenLayers (user-managed visibility state).
-	// In CINEMA + anim + zero-Z OFF: single frame at real depth (parallax lives).
-	// In CINEMA + anim + zero-Z ON: single frame, flattened (renderLayerBody handles Z=0).
+	// In animation mode: show the current frame layer + any pinned layers (locked3D)
+	// as persistent background/overlay. Pinned layers are excluded from getAnimationFrames
+	// (not frames of the flipbook) but always rendered in every frame, at their natural
+	// stack position. Does not affect hiddenLayers (user-managed visibility state).
+	// In CINEMA + anim + zero-Z OFF: real depth for frame, pinned layers fixed (isLocked3D).
+	// In CINEMA + anim + zero-Z ON: single frame + pinned layers, all flattened.
 	if (currentState.isAnimationMode) {
-		renderZs = [currentState.currentLayerIndex * -BASE_DEPTH_STEP];
+		const frameZ = currentState.currentLayerIndex * -BASE_DEPTH_STEP;
+		const pinnedSet = new Set(currentState.locked3DLayers.map(i => i * -BASE_DEPTH_STEP));
+		renderZs = renderZs.filter(z => z === frameZ || pinnedSet.has(z));
 	}
 
 	const camRot = currentCamera.rotation || 0;

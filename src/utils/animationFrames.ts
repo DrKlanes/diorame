@@ -26,7 +26,7 @@ export function isLayerEmpty(state: AppState, layerIndex: number): boolean {
 export function getAnimationFrames(state: AppState): number[] {
 	const frames: number[] = [];
 	for (let i = 0; i < state.totalLayers; i++) {
-		if (!isLayerEmpty(state, i) && !state.hiddenLayers.includes(i)) {
+		if (!isLayerEmpty(state, i) && !state.hiddenLayers.includes(i) && !state.locked3DLayers.includes(i)) {
 			frames.push(i);
 		}
 	}
