@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.9.3
+**Version**: 3.9.4
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,19 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.9.3)
+## Appendix C: Changelog Highlights (1.7.3 → 3.9.4)
+
+### 3.9.4 — Captura HQ: fidelidad de FX a escala (Fase B)
+
+**feat — FX a escala en HQ (cierra el HQ real)**: complemento de la Fase A (v3.9.3). Los efectos cuyos radios están en **píxeles fijos** (y por tanto no escalan solos con `renderScale`) ahora se multiplican por S para paridad visual total en HQ:
+- **Glow**: la base del blur (`35`/`20` px) se multiplica por S (`applyGlow` recibe `scale`).
+- **DoF**: `dofBlur` se escala **una sola vez** en `composeLayer` (`·opts.scale`); ese valor alimenta tanto a `applyGlow` (sumado a su radio) como a `applyDoFBlur` — nunca doble.
+- **Pixel-art**: el grid de snapping `pSize` se multiplica por S en los sitios que operan sobre coordenadas **físicas** (proyectadas ×S) de `renderLayerBody`, conservando el tamaño relativo de los bloques. La quantización de cámara (`quantizePixelArtCamera`) y de `viewPan` permanecen en espacio **lógico** a propósito: el ancla alineada al grid lógico mapea al grid físico vía la proyección ×S.
+
+Sin cambios (ya escalaban solos): **chromatic aberration** usa un factor proporcional a `w/h` (`s = 1 + 0.03·caInt`, desplazamiento ∝ `w`), no un offset en px fijos; y los FX basados en `w/h` (fog, vignette, grain, grunge, riso). `renderScale` default=1 deja el RAF en vivo y los exports existentes byte-idénticos. **Con A (v3.9.3) + B, el HQ tiene paridad visual completa con el preview** en toda la casuística (dibujo puro y full FX).
+- **Files**: `postProcessing.ts`, `composeLayer.ts`, `renderLayerBody.ts`.
+
+---
 
 ### 3.9.3 — Captura HQ = re-render real a 2× (Fase A)
 

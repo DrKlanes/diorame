@@ -99,10 +99,14 @@ export const applyGlow = (
 	helperCanvas: HTMLCanvasElement,
 	glowInt: number,
 	dofBlur: number,
-	isDarkMode: boolean
+	isDarkMode: boolean,
+	scale: number = 1
 ): void => {
 	offCtx.save();
-	offCtx.filter = `blur(${(isDarkMode ? 35 : 20) * glowInt + dofBlur}px)`;
+	// The base radius (35/20) is in device px and does NOT scale with the raster,
+	// so multiply it by renderScale to keep the same relative glow in HQ export.
+	// dofBlur arrives pre-scaled by the caller. scale=1 → byte-identical to before.
+	offCtx.filter = `blur(${(isDarkMode ? 35 : 20) * scale * glowInt + dofBlur}px)`;
 	offCtx.globalCompositeOperation = isDarkMode ? 'lighter' : 'source-over';
 	offCtx.globalAlpha = isDarkMode ? 1.0 : (0.3 + glowInt * 0.4);
 	offCtx.drawImage(helperCanvas, 0, 0);

@@ -56,12 +56,17 @@ export function renderLayer(
 	pfc: PerFrameComputed,
 ): void {
 	const currentState = rc.state;
+	// renderScale (HQ export). 1 = live. The pixel-art snap grid (pSize) is in device
+	// px, so it must be ·S to keep blocks at the same relative size in HQ. Camera/viewPan
+	// quantization stays in LOGICAL space (renderPipeline), so only the physical-coordinate
+	// snapping here scales. S=1 → byte-identical.
+	const S = rc.renderScale ?? 1;
 	const isDrawing = rc.isDrawing;
 	const currentPoints = rc.currentPoints;
 	const isCinematic = pfc.isCinematic;
 	const fxEnabled = pfc.fxEnabled;
 	const isPixelArt = pfc.isPixelArt;
-	const pSize = pfc.pSize;
+	const pSize = pfc.pSize * S;
 	const FL = pfc.FL;
 	const fxFocusDist = pfc.fxFocusDist;
 	const effectiveCameraZ = pfc.effectiveCameraZ;
@@ -275,7 +280,7 @@ export function renderLayer(
 
 			if (isPixelArt) {
 				useStraightLines = true;
-				const pSize = Math.max(2, currentState.postProcessing.pixelArtSize || 4);
+				const pSize = Math.max(2, currentState.postProcessing.pixelArtSize || 4) * S;
 
 				if (isBrushTap) {
 					 return; // Option A: Skip tap strokes entirely in Pixel Art View Mode to avoid artifacts
@@ -388,7 +393,7 @@ export function renderLayer(
 	if (hasContent) {
 		// Per-layer composition — extracted to canvas/composeLayer.ts
 		// Caller-side prep of pixelCanvas (was ensureCanvas inline in v2.7.1)
-		const pSizeForCompose = Math.max(2, currentState.postProcessing.pixelArtSize || 4);
+		const pSizeForCompose = Math.max(2, currentState.postProcessing.pixelArtSize || 4) * S;
 		const pixelCanvas = isPixelArt
 			? ensureCanvas(rc.pixelCanvasRef, Math.ceil(w / pSizeForCompose), Math.ceil(h / pSizeForCompose))
 			: null;
@@ -401,6 +406,7 @@ export function renderLayer(
 			{
 				w,
 				h,
+				scale: S,
 				shapePattern,
 				isPixelArt,
 				fxEnabled,

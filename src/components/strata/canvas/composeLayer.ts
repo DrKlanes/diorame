@@ -11,6 +11,9 @@ export type ComposeLayerOpts = {
 	layerAvgZ: number;
 	fxFocusDist: number;
 	isDarkMode: boolean;
+	// renderScale (HQ export). 1 = live. Scales px-fixed blur radii (glow base + DoF)
+	// so they keep the same relative size at S× resolution. w/h here are physical.
+	scale: number;
 	palette: string[];
 	postProcessing: {
 		fog: number;
@@ -86,12 +89,15 @@ export const composeLayer = (
 	}
 
 	const glowInt = opts.postProcessing.glow;
+	// dofBlur is in device px → ·scale once here so HQ keeps the same relative blur.
+	// This single scaled value feeds BOTH applyGlow (added to its radius) and
+	// applyDoFBlur, so the DoF blur is scaled exactly once, never twice. scale=1 → identical.
 	const dofBlur = (opts.fxEnabled && opts.postProcessingEnabled.dof)
-		? Math.min((Math.abs(opts.layerAvgZ - opts.fxFocusDist)/1000)*(opts.FL/400)*4, 30*opts.postProcessing.dof)
+		? Math.min((Math.abs(opts.layerAvgZ - opts.fxFocusDist)/1000)*(opts.FL/400)*4, 30*opts.postProcessing.dof) * opts.scale
 		: 0;
 
 	if (opts.fxEnabled && opts.postProcessingEnabled.glow && glowInt > 0.01) {
-		applyGlow(offCtx, helperCanvas, glowInt, dofBlur, opts.isDarkMode);
+		applyGlow(offCtx, helperCanvas, glowInt, dofBlur, opts.isDarkMode, opts.scale);
 	}
 
 	applyDoFBlur(offCtx, helperCanvas, dofBlur);
