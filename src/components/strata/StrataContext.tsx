@@ -1098,6 +1098,14 @@ function appReducer(state: AppState, action: Action): AppState {
                     updatedShape.originalPoints = shape.originalPoints.map(transformPoint);
                 }
 
+                // #7: bake eraserPolygon with the SAME transformPoint so the eraser's SVG-export
+                // mask/bounds stay coherent with the deformed points. Erasers are never text, so
+                // under uniform scale this matches the canvas result (canvas always used `points`);
+                // it only improves SVG export coherence (was stale before).
+                if (shape.eraserPolygon) {
+                    updatedShape.eraserPolygon = shape.eraserPolygon.map(transformPoint);
+                }
+
                 return updatedShape;
             }
             return shape;

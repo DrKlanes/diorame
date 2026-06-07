@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.9.9
+**Version**: 3.9.10
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,18 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.9.9)
+## Appendix C: Changelog Highlights (1.7.3 → 3.9.10)
+
+### 3.9.10 — Pulidos finales + cierre del sprint squash & stretch (Fase 5)
+
+**feat — Pulidos finales de squash & stretch (cierra el sprint)**:
+1. **Asas de lado ocultas en capas de solo-texto**: `renderFrame` computa `isActiveLayerPureText` (todas las shapes de la capa activa son texto) y lo pasa a `drawGizmo`, que omite las barras `mt/mb/ml/mr` del dibujo **y** del objeto `handles`. Como `hitTestGizmo` guarda con `handles.mt && …`, dejarlas `undefined` también **bloquea el hit-test** de los modos `scale_t/b/l/r` — sin guard extra en StrataCanvas. Capas **mixtas** (texto + trazos): asas visibles (los trazos se deforman, el texto no). Esquinas (uniforme, sí aplica a texto vía `fontSize·scale`) y rotación intactas.
+2. **`eraserPolygon` horneado**: el reducer `TRANSFORM_LAYER` aplica el mismo `transformPoint` a `eraserPolygon` que a `points`/`originalPoints`. El **canvas** siempre renderizó el eraser desde `points` (sin cambio, ni uniforme ni deformado); `eraserPolygon` solo se usa en el cálculo de bounds del **SVG export**, que antes quedaba **stale** tras cualquier transform y ahora es coherente.
+
+**Sprint squash & stretch — COMPLETO (Fases 0-5):** extracción del Move-gizmo a módulo puro (`moveGizmoInteraction.ts`), motor `scaleX/scaleY` con bake no uniforme, asas de lado visuales (barras orientadas), drag mono-eje (`scale_t/b/l/r`), preview en vivo (espeja el bake, sin salto), y pulidos. **Texto excluido** de la deformación por shape. **Quirk aceptado** (decisión, no pendiente): tras deformar no uniformemente un trazo brush, cambiar su grosor/tipo lo regenera desde el spine deformado (puede saltar) — se eligió mantener "deformar el outline" como semántica de squash & stretch.
+- **Files**: `drawGizmo.ts`, `renderPipeline.ts`, `StrataContext.tsx`.
+
+---
 
 ### 3.9.9 — Deformación interactiva con preview en vivo (squash & stretch Fase 3 + 4)
 

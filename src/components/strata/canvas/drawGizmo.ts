@@ -74,6 +74,7 @@ export const drawGizmo = (
 	cameraZ: number,
 	flipButtonsEl: HTMLDivElement | null,
 	baseDepthStep: number,
+	isActiveLayerPureText: boolean = false,
 ): GizmoHandles | null => {
 	if (!(mode === 'drawing' && tool === 'move' && transformState.layerBB)) {
 		// Hide flip buttons when gizmo is not visible
@@ -143,11 +144,20 @@ export const drawGizmo = (
 	const pRot = project(cx, bb.minY - offset);
 	const pCenter = project(bb.cx, bb.cy);
 
+	// #9: on a pure-text layer the side (squash & stretch) handles would no-op, so we omit
+	// them from BOTH the drawing and the returned handles. Leaving mt/mb/ml/mr undefined also
+	// makes hitTestGizmo skip the side modes (its `handles.mt && ...` guard), so a side drag
+	// can't activate on text — no separate hit-test guard needed.
+	const showSides = !isActiveLayerPureText;
+
 	// Compute handles (returned so caller can update its ref)
 	const handles: GizmoHandles = {
 		tl: pTL, tr: pTR, br: pBR, bl: pBL,
 		rotate: pRot, center: pCenter,
-		mt: pMT, mb: pMB, ml: pML, mr: pMR,
+		mt: showSides ? pMT : undefined,
+		mb: showSides ? pMB : undefined,
+		ml: showSides ? pML : undefined,
+		mr: showSides ? pMR : undefined,
 	};
 
 	// Draw
@@ -206,12 +216,15 @@ export const drawGizmo = (
 	drawHandle(pBR, 'scale');
 	drawHandle(pBL, 'scale');
 	// Mid-side bars — long axis along the adjacent edge (follows box rotation).
-	const topAngle = Math.atan2(pTR.y - pTL.y, pTR.x - pTL.x);  // top/bottom edge direction
-	const leftAngle = Math.atan2(pBL.y - pTL.y, pBL.x - pTL.x); // left/right edge direction
-	drawBar(pMT, topAngle);   // horizontal bar (when unrotated) → vertical stretch
-	drawBar(pMB, topAngle);
-	drawBar(pML, leftAngle);  // vertical bar (when unrotated) → horizontal stretch
-	drawBar(pMR, leftAngle);
+	// Hidden on pure-text layers (#9).
+	if (showSides) {
+		const topAngle = Math.atan2(pTR.y - pTL.y, pTR.x - pTL.x);  // top/bottom edge direction
+		const leftAngle = Math.atan2(pBL.y - pTL.y, pBL.x - pTL.x); // left/right edge direction
+		drawBar(pMT, topAngle);   // horizontal bar (when unrotated) → vertical stretch
+		drawBar(pMB, topAngle);
+		drawBar(pML, leftAngle);  // vertical bar (when unrotated) → horizontal stretch
+		drawBar(pMR, leftAngle);
+	}
 	ctx.fillStyle = '#3b82f6';
 	drawHandle(pRot, 'rotate');
 

@@ -496,6 +496,11 @@ export function renderFrame(
 	// --- 4. Overlays (skipped during animation playback) ---
 	if (!rc.skipCinematicOverlays) {
 		// --- Gizmo Drawing ---
+		// #9: hide the side (squash & stretch) handles on a pure-text active layer — they'd
+		// no-op (the reducer forces uniform on text). Mixed layers keep them (strokes deform).
+		const gizmoActiveZ = currentState.currentLayerIndex * -BASE_DEPTH_STEP;
+		const gizmoActiveShapes = rc.shapesByZ.get(gizmoActiveZ) || [];
+		const isActiveLayerPureText = gizmoActiveShapes.length > 0 && gizmoActiveShapes.every(s => s.type === 'text');
 		rc.transformHandlesRef.current = drawGizmo(
 			ctx, w, h,
 			currentState.mode,
@@ -507,6 +512,7 @@ export function renderFrame(
 			currentCamera.z,
 			rc.flipButtonsEl,
 			BASE_DEPTH_STEP,
+			isActiveLayerPureText,
 		);
 
 		// --- Symmetry Axis Guide ---
