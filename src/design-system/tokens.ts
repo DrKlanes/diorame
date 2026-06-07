@@ -35,9 +35,6 @@ export const T = {
 	// Stage (outside canvas) — always this regardless of dark mode
 	stage: '#0e0e0e',
 
-	// Backdrop blur
-	blur: 'blur(12px)',
-
 	// Danger / Destructive
 	danger:          'rgb(220, 38, 38)',
 	dangerDark:      'rgb(248, 113, 113)',
@@ -47,6 +44,13 @@ export const T = {
 	// Warning / Amber
 	warning:         '#F59E0B',
 	warningDark:     '#FBBF24',
+} as const;
+
+// ──────────────────────────────────────────────────────────────────
+// Backdrop blur values (separate from color tokens)
+// ──────────────────────────────────────────────────────────────────
+export const BLUR = {
+	default: 'blur(12px)',
 } as const;
 
 // ──────────────────────────────────────────────────────────────────

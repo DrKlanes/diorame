@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.9.0
+**Version**: 3.9.1
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,17 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.9.0)
+## Appendix C: Changelog Highlights (1.7.3 → 3.9.1)
+
+### 3.9.1 — Deuda técnica menor (design-system)
+
+**chore — Reubicación del icono `pen`**: la definición de `pen` en `icons.ts` estaba físicamente posicionada en la zona "Custom additions" aunque `ICON_SECTIONS` lo clasifica correctamente como 'Drawing Tools'. Movido al bloque Drawing Tools del archivo para eliminar la discrepancia.
+- **Files**: `icons.ts`.
+
+**chore — Token `BLUR` propio**: `T.blur = 'blur(12px)'` era el único valor no-color dentro del objeto `T`. Extraído a `export const BLUR = { default: 'blur(12px)' } as const`, análogo a `SHADOW` y `RADIUS`. 6 referencias actualizadas en 3 componentes.
+- **Files**: `tokens.ts`, `DiPill.tsx`, `DiPanel.tsx`, `TextSessionPanel.tsx`.
+
+---
 
 ### 3.9.0 — Reorganización I/O de TopBar (DocumentPill + ExportPill)
 

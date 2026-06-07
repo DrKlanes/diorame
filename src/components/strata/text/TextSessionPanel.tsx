@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Ico } from '../../../design-system';
-import { T, TYPE, RADIUS, SHADOW, dk } from '../../../design-system/tokens';
+import { T, TYPE, RADIUS, SHADOW, BLUR, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { useTranslation } from '../../../i18n';
 
@@ -62,8 +62,8 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 			border: `1px solid ${borderColor}`,
 			borderRadius: RADIUS.panel,
 			boxShadow: dk(dark, SHADOW.modal, SHADOW.modalDark),
-			backdropFilter: T.blur,
-			WebkitBackdropFilter: T.blur,
+			backdropFilter: BLUR.default,
+			WebkitBackdropFilter: BLUR.default,
 			width: 280,
 			display: 'flex',
 			flexDirection: 'column',

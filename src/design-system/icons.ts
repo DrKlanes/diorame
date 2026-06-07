@@ -156,6 +156,8 @@ export const ICONS: Record<string, string> = {
 		`<path d="M8.37 11.05L11.37 14.05M10.37 10.05L14.37 14.05M12.87 10.05L15.87 12.55M4.87 10.05C4.87 5.05 10.87 4.05 13.87 5.05C17.87 6.05 19.87 10.05 18.87 14.05C17.87 18.05 12.87 20.05 8.87 19.05C4.87 18.05 4.87 14.05 4.87 10.05Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'rotate':
 		`<path d="M19.2 11.85C19.1 15.65 16 19.05 12 19.15C8 19.25 4.8 16.05 4.8 12.05C4.8 8.05 8.1 4.85 12 4.85C14.8 4.85 17.2 6.35 18.6 8.55M19.2 5.05L18.8 8.85L15 8.35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+	'pen':
+		`<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>`,
 
 	// ─── File Operations ─────────────────────────────────────────────────
 	'new':
@@ -293,8 +295,6 @@ export const ICONS: Record<string, string> = {
 		`<path d="m14 7 3 3"/>`,
 	'tornado':
 		`<path d="M21 4H3M18 8H6M17 12H7M14 16h-4M13 20h-2"/>`,
-	'pen':
-		`<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>`,
 	'image':
 		`<rect width="18" height="18" x="3" y="3" rx="2"/>` +
 		`<circle cx="9" cy="9" r="2"/>` +
