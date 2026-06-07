@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
 import { generateStrokeForMode } from '../../utils/strokeGenerators';
-import { Shape, Point } from '../../types/strataTypes';
+import { Shape, Point, Waypoint } from '../../types/strataTypes';
 import paperTexture from "figma:asset/texture-paper.png";
 import grungeTexture from "figma:asset/texture-grunge.png";
 import { cn } from '../ui/utils';
@@ -18,6 +18,7 @@ import { getLayerBoundingBox } from './canvas/transformUtils';
 import { hitTestGizmo, computeMoveTransform, isSignificantTransform } from './canvas/moveGizmoInteraction';
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { renderFrame, type RenderContext } from './canvas/renderPipeline';
+import { CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
 
 export const StrataCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -77,6 +78,7 @@ export const StrataCanvas = () => {
   // Optimization: Cached Shapes by Z
   const shapesByZRef = useRef(new Map<number, Shape[]>());
   const sortedZsRef = useRef<number[]>([]);
+  const waypointsRef = useRef<Waypoint[]>([]);
 
   // Optimization: Camera Ref for Animation Loop
   const cameraRef = useRef({ x: 0, y: 0, z: 0, rotation: 0 });
@@ -354,6 +356,43 @@ export const StrataCanvas = () => {
       sortedZsRef.current = Array.from(map.keys()).sort((a, b) => b - a);
   }, [state.shapes]);
 
+  // Cache content centroids as camera waypoints for the 'storytelling' preset.
+  // Cheap centroid = average of every non-eraser shape point per layer (no getImageData).
+  // In the same pass we track the points bbox to derive radius (half the larger
+  // side) — a cheap size measure the motor uses for adaptive zoom per layer.
+  // Pinned (locked3D) layers are excluded as waypoints but still render fixed.
+  // Order back→front by layerIndex; z lives in cinematic (×depth-multiplier) space.
+  useEffect(() => {
+      const acc = new Map<number, { sx: number; sy: number; n: number; minX: number; maxX: number; minY: number; maxY: number }>();
+      state.shapes.forEach(s => {
+          const layerIndex = Math.round(-s.zIndex / BASE_DEPTH_STEP);
+          if (state.locked3DLayers.includes(layerIndex)) return;
+          if (s.isEraser) return; // erasers subtract only — no visible content, must not anchor a waypoint
+          let entry = acc.get(layerIndex);
+          if (!entry) { entry = { sx: 0, sy: 0, n: 0, minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }; acc.set(layerIndex, entry); }
+          s.points.forEach(p => {
+              entry!.sx += p.x; entry!.sy += p.y; entry!.n++;
+              if (p.x < entry!.minX) entry!.minX = p.x;
+              if (p.x > entry!.maxX) entry!.maxX = p.x;
+              if (p.y < entry!.minY) entry!.minY = p.y;
+              if (p.y > entry!.maxY) entry!.maxY = p.y;
+          });
+      });
+      const wps: Waypoint[] = [];
+      acc.forEach((v, layerIndex) => {
+          if (v.n === 0) return;
+          wps.push({
+              x: v.sx / v.n,
+              y: v.sy / v.n,
+              z: layerIndex * -BASE_DEPTH_STEP * CINEMATIC_DEPTH_MULTIPLIER,
+              layerIndex,
+              radius: Math.max(v.maxX - v.minX, v.maxY - v.minY) / 2,
+          });
+      });
+      wps.sort((a, b) => a.layerIndex - b.layerIndex);
+      waypointsRef.current = wps;
+  }, [state.shapes, state.locked3DLayers]);
+
   // Load Fonts
   useEffect(() => {
       const link = document.createElement('link');
@@ -405,7 +444,7 @@ export const StrataCanvas = () => {
           // (device quality ignores these and upscales the live canvas bitmap.)
           const pngOptions = {
               state: stateRef.current,
-              shapesByZ: shapesByZRef.current,
+              shapesByZ: shapesByZRef.current, waypoints: waypointsRef.current,
               sortedZs: sortedZsRef.current,
               camera: { ...cameraRef.current },
               w: containerRef.current?.clientWidth ?? canvas.width,
@@ -442,7 +481,7 @@ export const StrataCanvas = () => {
           // Snapshot all inputs so the frame-by-frame renderer is decoupled from the RAF.
           const exportOptions = {
               state: stateRef.current,
-              shapesByZ: shapesByZRef.current,
+              shapesByZ: shapesByZRef.current, waypoints: waypointsRef.current,
               sortedZs: sortedZsRef.current,
               camera: { ...cameraRef.current },
               w: containerRef.current?.clientWidth ?? canvas.width,
@@ -463,7 +502,7 @@ export const StrataCanvas = () => {
           // Same snapshot pattern as png-sequence; exportAsGIF uses the same infrastructure.
           const exportOptions = {
               state: stateRef.current,
-              shapesByZ: shapesByZRef.current,
+              shapesByZ: shapesByZRef.current, waypoints: waypointsRef.current,
               sortedZs: sortedZsRef.current,
               camera: { ...cameraRef.current },
               w: containerRef.current?.clientWidth ?? canvas.width,
@@ -1221,7 +1260,7 @@ export const StrataCanvas = () => {
       state: stateRef.current,
       isDrawing: isDrawingRef.current,
       currentPoints: currentPointsRef.current,
-      shapesByZ: shapesByZRef.current,
+      shapesByZ: shapesByZRef.current, waypoints: waypointsRef.current,
       sortedZs: sortedZsRef.current,
       transformState: transformRef.current,
       cameraRef,

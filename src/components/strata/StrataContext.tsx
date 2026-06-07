@@ -910,7 +910,7 @@ function appReducer(state: AppState, action: Action): AppState {
               : 25;
       const safeBrushThickness = rawBrushThickness;
       const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : state.isDarkMode;
-      const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom'].includes(action.payload.cinematicType))
+      const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom', 'storytelling'].includes(action.payload.cinematicType))
           ? action.payload.cinematicType as CinematicType : state.cinematicType;
       const rawProjectName = typeof action.payload.projectName === 'string'
           ? action.payload.projectName.slice(0, 100) : state.projectName;

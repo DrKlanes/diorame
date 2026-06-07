@@ -14,6 +14,7 @@ const PRESETS = [
 	{ type: 'truck',   icon: 'cam-truck',   tooltipKey: 'bottombar.view.preset.truck'   },
 	{ type: 'orbit',   icon: 'cam-orbit',   tooltipKey: 'bottombar.view.preset.free'   },
 	{ type: 'zoom',    icon: 'cam-zoom',    tooltipKey: 'bottombar.view.preset.zoom'    },
+	{ type: 'storytelling', icon: 'cam-storytelling', tooltipKey: 'bottombar.view.preset.storytelling' },
 ] as const;
 
 interface CameraPresetsZoneProps { dark: boolean; }

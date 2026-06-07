@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.9.10
+**Version**: 3.10.0
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -216,7 +216,7 @@ Two distinct actions create layers — they are **not** interchangeable:
   - Arrow Keys: Manual camera pan
   - Double-Click: Set Point of Interest (camera focus target)
 - **Touch Controls**: 1-finger pan, 2-finger orbit, pinch zoom
-- **Cinematic Moves**: 10 preset camera animations (Forward, Spiral, Yoyo, Pulse, Twist, Arc, Crane, Truck, Orbit, Zoom)
+- **Cinematic Moves**: 11 preset camera animations (Forward, Spiral, Yoyo, Pulse, Twist, Arc, Crane, Truck, Orbit, Zoom, Storytelling)
 - **Speed Control**: Adjustable cinematic speed (0.1-1.0)
 - **Handheld Shake**: Optional camera shake (Low, Medium, High)
 
@@ -694,7 +694,22 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.9.10)
+## Appendix C: Changelog Highlights (1.7.3 → 3.10.0)
+
+### 3.10.0 — Preset cinemático "Storytelling" (tour data-driven)
+
+**feat(camera) — Nuevo preset "Storytelling" (Narrativa)**: 11º movimiento cinemático. Tour contemplativo que recorre el **centroide de contenido visible** de cada capa en orden de stack (profundidad Z), con cámara orgánica continua.
+
+- **Waypoints data-driven**: un waypoint por capa, computado en `StrataCanvas` (useEffect sobre `[state.shapes, state.locked3DLayers]`) como promedio de los puntos de las shapes de la capa. `radius` = mitad del lado mayor del bbox (medida barata de tamaño para zoom adaptativo). Sin `getImageData`.
+- **Exclusiones**: capas **pinned** (`locked3DLayers`) y capas **sin contenido visible** (solo-eraser o sin puntos efectivos) no generan waypoint. Los **erasers se excluyen** del centroide/radius (solo sustraen, no aportan contenido espacial). El **texto sí cuenta** como contenido (aporta su ancla).
+- **Obertura de entrada**: arranca posada en `wp[0]` con un beat de respiración a amplitud plena (`INTRO_DURATION ≈ 4.5`), luego entra al viaje con handoff C0-continuo. Stateless: función cerrada de `t` desde 0, scrub-safe, nunca re-entrada en loops posteriores.
+- **Flujo orgánico continuo**: un único parámetro `s(t)` glide a lo largo de un spline cíclico Catmull-Rom a través de las poses. Velocidad **ondulante** (warp sinusoidal: lenta en cada capa, rápida entre capas) pero **estrictamente > 0** — sin frenazos, sin reversa, sin costura. Forma cerrada → reconstruible para cualquier `t`.
+- **Encuadre real (~70% del canvas)**: cada capa aterriza a una distancia de cámara que la hace llenar `TARGET_FILL_RATIO` del canvas, invirtiendo la proyección `layerScale = FL/(FL+dz)` → `dz* = FL·(1−k)/k`. Cap de apparent-scale robusto al focal length (`min(cap artístico, FL/FADE_SAFE_DISTANCE)`) → degradación elegante en capas extremas sin entrar al fade de opacidad.
+- **Respiración perceptualmente constante y continua**: amplitud relativa (fracción de la distancia de framing) → el swing de tamaño aparente se ve igual en capas cercanas y lejanas. Interpolada (`ampLerp`) entre waypoints adyacentes con la misma `frac` que la pose → sin escalón C0 en fronteras de segmento (mata el pop de zoom al llegar a cada capa).
+- **Loop sin costura**: el retorno frente→fondo es un segmento más del spline cíclico, no una fase especial.
+- **Files**: `strataTypes.ts` (tipo `Waypoint`, `'storytelling'` en `CinematicType`), `cinematicCamera.ts` (rama del motor + 4 params de framing), `renderPipeline.ts` (`waypoints` en `RenderContext`), `StrataCanvas.tsx` (`waypointsRef` + useEffect), `StrataContext.tsx` (whitelist `LOAD_PROJECT`), `animationExportRender.ts` / `exportHandlers.ts` (`waypoints: []`), `icons.ts` (`cam-storytelling`), `CameraPresetsZone.tsx`, `i18n/en.ts` + `es.ts`.
+
+---
 
 ### 3.9.10 — Pulidos finales + cierre del sprint squash & stretch (Fase 5)
 

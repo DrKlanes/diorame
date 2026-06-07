@@ -1,5 +1,6 @@
 import { BASE_DEPTH_STEP } from '../StrataContext';
 import { HANDHELD_SWAY_FREQ, HANDHELD_TREMOR_FREQ } from '../../../constants/renderConstants';
+import { Waypoint } from '../../../types/strataTypes';
 
 export const CINEMATIC_DEPTH_MULTIPLIER = 3;
 
@@ -40,7 +41,12 @@ export const computeCinematicTick = (
 	poiX: number,
 	poiY: number,
 	centerZ: number,
-	orbitState: OrbitState
+	orbitState: OrbitState,
+	waypoints: Waypoint[] = [],
+	focalLength: number = 800,
+	viewZoomOffset: number = 0,
+	layerSpacingFactor: number = 1,
+	canvasDim: number = 1000
 ): CinematicTickResult => {
 	const newAccTime = accumulatedTime + dt * cinematicSpeed;
 	const newHandheldTime = accumulatedHandheldTime + dt;
@@ -98,6 +104,123 @@ export const computeCinematicTick = (
 		nc.x = poiX;
 		nc.y = poiY;
 		nc.z = centerZ + 1200;
+	} else if (cinematicType === 'storytelling') {
+		// Data-driven contemplative tour: ONE continuous organic flow through every
+		// layer's content centroid (waypoints, back→front) and looping front→back.
+		// No dwell/travel phases, no easeInOut to zero — the camera never fully stops.
+		// A single progress parameter s∈[0,N) glides the pose along a smooth cyclic
+		// spline; its SPEED undulates (slow near each layer, fast between) but stays
+		// strictly > 0. Closed form: s is a PURE function of t → fully reconstructable
+		// for any t (scrub-safe) with NO persistent progress state.
+		//
+		// --- Tuning constants ---
+		// Undulating speed (segments / second): SPEED_MIN at each layer, SPEED_MAX mid-way.
+		const SPEED_MIN = 0.05;             // never 0 → no stop, no reverse (keep > 0)
+		const SPEED_MAX = 0.25;             // peak glide speed between layers
+		const INTRO_DURATION = 4.5;         // opening beat: hold posed on wp[0] (full breathing) before the journey begins. Function of absolute t from 0 (scrub-safe), never re-entered in later loops.
+		// Real framing (dolly): each layer lands at a camera distance that makes it fill
+		// ~TARGET_FILL_RATIO of the canvas, inverting layerScale = FL/(FL+dz).
+		const TARGET_FILL_RATIO = 0.70;     // fraction of canvasDim the layer should fill
+		const MAX_APPARENT_SCALE = 2.6;     // magnification cap (artistic). At FL=800 → FL/k≈308 > 250 fade threshold
+		const MIN_APPARENT_SCALE = 0.3;     // min apparent scale → caps how far the camera backs off on huge layers
+		const FADE_SAFE_DISTANCE = 280;     // keep FL+dz ≥ this (> 250 fade threshold, NEAR_CLIP=50) → derives a FL-robust k cap
+		const RADIUS_EPSILON = 1;           // radius=0 guard (clamp also saves it) → no divide-by-zero
+		// Breathing: a RELATIVE z swing (fraction of the framing distance) so the apparent
+		// size oscillation looks the same on near (magnified) and far layers. Surfaces in
+		// the SLOW moments (near layers) via the proximity weight.
+		const BREATH_AMPLITUDE_FRAC = 0.05; // ≈5% apparent-scale swing at each layer
+		const BREATH_FREQ = 0.5;            // breathing carrier speed (slow)
+		const FRAMING_Z_OFFSET = 1200;      // fallback offset for the n===0 (no waypoints) degenerate case only
+		// -------------------------
+
+		// Real framing scale for a waypoint: the clamped apparent scale k = layerScale that
+		// makes the layer (logical width 2·radius) fill TARGET_FILL_RATIO of canvasDim.
+		// kMax is the lesser of the artistic cap and the FL-derived fade-safe cap, so framed
+		// layers never enter the <250 opacity fade regardless of the user's focal length.
+		const framedScale = (wp: Waypoint) => {
+			const raw = (TARGET_FILL_RATIO * canvasDim) / (2 * Math.max(wp.radius, RADIUS_EPSILON));
+			const kMax = Math.min(MAX_APPARENT_SCALE, focalLength / FADE_SAFE_DISTANCE);
+			return Math.max(MIN_APPARENT_SCALE, Math.min(kMax, raw));
+		};
+
+		// Inverted projection → camera Z that frames the layer. From layerScale = FL/(FL+dz):
+		//   dz* = FL·(1−k)/k ,  and camZ = currentCamera.z + viewZoomOffset , dz = shapeZ − camZ
+		//   ⇒ nc.z = shapeZ − viewZoomOffset − dz*  , with shapeZ = wp.z·layerSpacingFactor
+		// (wp.z already carries ×CINEMATIC_DEPTH_MULTIPLIER; the spacing factor is applied here.)
+		const poseZAt = (wp: Waypoint) => {
+			const k = framedScale(wp);
+			const dzStar = focalLength * (1 - k) / k;
+			return wp.z * layerSpacingFactor - viewZoomOffset - dzStar;
+		};
+
+		// Framing pose for a waypoint: centered on the centroid (x,y), z from real framing.
+		const poseAt = (wp: Waypoint) => ({ x: wp.x, y: wp.y, z: poseZAt(wp) });
+
+		// Relative breathing amplitude in Z for a waypoint: a fixed fraction of its framing
+		// distance FL/k. Δz/(FL+dz) ≈ BREATH_AMPLITUDE_FRAC ⇒ constant apparent-scale swing.
+		const breathAmpZAt = (wp: Waypoint) => BREATH_AMPLITUDE_FRAC * (focalLength / framedScale(wp));
+
+		const n = waypoints.length;
+
+		if (n === 0) {
+			// Empty/all-pinned: degrade to a static framing on the POI (no crash, no radius).
+			nc.x = poiX; nc.y = poiY; nc.z = centerZ + FRAMING_Z_OFFSET; nc.rotation = 0;
+		} else if (n === 1) {
+			// Single layer: hold the framing pose with gentle continuous (relative) breathing.
+			const p = poseAt(waypoints[0]);
+			nc.x = p.x; nc.y = p.y;
+			nc.z = p.z + Math.sin(t * BREATH_FREQ) * breathAmpZAt(waypoints[0]);
+			nc.rotation = 0;
+		} else {
+			// Closed-form undulating progress. u advances LINEARLY in tTravel (t already folds
+			// in cinematicSpeed via the caller). Warping u→s with a sine makes ds/du =
+			// 1 − A·cos(2πu): minimum (= 1−A) exactly at integer u, where s is ALSO an
+			// integer → the slow point lands precisely on each waypoint. A < 1 (because
+			// SPEED_MIN > 0) keeps ds/du strictly positive: no stop, no reversal, no seam.
+			const R = (SPEED_MAX + SPEED_MIN) / 2;                 // mean segments / second
+			const A = (SPEED_MAX - SPEED_MIN) / (SPEED_MAX + SPEED_MIN); // undulation depth, 0<A<1
+			// Opening beat: t < INTRO_DURATION → tTravel = 0 → u = 0 → s = 0 (held on wp[0]).
+			// At t = INTRO_DURATION⁺ travel resumes from s = 0 (still wp[0]) → C0-continuous handoff.
+			// Stateless & non-recurrent: later loops use ever-growing tTravel, never re-enter the beat.
+			const tTravel = Math.max(0, t - INTRO_DURATION);
+			const u = R * tTravel;
+			const sWarp = u - (A / (2 * Math.PI)) * Math.sin(2 * Math.PI * u);
+			let s = sWarp % n;
+			if (s < 0) s += n;
+			const seg = Math.floor(s);
+			const frac = s - seg;
+
+			// Catmull-Rom through the poses gives a corner-free path (C1 across segments)
+			// that PASSES THROUGH each waypoint with a non-zero tangent — so the camera
+			// glides through layers without the velocity ever hitting zero. (With n===2
+			// the spline tangents vanish, so fall back to a straight back-and-forth.)
+			const poses = waypoints.map(poseAt);
+			const P = (i: number) => poses[((i % n) + n) % n];
+			const p0 = P(seg - 1), p1 = P(seg), p2 = P(seg + 1), p3 = P(seg + 2);
+			const cr = (a: number, b: number, c: number, d: number, f: number) =>
+				0.5 * ((2 * b) + (-a + c) * f + (2 * a - 5 * b + 4 * c - d) * f * f + (-a + 3 * b - 3 * c + d) * f * f * f);
+
+			if (n === 2) {
+				nc.x = p1.x + (p2.x - p1.x) * frac;
+				nc.y = p1.y + (p2.y - p1.y) * frac;
+				nc.z = p1.z + (p2.z - p1.z) * frac;
+			} else {
+				nc.x = cr(p0.x, p1.x, p2.x, p3.x, frac);
+				nc.y = cr(p0.y, p1.y, p2.y, p3.y, frac);
+				nc.z = cr(p0.z, p1.z, p2.z, p3.z, frac);
+			}
+
+			// Breathing is the TEXTURE of the slow moments: its weight is driven by the
+			// SAME thing as the speed — proximity to a waypoint. (1+cos(2πs))/2 is 1 at
+			// each layer (where speed is min) and fades to 0 mid-transit. Smooth function
+			// of s (hence of t), so it adds zero discontinuity by construction. The amplitude
+			// is the relative one of the NEAREST waypoint (waypoints[seg], where proximity
+			// peaks), keeping the apparent-size swing constant across near/far layers.
+			const proximity = (1 + Math.cos(2 * Math.PI * s)) / 2;
+			const ampLerp = (1 - frac) * breathAmpZAt(waypoints[seg]) + frac * breathAmpZAt(waypoints[(seg + 1) % n]);
+			nc.z += Math.sin(t * BREATH_FREQ) * ampLerp * proximity;
+			nc.rotation = 0;
+		}
 	}
 
 	// Apply Handheld Camera Shake (if enabled)

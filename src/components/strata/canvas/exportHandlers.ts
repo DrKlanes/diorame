@@ -59,6 +59,7 @@ const renderSnapshotAtScale = (
 		isDrawing: false,
 		currentPoints: [],
 		shapesByZ: options.shapesByZ,
+		waypoints: [],
 		sortedZs: options.sortedZs,
 		transformState: {
 			isActive: false,

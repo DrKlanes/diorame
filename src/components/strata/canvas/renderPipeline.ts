@@ -2,7 +2,7 @@ import React from 'react';
 import { BASE_DEPTH_STEP } from '../StrataContext';
 import { RENDER_THROTTLE_MS, NEAR_CLIP } from '../../../constants/renderConstants';
 import { createNoise } from '../../../utils/canvasUtils';
-import type { AppState, Shape, Point } from '../../../types/strataTypes';
+import type { AppState, Shape, Point, Waypoint } from '../../../types/strataTypes';
 import type { Particle } from './renderParticles';
 import type { GizmoHandles } from './drawGizmo';
 import type { OrbitState } from './cinematicCamera';
@@ -65,6 +65,7 @@ export type RenderContext = {
 	isDrawing: boolean;
 	currentPoints: Point[];
 	shapesByZ: Map<number, Shape[]>;
+	waypoints: Waypoint[];
 	sortedZs: number[];
 	transformState: TransformRefState;
 
@@ -536,7 +537,12 @@ export function renderFrame(
 			currentState.isHandheldEnabled,
 			currentState.handheldIntensity,
 			poiX, poiY, centerZ,
-			rc.orbitRef.current
+			rc.orbitRef.current,
+			rc.waypoints,
+			currentState.focalLength,
+			currentState.viewZoomOffset,
+			currentState.layerSpacingFactor,
+			Math.min(logicalW, logicalH)
 		);
 		rc.accumulatedTimeRef.current = cinematicResult.accumulatedTime;
 		rc.accumulatedHandheldTimeRef.current = cinematicResult.accumulatedHandheldTime;

@@ -103,6 +103,7 @@ export const es: Dictionary = {
 	'bottombar.view.preset.truck': 'Travelling',
 	'bottombar.view.preset.free': 'Libre',
 	'bottombar.view.preset.zoom': 'Zoom',
+	'bottombar.view.preset.storytelling': 'Narrativa',
 
 	'bottombar.view.handheld.label': 'Cámara en mano',
 	'bottombar.view.handheld.tooltip': 'Cámara en mano',

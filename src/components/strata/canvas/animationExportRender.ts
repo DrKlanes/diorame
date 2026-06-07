@@ -138,6 +138,7 @@ export async function renderAnimationFrames(
 			isDrawing: false,
 			currentPoints: [],
 			shapesByZ: options.shapesByZ,
+			waypoints: [],
 			sortedZs: options.sortedZs,
 			transformState: IDLE_TRANSFORM,
 

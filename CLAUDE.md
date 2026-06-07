@@ -154,7 +154,7 @@ Si dudas si tu cambio es "swap de import" o algo más, asume que es más y escal
 
 | Archivo | Líneas | Propósito |
 |---|---|---|
-| `cinematicCamera.ts` | 150 | `computeCinematicTick`: 10 modos de cámara + handheld shake |
+| `cinematicCamera.ts` | ~280 | `computeCinematicTick`: 11 modos de cámara (incl. `storytelling`: tour data-driven por waypoints) + handheld shake |
 | `composeLayer.ts` | 98 | Compositing de capa a offscreen buffer (pixel art + fog/glow/DoF) |
 | `drawBackground.ts` | 47 | Fondo del canvas (textura paper, dark mode) |
 | `drawGizmo.ts` | 179 | Gizmo handles del Move tool + botones flip overlay |

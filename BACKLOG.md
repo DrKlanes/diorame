@@ -1,6 +1,6 @@
 # Diorame — Backlog técnico
 
-**Actualizado:** 2026-06-02 — Post v3.7.4
+**Actualizado:** 2026-06-07 — Post v3.10.0
 
 ---
 
@@ -174,6 +174,30 @@ Resuelto en v3.7.4 (commit `fb88c33`): nueva sección "Animate/Animar" añadida 
 
 **Path:** `src/components/strata/modals/OnboardingOverlayV2.tsx`
 
+
+### ~~Item Storytelling — Preset cinemático data-driven~~ ✅ COMPLETADO (v3.10.0)
+
+11º movimiento cinemático. Tour contemplativo que recorre el centroide de **contenido visible** de cada capa en orden de stack (Z), con cámara orgánica continua. Propiedades finales:
+
+- **Waypoints** por capa = promedio de puntos de shapes (sin `getImageData`); `radius` = mitad del lado mayor del bbox.
+- **Exclusiones**: capas pinned (`locked3DLayers`) y sin contenido visible (solo-eraser / sin puntos). Erasers excluidos del centroide/radius (solo sustraen). Texto sí cuenta (aporta su ancla).
+- **Obertura de entrada** (`INTRO_DURATION`): posada en `wp[0]` con beat de respiración pleno, luego viaje con handoff C0-continuo. Stateless, función cerrada de `t`, scrub-safe, no recurrente.
+- **Flujo orgánico continuo**: spline cíclico Catmull-Rom + velocidad ondulante `s(t)` cerrada, estrictamente > 0 (sin frenazos, sin costura).
+- **Encuadre real ~70%**: inversión de proyección (`dz* = FL·(1−k)/k`), cap de apparent-scale robusto a FL → degradación elegante en capas extremas.
+- **Respiración** perceptualmente constante (fracción de la distancia de framing) y continua en fronteras de segmento (`ampLerp` → sin pop de zoom).
+- **Loop sin costura**: retorno frente→fondo es un segmento más.
+
+**Path:** `strataTypes.ts`, `cinematicCamera.ts`, `renderPipeline.ts`, `StrataCanvas.tsx`, `StrataContext.tsx`, `animationExportRender.ts`, `exportHandlers.ts`, `icons.ts`, `CameraPresetsZone.tsx`, `i18n/en.ts`, `i18n/es.ts`.
+
+---
+
+## 🎯 En cola
+
+| Item | Notas |
+|---|---|
+| **DoF follow para Storytelling** | Enfoque automático de la capa de destino cuando `storytelling` + DoF (locked) están activos: el plano de foco sigue al waypoint actual del tour, de modo que la capa enmarcada queda nítida y el resto en bokeh. Siguiente sprint del preset. |
+
+---
 
 ## 📦 Out of scope (anotado, sin agendar)
 
