@@ -19,6 +19,10 @@ export interface CinematicTickResult {
 	wiggleFrame: number;
 	newCamera: { x: number; y: number; z: number; rotation: number };
 	newShake: { x: number; y: number; z: number };
+	// Storytelling rack-focus: the (possibly fractional) REAL layer index the tour is
+	// currently framing, for DoF lock to follow. null for every non-storytelling preset
+	// and for the n===0 degenerate case → consumer gate falls back to the manual focus.
+	focusLayerIndex: number | null;
 }
 
 /**
@@ -57,6 +61,9 @@ export const computeCinematicTick = (
 	const maxD = totalLayers * -BASE_DEPTH_STEP * CINEMATIC_DEPTH_MULTIPLIER;
 
 	let nc = { ...camera };
+	// Storytelling rack-focus target (real layer index, fractional for smooth racking).
+	// Stays null for every other preset → the DoF override gate fails → manual focus intact.
+	let focusLayerIndex: number | null = null;
 
 	if (cinematicType === 'forward') {
 		nc.z -= spd; nc.x = poiX + Math.sin(t)*50; nc.y = poiY + Math.cos(t*0.7)*50;
@@ -171,6 +178,7 @@ export const computeCinematicTick = (
 			nc.x = p.x; nc.y = p.y;
 			nc.z = p.z + Math.sin(t * BREATH_FREQ) * breathAmpZAt(waypoints[0]);
 			nc.rotation = 0;
+			focusLayerIndex = waypoints[0].layerIndex;
 		} else {
 			// Closed-form undulating progress. u advances LINEARLY in tTravel (t already folds
 			// in cinematicSpeed via the caller). Warping u→s with a sine makes ds/du =
@@ -220,6 +228,14 @@ export const computeCinematicTick = (
 			const ampLerp = (1 - frac) * breathAmpZAt(waypoints[seg]) + frac * breathAmpZAt(waypoints[(seg + 1) % n]);
 			nc.z += Math.sin(t * BREATH_FREQ) * ampLerp * proximity;
 			nc.rotation = 0;
+
+			// Rack focus: interpolate the REAL layer index between the current waypoint and the
+			// next cyclic one with the SAME frac that drives the pose → the focus plane racks
+			// smoothly from layer to layer as the camera flies. Uses each waypoint's layerIndex
+			// (NOT seg — waypoints skip pinned/empty layers). During the opening beat (s=0 →
+			// seg=0, frac=0) this collapses to waypoints[0].layerIndex, and stays continuous
+			// across the beat→travel handoff (frac=0 on both sides).
+			focusLayerIndex = (1 - frac) * waypoints[seg].layerIndex + frac * waypoints[(seg + 1) % n].layerIndex;
 		}
 	}
 
@@ -269,5 +285,6 @@ export const computeCinematicTick = (
 		wiggleFrame: newWiggleFrame,
 		newCamera: nc,
 		newShake,
+		focusLayerIndex,
 	};
 };

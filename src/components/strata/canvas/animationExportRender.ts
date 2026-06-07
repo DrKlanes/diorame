@@ -144,6 +144,7 @@ export async function renderAnimationFrames(
 
 			// Read-write refs (fake — mutations stay local to this frame)
 			cameraRef,
+			storyFocusRef: { current: null },
 			lastShakeRef,
 			transformHandlesRef,
 			lastRenderTimeRef,

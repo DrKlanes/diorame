@@ -74,6 +74,7 @@ const renderSnapshotAtScale = (
 
 		// Read-write refs (fake — mutations stay local to this single render)
 		cameraRef: { current: { ...options.camera } },
+		storyFocusRef: { current: null },
 		lastShakeRef: { current: { x: 0, y: 0, z: 0 } },
 		transformHandlesRef,
 		lastRenderTimeRef: { current: 0 },

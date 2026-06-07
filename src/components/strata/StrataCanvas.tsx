@@ -82,6 +82,8 @@ export const StrataCanvas = () => {
 
   // Optimization: Camera Ref for Animation Loop
   const cameraRef = useRef({ x: 0, y: 0, z: 0, rotation: 0 });
+  // Storytelling rack-focus: tour's current (fractional) layer for DoF lock to follow. null otherwise.
+  const storyFocusRef = useRef<number | null>(null);
 
   const paperImgRef = useRef<HTMLImageElement | null>(null);
   const risoGrainRef = useRef<HTMLCanvasElement | null>(null);
@@ -1264,6 +1266,7 @@ export const StrataCanvas = () => {
       sortedZs: sortedZsRef.current,
       transformState: transformRef.current,
       cameraRef,
+      storyFocusRef,
       lastShakeRef,
       transformHandlesRef,
       lastRenderTimeRef,

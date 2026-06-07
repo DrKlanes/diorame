@@ -71,6 +71,9 @@ export type RenderContext = {
 
 	// Read-write refs (WRITE in fase 5 / throttle / drawGizmo)
 	cameraRef: React.MutableRefObject<{ x: number; y: number; z: number; rotation: number }>;
+	// Storytelling rack-focus target written by the cinematic tick (fase 5), read by the DoF
+	// focus block next frame. null for every non-storytelling preset → manual focus untouched.
+	storyFocusRef: React.MutableRefObject<number | null>;
 	lastShakeRef: React.MutableRefObject<{ x: number; y: number; z: number }>;
 	transformHandlesRef: React.MutableRefObject<GizmoHandles | null>;
 	lastRenderTimeRef: React.MutableRefObject<number>;
@@ -282,7 +285,15 @@ export function renderFrame(
 	let fxFocusDist = isCinematic ? currentState.postProcessing.focusDist : 800;
 
 	if (isCinematic && currentState.postProcessing.focusTargetLayer !== undefined && currentState.postProcessing.focusTargetLayer !== -1) {
-		const targetIdx = currentState.postProcessing.focusTargetLayer;
+		// Storytelling rack-focus override: when the tour is active AND DoF is on, the lock
+		// follows the tour's current (fractional) layer instead of the manual choice. Pure
+		// render-time decision — state.focusTargetLayer is NEVER mutated, so the manual lock
+		// restores itself on exit. storyFocusRef is null for every other preset / n===0, so
+		// outside this exact gate the targetIdx is byte-identical to before.
+		const storyFocus = (currentState.cinematicType === 'storytelling' && currentState.postProcessingEnabled.dof)
+			? rc.storyFocusRef.current
+			: null;
+		const targetIdx = storyFocus !== null ? storyFocus : currentState.postProcessing.focusTargetLayer;
 		if (targetIdx >= 0 && targetIdx < currentState.totalLayers) {
 		   const z = targetIdx * -BASE_DEPTH_STEP;
 		   const baseZ = z * currentState.layerSpacingFactor;
@@ -548,6 +559,7 @@ export function renderFrame(
 		rc.accumulatedHandheldTimeRef.current = cinematicResult.accumulatedHandheldTime;
 		rc.wiggleFrameRef.current = cinematicResult.wiggleFrame;
 		rc.cameraRef.current = cinematicResult.newCamera;
+		rc.storyFocusRef.current = cinematicResult.focusLayerIndex;
 		rc.lastShakeRef.current = cinematicResult.newShake;
 	}
 }

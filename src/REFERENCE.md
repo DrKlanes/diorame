@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.10.0
+**Version**: 3.10.1
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,19 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.10.0)
+## Appendix C: Changelog Highlights (1.7.3 → 3.10.1)
+
+### 3.10.1 — DoF rack focus que sigue al tour en Storytelling
+
+**feat(camera) — Storytelling + DoF lock: rack focus automático**: cuando el preset `storytelling` está activo y el DoF está en modo `lock` (`focusTargetLayer ≥ 0`), el plano de enfoque sigue automáticamente la capa hacia la que viaja la cámara con **rack focus suave** (índice de capa fraccional interpolado con la misma `frac` que la pose).
+
+- **Acople implícito**: override puro en tiempo de render dentro del bloque de foco de `renderPipeline`. `state.focusTargetLayer` **nunca se muta** → el lock manual se restaura solo al salir de storytelling o apagar DoF.
+- **Rack focus fraccional**: `focusLayerIndex = lerp(waypoints[seg].layerIndex, waypoints[(seg+1)%n].layerIndex, frac)`. Usa los `layerIndex` reales (no `seg`) porque los waypoints saltan capas pinned/vacías. Durante la obertura (`s=0`) colapsa a `waypoints[0].layerIndex` — sin salto en el handoff beat→viaje.
+- **Coherencia proyectiva**: la fórmula `shapeZ/effectiveCameraZ` reutiliza exactamente el mismo cómputo que el bloque lock preexistente (con `CINEMATIC_DEPTH_MULTIPLIER` y `layerSpacingFactor`) → al posarse en un waypoint, `fxFocusDist = dzStar` = distancia de encuadre → la capa enmarcada queda nítida por construcción.
+- **Fuera del gate byte-idéntico**: otros 10 presets, DoF off, `n=0` (sin waypoints), exports → `focusLayerIndex=null` → gate falla → ruta original intacta.
+- **Files**: `cinematicCamera.ts` (`focusLayerIndex` en `CinematicTickResult` + interpolación por ramas), `renderPipeline.ts` (`storyFocusRef` en `RenderContext`, gate + override, escritura tras tick), `StrataCanvas.tsx` (`storyFocusRef` + `buildRenderContext`), `animationExportRender.ts` / `exportHandlers.ts` (`storyFocusRef: {current:null}` en fake RC).
+
+---
 
 ### 3.10.0 — Preset cinemático "Storytelling" (tour data-driven)
 

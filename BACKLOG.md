@@ -1,6 +1,6 @@
 # Diorame — Backlog técnico
 
-**Actualizado:** 2026-06-07 — Post v3.10.0
+**Actualizado:** 2026-06-07 — Post v3.10.1
 
 ---
 
@@ -191,11 +191,17 @@ Resuelto en v3.7.4 (commit `fb88c33`): nueva sección "Animate/Animar" añadida 
 
 ---
 
+### ~~Item DoF follow — Rack focus automático en Storytelling~~ ✅ COMPLETADO (v3.10.1)
+
+Cuando `storytelling` + DoF modo `lock` están activos, el plano de enfoque sigue con rack focus suave la capa de destino del tour. Acople implícito (override de render, no muta estado). Coherencia proyectiva por construcción: capa enmarcada = capa nítida.
+
+**Path:** `cinematicCamera.ts`, `renderPipeline.ts`, `StrataCanvas.tsx`, `animationExportRender.ts`, `exportHandlers.ts`.
+
+---
+
 ## 🎯 En cola
 
-| Item | Notas |
-|---|---|
-| **DoF follow para Storytelling** | Enfoque automático de la capa de destino cuando `storytelling` + DoF (locked) están activos: el plano de foco sigue al waypoint actual del tour, de modo que la capa enmarcada queda nítida y el resto en bokeh. Siguiente sprint del preset. |
+*(vacía — sprint del preset Storytelling cerrado)*
 
 ---
 
