@@ -15,6 +15,7 @@ import { exportAsPNGSequence } from './canvas/pngSequenceHandler';
 import { exportAsGIF } from './canvas/gifHandler';
 import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
+import { hitTestGizmo, computeMoveTransform, isSignificantTransform } from './canvas/moveGizmoInteraction';
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { renderFrame, type RenderContext } from './canvas/renderPipeline';
 
@@ -839,18 +840,8 @@ export const StrataCanvas = () => {
             setIsDrawing(true);
             drawingPointerTypeRef.current = e.pointerType;
             
-            // Gizmo Interaction
-            const handles = transformHandlesRef.current;
-            let mode: any = 'move';
-            if (handles) {
-                const HIT = 40; // Larger hit area for touch
-                const dist = (p: {x:number,y:number}) => Math.hypot(p.x - pointerX, p.y - pointerY);
-                if (dist(handles.rotate) < HIT) mode = 'rotate';
-                else if (dist(handles.tl) < HIT) mode = 'scale_tl';
-                else if (dist(handles.tr) < HIT) mode = 'scale_tr';
-                else if (dist(handles.br) < HIT) mode = 'scale_br';
-                else if (dist(handles.bl) < HIT) mode = 'scale_bl';
-            }
+            // Gizmo Interaction — extracted to canvas/moveGizmoInteraction.ts
+            const mode = hitTestGizmo(pointerX, pointerY, transformHandlesRef.current);
 
             const activeLayerZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
             const bb = getLayerBoundingBox(state.shapes.filter(s => s.zIndex === activeLayerZ));
@@ -908,51 +899,25 @@ export const StrataCanvas = () => {
         return;
     }
 
-    // --- Transform Logic ---
+    // --- Transform Logic --- (math extracted to canvas/moveGizmoInteraction.ts)
     if (state.tool === 'move' && transformRef.current.isActive) {
         const t = transformRef.current;
         const rect = canvasRectRef.current || canvasRef.current!.getBoundingClientRect();
         const pointerX = e.clientX - rect.left;
         const pointerY = e.clientY - rect.top;
 
-        const dx = pointerX - t.startP.x;
-        const dy = pointerY - t.startP.y;
-        
-        const newT = { ...t.startTransform };
-        
-        if (t.mode === 'move') {
-             const activeZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
-             const FL = state.focalLength;
-             const camZ = state.camera.z;
-             const dz = activeZ - camZ;
-             const layerScale = FL / (FL + dz);
-             const s = (state.drawingZoom || 1) * layerScale;
-             
-             newT.x += dx / s;
-             newT.y += dy / s;
-        } else if (t.mode === 'rotate') {
-             const handles = transformHandlesRef.current;
-             if (handles) {
-                 const hcx = handles.center.x;
-                 const hcy = handles.center.y;
-                 const startAngle = Math.atan2(t.startP.y - hcy, t.startP.x - hcx);
-                 const currAngle = Math.atan2(pointerY - hcy, pointerX - hcx);
-                 newT.rotation += (currAngle - startAngle);
-             }
-        } else if (t.mode.startsWith('scale')) {
-             const handles = transformHandlesRef.current;
-             if (handles) {
-                 const hcx = handles.center.x;
-                 const hcy = handles.center.y;
-                 const startDist = Math.hypot(t.startP.x - hcx, t.startP.y - hcy);
-                 const currDist = Math.hypot(pointerX - hcx, pointerY - hcy);
-                 // Prevent division by zero
-                 const scaleFactor = currDist / Math.max(1, startDist);
-                 newT.scale *= scaleFactor;
-             }
-        }
-        
-        transformRef.current.currentTransform = newT;
+        transformRef.current.currentTransform = computeMoveTransform({
+            mode: t.mode,
+            startTransform: t.startTransform,
+            startP: t.startP,
+            pointerX,
+            pointerY,
+            handles: transformHandlesRef.current,
+            focalLength: state.focalLength,
+            cameraZ: state.camera.z,
+            activeZ: state.currentLayerIndex * -BASE_DEPTH_STEP,
+            drawingZoom: state.drawingZoom,
+        });
         return;
     }
 
@@ -1059,15 +1024,15 @@ export const StrataCanvas = () => {
             setIsDrawing(false);
             drawingPointerTypeRef.current = null;
             if (transformRef.current.isActive) {
-                 const { x, y, scale, rotation } = transformRef.current.currentTransform;
-                 // Only dispatch if significant change
-                 if (Math.abs(x) > 0.1 || Math.abs(y) > 0.1 || Math.abs(scale - 1) > 0.001 || Math.abs(rotation) > 0.001) {
+                 const ct = transformRef.current.currentTransform;
+                 // Only dispatch if significant change (guard extracted to module)
+                 if (isSignificantTransform(ct)) {
                      dispatch({
                          type: 'TRANSFORM_LAYER',
                          payload: {
                              layerIndex: state.currentLayerIndex,
                              transform: {
-                                 rotation, scale, dx: x, dy: y,
+                                 rotation: ct.rotation, scale: ct.scale, dx: ct.x, dy: ct.y,
                                  centerX: transformRef.current.centerX,
                                  centerY: transformRef.current.centerY
                              }
@@ -1316,6 +1281,20 @@ export const StrataCanvas = () => {
     });
   };
 
+  const handleCenterLayer = () => {
+    if (state.hiddenLayers.includes(state.currentLayerIndex)) return;
+    const bb = transformRef.current.layerBB;
+    if (!bb) return;
+    // Center = canvas home origin (0,0), where Reset View centers. Pure translation
+    // of the layer's bounding-box center to world origin.
+    const cx = (bb.minX + bb.maxX) / 2;
+    const cy = (bb.minY + bb.maxY) / 2;
+    dispatch({
+      type: 'MOVE_LAYER',
+      payload: { layerIndex: state.currentLayerIndex, deltaX: -cx, deltaY: -cy }
+    });
+  };
+
   return (
     <div ref={containerRef} className={cn("absolute inset-0 z-0 overflow-hidden touch-none", state.mode === 'drawing' ? (cursorOverride ? cursorOverride : (state.tool === 'move' ? "cursor-move" : "cursor-crosshair")) : "cursor-default")} style={{ touchAction: 'none' }}>
       <canvas ref={canvasRef} tabIndex={0} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel} className="block w-full h-full" style={{ touchAction: 'none', outline: 'none' }} />
@@ -1353,6 +1332,20 @@ export const StrataCanvas = () => {
             <path d="M14 12h2" />
             <path d="M8 12h2" />
             <path d="M2 12h2" />
+          </svg>
+        </button>
+        <button
+          onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+          onClick={(e) => { e.stopPropagation(); handleCenterLayer(); }}
+          className="flex items-center justify-center w-7 h-7 rounded-md bg-white/90 border border-slate-200 shadow-sm hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 transition-colors backdrop-blur-sm"
+          title={t('viewport.centerLayer')}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(26, 26, 26)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v4" />
+            <path d="M12 18v4" />
+            <path d="M2 12h4" />
+            <path d="M18 12h4" />
           </svg>
         </button>
       </div>

@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.9.4
+**Version**: 3.9.5
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,19 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.9.4)
+## Appendix C: Changelog Highlights (1.7.3 → 3.9.5)
+
+### 3.9.5 — Botón centrar capa (Move) + extracción Move-gizmo (squash & stretch Fase 0)
+
+**feat — Botón "centrar capa" en las acciones del Move**: tercer botón en la fila de acciones del gizmo del Move (junto a reflejar H/V), icono crosshair. Traslada la capa actual al **centro del canvas** (origen del mundo `0,0`, donde centra Reset View) moviendo el centro de su bounding box ahí. Traslación pura vía `MOVE_LAYER` (hornea points + originalPoints, con undo). i18n EN/ES.
+- **Files**: `StrataCanvas.tsx` (overlay de acciones del Move), `en.ts`, `es.ts`.
+
+**refactor — Extracción de la interacción del Move-gizmo (Fase 0 de squash & stretch)**: la lógica de interacción del gizmo del Move (hit-test de asas, matemática de transform de onPointerMove, guard de commit) se extrajo de `StrataCanvas.tsx` a `canvas/moveGizmoInteraction.ts` (módulo puro: recibe valores, devuelve valores, no toca refs ni el RAF). Comportamiento **byte-idéntico** — solo reubicado. StrataCanvas −35 líneas netas. Prepara el terreno para las fases 1-5 de squash & stretch sin crecer el monolito. RAF/buildRenderContext/live-stroke intactos.
+- **Files**: `moveGizmoInteraction.ts` (nuevo), `StrataCanvas.tsx`.
+
+**docs — Reclasificación de squash & stretch en BACKLOG**: riesgo HIGH → MEDIUM. El modelo de datos es destructivo (transform horneado en `points`), así que la deformación no uniforme de trazos no toca proyección/SVG/save-load. Decisiones cerradas (texto excluido, asas de lado = escala pura de eje) y faseado 0-5.
+
+---
 
 ### 3.9.4 — Captura HQ: fidelidad de FX a escala (Fase B)
 

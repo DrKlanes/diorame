@@ -149,16 +149,31 @@ Diorame no tiene manifest ni service worker. Primer paso: PWA con `vite-plugin-p
 
 ### Item Squash & Stretch — Gizmos de deformación no proporcional (Move tool)
 
-**Categoría:** feature estructural
-**Riesgo:** high — toca render, proyección 3D, SVG export y save/load
+**Categoría:** feature de expresividad
+**Riesgo:** **medium** (rebajado de high tras análisis del modelo de datos real)
 **Origen:** expresividad UX + motivación animación
-**⚠️ Nota:** PROYECTO PROPIO. No mezclar con otros sprints. Requiere sesión dedicada, probablemente Opus.
+**⚠️ Nota:** PROYECTO PROPIO. Sesión dedicada, Opus. Faseado 0-5 (Fase 0 ya HECHA en v3.9.5).
 
 Gizmos situados en los puntos medios de cada lado del rectángulo de selección del Move tool que permiten reescalar de forma **no uniforme** (estirar/comprimir en X o en Y), deformando la forma. Motivación principal: expresividad artística y squash & stretch clásico de animación.
 
-Esta feature **NO es de animación** aunque la motive. Técnicamente modifica cómo se calculan render (trazos deformados no-uniformes), proyección 3D, SVG export (las formas deformadas cambian el cálculo de máscaras y paths) y save/load (el modelo Shape necesita capturar la deformación). Es una intervención estructural, no cosmética. No agendar hasta tener un sprint dedicado con análisis previo completo.
+**Reclasificación tras análisis (la premisa original era incorrecta).** El modelo de datos es **DESTRUCTIVO**: el reducer `TRANSFORM_LAYER` hornea el transform en `shape.points` (no hay scaleX/scaleY ni matriz persistente; solo el texto guarda `rotation`/`fontSize`). Por tanto, para **trazos**, una escala no uniforme se hornea en los puntos **exactamente igual** que la escala uniforme de hoy → **cero cambios** en proyección 3D, SVG export (mapea `points` directo) y save/load (serializa `points`). Los 3 "frentes estructurales" del análisis previo **desaparecen** para trazos. Solo queda: gizmos + hit-test + drag + preview en vivo + el reducer.
 
-**Path:** `src/components/strata/canvas/drawGizmo.ts`, `renderLayerBody.ts`, `exportHandlers.ts`, `strataTypes.ts`
+**Decisiones cerradas:**
+- **Texto excluido** del squash & stretch (no es geometría de puntos; una escala no uniforme no cabe en un solo `fontSize`). Las asas de lado hacen no-op en capas de texto.
+- **Asas de lado = escala pura de eje** (sin rotación). La rotación queda como gesto aparte (asa de rotación existente).
+- **Centro del box** (no centroide) como referencia de deformación — lo más intuitivo visualmente.
+
+**Faseado validable (estilo HQ A/B):**
+- **Fase 0 — Extracción (HECHA, v3.9.5):** lógica de interacción del Move-gizmo extraída de StrataCanvas a `canvas/moveGizmoInteraction.ts` (módulo puro). Aísla el monolito para las fases siguientes.
+- **Fase 1 — Motor:** `scaleX/scaleY` en `currentTransform` + payload de `TRANSFORM_LAYER` (default = `scale`, retrocompat). Bake no uniforme en points.
+- **Fase 2 — Gizmo visual:** asas de lado medio en `drawGizmo.ts` + `GizmoHandles`.
+- **Fase 3 — Drag:** hit-test + modos `scale_t/b/l/r` + escala mono-eje (en el módulo de Fase 0).
+- **Fase 4 — Preview en vivo:** `scaleX/scaleY` en el preview de `renderLayerBody`.
+- **Fase 5 — Texto + edge cases:** exclusión de texto, `originalPoints` (spine), clamp anti-flip.
+
+**Riesgo concentrado:** editar los pointer handlers del Move (mitigado por la Fase 0). RAF/buildRenderContext/live-stroke fuera de alcance.
+
+**Path:** `src/components/strata/canvas/moveGizmoInteraction.ts` (Fase 0), `drawGizmo.ts`, `renderLayerBody.ts`, `StrataContext.tsx` (reducer), `StrataCanvas.tsx` (pointer handlers del Move)
 
 ---
 

@@ -1,0 +1,107 @@
+import type { GizmoHandles } from './drawGizmo';
+
+/**
+ * Pure interaction logic for the Move tool's transform gizmo.
+ *
+ * Extracted verbatim from StrataCanvas's pointer handlers (Fase 0 of the
+ * squash & stretch sprint). The math and behavior are IDENTICAL to the
+ * previous inline code — only relocated. These functions never touch React
+ * refs or the RAF; the caller (StrataCanvas) reads its refs/state, passes
+ * plain values in, and writes the returned values back. "Caller orquesta,
+ * módulos puros."
+ */
+
+export type TransformMode = 'move' | 'rotate' | 'scale_tl' | 'scale_tr' | 'scale_br' | 'scale_bl';
+
+export type Transform = { x: number; y: number; scale: number; rotation: number };
+
+// Hit radius in screen px. Larger than the visual handle for comfortable touch.
+const HIT_RADIUS = 40;
+
+/**
+ * Hit-tests the pointer against the gizmo handles and returns the interaction
+ * mode. Defaults to 'move' (drag the whole layer) when no handle is hit or no
+ * handles are present.
+ */
+export const hitTestGizmo = (
+	pointerX: number,
+	pointerY: number,
+	handles: GizmoHandles | null,
+): TransformMode => {
+	let mode: TransformMode = 'move';
+	if (handles) {
+		const dist = (p: { x: number; y: number }) => Math.hypot(p.x - pointerX, p.y - pointerY);
+		if (dist(handles.rotate) < HIT_RADIUS) mode = 'rotate';
+		else if (dist(handles.tl) < HIT_RADIUS) mode = 'scale_tl';
+		else if (dist(handles.tr) < HIT_RADIUS) mode = 'scale_tr';
+		else if (dist(handles.br) < HIT_RADIUS) mode = 'scale_br';
+		else if (dist(handles.bl) < HIT_RADIUS) mode = 'scale_bl';
+	}
+	return mode;
+};
+
+export type ComputeMoveTransformParams = {
+	mode: string;
+	startTransform: Transform;
+	startP: { x: number; y: number };
+	pointerX: number;
+	pointerY: number;
+	handles: GizmoHandles | null;
+	// Inputs for the 'move' mode drawing-parallax scale (so a pointer delta in
+	// screen px maps to the right world delta at the active layer's depth).
+	focalLength: number;
+	cameraZ: number;
+	activeZ: number;
+	drawingZoom: number;
+};
+
+/**
+ * Computes the new transform from the active gizmo drag. Returns a fresh
+ * Transform derived from startTransform — does not mutate inputs.
+ *
+ * - 'move':   translate by the pointer delta, divided by the layer's projected
+ *             scale so it tracks the cursor in world space.
+ * - 'rotate': add the angle swept around the box center.
+ * - 'scale*': uniform scale by the ratio of current/start distance to center.
+ */
+export const computeMoveTransform = (p: ComputeMoveTransformParams): Transform => {
+	const { mode, startTransform, startP, pointerX, pointerY, handles } = p;
+	const dx = pointerX - startP.x;
+	const dy = pointerY - startP.y;
+	const newT = { ...startTransform };
+
+	if (mode === 'move') {
+		const dz = p.activeZ - p.cameraZ;
+		const layerScale = p.focalLength / (p.focalLength + dz);
+		const s = (p.drawingZoom || 1) * layerScale;
+		newT.x += dx / s;
+		newT.y += dy / s;
+	} else if (mode === 'rotate') {
+		if (handles) {
+			const hcx = handles.center.x;
+			const hcy = handles.center.y;
+			const startAngle = Math.atan2(startP.y - hcy, startP.x - hcx);
+			const currAngle = Math.atan2(pointerY - hcy, pointerX - hcx);
+			newT.rotation += (currAngle - startAngle);
+		}
+	} else if (mode.startsWith('scale')) {
+		if (handles) {
+			const hcx = handles.center.x;
+			const hcy = handles.center.y;
+			const startDist = Math.hypot(startP.x - hcx, startP.y - hcy);
+			const currDist = Math.hypot(pointerX - hcx, pointerY - hcy);
+			// Prevent division by zero
+			const scaleFactor = currDist / Math.max(1, startDist);
+			newT.scale *= scaleFactor;
+		}
+	}
+
+	return newT;
+};
+
+/**
+ * True when the transform departs enough from identity to be worth committing
+ * to history (same thresholds as the original inline guard).
+ */
+export const isSignificantTransform = (t: Transform): boolean =>
+	Math.abs(t.x) > 0.1 || Math.abs(t.y) > 0.1 || Math.abs(t.scale - 1) > 0.001 || Math.abs(t.rotation) > 0.001;
