@@ -26,6 +26,7 @@
 | Item 7 — Hex hardcodeados en MobileBlockScreenV2 | 9.1 | Dos `rgb(154,15,249)` → `T.purple` en iconos tablet/monitor. Los hex dentro de THEME_CSS permanecen documentados como restricción arquitectural (CSS inyectada, no tokenizable sin sistema de CSS variables). Commit `61a934d`. |
 | Item 8 — Focus trap para variant banner | 9.7 | El primitivo ya tenía focus trap completo (Tab cycling + initial focus). Solo faltaba excluir variant `banner` por coherencia con scroll lock y ESC handler. Fix de 1 línea. Commit `1ede6b7`. |
 | Item 9 — Primitivo DiActionButton para LayersPanel | 9.8 | `IconBtn` promovido a `DiActionButton` en design-system. Añadidas props `disabled` (interna, elimina 10 wrappers `<div style={off(...)}>`) y `danger` (variante semántica usada por trash). Hover migrado a pointer events. 11 consumidores migrados. `topbar/_shared.tsx` eliminado. Commit `bada128`. |
+| Item 11 — Warning `ref is not a prop` en DiModal | v3.9.2 | **Premisa del backlog era falsa: es React 18.3.1, no React 19.** Causa real: el `motion.div` del panel se creaba con `ref={panelRef}`; React 18.3 instala un getter de warning sobre `props.ref` de cualquier elemento creado con ref, y `framer-motion@12.38` (`PopChild`) lee `children.props?.ref` (ruta React 19) antes del fallback React 18, disparándolo. El displayName `"[object Object]"` delataba un `type` exótico (forwardRef de `motion`), no el backdrop. Fix: ref movida a wrapper interno `display:contents` — el hijo directo de `AnimatePresence` ya no se crea con ref → warning eliminado en origen, sin depender de versión de framer-motion. Un intento local previo (no commiteado) envolvió `DiModalBackdrop` en `forwardRef`: código muerto basado en diagnóstico erróneo (el backdrop nunca recibe ref); descartado. Cosmético dev-only (refs siempre funcionaron). |
 
 ---
 
@@ -47,22 +48,11 @@ Monolito de alto riesgo. Render loop, gestos, proyección 3D. Refactor diferido 
 
 ---
 
-### Item 11 — Warning `ref is not a prop` en framer-motion + React 19
+### ~~Item 11 — Warning `ref is not a prop` en DiModal~~ ✅ CERRADO
 
-**Categoría:** library compatibility
-**Riesgo:** low (cosmético, no afecta funcionalidad)
-**Origen:** detectado durante validación de Fase 9
+Resuelto en v3.9.2. **La premisa original ("framer-motion + React 19") era falsa: el proyecto corre React 18.3.1.** El warning legacy de React 18.3 se disparaba porque el `motion.div` del panel se creaba con `ref={panelRef}` (React instala un getter sobre `props.ref` en todo elemento creado con ref) y `framer-motion@12.38` `PopChild` lee `children.props?.ref` antes del fallback React 18. El prefijo `"[object Object]"` delataba el `type` exótico de `motion` (forwardRef), no el backdrop. Fix: ref movida a un wrapper interno `display:contents`, de modo que el hijo directo de `AnimatePresence` ya no se crea con ref — warning eliminado en origen. Un intento local previo no commiteado había envuelto `DiModalBackdrop` en `forwardRef` (código muerto: el backdrop nunca recibe ref); descartado. Cosmético dev-only; los refs siempre funcionaron.
 
-**Problema:** Consola del navegador muestra warning de React 19:
-> `ref` is not a prop. Trying to access it will result in `undefined` being returned.
-
-Aparece en la cadena `AnimatePresence → PresenceChild → PopChild → DiModalRoot`. Es bug conocido de `framer-motion` con React 19 — la librería accede a `ref` como prop interna y React 19 cambió la semántica.
-
-**Solución propuesta:** actualizar `framer-motion` a versión que ya haya parcheado el issue (verificar changelog del package), o cambiar el patrón de uso de `AnimatePresence` en `DiModal.Root` si no hay versión arreglada disponible.
-
-**Path:** `src/components/strata/modals/DiModal.tsx` líneas 45 aprox.
-
-**Nota (2026-06-01):** `framer-motion` v12.38.0 está instalado — verificar en consola si el warning persiste con esta versión antes de actuar.
+**Path:** `src/components/strata/modals/DiModal.tsx`, `DiModalBackdrop.tsx`
 
 ---
 

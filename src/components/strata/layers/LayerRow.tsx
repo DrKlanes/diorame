@@ -57,11 +57,17 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 	const badgeColor = badgeIsFilled ? T.purple : mutedColor;
 
 	return (
-		<motion.button
+		<motion.div
 			ref={setNodeRef}
 			layout={!isDragging}
 			transition={SPRING}
 			onClick={!isDragging ? () => dispatch({ type: 'SET_CURRENT_LAYER', payload: index } as any) : undefined}
+			onKeyDown={!isDragging ? (e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					dispatch({ type: 'SET_CURRENT_LAYER', payload: index } as any);
+				}
+			} : undefined}
 			style={{
 				width: '100%',
 				padding: '5px 6px 5px 4px',
@@ -183,6 +189,6 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 					/>
 				</button>
 			</div>
-		</motion.button>
+		</motion.div>
 	);
 }

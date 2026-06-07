@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.9.1
+**Version**: 3.9.2
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,17 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.9.1)
+## Appendix C: Changelog Highlights (1.7.3 → 3.9.2)
+
+### 3.9.2 — Warnings de consola (DiModal + LayerRow)
+
+**fix — Warning dev `ref is not a prop` en DiModal**: causa real **React 18.3.1, no React 19** (la premisa del backlog era falsa). El `motion.div` del panel se creaba con `ref={panelRef}`; React 18.3 instala un getter de warning sobre `props.ref` en todo elemento creado con ref, y `framer-motion@12.38` (`PopChild`) lee `children.props?.ref` (ruta React 19) antes del fallback React 18, disparándolo. El prefijo `"[object Object]"` delataba el `type` exótico de `motion` (forwardRef), no el backdrop. Fix: ref movida a un wrapper interno `display:contents` que envuelve `{children}` — el hijo directo de `AnimatePresence` ya no se crea con ref → warning eliminado en origen, sin depender de versión de framer-motion. Focus-trap (`querySelectorAll` atraviesa `display:contents`) y animación intactos. Un intento local previo (no commiteado) había envuelto `DiModalBackdrop` en `forwardRef`: código muerto basado en diagnóstico erróneo; descartado.
+- **Files**: `DiModal.tsx`.
+
+**fix — Warning `<button>` anidado en LayerRow**: la fila de capa era un `motion.button` que contenía otros `<button>` (visibilidad, pin) — `validateDOMNesting` inválido. Cambiada la fila a `motion.div` con `onKeyDown` (Enter/Space) para activación por teclado; `role="button"`/`tabIndex` ya los inyecta dnd-kit vía `{...attributes}`. Los `stopPropagation` de los botones internos y la accesibilidad se conservan.
+- **Files**: `LayerRow.tsx`.
+
+---
 
 ### 3.9.1 — Deuda técnica menor (design-system)
 

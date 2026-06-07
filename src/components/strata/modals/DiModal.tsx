@@ -92,7 +92,6 @@ function DiModalRoot({ open, onClose, variant = 'dialog', size = 'md', width: wi
 			<AnimatePresence>
 				{open && (
 					<motion.div
-						ref={panelRef}
 						variants={getVariants(variant)}
 						initial="hidden"
 						animate="visible"
@@ -101,7 +100,14 @@ function DiModalRoot({ open, onClose, variant = 'dialog', size = 'md', width: wi
 						aria-modal="true"
 						style={panelStyle}
 					>
-						{children}
+						{/* Focus-trap container. The ref lives here, NOT on the motion.div:
+						    AnimatePresence's PopChild reads children.props.ref, and React 18.3
+						    installs a warning getter on any element created with a ref, firing
+						    "ref is not a prop". display:contents keeps layout/animation identical
+						    and querySelectorAll still traverses it for the focus trap. */}
+						<div ref={panelRef} style={{ display: 'contents' }}>
+							{children}
+						</div>
 					</motion.div>
 				)}
 			</AnimatePresence>
