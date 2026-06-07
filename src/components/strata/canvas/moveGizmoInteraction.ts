@@ -11,7 +11,10 @@ import type { GizmoHandles } from './drawGizmo';
  * módulos puros."
  */
 
-export type TransformMode = 'move' | 'rotate' | 'scale_tl' | 'scale_tr' | 'scale_br' | 'scale_bl';
+export type TransformMode =
+	| 'move' | 'rotate'
+	| 'scale_tl' | 'scale_tr' | 'scale_br' | 'scale_bl'  // corners → uniform scale
+	| 'scale_t' | 'scale_b' | 'scale_l' | 'scale_r';     // sides → per-axis (squash & stretch)
 
 export type Transform = {
 	x: number;
@@ -45,6 +48,12 @@ export const hitTestGizmo = (
 		else if (dist(handles.tr) < HIT_RADIUS) mode = 'scale_tr';
 		else if (dist(handles.br) < HIT_RADIUS) mode = 'scale_br';
 		else if (dist(handles.bl) < HIT_RADIUS) mode = 'scale_bl';
+		// Mid-side handles (squash & stretch). Checked AFTER corners so corners win on
+		// overlap in small boxes. Optional in the type, but drawGizmo always sets them.
+		else if (handles.mt && dist(handles.mt) < HIT_RADIUS) mode = 'scale_t';
+		else if (handles.mb && dist(handles.mb) < HIT_RADIUS) mode = 'scale_b';
+		else if (handles.ml && dist(handles.ml) < HIT_RADIUS) mode = 'scale_l';
+		else if (handles.mr && dist(handles.mr) < HIT_RADIUS) mode = 'scale_r';
 	}
 	return mode;
 };
@@ -70,8 +79,10 @@ export type ComputeMoveTransformParams = {
  *
  * - 'move':   translate by the pointer delta, divided by the layer's projected
  *             scale so it tracks the cursor in world space.
- * - 'rotate': add the angle swept around the box center.
- * - 'scale*': uniform scale by the ratio of current/start distance to center.
+ * - 'rotate':        add the angle swept around the box center.
+ * - 'scale_l/r':     per-axis horizontal stretch (squash & stretch) → scaleX.
+ * - 'scale_t/b':     per-axis vertical stretch → scaleY. No rotation involved.
+ * - 'scale_tl..bl':  uniform scale by the ratio of current/start distance to center.
  */
 export const computeMoveTransform = (p: ComputeMoveTransformParams): Transform => {
 	const { mode, startTransform, startP, pointerX, pointerY, handles } = p;
@@ -93,7 +104,28 @@ export const computeMoveTransform = (p: ComputeMoveTransformParams): Transform =
 			const currAngle = Math.atan2(pointerY - hcy, pointerX - hcx);
 			newT.rotation += (currAngle - startAngle);
 		}
+	} else if (mode === 'scale_l' || mode === 'scale_r') {
+		// Side handle → pure horizontal (world-X) stretch. Ratio of the pointer's
+		// horizontal distance from the box center vs. its start. rotation untouched.
+		// Drawing-mode projection has no rotation, so screen-X aligns with world-X.
+		if (handles) {
+			const hcx = handles.center.x;
+			const startDistX = Math.abs(startP.x - hcx);
+			const currDistX = Math.abs(pointerX - hcx);
+			newT.scaleX = (startTransform.scaleX ?? 1) * (currDistX / Math.max(1, startDistX));
+			newT.scaleY = startTransform.scaleY ?? 1;
+		}
+	} else if (mode === 'scale_t' || mode === 'scale_b') {
+		// Side handle → pure vertical (world-Y) stretch.
+		if (handles) {
+			const hcy = handles.center.y;
+			const startDistY = Math.abs(startP.y - hcy);
+			const currDistY = Math.abs(pointerY - hcy);
+			newT.scaleY = (startTransform.scaleY ?? 1) * (currDistY / Math.max(1, startDistY));
+			newT.scaleX = startTransform.scaleX ?? 1;
+		}
 	} else if (mode.startsWith('scale')) {
+		// Corner handles → uniform scale (existing behavior, unchanged).
 		if (handles) {
 			const hcx = handles.center.x;
 			const hcy = handles.center.y;
@@ -113,4 +145,6 @@ export const computeMoveTransform = (p: ComputeMoveTransformParams): Transform =
  * to history (same thresholds as the original inline guard).
  */
 export const isSignificantTransform = (t: Transform): boolean =>
-	Math.abs(t.x) > 0.1 || Math.abs(t.y) > 0.1 || Math.abs(t.scale - 1) > 0.001 || Math.abs(t.rotation) > 0.001;
+	Math.abs(t.x) > 0.1 || Math.abs(t.y) > 0.1 || Math.abs(t.scale - 1) > 0.001 || Math.abs(t.rotation) > 0.001
+	|| (t.scaleX !== undefined && Math.abs(t.scaleX - 1) > 0.001)
+	|| (t.scaleY !== undefined && Math.abs(t.scaleY - 1) > 0.001);

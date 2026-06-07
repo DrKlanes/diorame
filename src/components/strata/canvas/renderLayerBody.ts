@@ -205,12 +205,19 @@ export function renderLayer(
 			 const cy = rc.transformState.centerY;
 			 const sin = Math.sin(t.rotation);
 			 const cos = Math.cos(t.rotation);
+			 // Mirror the TRANSFORM_LAYER reducer's per-axis bake so the live preview
+			 // matches the committed result exactly (no jump on release). Text is excluded
+			 // from non-uniform deformation (sx===sy===scale), same as the reducer.
+			 const isText = shape.type === 'text';
+			 const hasNonUniform = !isText && (t.scaleX !== undefined || t.scaleY !== undefined);
+			 const sx = hasNonUniform ? Math.max(0.01, t.scaleX ?? t.scale) : t.scale;
+			 const sy = hasNonUniform ? Math.max(0.01, t.scaleY ?? t.scale) : t.scale;
 
 			 currentPoints = currentPoints.map(p => {
 				 const ox = p.x - cx;
 				 const oy = p.y - cy;
-				 const rx = (ox * cos - oy * sin) * t.scale;
-				 const ry = (ox * sin + oy * cos) * t.scale;
+				 const rx = (ox * cos - oy * sin) * sx;
+				 const ry = (ox * sin + oy * cos) * sy;
 				 return {
 					 ...p,
 					 x: rx + cx + t.x,

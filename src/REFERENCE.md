@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.9.7
+**Version**: 3.9.9
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,15 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.9.7)
+## Appendix C: Changelog Highlights (1.7.3 → 3.9.9)
+
+### 3.9.9 — Deformación interactiva con preview en vivo (squash & stretch Fase 3 + 4)
+
+**feat — Squash & stretch interactivo en el Move (Fase 3 drag + Fase 4 preview)**: arrastrar las asas de lado del gizmo deforma la capa en su eje — izq/der → `scaleX`, arriba/abajo → `scaleY` — con escala **mono-eje** respecto al centro del box (ratio de la distancia horizontal/vertical del puntero al centro vs. el inicio; sin rotación). Nuevos modos `scale_t/b/l/r` en `moveGizmoInteraction.ts` (hit-test + `computeMoveTransform`); el commit incluye `scaleX/scaleY` en el payload, que dispara la ruta no uniforme del reducer (motor de Fase 1) horneando la deformación en `points` y `originalPoints`. **Preview EN VIVO** durante el arrastre: `renderLayerBody` y el `project()` del gizmo aplican `scaleX/scaleY` espejando **exactamente** la fórmula del bake (`rx=(ox·cos−oy·sin)·sx`, `ry=(ox·sin+oy·cos)·sy`), así que la capa y el bounding box se deforman mientras arrastras y **no hay salto al soltar**. Esquinas (escala uniforme) y todo el Move actual **byte-idénticos** cuando no hay `scaleX/scaleY`. Texto **no se deforma** (excluido por shape en reducer y preview). Clamp anti-flip `≥0.01` en el camino no uniforme.
+- **Files**: `moveGizmoInteraction.ts`, `StrataCanvas.tsx` (tipo `mode` + payload), `renderPipeline.ts` (tipo), `renderLayerBody.ts` (preview), `drawGizmo.ts` (gizmo en vivo).
+- **Nota de versión**: combina Fase 3 + Fase 4 en un commit; **v3.9.8 no llegó a desplegarse** (su commit no se ejecutó), por eso se salta sin dejar hueco real en el historial.
+
+---
 
 ### 3.9.7 — Asas de lado medio en el gizmo del Move (squash & stretch Fase 2)
 

@@ -140,7 +140,7 @@ export const StrataCanvas = () => {
   // Transform Tool State
   const transformRef = useRef<{
       isActive: boolean;
-      mode: 'none' | 'move' | 'scale_tl' | 'scale_tr' | 'scale_br' | 'scale_bl' | 'rotate';
+      mode: 'none' | 'move' | 'scale_tl' | 'scale_tr' | 'scale_br' | 'scale_bl' | 'rotate' | 'scale_t' | 'scale_b' | 'scale_l' | 'scale_r';
       startP: { x: number, y: number };
       startTransform: { x: number, y: number, scale: number, rotation: number, scaleX?: number, scaleY?: number };
       centerX: number; centerY: number;
@@ -1033,6 +1033,9 @@ export const StrataCanvas = () => {
                              layerIndex: state.currentLayerIndex,
                              transform: {
                                  rotation: ct.rotation, scale: ct.scale, dx: ct.x, dy: ct.y,
+                                 // scaleX/scaleY present only for side-handle drags → triggers
+                                 // the reducer's non-uniform path. undefined for corners → uniform.
+                                 scaleX: ct.scaleX, scaleY: ct.scaleY,
                                  centerX: transformRef.current.centerX,
                                  centerY: transformRef.current.centerY
                              }

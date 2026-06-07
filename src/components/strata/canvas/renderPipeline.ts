@@ -32,7 +32,7 @@ const ONION_ALPHA_NEXT = 0.22;
  */
 export type TransformRefState = {
 	isActive: boolean;
-	mode: 'none' | 'move' | 'scale_tl' | 'scale_tr' | 'scale_br' | 'scale_bl' | 'rotate';
+	mode: 'none' | 'move' | 'scale_tl' | 'scale_tr' | 'scale_br' | 'scale_bl' | 'rotate' | 'scale_t' | 'scale_b' | 'scale_l' | 'scale_r';
 	startP: { x: number; y: number };
 	startTransform: { x: number; y: number; scale: number; rotation: number; scaleX?: number; scaleY?: number };
 	centerX: number;

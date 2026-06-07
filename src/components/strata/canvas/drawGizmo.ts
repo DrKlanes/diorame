@@ -21,7 +21,7 @@ export type GizmoHandles = {
 type TransformState = {
 	layerBB: { minX: number; minY: number; maxX: number; maxY: number; cx: number; cy: number } | null;
 	isActive: boolean;
-	currentTransform: { x: number; y: number; scale: number; rotation: number };
+	currentTransform: { x: number; y: number; scale: number; rotation: number; scaleX?: number; scaleY?: number };
 	centerX: number;
 	centerY: number;
 };
@@ -91,6 +91,11 @@ export const drawGizmo = (
 	const cy = tr.centerY;
 	const sin = Math.sin(t.rotation);
 	const cos = Math.cos(t.rotation);
+	// Non-uniform (squash & stretch) live preview: mirror the reducer so the gizmo box
+	// follows a side-handle deformation while dragging. Uniform / no scaleXY → scX===scY===scale.
+	const tNonUniform = (t.scaleX !== undefined || t.scaleY !== undefined);
+	const scX = tNonUniform ? Math.max(0.01, t.scaleX ?? t.scale) : t.scale;
+	const scY = tNonUniform ? Math.max(0.01, t.scaleY ?? t.scale) : t.scale;
 
 	const activeZ = currentLayerIndex * -baseDepthStep;
 	const dDraw = activeZ - cameraZ;
@@ -100,8 +105,8 @@ export const drawGizmo = (
 		// World Transform
 		const ox = wx - cx;
 		const oy = wy - cy;
-		const rx = (ox * cos - oy * sin) * t.scale;
-		const ry = (ox * sin + oy * cos) * t.scale;
+		const rx = (ox * cos - oy * sin) * scX;
+		const ry = (ox * sin + oy * cos) * scY;
 		const finalX = rx + cx + t.x;
 		const finalY = ry + cy + t.y;
 
