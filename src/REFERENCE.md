@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.9.6
+**Version**: 3.9.7
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,14 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.9.6)
+## Appendix C: Changelog Highlights (1.7.3 → 3.9.7)
+
+### 3.9.7 — Asas de lado medio en el gizmo del Move (squash & stretch Fase 2)
+
+**feat (en progreso) — 4 asas de lado medio en el gizmo del Move**: añadidas las asas top/bottom/left/right (`mt/mb/ml/mr`) al `GizmoHandles` (opcionales, para mantener compatible la ref inline de StrataCanvas sin tocarla) y dibujadas en `drawGizmo.ts` como **barras pill** (14×4px, extremos redondeados) cuyo eje largo corre **a lo largo del borde adyacente** del box — verticales en izq/der (estiramiento horizontal), horizontales en arriba/abajo (estiramiento vertical). **Siguen la rotación del box**: los ángulos se derivan de las esquinas ya proyectadas (`topAngle`/`leftAngle`). Sutilmente distintas de las asas de esquina (círculos ⌀12) para comunicar "deformación de eje" vs "escala uniforme". Mismo relleno blanco + borde azul. **Solo dibujo** — sin hit-test ni drag aún (Fase 3). Rounded rect vía `arcTo` manual (compat iPad). El caso "capa de texto" (asas irrelevantes) se gestiona en Fase 3.
+- **Files**: `drawGizmo.ts`.
+
+---
 
 ### 3.9.6 — Motor de deformación no uniforme (squash & stretch Fase 1)
 

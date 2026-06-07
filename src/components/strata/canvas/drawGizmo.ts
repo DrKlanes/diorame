@@ -9,6 +9,13 @@ export type GizmoHandles = {
 	bl: Point2D;
 	rotate: Point2D;
 	center: Point2D;
+	// Mid-side handles for non-uniform (squash & stretch) scaling: top / bottom /
+	// left / right edge midpoints. Optional so StrataCanvas's inline ref type stays
+	// structurally compatible without edits; drawGizmo always populates them.
+	mt?: Point2D;
+	mb?: Point2D;
+	ml?: Point2D;
+	mr?: Point2D;
 };
 
 type TransformState = {
@@ -111,6 +118,12 @@ export const drawGizmo = (
 	const pBR = project(bb.maxX, bb.maxY);
 	const pBL = project(bb.minX, bb.maxY);
 
+	// Mid-side handles (squash & stretch) — centered on each edge of the bbox.
+	const pMT = project(bb.cx, bb.minY); // top mid
+	const pMB = project(bb.cx, bb.maxY); // bottom mid
+	const pML = project(bb.minX, bb.cy); // left mid
+	const pMR = project(bb.maxX, bb.cy); // right mid
+
 	// Rotate handle above top edge
 	// Project unrotated top-mid point, but moved up in unrotated Y
 	// Actually, simpler: take projected TL and TR, find midpoint, then extend perpendicular.
@@ -129,6 +142,7 @@ export const drawGizmo = (
 	const handles: GizmoHandles = {
 		tl: pTL, tr: pTR, br: pBR, bl: pBL,
 		rotate: pRot, center: pCenter,
+		mt: pMT, mb: pMB, ml: pML, mr: pMR,
 	};
 
 	// Draw
@@ -160,10 +174,39 @@ export const drawGizmo = (
 		ctx.stroke();
 	};
 
+	// Mid-side bars (squash & stretch). A thin rounded pill whose long axis runs
+	// ALONG the adjacent box edge — reads as "stretch this axis" and follows the box
+	// rotation (angle derived from the projected corners). Same white fill + blue
+	// border as the corner handles; only the shape differs.
+	const drawBar = (p: {x:number,y:number}, angle: number) => {
+		const long = 14, thick = 4, r = thick / 2;
+		ctx.save();
+		ctx.translate(p.x, p.y);
+		ctx.rotate(angle);
+		const x = -long / 2, y = -thick / 2;
+		ctx.beginPath();
+		ctx.moveTo(x + r, y);
+		ctx.arcTo(x + long, y, x + long, y + thick, r);
+		ctx.arcTo(x + long, y + thick, x, y + thick, r);
+		ctx.arcTo(x, y + thick, x, y, r);
+		ctx.arcTo(x, y, x + long, y, r);
+		ctx.closePath();
+		ctx.fill();
+		ctx.stroke();
+		ctx.restore();
+	};
+
 	drawHandle(pTL, 'scale');
 	drawHandle(pTR, 'scale');
 	drawHandle(pBR, 'scale');
 	drawHandle(pBL, 'scale');
+	// Mid-side bars — long axis along the adjacent edge (follows box rotation).
+	const topAngle = Math.atan2(pTR.y - pTL.y, pTR.x - pTL.x);  // top/bottom edge direction
+	const leftAngle = Math.atan2(pBL.y - pTL.y, pBL.x - pTL.x); // left/right edge direction
+	drawBar(pMT, topAngle);   // horizontal bar (when unrotated) → vertical stretch
+	drawBar(pMB, topAngle);
+	drawBar(pML, leftAngle);  // vertical bar (when unrotated) → horizontal stretch
+	drawBar(pMR, leftAngle);
 	ctx.fillStyle = '#3b82f6';
 	drawHandle(pRot, 'rotate');
 
