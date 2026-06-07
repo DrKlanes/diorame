@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.8.0
+**Version**: 3.9.0
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,23 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.8.0)
+## Appendix C: Changelog Highlights (1.7.3 → 3.9.0)
+
+### 3.9.0 — Reorganización I/O de TopBar (DocumentPill + ExportPill)
+
+**feat — Reorganización de la arquitectura de I/O de la TopBar**: las operaciones de archivo ya no están divididas por modo. Nuevo `DocumentPill` transversal (info, nuevo, abrir, guardar .dior, nombre de proyecto; undo/redo solo en DRAW) visible en ambos modos — ahora se puede guardar, cargar y nombrar proyectos también desde CINEMA (antes era imposible). Nuevo `ExportPill` (solo icono) contextual a la derecha: SVG/SVGZ en DRAW; Captura (calidad device/HQ), Vídeo (loops ×1/×3/×6), GIF (100%/50%/25%), Secuencia PNG en CINEMA, con sub-opciones inline anidadas sin popovers anidados. Eliminados `FileControlsPill` y `SnapshotRecordPill`. `TopBar` rediseñada en grid `auto/1fr/auto` — resuelve de paso el solape del pill central en tablet sin necesidad de pill flotante.
+- **Files**: `DocumentPill.tsx` (nuevo), `ExportPill.tsx` (nuevo), `ProjectNameButton.tsx` (nuevo), `TopBar.tsx`, `FileControlsPill.tsx` (eliminado), `SnapshotRecordPill.tsx` (eliminado), `en.ts`, `es.ts`.
+
+**feat — Loops de export de vídeo ampliados**: opciones de loop cambiadas de ×1/×2/×3 a ×1/×3/×6.
+- **Files**: `ExportPill.tsx`, `en.ts`, `es.ts`.
+
+**fix — Pill de nombre de proyecto**: el pill del DocumentPill se ensanchaba al entrar en modo edición (botón con `maxWidth` variable vs input con `width` fijo). Ambos modos ahora comparten un wrapper de ancho fijo — sin saltos.
+- **Files**: `ProjectNameButton.tsx`.
+
+**fix — Toasts en modo dark**: los toasts informativos ignoraban el modo oscuro (colores hardcodeados en light). `ToastProvider` lee `isDarkMode` vía `useStrata()` y aplica tokens `dk()` + prop `theme` de Sonner.
+- **Files**: `toast-provider.tsx`.
+
+---
 
 ### 3.8.0 — Capas ancladas como fondo/overlay persistente en animación
 

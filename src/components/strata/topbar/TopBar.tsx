@@ -1,37 +1,55 @@
 import React from 'react';
-import { useStrata } from '../StrataContext';
 import { useTheme } from '../../../design-system/useTheme';
-import { FileControlsPill } from './FileControlsPill';
-import { SnapshotRecordPill } from './SnapshotRecordPill';
 import { ModeSwitchPill } from './ModeSwitchPill';
 import { ThemeTogglePill } from './ThemeTogglePill';
 import { AnimationPlayerUI } from './AnimationPlayerUI';
+import { DocumentPill } from './DocumentPill';
+import { ExportPill } from './ExportPill';
 
+/**
+ * TopBar — three-column grid layout (auto / 1fr / auto).
+ *
+ * Left  (auto):  DocumentPill — transversal, both modes.
+ *                new / open / save / name / info + undo/redo (DRAW only).
+ * Center (1fr):  ModeSwitchPill + AnimationPlayerUI — unchanged.
+ * Right  (auto): ExportPill (contextual per mode) + ThemeTogglePill.
+ *
+ * Grid prevents center group from overlapping left/right cells on any screen
+ * width, fixing the tablet overlap issue without conditional pill positions.
+ */
 export function TopBar() {
-	const { state } = useStrata();
 	const { dark } = useTheme();
-	const isDrawing = state.mode === 'drawing';
 
 	return (
-		<>
-			{/* Top-left: contextual per mode */}
-			<div style={{ position: 'absolute', top: 12, left: 12, zIndex: 50 }}>
-				{isDrawing
-					? <FileControlsPill dark={dark} />
-					: <SnapshotRecordPill dark={dark} />
-				}
+		<div style={{
+			position: 'absolute',
+			top: 0,
+			left: 0,
+			right: 0,
+			padding: '12px',
+			display: 'grid',
+			gridTemplateColumns: 'auto 1fr auto',
+			alignItems: 'start',
+			gap: 8,
+			zIndex: 50,
+			pointerEvents: 'none',
+		}}>
+			{/* Left cell — document operations (transversal) */}
+			<div style={{ pointerEvents: 'auto' }}>
+				<DocumentPill dark={dark} />
 			</div>
 
-			{/* Top-center: mode switch + animation player (DRAW only, auto-hides in CINEMA via mode guard) */}
-			<div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', alignItems: 'center', gap: 8 }}>
+			{/* Center cell — mode switch + animation player */}
+			<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, pointerEvents: 'auto' }}>
 				<ModeSwitchPill dark={dark} />
 				<AnimationPlayerUI />
 			</div>
 
-			{/* Top-right: theme toggle */}
-			<div style={{ position: 'absolute', top: 12, right: 12, zIndex: 50 }}>
+			{/* Right cell — export (contextual) + theme toggle */}
+			<div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end', pointerEvents: 'auto' }}>
+				<ExportPill dark={dark} />
 				<ThemeTogglePill dark={dark} />
 			</div>
-		</>
+		</div>
 	);
 }

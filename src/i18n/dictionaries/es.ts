@@ -37,11 +37,18 @@ export const es: Dictionary = {
 	'topbar.record.video':          'Vídeo',
 	'topbar.record.pngSeq':         'PNG seq',
 	'topbar.record.videoLoop1Desc': '1 bucle',
-	'topbar.record.videoLoop2Desc': '2 bucles',
-	'topbar.record.videoLoop3Desc': '3 bucles',
+	'topbar.record.videoLoop2Desc': '3 bucles',
+	'topbar.record.videoLoop3Desc': '6 bucles',
 	'topbar.record.gifFullDesc':    'Tamaño completo',
 	'topbar.record.gifHalfDesc':    'La mitad',
 	'topbar.record.gifQuarterDesc': 'Un cuarto',
+
+	// Export pill (contextual)
+	'topbar.export.tooltip':      'Exportar',
+	'topbar.export.capture':      'Captura',
+	'topbar.export.pngSeq':       'Secuencia PNG',
+	'topbar.export.group.image':  'IMAGEN',
+	'topbar.export.group.motion': 'MOVIMIENTO',
 
 	'topbar.info.about': 'Acerca de Diorame',
 
