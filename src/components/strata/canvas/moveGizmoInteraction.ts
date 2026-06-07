@@ -13,7 +13,16 @@ import type { GizmoHandles } from './drawGizmo';
 
 export type TransformMode = 'move' | 'rotate' | 'scale_tl' | 'scale_tr' | 'scale_br' | 'scale_bl';
 
-export type Transform = { x: number; y: number; scale: number; rotation: number };
+export type Transform = {
+	x: number;
+	y: number;
+	scale: number;       // uniform scale (corner handles)
+	rotation: number;
+	// Non-uniform axis scale (side handles, squash & stretch). When absent the
+	// uniform `scale` is used for both axes, so a uniform transform is unchanged.
+	scaleX?: number;
+	scaleY?: number;
+};
 
 // Hit radius in screen px. Larger than the visual handle for comfortable touch.
 const HIT_RADIUS = 40;

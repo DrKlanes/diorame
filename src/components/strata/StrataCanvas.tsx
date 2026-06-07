@@ -142,10 +142,10 @@ export const StrataCanvas = () => {
       isActive: boolean;
       mode: 'none' | 'move' | 'scale_tl' | 'scale_tr' | 'scale_br' | 'scale_bl' | 'rotate';
       startP: { x: number, y: number };
-      startTransform: { x: number, y: number, scale: number, rotation: number };
+      startTransform: { x: number, y: number, scale: number, rotation: number, scaleX?: number, scaleY?: number };
       centerX: number; centerY: number;
       layerBB: { minX: number, maxX: number, minY: number, maxY: number };
-      currentTransform: { x: number, y: number, scale: number, rotation: number };
+      currentTransform: { x: number, y: number, scale: number, rotation: number, scaleX?: number, scaleY?: number };
   }>({
       isActive: false, mode: 'none', startP: {x:0,y:0},
       startTransform: {x:0,y:0,scale:1,rotation:0},

@@ -72,7 +72,7 @@ type Action =
   | { type: 'TOGGLE_LAYER_VISIBILITY'; payload: number }
   | { type: 'TOGGLE_3D_LOCK'; payload: number }
   | { type: 'MOVE_LAYER'; payload: { layerIndex: number; deltaX: number; deltaY: number } }
-  | { type: 'TRANSFORM_LAYER'; payload: { layerIndex: number; transform: { rotation: number; scale: number; dx: number; dy: number; centerX: number; centerY: number } } }
+  | { type: 'TRANSFORM_LAYER'; payload: { layerIndex: number; transform: { rotation: number; scale: number; dx: number; dy: number; centerX: number; centerY: number; scaleX?: number; scaleY?: number } } }
   | { type: 'TOGGLE_WELCOME_MODAL' }
   | { type: 'TOGGLE_UI' }
   | { type: 'SET_DRAWING_ACTIVE'; payload: boolean }
@@ -1050,6 +1050,17 @@ function appReducer(state: AppState, action: Action): AppState {
 
         const newShapes = state.shapes.map(shape => {
             if (shape.zIndex === layerIndex * -BASE_DEPTH_STEP) {
+                // Non-uniform deformation (squash & stretch). Text is EXCLUDED — it has no
+                // point geometry to stretch, so text always uses the uniform `scale`. When
+                // scaleX/scaleY are absent (every legacy uniform transform), sx===sy===scale
+                // and the formula below reduces to the original uniform bake byte-identically.
+                const isText = shape.type === 'text';
+                const hasNonUniform = !isText && (transform.scaleX !== undefined || transform.scaleY !== undefined);
+                // Clamp ONLY the non-uniform axes to prevent flip/collapse (scale <= 0).
+                // The uniform path is left untouched to preserve exact legacy behavior.
+                const sx = hasNonUniform ? Math.max(0.01, transform.scaleX ?? scale) : scale;
+                const sy = hasNonUniform ? Math.max(0.01, transform.scaleY ?? scale) : scale;
+
                 // Handle Text specific transforms
                 let newProps = {};
                 if (shape.type === 'text') {
@@ -1063,10 +1074,11 @@ function appReducer(state: AppState, action: Action): AppState {
                     // 1. Translate to origin
                     const ox = point.x - centerX;
                     const oy = point.y - centerY;
-                    
-                    // 2. Rotate & Scale
-                    const rx = (ox * cos - oy * sin) * scale;
-                    const ry = (ox * sin + oy * cos) * scale;
+
+                    // 2. Rotate & Scale (per-axis). sx===sy===scale reduces this to the
+                    //    original uniform formula exactly.
+                    const rx = (ox * cos - oy * sin) * sx;
+                    const ry = (ox * sin + oy * cos) * sy;
 
                     // 3. Translate back & Apply delta
                     return {

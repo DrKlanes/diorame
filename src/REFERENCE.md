@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.9.5
+**Version**: 3.9.6
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,14 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.9.5)
+## Appendix C: Changelog Highlights (1.7.3 → 3.9.6)
+
+### 3.9.6 — Motor de deformación no uniforme (squash & stretch Fase 1)
+
+**feat (en progreso) — Motor `scaleX/scaleY` en el transform del Move**: el tipo `Transform`/`currentTransform` se extiende con `scaleX?`/`scaleY?` (en `moveGizmoInteraction.ts`, `renderPipeline.TransformRefState`, `StrataCanvas` `transformRef`) y el payload de `TRANSFORM_LAYER` los acepta. El reducer hornea la deformación en `points` **y** `originalPoints` (spine) con una fórmula unificada por eje — `rx=(ox·cos−oy·sin)·sx`, `ry=(ox·sin+oy·cos)·sy` — que **colapsa carácter por carácter al caso uniforme** cuando `sx===sy===scale`. Retrocompat total: todo transform sin `scaleX/scaleY` (esquinas del gizmo) es byte-idéntico al actual. **Texto excluido** (fuerza uniforme, `fontSize·scale` intacto). **Clamp anti-flip** (`≥0.01`) aplicado solo al camino no uniforme para no alterar el uniforme legacy. **Sin gizmos visuales aún** (Fase 2): este commit es el motor puro, validado por consola.
+- **Files**: `moveGizmoInteraction.ts`, `renderPipeline.ts`, `StrataCanvas.tsx` (tipo), `StrataContext.tsx` (reducer + payload).
+
+---
 
 ### 3.9.5 — Botón centrar capa (Move) + extracción Move-gizmo (squash & stretch Fase 0)
 
