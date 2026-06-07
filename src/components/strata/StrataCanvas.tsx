@@ -400,7 +400,24 @@ export const StrataCanvas = () => {
       const onFinish = () => dispatch({ type: 'FINISH_EXPORT' });
 
       if (state.exportRequest === 'png') {
-          exportAsPNG(canvas, state.projectName, onFinish, t);
+          // Snapshot all inputs so HQ can re-render the scene at 2× off the live RAF.
+          // (device quality ignores these and upscales the live canvas bitmap.)
+          const pngOptions = {
+              state: stateRef.current,
+              shapesByZ: shapesByZRef.current,
+              sortedZs: sortedZsRef.current,
+              camera: { ...cameraRef.current },
+              w: containerRef.current?.clientWidth ?? canvas.width,
+              h: containerRef.current?.clientHeight ?? canvas.height,
+              paperImg: paperImgRef.current,
+              risoGrain: risoGrainRef.current,
+              grungeImg: grungeImgRef.current,
+              particles: particlesRef.current,
+              noiseCanvas: noiseCanvasRef.current,
+              shapePattern: shapePatternRef.current,
+              getActiveZ,
+          };
+          exportAsPNG(canvas, pngOptions, state.projectName, onFinish, t);
       }
       if (state.exportRequest === 'svg' || state.exportRequest === 'svgz') {
           exportAsSVG(state.exportRequest, state.shapes, state.projectName, onFinish, t);

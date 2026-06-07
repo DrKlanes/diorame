@@ -114,6 +114,11 @@ export type RenderContext = {
 	skipLiveStroke?: boolean;
 	// If true, skip Fase 4 (drawGizmo + drawSymmetryAxis).
 	skipCinematicOverlays?: boolean;
+	// Render scale multiplier (HQ export). Default 1 = live behavior. When >1,
+	// the raster (canvas + every offscreen buffer + FX) is dimensioned to S·w × S·h
+	// and the projection is scaled by S so the framing is identical at S× resolution.
+	// S=1 collapses every derived formula to today's values (byte-identical).
+	renderScale?: number;
 };
 
 /**
@@ -138,6 +143,10 @@ export type PerFrameComputed = {
 	viewPan: { x: number; y: number };
 	centerXScreen: number;
 	centerYScreen: number;
+	// Logical (unscaled) center — used by lens distortion so it stays identical at
+	// any renderScale. Equals centerXScreen/centerYScreen when renderScale === 1.
+	logicalCenterX: number;
+	logicalCenterY: number;
 	w: number;
 	h: number;
 
@@ -293,8 +302,15 @@ export function renderFrame(
 	}
 
 	// --- Resize Handling ---
-	const w = rc.w || canvas.width;
-	const h = rc.h || canvas.height;
+	// renderScale (S): HQ export renders the whole raster at S× while keeping the
+	// projection framing identical (logicalCenterX/Y + pfc viewZoom·S / viewPan·S).
+	// S=1 (the default for the live RAF and every existing export) makes w === logicalW,
+	// so every formula below collapses to today's values — byte-identical behavior.
+	const S = rc.renderScale ?? 1;
+	const logicalW = rc.w || canvas.width;
+	const logicalH = rc.h || canvas.height;
+	const w = logicalW * S;
+	const h = logicalH * S;
 	if (canvas.width !== w || canvas.height !== h) {
 		canvas.width = w; canvas.height = h;
 		// Re-init noise
@@ -347,6 +363,8 @@ export function renderFrame(
 
 	const centerXScreen = w / 2;
 	const centerYScreen = h / 2;
+	const logicalCenterX = logicalW / 2;
+	const logicalCenterY = logicalH / 2;
 
 	// --- 2. Render Layers ---
 	offCtx.setTransform(1, 0, 0, 1, 0, 0);
@@ -400,7 +418,8 @@ export function renderFrame(
 	const pfc: PerFrameComputed = {
 		isCinematic, fxEnabled, isPixelArt, pSize,
 		currentCamera, effectiveCameraZ, FL, fxFocusDist,
-		viewZoom, viewPan, centerXScreen, centerYScreen, w, h,
+		viewZoom: viewZoom * S, viewPan: { x: viewPan.x * S, y: viewPan.y * S },
+		centerXScreen, centerYScreen, logicalCenterX, logicalCenterY, w, h,
 		camRot, cosR, sinR,
 		poiX, poiY, centerZ, isArcOrOrbit, arcPivotScale,
 		distortionK,

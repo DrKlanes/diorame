@@ -69,6 +69,8 @@ export function renderLayer(
 	const viewPan = pfc.viewPan;
 	const centerXScreen = pfc.centerXScreen;
 	const centerYScreen = pfc.centerYScreen;
+	const logicalCenterX = pfc.logicalCenterX;
+	const logicalCenterY = pfc.logicalCenterY;
 	const camRot = pfc.camRot;
 	const cosR = pfc.cosR;
 	const sinR = pfc.sinR;
@@ -142,6 +144,8 @@ export function renderLayer(
 			viewPan,
 			centerXScreen,
 			centerYScreen,
+			distortCenterX: logicalCenterX,
+			distortCenterY: logicalCenterY,
 			camRot,
 			cosR,
 			sinR,

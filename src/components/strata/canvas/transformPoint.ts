@@ -28,6 +28,11 @@ export type FrameProjectionParams = {
 	viewPan: { x: number; y: number };
 	centerXScreen: number;
 	centerYScreen: number;
+	// Logical (unscaled) center for lens distortion. Equals centerXScreen/centerYScreen
+	// at renderScale 1; under HQ export the screen center scales by S but the distortion
+	// normalization must use the logical center so the warp is identical at any scale.
+	distortCenterX: number;
+	distortCenterY: number;
 	camRot: number;
 	cosR: number;
 	sinR: number;
@@ -108,8 +113,8 @@ export const createTransformPoint = (
 
 	let distFactor = 1;
 	if (frame.distortionK !== 0 && !layer.isLocked3D) {
-		const nx = sx / frame.centerXScreen;
-		const ny = sy / frame.centerYScreen;
+		const nx = sx / frame.distortCenterX;
+		const ny = sy / frame.distortCenterY;
 		const r2 = nx*nx + ny*ny;
 		distFactor = 1 + frame.distortionK * r2;
 		sx *= distFactor; sy *= distFactor;

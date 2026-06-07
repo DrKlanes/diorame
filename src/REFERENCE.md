@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.9.2
+**Version**: 3.9.3
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,16 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.9.2)
+## Appendix C: Changelog Highlights (1.7.3 → 3.9.3)
+
+### 3.9.3 — Captura HQ = re-render real a 2× (Fase A)
+
+**feat — HQ snapshot a doble resolución genuina**: la captura HQ era un **upscale falso** (`exportHandlers.ts` hacía `drawImage(canvas, 0,0, targetW, targetH)`, estirando el bitmap ya renderizado → borroso al ampliar). Ahora es **re-render REAL a 2×**: la escena se renderiza de nuevo a resolución física doble mediante `renderScale` paramétrico en el pipeline — proyección 3D, linework y trazos a 2× de detalle genuino, sin interpolar. El canvas y todos los buffers offscreen se dimensionan a `S·w × S·h`; la proyección se escala por S (`viewZoom·S`, `viewPan·S`, centro físico) para mantener el encuadre idéntico. El export usa canvases offscreen **propios** (calcados de `animationExportRender.ts`), nunca los del RAF en vivo. La distorsión de lente se preserva vía un **centro lógico desacoplado** (`distortCenterX/Y`, sin `·S`). `renderScale` default=1 deja el RAF en vivo y los exports existentes (mp4/gif/png-seq) **byte-idénticos**. La captura **device** permanece intacta (upscale del bitmap vivo a `dpr`). HQ scale=2 sobre resolución CSS, con clamp a `MAX_DIMENSION=8192`.
+- **Files**: `renderPipeline.ts`, `transformPoint.ts`, `renderLayerBody.ts`, `exportHandlers.ts`, `StrataCanvas.tsx` (solo el call-site del export).
+
+**Pendiente (Fase B) — fidelidad de FX a escala**: los efectos con blur/offset en píxeles (glow, DoF, chromatic aberration) y el grid de pixel-art (`pSize`) no escalan con S todavía; en HQ quedan a **radio relativo reducido** hasta Fase B. La geometría y el linework ya son correctos a 2×.
+
+---
 
 ### 3.9.2 — Warnings de consola (DiModal + LayerRow)
 
