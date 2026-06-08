@@ -31,6 +31,17 @@ function AppContent() {
     if (enabled) dispatch({ type: 'SET_SOUNDS_ENABLED', payload: true });
   }, []);
 
+  // Mantener el fondo de html/body sincronizado con el tema. En PWA standalone iOS,
+  // tras un ciclo de foco 100dvh puede resolver más corto que la pantalla y asomar el
+  // fondo del viewport bajo el root (h-[100dvh]); igualándolo al fondo de la app, esa
+  // franja queda INVISIBLE en claro (#f8fafc = slate-50/canvas) y oscuro (#050505 = canvas).
+  // El tema es solo estado JS (no hay clase .dark en el DOM), por eso se cablea aquí.
+  useEffect(() => {
+    const bg = state.isDarkMode ? '#050505' : '#f8fafc';
+    document.documentElement.style.backgroundColor = bg;
+    document.body.style.backgroundColor = bg;
+  }, [state.isDarkMode]);
+
   // Mantener el autosave actualizado cada 30s cuando isDirty
   const { suspendAutosave, resumeAutosave } = useAutoSave();
 

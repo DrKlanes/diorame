@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.10.6
+**Version**: 3.10.7
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,17 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.10.6)
+## Appendix C: Changelog Highlights (1.7.3 → 3.10.7)
+
+### 3.10.7 — Fix franja blanca inferior en PWA standalone iPad
+
+**fix(pwa)** — En PWA standalone iPad, tras un ciclo de foco (guardar → file picker iOS → volver), `100dvh` resuelve ~30-40px más corto que la pantalla física y asoma el fondo del viewport bajo el root (`h-[100dvh]`). El body era `#ffffff` siempre (el tema es estado JS, NO aplica clase `.dark` al DOM), así que la franja era blanca en ambos temas. **Fix:** un `useEffect` en `App.tsx` sincroniza el `backgroundColor` de `html`/`body` con el tema — `#f8fafc` (claro, = slate-50/canvas) / `#050505` (oscuro, = base del canvas) → la franja queda **invisible** en claro y oscuro. No toca el root, el canvas, el SW ni el manifest. No condicional a standalone (inerte en navegador, donde el hueco no aparece).
+
+**Workaround de visibilidad, no de causa raíz.** La causa raíz (fluctuación de `100dvh` en standalone iOS tras cambios de foco) queda documentada por si reaparece; el fix de raíz sería anclar el root a la pantalla física (`position: fixed; inset: 0` o `min-height` con fallback), no abordado aquí por ser mayor riesgo.
+
+- **Files**: `src/App.tsx`.
+
+---
 
 ### 3.10.6 — PWA completa: service worker, offline y toast de actualización
 
