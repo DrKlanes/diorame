@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.10.2
+**Version**: 3.10.3
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,15 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.10.2)
+## Appendix C: Changelog Highlights (1.7.3 → 3.10.3)
+
+### 3.10.3 — Dos vídeos nuevos en la rueda del welcome modal
+
+**feat(welcome)**: añade `8.mp4` y `9.mp4` a `public/welcome-videos/`. La rueda aleatoria del welcome modal pasa de 7 a **9 vídeos**. Selección vía `Math.floor(Math.random() * WELCOME_VIDEOS.length)` — sin off-by-one, rango 1–9 cubierto íntegramente.
+
+- **Files**: `public/welcome-videos/8.mp4`, `public/welcome-videos/9.mp4`, `WelcomeModalV2.tsx`.
+
+---
 
 ### 3.10.2 — DiActionButton migrado a EnhancedTooltip
 

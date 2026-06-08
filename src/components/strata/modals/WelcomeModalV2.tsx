@@ -57,6 +57,8 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 		'/welcome-videos/5.mp4',
 		'/welcome-videos/6.mp4',
 		'/welcome-videos/7.mp4',
+		'/welcome-videos/8.mp4',
+		'/welcome-videos/9.mp4',
 	];
 	const [videoIndex] = useState(() => Math.floor(Math.random() * WELCOME_VIDEOS.length));
 	const [videoFailed, setVideoFailed] = useState(false);
