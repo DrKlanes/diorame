@@ -8,6 +8,7 @@ import { useIsMobile } from './hooks/useIsMobile';
 import { useLoadExampleScene } from './hooks/useLoadExampleScene';
 import { MobileBlockScreenV2, ExportProgressV2, WelcomeModalV2 } from './components/strata/modals';
 import { ToastProvider } from './components/ui/toast-provider';
+import { PwaUpdatePrompt } from './components/PwaUpdatePrompt';
 import { PreviewPage } from './preview/PreviewPage';
 import { useAutoSave, AUTOSAVE_KEY } from './hooks/useAutoSave';
 import { initSoundsFromStorage } from './utils/soundManager';
@@ -111,6 +112,7 @@ export default function App() {
   return (
     <StrataProvider>
       <ToastProvider />
+      <PwaUpdatePrompt />
       <AppContentWithMobileGate />
     </StrataProvider>
   );

@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.10.5
+**Version**: 3.10.6
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,21 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.10.5)
+## Appendix C: Changelog Highlights (1.7.3 → 3.10.6)
+
+### 3.10.6 — PWA completa: service worker, offline y toast de actualización
+
+**feat(pwa) — Service worker en producción (Fases 1-3)**. La app es ahora una PWA con offline real. Construido con `vite-plugin-pwa` (generateSW, `registerType: 'prompt'`). **Primer despliegue del SW.**
+
+- **Precache app-shell** (12 entradas): JS/CSS/HTML, iconos PWA, manifest, favicon, logo (<2 MiB), 1 ilustración welcome → la app **abre offline**.
+- **Runtime cache de texturas** (`diorame-textures`, CacheFirst): `texture-paper` (~7 MiB) y `texture-grunge` (~13 MiB) están **fuera del precache** (cap 2 MiB) pero se cachean en runtime tras la 1ª carga online → **papel/grunge disponibles offline tras el primer uso**. Inmutables (hash en el nombre), `maxEntries: 10`.
+- **Vídeos welcome — `NetworkOnly`**: `welcome-videos/*.mp4` se reenvían directos a la red con el Range header intacto (206 Partial Content) → streaming idéntico a sin SW. NO se cachean (bajo demanda, sin offline, por diseño). `navigateFallbackDenylist` excluye `/welcome-videos/` del fallback HTML. *(Resuelve la regresión de carga de vídeo introducida por el SW.)*
+- **Toast de actualización** (`PwaUpdatePrompt.tsx`): con `registerType: 'prompt'`, al detectar versión nueva muestra un toast Sonner persistente "Nueva versión disponible / Recargar" → `updateServiceWorker(true)` (skipWaiting + reload). Toast breve `offlineReady`. i18n EN/ES (`pwa.update.*`, `pwa.offlineReady.message`). Registro vía `useRegisterSW` (hook React) montado junto a `ToastProvider`.
+- **Kill-switch de rollback** documentado en `assets-source/kill-switch-sw.js` + `PWA-ROLLBACK-README.md` (NO se despliega; red de seguridad para purgar un SW roto en el campo).
+- **Invariantes**: `manifest: false` (usa el `public/manifest.webmanifest` de Fase 0, sin duplicar), sin `base` (scope raíz, CNAME intacto). `vite.config.ts` solo gana el plugin PWA.
+- **Files**: `vite.config.ts`, `src/components/PwaUpdatePrompt.tsx` (nuevo), `src/App.tsx`, `i18n/en.ts` + `es.ts`, `assets-source/` (kill-switch). `package.json`/`package-lock.json` (vite-plugin-pwa).
+
+---
 
 ### 3.10.5 — PWA Fase 0: app instalable (manifest + iconos + meta tags)
 

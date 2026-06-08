@@ -219,6 +219,11 @@ export const en: Dictionary = {
 	// Browser capability warnings
 	'fx.common.browserUnsupported': 'This effect is not supported by your browser',
 
+	// PWA — service worker update / offline
+	'pwa.update.message': 'New version available',
+	'pwa.update.reload': 'Reload',
+	'pwa.offlineReady.message': 'Ready to work offline',
+
 	// ═══════════════════════════════════════════════
 	// LAYERS
 	// ═══════════════════════════════════════════════

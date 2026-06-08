@@ -138,14 +138,21 @@ La animación es frame-a-frame sin interpolación. Tweening (interpolación auto
 
 ---
 
-### Item PWA — Instalable (Progressive Web App) — ⏳ Fase 0 HECHA, service worker pendiente
+### ~~Item PWA — Instalable (Progressive Web App)~~ ✅ PWA COMPLETA (Fases 0-3) — HECHA
 
 **Categoría:** feature infra
 **Riesgo:** low
 
-**Fase 0 — HECHA (v3.10.5):** app instalable vía `manifest.webmanifest` + 4 iconos (192/512/512-maskable/apple-touch-180) + meta tags en index.html. Color de marca `#511d65`. **Sin service worker** (riesgo de caché cero).
+**Fase 0 — HECHA (v3.10.5):** app instalable vía `manifest.webmanifest` + 4 iconos (192/512/512-maskable/apple-touch-180) + meta tags en index.html. Color de marca `#511d65`.
 
-**Pendiente (fases futuras):** service worker con `vite-plugin-pwa` para **offline completo** (precache de app-shell; excluir vídeos del welcome; decidir estrategia para las texturas grandes >2 MiB), update vía prompt (toast Sonner "Recargar"), kill-switch de rollback. Diseño ya decidido: update por prompt, offline completo de la app pero vídeos bajo demanda. Tauri (app nativa) queda FUERA (futuro lejano).
+**Fases 1-3 — HECHAS (v3.10.6):** service worker con `vite-plugin-pwa` (`registerType: 'prompt'`).
+- Precache app-shell (12 entradas) → app abre offline.
+- Runtime cache CacheFirst de texturas (`diorame-textures`) → papel/grunge offline tras 1ª carga online.
+- Vídeos welcome `NetworkOnly` (streaming/range intacto, no offline por diseño).
+- Toast de actualización (`PwaUpdatePrompt.tsx`) → "Nueva versión disponible / Recargar".
+- Kill-switch de rollback documentado en `assets-source/`.
+
+**Fuera de alcance (sin compromiso):** Tauri (app nativa) = futuro lejano. Caché de sonidos para offline (hoy red-only). Precache de las texturas grandes (decisión: runtime en vez de precache, para no inflar la carga inicial).
 
 ---
 

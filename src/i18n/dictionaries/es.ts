@@ -200,6 +200,11 @@ export const es: Dictionary = {
 	// Advertencias de compatibilidad del navegador
 	'fx.common.browserUnsupported': 'Este efecto no está soportado por tu navegador',
 
+	// PWA — actualización del service worker / offline
+	'pwa.update.message': 'Nueva versión disponible',
+	'pwa.update.reload': 'Recargar',
+	'pwa.offlineReady.message': 'Listo para usar sin conexión',
+
 	// ═══════════════════════════════════════════════
 	// LAYERS
 	// ═══════════════════════════════════════════════
