@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Ico } from './Ico';
 import { T, TYPE, RADIUS, dk } from './tokens';
-import { hasFinePointer, formatShortcut } from '../utils/keyboardShortcuts';
+import { EnhancedTooltip } from '../components/ui/enhanced-tooltip';
 
 export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, label, labelSize, tooltip, shortcut, disabled = false, danger = false, minWidth }: {
 	name: string;
@@ -20,11 +20,6 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 	minWidth?: number;
 }) {
 	const [hov, setHov] = useState(false);
-	const titleText: string | undefined = (() => {
-		if (!shortcut || !hasFinePointer()) return tooltip;
-		const fmt = formatShortcut(shortcut);
-		return tooltip ? tooltip + ' · ' + fmt : fmt;
-	})();
 	const activeBg = activeStyle === 'solid'
 		? T.purple
 		: dk(dark, T.purple10, T.purple20);
@@ -44,12 +39,11 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 	const boxShadow = (active && activeStyle === 'wash' && dark)
 		? 'inset 0 0 0 1px rgba(154, 15, 249, 0.35)'
 		: 'none';
-	return (
+	const btn = (
 		<button
 			onClick={onClick}
 			onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHov(true); }}
 			onPointerLeave={() => setHov(false)}
-			title={titleText}
 			style={{
 				width: label ? 'auto' : 30,
 				minWidth: minWidth,
@@ -85,5 +79,11 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 				</span>
 			)}
 		</button>
+	);
+	if (!tooltip) return btn;
+	return (
+		<EnhancedTooltip content={tooltip} shortcut={shortcut} side="bottom">
+			{btn}
+		</EnhancedTooltip>
 	);
 }

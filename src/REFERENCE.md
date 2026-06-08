@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.10.1
+**Version**: 3.10.2
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,15 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.10.1)
+## Appendix C: Changelog Highlights (1.7.3 → 3.10.2)
+
+### 3.10.2 — DiActionButton migrado a EnhancedTooltip
+
+**refactor(ui) — Unificación de tooltips**: `DiActionButton` usa ahora `EnhancedTooltip` (Radix UI) en lugar del atributo `title` HTML nativo, igualando el patrón de `DiIconButton`. Los 19 consumidores que pasan `tooltip=` no necesitan cambios (prop pública conservada). Código muerto eliminado: `hasFinePointer`, `formatShortcut` y `titleText`. El tooltip se suprime en touch (filtro `pointerType` interno de `EnhancedTooltip`); botones sin `tooltip` retornan el elemento sin envolver.
+
+- **Files**: `src/design-system/DiActionButton.tsx`.
+
+---
 
 ### 3.10.1 — DoF rack focus que sigue al tour en Storytelling
 
