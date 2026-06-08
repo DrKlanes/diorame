@@ -138,12 +138,14 @@ La animación es frame-a-frame sin interpolación. Tweening (interpolación auto
 
 ---
 
-### Item PWA — Instalable (Progressive Web App)
+### Item PWA — Instalable (Progressive Web App) — ⏳ Fase 0 HECHA, service worker pendiente
 
 **Categoría:** feature infra
 **Riesgo:** low
 
-Diorame no tiene manifest ni service worker. Primer paso: PWA con `vite-plugin-pwa` para instalación en iOS/Android/desktop. Tauri (app nativa) sería el siguiente nivel. Track propio cuando sea prioritario.
+**Fase 0 — HECHA (v3.10.5):** app instalable vía `manifest.webmanifest` + 4 iconos (192/512/512-maskable/apple-touch-180) + meta tags en index.html. Color de marca `#511d65`. **Sin service worker** (riesgo de caché cero).
+
+**Pendiente (fases futuras):** service worker con `vite-plugin-pwa` para **offline completo** (precache de app-shell; excluir vídeos del welcome; decidir estrategia para las texturas grandes >2 MiB), update vía prompt (toast Sonner "Recargar"), kill-switch de rollback. Diseño ya decidido: update por prompt, offline completo de la app pero vídeos bajo demanda. Tauri (app nativa) queda FUERA (futuro lejano).
 
 ---
 

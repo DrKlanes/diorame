@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.10.4
+**Version**: 3.10.5
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,18 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.10.4)
+## Appendix C: Changelog Highlights (1.7.3 → 3.10.5)
+
+### 3.10.5 — PWA Fase 0: app instalable (manifest + iconos + meta tags)
+
+**feat(pwa) — Fase 0 de PWA**: la app es ahora **instalable** como aplicación (Add to Home Screen con icono propio + modo standalone), sin service worker. **Offline diferido a fase futura** (riesgo de caché cero en esta fase).
+
+- **`public/manifest.webmanifest`** (nuevo): name/short_name "Diorame", `display: standalone`, `start_url`/`scope` "/", `theme_color`/`background_color` `#511d65` (morado de marca), `orientation: any`, `lang: en`. 3 iconos: 192/512 `purpose:any` + 512 `purpose:maskable`.
+- **Iconos** (creados manualmente): `public/pwa/icon-192.png`, `icon-512.png`, `icon-512-maskable.png` (fondo sólido #511d65), `public/apple-touch-icon.png` (180×180 en raíz). Máster 1024 conservado fuera de `public/` en `assets-source/` (no deployable).
+- **`index.html`**: `<link rel="manifest">`, `<meta name="theme-color">`, `<link rel="apple-touch-icon">`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`. Favicon intacto.
+- **SIN service worker / vite-plugin-pwa**: instalabilidad sí, offline no. `vite.config.ts` sin cambios (sin `base`, scope raíz limpio para el SW futuro).
+
+---
 
 ### 3.10.4 — Welcome modal: créditos en desplegable + botón "Cargar archivo"
 
