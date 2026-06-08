@@ -9,6 +9,7 @@ import { useLoadExampleScene } from './hooks/useLoadExampleScene';
 import { MobileBlockScreenV2, ExportProgressV2, WelcomeModalV2 } from './components/strata/modals';
 import { ToastProvider } from './components/ui/toast-provider';
 import { PwaUpdatePrompt } from './components/PwaUpdatePrompt';
+import { SafeAreaDebugOverlay, isSafeAreaDebugEnabled } from './components/SafeAreaDebugOverlay';
 import { PreviewPage } from './preview/PreviewPage';
 import { useAutoSave, AUTOSAVE_KEY } from './hooks/useAutoSave';
 import { initSoundsFromStorage } from './utils/soundManager';
@@ -78,7 +79,7 @@ function AppContent() {
   };
 
   return (
-    <div className="relative w-full h-[100dvh] overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]">
+    <div data-app-root className="relative w-full h-[100dvh] overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]">
       {/* Global interaction lock */}
       <style dangerouslySetInnerHTML={{__html: `
           * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -124,6 +125,7 @@ export default function App() {
     <StrataProvider>
       <ToastProvider />
       <PwaUpdatePrompt />
+      {isSafeAreaDebugEnabled() && <SafeAreaDebugOverlay />}
       <AppContentWithMobileGate />
     </StrataProvider>
   );
