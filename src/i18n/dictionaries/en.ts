@@ -357,7 +357,9 @@ export const en: Dictionary = {
 	'modal.welcome.cta.loading': 'Loading…',
 	'modal.welcome.cta.restore': 'Continue previous work',
 	'modal.welcome.cta.backToDrawing': 'Back to drawing',
+	'modal.welcome.cta.loadFile': 'Load file',
 	'modal.welcome.sounds.toggle': 'Enable UI sounds',
+	'modal.welcome.sounds.credits': 'Sound credits',
 	'modal.welcome.sounds.creditPrefix': 'Sounds by',
 	'modal.welcome.sounds.creditSuffix': '(Pixabay)',
 

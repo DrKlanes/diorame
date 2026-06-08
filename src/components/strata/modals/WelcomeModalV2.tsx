@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { DiModal } from './index';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { Ico } from '../../../design-system';
@@ -10,6 +10,7 @@ import { hasFinePointer, formatShortcut, SHORTCUTS_GROUPS } from '../../../utils
 import { useTranslation } from '../../../i18n';
 import { LanguageToggle } from '../../../design-system/LanguageToggle';
 import { useStrata } from '../StrataContext';
+import { useSaveLoad } from '../../../hooks/useSaveLoad';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -47,8 +48,11 @@ interface WelcomeModalV2Props {
 export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAutosave, isMidSession }: WelcomeModalV2Props) {
 	const { t } = useTranslation();
 	const { state, dispatch } = useStrata();
+	const { handleLoadProject } = useSaveLoad();
+	const loadFileInputRef = useRef<HTMLInputElement>(null);
 	const [isLoadingExample, setIsLoadingExample] = useState(false);
 	const [shortcutsExpanded, setShortcutsExpanded] = useState(false);
+	const [creditsExpanded, setCreditsExpanded] = useState(false);
 	const WELCOME_VIDEOS = [
 		'/welcome-videos/1.mp4',
 		'/welcome-videos/2.mp4',
@@ -197,6 +201,20 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 								<DiModal.SecondaryAction onClick={handleLoadExample} disabled={isLoadingExample}>
 									{isLoadingExample ? t('modal.welcome.cta.loading') : t('modal.welcome.cta.secondary')}
 								</DiModal.SecondaryAction>
+								<input
+									ref={loadFileInputRef}
+									type="file"
+									accept=".dior"
+									style={{ display: 'none' }}
+									onChange={e => {
+										const f = e.target.files?.[0];
+										if (f) { handleLoadProject(f); onClose(); }
+										if (loadFileInputRef.current) loadFileInputRef.current.value = '';
+									}}
+								/>
+								<DiModal.SecondaryAction onClick={() => loadFileInputRef.current?.click()}>
+									{t('modal.welcome.cta.loadFile')}
+								</DiModal.SecondaryAction>
 							</>
 						)}
 					</div>
@@ -314,13 +332,36 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 							</label>
 						</div>
 						<div style={{ marginTop: 6 }}>
-							{t('modal.welcome.sounds.creditPrefix')}{' '}
-							<ResourceLink href="https://pixabay.com/es/users/juniorsoundays-19205462/" mutedColor={muted}>Juniorsoundays</ResourceLink>
-							{', '}
-							<ResourceLink href="https://pixabay.com/es/users/freesound_community-46691455/" mutedColor={muted}>freesound_community</ResourceLink>
-							{' & '}
-							<ResourceLink href="https://pixabay.com/es/users/photoqueiros-44078343/" mutedColor={muted}>Photoqueiros</ResourceLink>
-							{' '}{t('modal.welcome.sounds.creditSuffix')}
+							<button
+								onClick={() => setCreditsExpanded(!creditsExpanded)}
+								style={{
+									background: 'transparent',
+									border: 'none',
+									cursor: 'pointer',
+									display: 'inline-flex',
+									alignItems: 'center',
+									gap: 6,
+									color: muted,
+									fontFamily: TYPE.numericValue.family,
+									fontWeight: 400,
+									fontSize: TYPE.numericValue.size,
+									padding: 0,
+								}}
+							>
+								<span style={{ textDecoration: 'underline' }}>{t('modal.welcome.sounds.credits')}</span>
+								<Ico name={creditsExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={muted} />
+							</button>
+							{creditsExpanded && (
+								<div style={{ marginTop: 6 }}>
+									{t('modal.welcome.sounds.creditPrefix')}{' '}
+									<ResourceLink href="https://pixabay.com/es/users/juniorsoundays-19205462/" mutedColor={muted}>Juniorsoundays</ResourceLink>
+									{', '}
+									<ResourceLink href="https://pixabay.com/es/users/freesound_community-46691455/" mutedColor={muted}>freesound_community</ResourceLink>
+									{' & '}
+									<ResourceLink href="https://pixabay.com/es/users/photoqueiros-44078343/" mutedColor={muted}>Photoqueiros</ResourceLink>
+									{' '}{t('modal.welcome.sounds.creditSuffix')}
+								</div>
+							)}
 						</div>
 						<div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 10 }}>
 							<LanguageToggle />

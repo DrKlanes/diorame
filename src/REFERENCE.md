@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.10.3
+**Version**: 3.10.4
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,7 +694,20 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.10.3)
+## Appendix C: Changelog Highlights (1.7.3 → 3.10.4)
+
+### 3.10.4 — Welcome modal: créditos en desplegable + botón "Cargar archivo"
+
+**feat(welcome) — Dos mejoras de UX en el welcome modal**:
+
+1. **Créditos de sonido a desplegable**: los créditos ("Sonidos por Juniorsoundays, freesound_community & Photoqueiros") se movieron a un disclosure colapsable ("Créditos de sonido" / "Sound credits"), replicando el patrón exacto del desplegable de atajos de teclado existente. El toggle "Activar sonidos" sigue visible. Colapsado por defecto.
+
+2. **Botón secundario "Cargar archivo"**: tercer botón en la zona de acciones (mismo nivel visual que "Cargar escena de ejemplo"). Reutiliza `useSaveLoad().handleLoadProject` con un `<input type="file" accept=".dior">` propio del modal — `DocumentPill` intacto, sin compartir refs. Flujo: archivo elegido → carga + cierra modal; cancelar → modal permanece abierto.
+
+- **i18n**: `modal.welcome.cta.loadFile` (EN: "Load file" / ES: "Cargar archivo"), `modal.welcome.sounds.credits` (EN: "Sound credits" / ES: "Créditos de sonido").
+- **Files**: `WelcomeModalV2.tsx`, `i18n/en.ts`, `i18n/es.ts`.
+
+---
 
 ### 3.10.3 — Dos vídeos nuevos en la rueda del welcome modal
 
