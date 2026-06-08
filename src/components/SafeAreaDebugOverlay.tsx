@@ -8,7 +8,7 @@ import React, { useState, useEffect, useRef } from 'react';
 //
 // QUITAR (cleanup): borrar este archivo + su import y su montaje en src/App.tsx
 // + el atributo data-app-root del div root en App.tsx. (O poner la constante en false.)
-const DEBUG_SAFE_AREA = true;
+const DEBUG_SAFE_AREA = false;
 
 export function isSafeAreaDebugEnabled(): boolean {
 	if (DEBUG_SAFE_AREA) return true;
