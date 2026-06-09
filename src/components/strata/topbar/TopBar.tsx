@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '../../../design-system/useTheme';
+import { useIsStandalone } from '../../../hooks/useIsStandalone';
 import { ModeSwitchPill } from './ModeSwitchPill';
 import { ThemeTogglePill } from './ThemeTogglePill';
 import { AnimationPlayerUI } from './AnimationPlayerUI';
@@ -19,6 +20,7 @@ import { ExportPill } from './ExportPill';
  */
 export function TopBar() {
 	const { dark } = useTheme();
+	const isStandalone = useIsStandalone();
 
 	return (
 		<div style={{
@@ -27,6 +29,10 @@ export function TopBar() {
 			left: 0,
 			right: 0,
 			padding: '12px',
+			// In standalone PWA (iOS) the system status strip overlays the content; reserve the
+			// top safe-area inset so the DocumentPill clears it. Browser (isStandalone=false) →
+			// plain 12px, byte-identical. paddingTop after padding so the longhand wins.
+			paddingTop: isStandalone ? 'calc(12px + env(safe-area-inset-top, 0px))' : '12px',
 			display: 'grid',
 			gridTemplateColumns: 'auto 1fr auto',
 			alignItems: 'start',

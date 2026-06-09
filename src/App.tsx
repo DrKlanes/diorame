@@ -9,7 +9,6 @@ import { useLoadExampleScene } from './hooks/useLoadExampleScene';
 import { MobileBlockScreenV2, ExportProgressV2, WelcomeModalV2 } from './components/strata/modals';
 import { ToastProvider } from './components/ui/toast-provider';
 import { PwaUpdatePrompt } from './components/PwaUpdatePrompt';
-import { SafeAreaDebugOverlay, isSafeAreaDebugEnabled } from './components/SafeAreaDebugOverlay';
 import { PreviewPage } from './preview/PreviewPage';
 import { useAutoSave, AUTOSAVE_KEY } from './hooks/useAutoSave';
 import { initSoundsFromStorage } from './utils/soundManager';
@@ -32,11 +31,11 @@ function AppContent() {
     if (enabled) dispatch({ type: 'SET_SOUNDS_ENABLED', payload: true });
   }, []);
 
-  // Mantener el fondo de html/body sincronizado con el tema. En PWA standalone iOS,
-  // tras un ciclo de foco 100dvh puede resolver más corto que la pantalla y asomar el
-  // fondo del viewport bajo el root (h-[100dvh]); igualándolo al fondo de la app, esa
-  // franja queda INVISIBLE en claro (#f8fafc = slate-50/canvas) y oscuro (#050505 = canvas).
-  // El tema es solo estado JS (no hay clase .dark en el DOM), por eso se cablea aquí.
+  // Fondo de html/body sincronizado con el tema (claro #f8fafc / oscuro #050505 = canvas).
+  // Defensa belt-and-suspenders: el root es ahora `fixed inset-0` (cubre el viewport físico
+  // sin depender de 100dvh), así que el fondo del body no debería asomar; esto cubre cualquier
+  // borde (overscroll/rubber-band iOS, pre-pintado) sin que se vea blanco. Tema = estado JS
+  // (no hay clase .dark en el DOM), por eso se cablea aquí.
   useEffect(() => {
     const bg = state.isDarkMode ? '#050505' : '#f8fafc';
     document.documentElement.style.backgroundColor = bg;
@@ -79,7 +78,7 @@ function AppContent() {
   };
 
   return (
-    <div data-app-root className="relative w-full h-[100dvh] overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]">
+    <div className="fixed inset-0 overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]">
       {/* Global interaction lock */}
       <style dangerouslySetInnerHTML={{__html: `
           * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -125,7 +124,6 @@ export default function App() {
     <StrataProvider>
       <ToastProvider />
       <PwaUpdatePrompt />
-      {isSafeAreaDebugEnabled() && <SafeAreaDebugOverlay />}
       <AppContentWithMobileGate />
     </StrataProvider>
   );
