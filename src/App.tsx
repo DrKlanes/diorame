@@ -78,7 +78,10 @@ function AppContent() {
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]">
+    <div
+			className="relative w-full h-[100vh] overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]"
+			style={{ background: 'magenta' /* DEBUG: quitar tras medir — color discrimina si la franja está DENTRO del root (magenta) o es el body asomando (blanco/gris) */ }}
+		>
       {/* Global interaction lock */}
       <style dangerouslySetInnerHTML={{__html: `
           * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
