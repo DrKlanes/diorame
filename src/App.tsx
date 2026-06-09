@@ -32,9 +32,9 @@ function AppContent() {
   }, []);
 
   // Fondo de html/body sincronizado con el tema (claro #f8fafc / oscuro #050505 = canvas).
-  // Defensa belt-and-suspenders: el root es ahora `fixed inset-0` (cubre el viewport físico
-  // sin depender de 100dvh), así que el fondo del body no debería asomar; esto cubre cualquier
-  // borde (overscroll/rubber-band iOS, pre-pintado) sin que se vea blanco. Tema = estado JS
+  // Defensa belt-and-suspenders contra overscroll/rubber-band iOS y pre-pintado del body:
+  // el root es h-[100vh] estático y no debería asomar body en uso normal, pero en gestos de
+  // overscroll o antes del primer paint puede asomar brevemente. Tema = estado JS
   // (no hay clase .dark en el DOM), por eso se cablea aquí.
   useEffect(() => {
     const bg = state.isDarkMode ? '#050505' : '#f8fafc';
@@ -78,10 +78,7 @@ function AppContent() {
   };
 
   return (
-    <div
-			className="relative w-full h-[100vh] overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]"
-			style={{ background: 'magenta' /* DEBUG: quitar tras medir — color discrimina si la franja está DENTRO del root (magenta) o es el body asomando (blanco/gris) */ }}
-		>
+    <div className="relative w-full h-[100vh] overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]">
       {/* Global interaction lock */}
       <style dangerouslySetInnerHTML={{__html: `
           * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

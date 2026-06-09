@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.10.8
+**Version**: 3.10.9
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -694,13 +694,28 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.10.8)
+## Appendix C: Changelog Highlights (1.7.3 → 3.10.9)
+
+### 3.10.9 — Fix DEFINITIVO franja inferior PWA standalone iPad: root a 100vh estático
+
+**fix(pwa)** — Fix definitivo de la franja inferior en iPad standalone, validado en dispositivo. El root de la app pasa a `h-[100vh]` estático (viewport units estáticas, NO dvh, NO position:fixed).
+
+**Causa raíz completa — dos bugs de iOS standalone, un fix que los esquiva ambos:**
+- **Bug A** (`100dvh`): en cold start, `dvh` reporta ~22px menos que la pantalla física en standalone iOS; solo se corrige tras rotación/reflow. Era el bug original (≤v3.10.6).
+- **Bug B** (`position:fixed`): en standalone, los elementos `fixed` se desplazan como si una navbar invisible empujara el viewport *tras haber puesto la app en segundo plano y reanudarla*. Se dispara exactamente por el file picker al guardar → franja aparece y ya no desaparece. **Introducido en v3.10.8.** Documentado en Apple Developer Forums thread/744327 como sin fix oficial de Apple.
+- **`100vh` estático** esquiva ambos: no sufre el recorte de arranque de `dvh` ni el desplazamiento post-backgrounding de `fixed`. Documentado como la unidad robusta para standalone en la literatura de iOS PWA.
+
+El fix de franja superior (`paddingTop` standalone en TopBar, v3.10.8) se mantiene intacto. `useEffect` fondo tema-aware se mantiene como defensa de overscroll/rubber-band.
+
+- **Files**: `src/App.tsx` (quita `position:fixed inset:0`, quita magenta debug), `src/constants/version.ts`, `package.json`.
+
+---
 
 ### 3.10.8 — Fix safe-area PWA standalone iPad: franja inferior + superior
 
 **fix(pwa)** — Dos fixes de safe-area para iPad en modo PWA standalone.
 
-- **Franja inferior (causa raíz)**: el root de la app pasó de `h-[100dvh]` a `position: fixed; inset: 0`, anclado al viewport físico real (~1014px) en vez de depender de `100dvh` que iOS resuelve corto al arranque (~992px) en standalone. `containerRef` del canvas es `absolute inset-0` hijo del root — hereda la altura correcta sin tocar la lógica de medición por-frame. Byte-idéntico en navegador. Resuelve definitivamente la causa raíz descrita en 3.10.7.
+- **Franja inferior** ⚠️ **REVERTIDO en v3.10.9**: el root pasó de `h-[100dvh]` a `position: fixed; inset: 0`. Este cambio esquivaba el Bug A (dvh corto en cold start) pero exponía el Bug B de iOS standalone (position:fixed se rompe tras backgrounding — el file picker del guardado lo dispara, franja aparece permanente). El fix definitivo es `h-[100vh]` estático, aplicado en v3.10.9.
 - **Franja superior**: nuevo hook `useIsStandalone` (reactivo, combina `matchMedia('(display-mode: standalone)')` + `navigator.standalone` legacy). En `TopBar`, `paddingTop` se amplía a `calc(12px + env(safe-area-inset-top, 0px))` solo cuando `isStandalone=true` → el DocumentPill libra la franja de sistema iOS. Navegador: byte-idéntico (12px). Portable (funciona en iOS y Android).
 - **Cleanup debug**: `SafeAreaDebugOverlay.tsx` eliminado; referencias en `App.tsx` y grep vacío.
 - **useEffect fondo tema-aware** (v3.10.7): se mantiene como defensa belt-and-suspenders para rubber-band/overscroll iOS.
@@ -713,7 +728,7 @@ APP_VERSION = "3.8.0"           // Current release version
 
 **fix(pwa)** — En PWA standalone iPad, tras un ciclo de foco (guardar → file picker iOS → volver), `100dvh` resuelve ~30-40px más corto que la pantalla física y asoma el fondo del viewport bajo el root (`h-[100dvh]`). El body era `#ffffff` siempre (el tema es estado JS, NO aplica clase `.dark` al DOM), así que la franja era blanca en ambos temas. **Fix:** un `useEffect` en `App.tsx` sincroniza el `backgroundColor` de `html`/`body` con el tema — `#f8fafc` (claro, = slate-50/canvas) / `#050505` (oscuro, = base del canvas) → la franja queda **invisible** en claro y oscuro. No toca el root, el canvas, el SW ni el manifest. No condicional a standalone (inerte en navegador, donde el hueco no aparece).
 
-**Workaround de visibilidad, no de causa raíz.** La causa raíz (fluctuación de `100dvh` en standalone iOS tras cambios de foco) quedó documentada aquí; el fix de raíz (`position: fixed; inset: 0`) se aplicó en v3.10.8.
+**Workaround de visibilidad, no de causa raíz.** La causa raíz (fluctuación de `100dvh` en standalone iOS) quedó documentada aquí. El fix definitivo — `h-[100vh]` estático — se aplicó en v3.10.9 (v3.10.8 usó `position:fixed` pero exponía otro bug de iOS; ver v3.10.8 y v3.10.9).
 
 - **Files**: `src/App.tsx`.
 
