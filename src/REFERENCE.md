@@ -307,17 +307,19 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
-| `StrataCanvas.tsx` | ~1289 | Thin React shell: render loop, event handlers, gesture input. **Frozen** — extract only, never add. |
-| `StrataContext.tsx` | ~1669 | React Context + useReducer: app reducer, constants, re-exports all types |
-| `ControlsV2.tsx` | ~150 | Thin root compositor for both modes. Mounts all UI atoms; enforces `isUIHidden`; hosts 3 global side-effects (keyboard shortcuts, sessionStorage cleanup, mode-change camera reset). |
+| `StrataCanvas.tsx` | ~1450 | Thin React shell: render loop, event handlers, gesture input. **Frozen** — extract only, never add. |
+| `StrataContext.tsx` | ~1800 | React Context + useReducer: app reducer, constants, re-exports all types |
+| `ControlsV2.tsx` | ~165 | Thin root compositor for both modes. Mounts all UI atoms; enforces `isUIHidden`; hosts 3 global side-effects (keyboard shortcuts, sessionStorage cleanup, mode-change camera reset). |
 
 **Drawing mode atoms (`topbar/`, `bottombar/`, `layers/`, `colorpalette/`, `drawing/`, `viewport/`, `text/`):**
 
 | File | Purpose |
 |---|---|
-| `topbar/TopBar.tsx` | Slot router: FileControlsPill (draw) / SnapshotRecordPill (view) + shared AnimationPlayerUI + ModeSwitchPill + ThemeTogglePill |
-| `topbar/FileControlsPill.tsx` | new / open / save / export (SVG/SVGZ) + undo/redo + project name + info |
-| `topbar/SnapshotRecordPill.tsx` | PNG snapshot + MP4 record + PNG-sequence + GIF export controls in CINEMA animation mode |
+| `topbar/TopBar.tsx` | Three-column grid (auto/1fr/auto): DocumentPill left · ModeSwitchPill + AnimationPlayerUI center · ExportPill + ThemeTogglePill right. `useIsStandalone` paddingTop for iOS standalone safe-area |
+| `topbar/DocumentPill.tsx` | Transversal (both modes): new / open / save .dior + project name + undo/redo (DRAW only) + info |
+| `topbar/ExportPill.tsx` | Context-sensitive export popover: SVG/SVGZ (DRAW) · PNG/MP4/GIF/PNG-seq with sub-options (CINEMA) |
+| `topbar/ProjectNameButton.tsx` | Inline-editable project name; fixed-width pill to prevent layout shift on edit |
+| `topbar/InfoButton.tsx` | Opens welcome modal (`TOGGLE_WELCOME_MODAL`); shortcut Shift+? |
 | `topbar/AnimationPlayerUI.tsx` | Collapsible animation pill: bounce toggle + play/pause + frame nav + X/N counter + FPS (4/6/8) + loop/ping-pong + onion skin (DRAW) + zero-Z depth toggle (CINEMA) |
 | `topbar/ModeSwitchPill.tsx` | DRAW / VIEW / hide-UI mode toggle |
 | `topbar/ThemeTogglePill.tsx` | Light/dark paper toggle |
@@ -342,49 +344,57 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
-| `cinematicCamera.ts` | 150 | `computeCinematicTick`: all 10 camera modes + handheld shake, returns new camera state |
-| `composeLayer.ts` | 98 | Layer compositing to offscreen buffer (pixel art + fog/glow/DoF) |
-| `drawBackground.ts` | 47 | Canvas background rendering (paper texture, dark mode) |
-| `drawGizmo.ts` | 179 | Move tool gizmo handles + flip overlay buttons |
-| `drawSymmetryAxis.ts` | 31 | Symmetry axis line rendering |
-| `exportHandlers.ts` | 422 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4`: all export logic |
-| `PixelArtProcessor.ts` | 173 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
-| `postProcessing.ts` | 409 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge` |
-| `quantizePixelArtCamera.ts` | 99 | Snaps camera to pixel grid for pixel art mode |
-| `renderEraserShape.ts` | 30 | Eraser shape rendering (destination-out compositing) |
-| `renderLayerBody.ts` | 380 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)` |
-| `renderLiveStroke.ts` | 151 | In-progress live stroke rendering |
-| `renderParticles.ts` | 98 | Floating cinematic particles rendering |
-| `renderPipeline.ts` | 476 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted 400L oversize (see §12) |
-| `renderRegularFillShape.ts` | 95 | Regular fill shapes (blob / tapered brush) |
-| `renderTextShape.ts` | 175 | Text shape rendering with font + alignment |
-| `renderUniformLineShape.ts` | 144 | Uniform-mode brush stroke rendering |
-| `transformPoint.ts` | 124 | `createTransformPoint` factory for 3D projection |
-| `transformUtils.ts` | 134 | `getLayerBoundingBox`: pixel-accurate bounding box for Move tool gizmo |
-| `animationExportRender.ts` | 192 | `renderAnimationFrames`: shared frame-by-frame render infrastructure; builds fake `RenderContext` with dedicated canvases per frame, async yield between frames |
-| `pngSequenceHandler.ts` | 100 | `exportAsPNGSequence`: `ImageData[]` → PNG bytes → ZIP via `fflate`; files `{project}_frame_01.png`, ZIP `{project}_frames.zip` |
-| `gifHandler.ts` | 131 | `exportAsGIF`: `ImageData[]` → animated GIF via `gifenc`; per-frame palette quantization, scale presets 1/0.5/0.25, infinite native loop |
+| `cinematicCamera.ts` | ~290 | `computeCinematicTick`: all 11 camera modes (Forward, Spiral, Yoyo, Pulse, Twist, Arc, Orbit, Crane, Truck, Zoom, Storytelling) + handheld shake, returns new camera state |
+| `composeLayer.ts` | ~105 | Layer compositing to offscreen buffer (pixel art + fog/glow/DoF) |
+| `drawBackground.ts` | ~50 | Canvas background rendering (paper texture, dark mode) |
+| `drawGizmo.ts` | ~240 | Move tool gizmo handles + flip overlay buttons (incl. side-bar handles for squash & stretch) |
+| `drawSymmetryAxis.ts` | ~30 | Symmetry axis line rendering |
+| `exportHandlers.ts` | ~600 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4`: all export logic |
+| `PixelArtProcessor.ts` | ~175 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
+| `postProcessing.ts` | ~415 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge` |
+| `quantizePixelArtCamera.ts` | ~100 | Snaps camera to pixel grid for pixel art mode |
+| `renderEraserShape.ts` | ~30 | Eraser shape rendering (destination-out compositing) |
+| `renderLayerBody.ts` | ~440 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)` |
+| `renderLiveStroke.ts` | ~150 | In-progress live stroke rendering |
+| `renderParticles.ts` | ~100 | Floating cinematic particles rendering |
+| `renderPipeline.ts` | ~565 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12) |
+| `renderRegularFillShape.ts` | ~95 | Regular fill shapes (blob / tapered brush) |
+| `renderTextShape.ts` | ~175 | Text shape rendering with font + alignment |
+| `renderUniformLineShape.ts` | ~160 | Uniform-mode brush stroke rendering |
+| `transformPoint.ts` | ~130 | `createTransformPoint` factory for 3D projection |
+| `transformUtils.ts` | ~135 | `getLayerBoundingBox`: pixel-accurate bounding box for Move tool gizmo |
+| `moveGizmoInteraction.ts` | ~150 | `hitTestGizmo`, `computeMoveTransform`: Move tool hit-testing + transform math (translate/rotate/scale uniform + scaleX/scaleY non-uniform for squash & stretch). Pure module extracted from StrataCanvas |
+| `animationExportRender.ts` | ~195 | `renderAnimationFrames`: shared frame-by-frame render infrastructure; builds fake `RenderContext` with dedicated canvases per frame, async yield between frames |
+| `pngSequenceHandler.ts` | ~100 | `exportAsPNGSequence`: `ImageData[]` → PNG bytes → ZIP via `fflate`; files `{project}_frame_01.png`, ZIP `{project}_frames.zip` |
+| `gifHandler.ts` | ~140 | `exportAsGIF`: `ImageData[]` → animated GIF via `gifenc`; per-frame palette quantization, scale presets 1/0.5/0.25, infinite native loop |
 
 ### Type System (`src/types/`)
 
 | File | Lines | Purpose |
 |---|---|---|
-| `strataTypes.ts` | 136 | All TypeScript interfaces and types: `Point`, `Shape`, `AppState`, `AppMode`, `ToolType`, `HistorySnapshot`, post-processing types, etc. Re-exported from `StrataContext.tsx` for backwards compatibility. |
+| `strataTypes.ts` | ~170 | All TypeScript interfaces and types: `Point`, `Shape`, `AppState`, `AppMode`, `ToolType`, `HistorySnapshot`, post-processing types, etc. Re-exported from `StrataContext.tsx` for backwards compatibility. |
 
 ### Utilities (`src/utils/`)
 
 | File | Lines | Purpose |
 |---|---|---|
-| `colorUtils.ts` | 33 | `hexToHSL`, `hslToHex`, `getVibrantVariant`, `hexToRgba` |
-| `canvasUtils.ts` | 32 | `createNoise`, `drawSmoothLine`, `drawStraightLine` |
-| `strokeGenerators.ts` | 294 | `generateTaperedStroke`, `generateUniformStroke`, `generateInkStroke`, `generateStrokeForMode` |
-| `animationFrames.ts` | 83 | `getAnimationFrames`, `isLayerEmpty`, `getOnionGhostZs` — animation frame logic shared by the render pipeline, playback, onion skin, and exports |
+| `colorUtils.ts` | ~35 | `hexToHSL`, `hslToHex`, `getVibrantVariant`, `hexToRgba` |
+| `canvasUtils.ts` | ~30 | `createNoise`, `drawSmoothLine`, `drawStraightLine` |
+| `strokeGenerators.ts` | ~295 | `generateTaperedStroke`, `generateUniformStroke`, `generateInkStroke`, `generateStrokeForMode` |
+| `animationFrames.ts` | ~80 | `getAnimationFrames`, `isLayerEmpty`, `getOnionGhostZs` — animation frame logic shared by the render pipeline, playback, onion skin, and exports |
+| `cinematic.ts` | ~10 | `flToMm`, `mmToFl` — focal-length conversion helpers (FL raw ↔ mm); extracted from legacy ControlsCinematic |
+| `keyboardShortcuts.ts` | ~55 | `ShortcutItem`/`ShortcutGroup` types, `formatShortcut`, `isMac`, `hasFinePointer` — shared keyboard shortcut formatting and platform detection |
+| `browserCapabilities.ts` | ~60 | `supportsCanvasFilter()` — cached functional detection for `ctx.filter` support (Safari/WebKit silently ignores filter; this avoids false-positive checks) |
+| `soundManager.ts` | ~140 | UI sound playback manager: click, success, brush stroke (pool of 6), mode switch via HTMLAudioElement |
 
 ### Constants (`src/constants/`)
 
 | File | Lines | Purpose |
 |---|---|---|
-| `renderConstants.ts` | 32 | `PARTICLE_COUNT`, `MIN_TOUCH_STROKE_POINTS`, `FOG_DENSITY_FACTOR`, `HANDHELD_SWAY_FREQ`, `HANDHELD_TREMOR_FREQ`, `DOUBLE_CLICK_DELAY`, `RENDER_THROTTLE_MS`, `DRAW_FOCAL_LENGTH`, `NEAR_CLIP` |
+| `renderConstants.ts` | ~30 | `PARTICLE_COUNT`, `MIN_TOUCH_STROKE_POINTS`, `FOG_DENSITY_FACTOR`, `HANDHELD_SWAY_FREQ`, `HANDHELD_TREMOR_FREQ`, `DOUBLE_CLICK_DELAY`, `RENDER_THROTTLE_MS`, `DRAW_FOCAL_LENGTH`, `NEAR_CLIP` |
+| `palette.ts` | ~90 | `PALETTE_PRIMARY`, `PALETTE_ALTERNATIVE` (24 colors each, `{hex, nameKey, isDark}`), `GRADIENT_DEFAULTS`, `DARK_COLORS` — canonical color system, immutable by design |
+| `version.ts` | ~5 | `APP_VERSION` — single source of truth for the current release version |
+| `project.ts` | ~30 | `UNTITLED_PROJECT_SENTINEL` (`'__UNTITLED__'`) + `getFilenameBase()` — NFD-normalized filename sanitizer for exports and .dior saves |
 
 ### Hooks (`src/hooks/`)
 
@@ -393,8 +403,10 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `useAnimationPlayback.ts` | Drives animation playback: `setInterval` at `1000/animationFramerate` ms dispatching `ADVANCE_ANIMATION_FRAME`; invoked in `ControlsV2` |
 | `useAutoSave.ts` | Periodic auto-save of the project |
 | `useBeforeUnload.ts` | Warns before closing if there are unsaved changes |
-| `useExportFlow.ts` | Orchestrates the export flow (PNG / SVG / MP4) |
+| `useCanvasRecovery.ts` | Calls `onRecover` on `visibilitychange → visible` + `pageshow` to clean up orphaned gesture state after backgrounding; never fires on hidden (see §9.7) |
+| `useExportFlow.ts` | SVG/SVGZ complexity gate: checks visible shape count against 800-shape threshold before dispatching `REQUEST_EXPORT`; shows `ComplexSceneModalV2` on overflow |
 | `useIsMobile.ts` | Mobile device detection via `matchMedia` |
+| `useIsStandalone.ts` | Reactive PWA standalone detection: combines `matchMedia('(display-mode: standalone)')` + legacy `navigator.standalone`; used by `TopBar` for iOS safe-area paddingTop |
 | `useKeyboardShortcuts.ts` | All global and drawing-mode keyboard shortcuts |
 | `useLoadExampleScene.ts` | Fetches, parses, and dispatches the example `.dior` scene |
 | `useSaveLoad.ts` | Save and load projects from IndexedDB (idb-keyval) |
@@ -507,8 +519,8 @@ This section is critical. These actions are **forbidden**:
 
 | File | Lines | Reason |
 |---|---|---|
-| `src/components/strata/StrataCanvas.tsx` | ~1290 | Legacy monolith — subject of ongoing extraction (Plan C). Never add to it. |
-| `src/components/strata/canvas/renderPipeline.ts` | ~476 | Frame orchestrator. Accepted oversize: its purpose is to sequence all render sub-modules in the correct order. Splitting into smaller files would fragment the orchestration logic without reducing real complexity. |
+| `src/components/strata/StrataCanvas.tsx` | ~1450 | Legacy monolith — subject of ongoing extraction (Plan C). Never add to it. |
+| `src/components/strata/canvas/renderPipeline.ts` | ~565 | Frame orchestrator. Accepted oversize: its purpose is to sequence all render sub-modules in the correct order. Splitting into smaller files would fragment the orchestration logic without reducing real complexity. |
 
 ---
 
@@ -653,7 +665,7 @@ CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
 DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
-APP_VERSION = "3.8.0"           // Current release version
+APP_VERSION = "3.10.10"         // Current release version
 ```
 
 ### Post-Processing Effects
