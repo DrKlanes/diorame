@@ -33,7 +33,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 ### Reglas doradas
 
 1. **StrataCanvas.tsx está congelado** — Solo extraer código de él; nunca agregar líneas nuevas.
-2. **Máximo 400 líneas por archivo** — Si un archivo nuevo se acerca al límite, dividirlo antes de continuar. Excepción documentada: `renderPipeline.ts` (~476L) como orquestador de frame — aceptado en v3.0.0.
+2. **Máximo 400 líneas por archivo** — Si un archivo nuevo se acerca al límite, dividirlo antes de continuar. Excepción documentada: `renderPipeline.ts` como orquestador de frame (aceptado en v3.0.0) — tamaño vivo en REFERENCE.md §12.
 3. **Tabs para indentación** — El codebase entero usa tabs. Nunca mezclar spaces.
 4. **No abstracciones especulativas** — Tres líneas similares son mejores que una abstracción prematura.
 
