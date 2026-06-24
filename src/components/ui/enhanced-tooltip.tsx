@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { cn } from './utils';
 
@@ -20,6 +20,15 @@ export function EnhancedTooltip({
   const [open, setOpen] = useState(false);
   const pointerTypeRef = useRef<string>('mouse');
 
+  // Force-close on any visibility change. Defends against a tooltip left stuck open
+  // when the app is backgrounded mid-interaction (e.g. the save share sheet on iPad)
+  // and the closing pointerleave/blur never arrives. No-op when already closed.
+  useEffect(() => {
+    const closeOnVisibilityChange = () => setOpen(false);
+    document.addEventListener('visibilitychange', closeOnVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', closeOnVisibilityChange);
+  }, []);
+
   if (disabled) return <>{children}</>;
 
   return (
@@ -34,6 +43,12 @@ export function EnhancedTooltip({
       >
         <TooltipPrimitive.Trigger
           asChild
+          onPointerEnter={(e: React.PointerEvent) => {
+            // pointerenter precedes focus on touch, so the type is known before Radix's
+            // focus-driven onOpenChange runs. Fixes the race where a touch tooltip opened
+            // because pointerTypeRef was still its 'mouse' default at open time.
+            pointerTypeRef.current = e.pointerType;
+          }}
           onPointerDown={(e: React.PointerEvent) => {
             pointerTypeRef.current = e.pointerType;
           }}

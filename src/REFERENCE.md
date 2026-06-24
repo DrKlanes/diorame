@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.10.9
+**Version**: 3.10.10
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -286,11 +286,11 @@ Performance is a first-class concern. Any change that degrades performance is re
    - Touch events use native listeners for palm rejection
    - Pinch-to-zoom is hardware-accelerated
 
-7. **Canvas Recovery**
-   - `useCanvasRecovery` hook monitors page visibility and window focus events
-   - Dispatches synthetic `pointerup` events to reset stuck drawing state after download dialogs or tab switches
-   - Intercepts native `pointercancel` events (not bound by StrataCanvas) and forwards as `pointerup`
-   - Refocuses the canvas element with staggered delays (50ms, 300ms) to restore keyboard/pointer input
+7. **Canvas Recovery** (implemented v3.10.10)
+   - `useCanvasRecovery(onRecover)` hook listens to `visibilitychange` + `pageshow`
+   - Calls `onRecover` ONLY when the document returns to `visible` — never on the way to hidden (a live gesture on return is necessarily orphaned; resetting on hidden would kill legitimate strokes)
+   - In StrataCanvas, `onRecover` is `resetGestureState`: clears `gestureRef.isPinching`/`isOrbitTouch`, `isPanningRef`, `isDrawingRef` (+ `SET_DRAWING_ACTIVE` dispatch), `currentPointsRef`, `drawingPointerTypeRef`, and releases any orphaned pointer capture (try/catch)
+   - The canvas `onPointerCancel` is bound directly to `resetGestureState` as a same-frame safety net (discards the interrupted stroke rather than committing it)
 
 ### Performance Metrics to Preserve
 - **Draw Latency**: < 10ms from pointer down to first render
@@ -694,7 +694,21 @@ APP_VERSION = "3.8.0"           // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.10.9)
+## Appendix C: Changelog Highlights (1.7.3 → 3.10.10)
+
+### 3.10.10 — Fix bug intermitente iPad: estado de gesto/tooltip huérfano tras guardar
+
+**fix** — En iPad PWA standalone, guardar un `.dior` dispara un `<a download>.click()` que abre el share sheet del sistema → la app pasa a background e iOS puede no entregar los eventos de cierre de gesto (`pointerup`/`leave`/`cancel`/`touchend`/`blur`). Quedaban huérfanos: `gestureRef.isPinching=true` (bloquea zoom **y** dibujo), `isDrawingRef=true`, pointer capture sin liberar, y el tooltip de Radix `open=true`. No existía ningún handler de visibility que lo limpiara — el hook `useCanvasRecovery` que esta doc describía **nunca se había implementado**. Solo un refresh lo curaba. Fix en 3 capas:
+
+- **Capa 1 — `useCanvasRecovery` (el fix de fondo, ahora real)**: hook nuevo (`src/hooks/useCanvasRecovery.ts`) que escucha `visibilitychange` + `pageshow` y llama un callback `resetGestureState` SOLO al volver a `visible` (nunca al ir a hidden — un gesto vivo al volver es necesariamente huérfano; resetear al hidden mataría trazos legítimos). `resetGestureState` (en StrataCanvas, `useCallback`) limpia `isPinching`/`isOrbitTouch`, `isPanningRef`, `isDrawingRef`, `currentPointsRef`, `drawingPointerTypeRef` y libera el pointer capture huérfano (vía `activePointerIdRef`, try/catch).
+- **Capa 2 — `onPointerCancel` en el canvas (red de seguridad)**: el JSX tenía `onPointerUp`/`Leave`/`onTouchCancel` pero NO `onPointerCancel`, y el dibujo va por pointer events. Se añade `onPointerCancel={resetGestureState}` — apunta a `resetGestureState`, **no** a `handlePointerUp`, porque un cancel = gesto abortado: descarta el trazo parcial en vez de commitearlo como shape.
+- **Capa 3 — tooltip (`enhanced-tooltip.tsx`)**: (1) `useEffect` que fuerza `open=false` en cualquier `visibilitychange` → defiende contra el tooltip pegado cuando el cierre por `pointerleave`/`blur` nunca llega. (2) Se setea `pointerTypeRef` también en `onPointerEnter` (que precede a `focus` en touch) → elimina el race donde Radix abría el tooltip por focus antes de que `onPointerDown` marcara el input como touch.
+
+`useCanvasRecovery` no toca el render loop, refs de frame, ni la lógica de pinch/draw — solo limpieza defensiva de lifecycle. La descripción de Canvas Recovery (sección 7 y changelog 1.10.x) se corrigió para reflejar el código real.
+
+- **Files**: `src/hooks/useCanvasRecovery.ts` (nuevo), `src/components/strata/StrataCanvas.tsx`, `src/components/ui/enhanced-tooltip.tsx`, `src/constants/version.ts`, `package.json`, `src/REFERENCE.md`.
+
+---
 
 ### 3.10.9 — Fix DEFINITIVO franja inferior PWA standalone iPad: root a 100vh estático
 
@@ -1363,7 +1377,7 @@ Full replacement of the legacy monolithic controls (Controls.tsx + ControlsDrawi
 
 ### 1.10.x — Depth, Recovery & Polish
 - **Layer Spacing slider**: range expanded to 0.00-2.00 (was 0.5-2.0); value of 0 produces flat 2D visualization
-- **Canvas recovery hook** (`useCanvasRecovery.ts`): monitors page visibility and window focus; dispatches synthetic `pointerup` to reset stuck pointer state after download dialogs; intercepts native `pointercancel` events
+- **Canvas recovery hook**: *documented here but never actually committed in 1.10.x — the file did not exist.* A real `useCanvasRecovery` was finally implemented in v3.10.10 (see that changelog entry); this line is kept for historical accuracy.
 - **Save deferral**: `handleSaveProject` wraps heavy JSON.stringify + download in `setTimeout(_, 0)` to avoid blocking the synchronous click path
 - **Tool Options Panel** (`ToolOptionsPanel.tsx`): extracted context-sensitive UI for Brush line mode/thickness and Gradient settings
 - **Fit-to-view on load**: `shouldFitToView` flag triggers auto-fit after loading a project

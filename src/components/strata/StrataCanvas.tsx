@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
+import { useCanvasRecovery } from '../../hooks/useCanvasRecovery';
 import { generateStrokeForMode } from '../../utils/strokeGenerators';
 import { Shape, Point, Waypoint } from '../../types/strataTypes';
 import paperTexture from "figma:asset/texture-paper.png";
@@ -173,6 +174,10 @@ export const StrataCanvas = () => {
   // Pan & Zoom Desktop State
   const isPanningRef = useRef(false);
   const [cursorOverride, setCursorOverride] = useState<string | null>(null);
+
+  // Last captured pointer id — lets resetGestureState release an orphaned capture
+  // when the app returns from background mid-gesture (no pointerup/cancel delivered).
+  const activePointerIdRef = useRef<number | null>(null);
 
   // --- Event Listeners & Initialization ---
 
@@ -784,7 +789,11 @@ export const StrataCanvas = () => {
         if (!e.isPrimary) return;
          // Post-pinch cooldown: ignore touch shortly after pinch to prevent ghost strokes
          if (e.pointerType === 'touch' && (Date.now() - pinchEndTimestampRef.current) < 150) return;
-    } 
+    }
+
+    // Track the active pointer so an orphaned capture (app sent to background mid-gesture)
+    // can be released later by resetGestureState. Harmless for gestures that never capture.
+    activePointerIdRef.current = e.pointerId;
 
     if (e.button === 1) { // Middle Mouse Button: Pan/Zoom
         e.preventDefault();
@@ -1052,6 +1061,7 @@ export const StrataCanvas = () => {
   const handlePointerUp = (e: React.PointerEvent) => {
 
     try { if(e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
+    activePointerIdRef.current = null;
 
     if (isPanningRef.current) {
         isPanningRef.current = false;
@@ -1223,6 +1233,39 @@ export const StrataCanvas = () => {
     }
   };
 
+  // Clears every gesture flag that can be left orphaned when the app is backgrounded
+  // mid-gesture (iOS may not deliver pointerup/cancel/touchend). Called by
+  // useCanvasRecovery on foreground return and by the canvas onPointerCancel.
+  const resetGestureState = useCallback(() => {
+    // Release any orphaned pointer capture (same try/catch shape as handlePointerUp).
+    const canvas = canvasRef.current;
+    const pid = activePointerIdRef.current;
+    if (canvas && pid !== null) {
+      try { if (canvas.hasPointerCapture(pid)) canvas.releasePointerCapture(pid); } catch (err) {}
+    }
+    activePointerIdRef.current = null;
+
+    // Gesture flags. isPinching is the one that blocks both drawing (handlePointerDown)
+    // and stroke processing (handlePointerMove) while it stays true.
+    gestureRef.current.isPinching = false;
+    gestureRef.current.isOrbitTouch = false;
+    pinchEndTimestampRef.current = Date.now();
+
+    // Pan + in-progress stroke. The stroke is discarded (no dispatch) — an interrupted
+    // gesture is not a committed shape.
+    isPanningRef.current = false;
+    setCursorOverride(null);
+    currentPointsRef.current = [];
+    drawingPointerTypeRef.current = null;
+    if (isDrawingRef.current) {
+      isDrawingRef.current = false;
+      dispatch({ type: 'SET_DRAWING_ACTIVE', payload: false });
+    }
+  }, [dispatch]);
+
+  // Recover orphaned gesture state when the app returns to the foreground.
+  useCanvasRecovery(resetGestureState);
+
   // --- Render Loop ---
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1342,7 +1385,7 @@ export const StrataCanvas = () => {
 
   return (
     <div ref={containerRef} className={cn("absolute inset-0 z-0 overflow-hidden touch-none", state.mode === 'drawing' ? (cursorOverride ? cursorOverride : (state.tool === 'move' ? "cursor-move" : "cursor-crosshair")) : "cursor-default")} style={{ touchAction: 'none' }}>
-      <canvas ref={canvasRef} tabIndex={0} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel} className="block w-full h-full" style={{ touchAction: 'none', outline: 'none' }} />
+      <canvas ref={canvasRef} tabIndex={0} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} onPointerCancel={resetGestureState} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel} className="block w-full h-full" style={{ touchAction: 'none', outline: 'none' }} />
       {/* Flip buttons overlay - positioned via render loop */}
       <div
         ref={flipButtonsRef}
