@@ -12,7 +12,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 | | |
 |---|---|
-| **Versión** | 3.7.1 |
+| **Versión** | 3.10.10 (fuente: `src/constants/version.ts`) |
 | **Stack** | React 18 + TypeScript + Vite 6 + Tailwind CSS 4 + Canvas 2D API |
 | **Dev** | `npm run dev` → puerto 3000 |
 | **Build** | `npm run build` — siempre verificar antes de hacer commit |
@@ -123,125 +123,13 @@ Si dudas si tu cambio es "swap de import" o algo más, asume que es más y escal
 
 ---
 
-## Mapa de archivos (estado actual)
+## Mapa de archivos
 
-### Core — `src/components/strata/`
+El mapa de archivos completo — rutas, rol y conteo aproximado de cada módulo — vive en **`src/REFERENCE.md` §10 (Architecture & File Structure)**. Es la **fuente única**; CLAUDE.md ya no lo duplica para que las dos copias no vuelvan a divergir.
 
-| Archivo | Líneas | Rol |
-|---|---|---|
-| `StrataCanvas.tsx` | ~1289 | Thin React shell: render loop, event handlers, gestures. **CONGELADO.** |
-| `StrataContext.tsx` | ~1669 | React Context + useReducer, constantes, re-exports de tipos |
-| `ControlsV2.tsx` | ~150 | Root orquestador delgado para ambos modos. Side-effects globales (keyboard shortcuts, sessionStorage, mode-change camera reset). |
+Ahí están documentados: el árbol de `src/components/strata/` (Core + átomos UI V2 por directorio — `topbar/`, `bottombar/`, `colorpalette/`, `layers/`, `drawing/`, `viewport/`, `text/`, `fx/`, `modals/`, `popovers/`), el pipeline de `canvas/`, y las tablas de `types/`, `utils/`, `constants/` y `hooks/`.
 
-**Átomos UI V2 (producción, v3.7.1):**
-
-| Directorio | Archivos clave |
-|---|---|
-| `topbar/` | `TopBar.tsx`, `FileControlsPill.tsx`, `SnapshotRecordPill.tsx`, `AnimationPlayerUI.tsx`, `ModeSwitchPill.tsx`, `ThemeTogglePill.tsx`, `InfoButton.tsx` |
-| `bottombar/` | `BottomBar.tsx`, `DrawingToolbar.tsx`, `CameraBar.tsx`, `CameraPresetsZone.tsx`, `CameraSpeedZone.tsx`, `CameraSlidersZone.tsx`, `_shared.tsx` |
-| `colorpalette/` | `ColorPalette.tsx`, `PaletteHeader.tsx`, `GradientControls.tsx`, `SwatchGrid.tsx` |
-| `layers/` | `LayersPanel.tsx`, `LayerRow.tsx`, `LayerDotsRail.tsx` |
-| `viewport/` | `ResetViewPill.tsx` |
-| `drawing/` | `ToolOptionsPanel.tsx` |
-| `text/` | `TextSessionPanel.tsx` |
-| `fx/` | `FXPanel.tsx`, `FXRow.tsx` |
-| `modals/` | `WelcomeModalV2.tsx`, `ClearCanvasAlertV2.tsx`, `ComplexSceneModalV2.tsx`, `ExportProgressV2.tsx`, `OnboardingOverlayV2.tsx`, `MobileBlockScreenV2.tsx`, `DiModal.tsx`, `DiModalActions.tsx`, `DiModalBackdrop.tsx`, `DiModalBody.tsx`, `DiModalCloseButton.tsx`, `DiModalContext.ts`, `DiModalFooter.tsx`, `DiModalHeader.tsx` |
-| `popovers/` | `DiSelectorPopover.tsx`, `DiSelectorOption.tsx` |
-
----
-
-### Canvas pipeline — `src/components/strata/canvas/`
-
-| Archivo | Líneas | Propósito |
-|---|---|---|
-| `cinematicCamera.ts` | ~280 | `computeCinematicTick`: 11 modos de cámara (incl. `storytelling`: tour data-driven por waypoints) + handheld shake |
-| `composeLayer.ts` | 98 | Compositing de capa a offscreen buffer (pixel art + fog/glow/DoF) |
-| `drawBackground.ts` | 47 | Fondo del canvas (textura paper, dark mode) |
-| `drawGizmo.ts` | 179 | Gizmo handles del Move tool + botones flip overlay |
-| `drawSymmetryAxis.ts` | 31 | Renderizado del eje de simetría |
-| `exportHandlers.ts` | 422 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4` |
-| `PixelArtProcessor.ts` | 173 | Downscale, quantización de paleta, dithering Bayer |
-| `postProcessing.ts` | 409 | 8 efectos: Fog, Glow, DoF, RisoV2, ChromAb, Vignette, Grain, Grunge |
-| `quantizePixelArtCamera.ts` | 99 | Snaps cámara a pixel grid para modo pixel art |
-| `renderEraserShape.ts` | 30 | Renderizado de forma del eraser (compositing destination-out) |
-| `renderLayerBody.ts` | 380 | Renderer por capa: `renderLayer(z, rc, offCtx, pfc)` |
-| `renderLiveStroke.ts` | 151 | Renderizado del trazo en progreso (live stroke) |
-| `renderParticles.ts` | 98 | Renderizado de partículas flotantes cinemáticas |
-| `renderPipeline.ts` | 476 | Orquestador de frame: `renderFrame(ctx, rc: RenderContext)` ⚠️ excepción 400L |
-| `renderRegularFillShape.ts` | 95 | Formas de relleno regular (blob/tapered brush) |
-| `renderTextShape.ts` | 175 | Renderizado de texto con fuente + alineación |
-| `renderUniformLineShape.ts` | 144 | Renderizado de trazo brush en modo uniform |
-| `transformPoint.ts` | 124 | Factory `createTransformPoint` para proyección 3D |
-| `transformUtils.ts` | 134 | `getLayerBoundingBox` para Move tool |
-| `animationExportRender.ts` | 192 | `renderAnimationFrames`: infra frame-a-frame compartida; fake `RenderContext` con canvases dedicados |
-| `pngSequenceHandler.ts` | 100 | `exportAsPNGSequence`: `ImageData[]` → PNGs → ZIP (fflate) |
-| `gifHandler.ts` | 131 | `exportAsGIF`: `ImageData[]` → GIF animado (gifenc); secuencia espejo ping-pong, escala 1/0.5/0.25 |
-
-### Arquitectura del render pipeline
-
-**Patrón: "caller orquesta, módulos puros"**
-
-- `StrataCanvas.tsx` — gestiona el ciclo React y los refs. Llama a `renderFrame(ctx, buildRenderContext())` en cada frame.
-- `renderPipeline.ts` — orquestador puro. Recibe `RenderContext`, ejecuta las fases en orden, no toca refs de React.
-- Módulos `canvas/*.ts` — funciones puras que reciben parámetros tipados. Nunca acceden a refs de React ni a closures del componente.
-
-**Tipos centrales exportados por `renderPipeline.ts`:**
-
-| Tipo | Propósito |
-|---|---|
-| `RenderContext` | Bundle de todos los refs, snapshots de estado, refs frame-persistent, refs canvas y overrides |
-| `PerFrameComputed` | Valores computados una vez por frame y compartidos entre todas las llamadas de capa |
-| `TransformRefState` | Estado de transform por ref para el frame actual |
-
-**Overrides en RenderContext:**
-
-| Override | Efecto |
-|---|---|
-| `renderZsOverride?` | Fuerza un orden de capas alternativo (usado en Move tool) |
-| `skipLiveStroke?` | Omite el renderizado del trazo en progreso |
-| `skipCinematicOverlays?` | Omite partículas y overlays cinemáticos |
-
-**5 refs frame-persistent en StrataCanvas:**
-`accumulatedTimeRef`, `accumulatedHandheldTimeRef`, `lastTimeRef`, `wiggleFrameRef`, `shapePatternRef` — migrados de `let` en closure de useEffect a `useRef` en nivel de componente en v3.0.0.
-
-**Secuencia de fases en `renderFrame`:**
-throttle → quantize cam → FL/focus → buffers → background → viewport → loop de capas → post-processing → overlays → cinematic tick
-
----
-
-### Tipos — `src/types/`
-
-| Archivo | Propósito |
-|---|---|
-| `strataTypes.ts` | Todas las interfaces y tipos: `Point`, `Shape`, `AppState`, `AppMode`, `ToolType`, `HistorySnapshot`, tipos de post-processing. Re-exportados desde `StrataContext.tsx`. |
-
-### Utilidades — `src/utils/`
-
-| Archivo | Propósito |
-|---|---|
-| `colorUtils.ts` | `hexToHSL`, `hslToHex`, `getVibrantVariant`, `hexToRgba` |
-| `canvasUtils.ts` | `createNoise`, `drawSmoothLine`, `drawStraightLine` |
-| `strokeGenerators.ts` | `generateTaperedStroke`, `generateUniformStroke`, `generateInkStroke`, `generateStrokeForMode` |
-
-### Constantes — `src/constants/`
-
-| Archivo | Propósito |
-|---|---|
-| `renderConstants.ts` | `PARTICLE_COUNT`, `RENDER_THROTTLE_MS`, `DOUBLE_CLICK_DELAY`, `DRAW_FOCAL_LENGTH`, `NEAR_CLIP`, `FOG_DENSITY_FACTOR`, frecuencias de handheld |
-| `palette.ts` | `PALETTE_PRIMARY`, `PALETTE_ALTERNATIVE` como `PaletteColor[]` con `{hex, name, isDark}`. `GRADIENT_DEFAULTS`. `DARK_COLORS` (Set derivado). **Fuente única de verdad del sistema de color.** |
-
-### Hooks — `src/hooks/`
-
-| Archivo | Propósito |
-|---|---|
-| `useAutoSave.ts` | Auto-guardado periódico del proyecto |
-| `useBeforeUnload.ts` | Alerta al cerrar si hay cambios sin guardar |
-| `useExportFlow.ts` | Orquesta el flujo de exportación (PNG/SVG/MP4/GIF/PNG sequence) |
-| `useIsMobile.ts` | Detección de dispositivo móvil |
-| `useKeyboardShortcuts.ts` | Todos los atajos de teclado globales y por modo |
-| `useLoadExampleScene.ts` | Carga la escena de ejemplo en primer uso |
-| `useAnimationPlayback.ts` | Playback de animación: setInterval a 1000/fps ms despachando ADVANCE_ANIMATION_FRAME |
-| `useSaveLoad.ts` | Guardar y cargar proyectos desde indexedDB |
+> **Redirect operativo — render pipeline:** el patrón "caller orquesta, módulos puros", los tipos centrales de `RenderContext` (incluidos `PerFrameComputed` y `TransformRefState`), los overrides (`renderZsOverride`, `skipLiveStroke`, `skipCinematicOverlays`), los 5 refs frame-persistent y la secuencia de fases de `renderFrame` están documentados en **REFERENCE.md §10 ("Render Pipeline Architecture")**. Cualquier sesión que toque el render debe leerlo **ahí** antes de empezar — no está duplicado en CLAUDE.md a propósito.
 
 ---
 
@@ -275,7 +163,7 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 
 - `PALETTE_PRIMARY` / `PALETTE_ALTERNATIVE`: 24 colores cada una, **fijas e inmutables** (filosofía Riso)
 - `FIXED_PALETTE` / `ALTERNATIVE_PALETTE` en `StrataContext.tsx` se derivan con `.map(c => c.hex)` — retrocompatibilidad total
-- `DARK_COLORS`: Set derivado de `isDark: true` en ambas paletas — usado en `ControlsDrawing.tsx` para el ring de contraste en swatches seleccionados
+- `DARK_COLORS`: Set derivado de `isDark: true` en ambas paletas — usado en `SwatchGrid.tsx`/`ColorPalette.tsx` para el ring de contraste en swatches seleccionados
 - `GRADIENT_DEFAULTS`: `{ angle: 90, intensity: 0.2, gradType: 'solid' }` — único fallback para `layerGradParams`
 
 ---
@@ -302,7 +190,7 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 ## Constantes clave
 
 ```typescript
-APP_VERSION         = "3.7.1"    // en src/constants/version.ts — bump en cualquier cambio visible
+APP_VERSION         = ver src/constants/version.ts  // fuente única — bump en cualquier cambio visible
 BASE_DEPTH_STEP     = 150        // Z-units por capa
 MAX_LAYERS          = 10
 MAX_HISTORY_STEPS   = 50
@@ -334,7 +222,10 @@ NEAR_CLIP           = 50         // clipping mínimo de capa en proyección 3D
 2. Documentar hallazgos y proponer plan
 3. Esperar confirmación explícita
 4. Implementar en pasos pequeños
-5. `npm run build` para verificar
-6. `git add <archivos específicos>` + `git commit` + `git push`
+5. **Sincronizar REFERENCE.md §10** — si el commit añade, elimina o renombra un archivo `.ts`/`.tsx`, o cambia sustancialmente lo que hace, actualizar su fila en REFERENCE.md §10 **en el mismo commit**. Conteos de línea siempre como `~NNN` aproximado, nunca exacto.
+6. `npm run build` para verificar
+7. `git add <archivos específicos>` + `git commit` + `git push`
 
 **Staging:** Siempre archivos específicos por nombre. Nunca `git add -A` o `git add .`.
+
+**Cierre del commit:** el resumen de cierre debe declarar explícitamente el estado de sync de §10 — p. ej. `REFERENCE.md §10 sync: updated (añadido X)` o `N/A (sin cambios de archivos .ts/.tsx)`. Sin esa declaración, el commit no está cerrado.
