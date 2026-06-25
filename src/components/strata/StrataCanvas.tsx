@@ -400,14 +400,7 @@ export const StrataCanvas = () => {
       waypointsRef.current = wps;
   }, [state.shapes, state.locked3DLayers]);
 
-  // Load Fonts
-  useEffect(() => {
-      const link = document.createElement('link');
-      link.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Courier+Prime:wght@400;700&family=Inter:wght@400;700&family=Bangers&family=Inknut+Antiqua:wght@400;700&display=swap';
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
-      return () => { document.head.removeChild(link); }
-  }, []);
+  // Fonts now self-hosted via @fontsource (imported in src/fonts.ts); no CDN <link> needed.
 
   // Load Textures
   useEffect(() => {

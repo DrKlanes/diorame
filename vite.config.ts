@@ -16,9 +16,10 @@
         injectRegister: null,   // registro manual en src/pwa.ts (evita doble registro)
         manifest: false,        // YA servimos public/manifest.webmanifest — no duplicar
         workbox: {
-          // App-shell + iconos + manifest. PNG incluido por los iconos; las texturas
-          // grandes (>2 MiB) las excluye el cap default, y además globIgnores explícito.
-          globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+          // App-shell + iconos + manifest + fuentes. PNG incluido por los iconos; las
+          // texturas grandes (>2 MiB) las excluye el cap default, y además globIgnores
+          // explícito. woff2: fuentes self-hosted (@fontsource) → precache para offline.
+          globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
           globIgnores: ['**/welcome-videos/**', '**/texture-*.png'],
           navigateFallback: '/index.html',   // SPA offline
           navigateFallbackDenylist: [/\/welcome-videos\//],  // los .mp4 NUNCA caen al fallback HTML

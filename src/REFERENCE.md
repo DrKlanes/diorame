@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.10.10
+**Version**: 3.11.0
 **Last Updated**: Junio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -706,7 +706,23 @@ APP_VERSION = "3.10.10"         // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.10.10)
+## Appendix C: Changelog Highlights (1.7.3 → 3.11.0)
+
+### 3.11.0 — Fuentes auto-hospedadas (offline) vía @fontsource
+
+**feat(pwa)** — La tipografía deja de depender del CDN de Google Fonts y funciona **offline** dentro de la PWA. Antes había **dos** puntos de carga CDN: el `<link>` de `index.html` (7 familias) y un `useEffect` dentro de `StrataCanvas.tsx` que inyectaba un `<link>` dinámico para las 5 fuentes del canvas. Ambos eliminados.
+
+- **7 familias auto-hospedadas vía `@fontsource`** (woff2 bundleado, subset **latin** — cubre EN/ES; otros subsets omitidos a propósito para no inflar el precache):
+  - **UI** (`design-system/tokens.ts`): Manrope 400/500/600/700 · Sora 400/600.
+  - **Canvas** (`renderTextShape.ts`, todas en bold): Inter (`pharma`) · Courier Prime (`noir`) · Cinzel (`mansion`) · Bangers (`comic`, single-weight) · Inknut Antiqua (`dungeons`). Se hospedan 400+700 (Bangers solo 400).
+  - Pesos = exactamente los que se renderizaban antes → **apariencia idéntica**. Cadena de fallback a system fonts intacta.
+- **Imports** centralizados en `src/fonts.ts` (nuevo), importado en `main.tsx` antes de los estilos. Sin fallback woff2 manual: los 15 `latin-*.css` existen en @fontsource.
+- **Service worker (offline)**: `globPatterns` de `vite.config.ts` amplía a `…,woff2}` → los **15 woff2 entran al precache** (CacheFirst, inmutables). El precache pasa de 12 a 27 entradas. Offline cubierto aunque las fuentes del canvas se carguen lazy (el SW las precachea todas al instalar, no on-demand).
+- **StrataCanvas**: se elimina el `useEffect` "Load Fonts" (−6 líneas, reduce el monolito; no toca render loop/gestos/proyección). Sustituido por un comentario que apunta a `src/fonts.ts`.
+- **Validado**: build verde (15 woff2 en `sw.js`), **cero** referencias a `fonts.googleapis.com`/`gstatic.com` en HTML/JS/CSS final, fuentes servidas desde mismo origen, las 5 del canvas cargan on-demand sin error, render UI idéntico (Manrope).
+- **Files**: `src/fonts.ts` (nuevo), `src/main.tsx`, `index.html`, `vite.config.ts`, `src/components/strata/StrataCanvas.tsx`, `src/constants/version.ts`, `package.json` (+7 deps `@fontsource/*`).
+
+---
 
 ### 3.10.10 — Fix bug intermitente iPad: estado de gesto/tooltip huérfano tras guardar
 
