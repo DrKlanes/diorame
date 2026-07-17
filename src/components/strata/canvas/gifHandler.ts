@@ -1,6 +1,7 @@
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { toast } from 'sonner@2.0.3';
 import { playSound } from '../../../utils/soundManager';
+import { downloadBlob } from '../../../utils/downloadBlob';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
 
@@ -116,12 +117,7 @@ export async function exportAsGIF(
 		const bytes = gif.bytes();
 		const blob = new Blob([bytes], { type: 'image/gif' });
 
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = `${sanitizedName}.gif`;
-		a.click();
-		URL.revokeObjectURL(url);
+		downloadBlob(blob, `${sanitizedName}.gif`);
 
 		toast.success(t('toast.export.gif.successTitle'), {
 			description: t('toast.export.gif.successDesc'),

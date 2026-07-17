@@ -385,6 +385,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `cinematic.ts` | ~10 | `flToMm`, `mmToFl` — focal-length conversion helpers (FL raw ↔ mm); extracted from legacy ControlsCinematic |
 | `keyboardShortcuts.ts` | ~55 | `ShortcutItem`/`ShortcutGroup` types, `formatShortcut`, `isMac`, `hasFinePointer` — shared keyboard shortcut formatting and platform detection |
 | `browserCapabilities.ts` | ~60 | `supportsCanvasFilter()` — cached functional detection for `ctx.filter` support (Safari/WebKit silently ignores filter; this avoids false-positive checks) |
+| `downloadBlob.ts` | ~25 | `downloadBlob(blob, filename)` — Blob download via hidden appended anchor + deferred cleanup/revoke (iPadOS WebKit drops detached-anchor clicks and sync-revoked URLs); shared by PNG/SVG/MP4/GIF/ZIP export sinks |
 | `soundManager.ts` | ~140 | UI sound playback manager: click, success, brush stroke (pool of 6), mode switch via HTMLAudioElement |
 
 ### Constants (`src/constants/`)

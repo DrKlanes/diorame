@@ -1,6 +1,7 @@
 import { zipSync } from 'fflate';
 import { toast } from 'sonner@2.0.3';
 import { playSound } from '../../../utils/soundManager';
+import { downloadBlob } from '../../../utils/downloadBlob';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
 
@@ -77,12 +78,7 @@ export async function exportAsPNGSequence(
 		const zipBytes = zipSync(zipFiles);
 		const blob = new Blob([zipBytes], { type: 'application/zip' });
 
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = `${sanitizedName}_frames.zip`;
-		a.click();
-		URL.revokeObjectURL(url);
+		downloadBlob(blob, `${sanitizedName}_frames.zip`);
 
 		toast.success(t('toast.export.pngSequence.successTitle'), {
 			description: t('toast.export.pngSequence.successDesc'),

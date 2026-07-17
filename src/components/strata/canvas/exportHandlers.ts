@@ -1,5 +1,6 @@
 import { toast } from 'sonner@2.0.3';
 import { playSound } from '../../../utils/soundManager';
+import { downloadBlob } from '../../../utils/downloadBlob';
 import { Shape } from '../../../types/strataTypes';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
@@ -154,27 +155,38 @@ export const exportAsPNG = (
 				src = canvas;
 			}
 		}
-		const link = document.createElement('a');
 		const displayName = projectName === UNTITLED_PROJECT_SENTINEL
 			? t('topbar.file.untitledProject')
 			: projectName;
 		const sanitizedName = getFilenameBase(displayName);
-		link.download = `${sanitizedName}-${Date.now()}.png`;
-		link.href = src.toDataURL('image/png', 1.0);
-		link.click();
-		toast.success(t('toast.export.snapshot.successTitle'), {
-			description: t('toast.export.snapshot.successDesc'),
-			duration: 2000,
-		});
-		playSound('success');
+		// toBlob (async) instead of toDataURL: iPadOS WebKit silently drops
+		// downloads of large data: URLs. Toasts and onFinish resolve in the callback.
+		src.toBlob((blob) => {
+			if (!blob) {
+				console.error("Export PNG failed: toBlob returned null");
+				toast.error(t('toast.export.snapshot.errorTitle'), {
+					description: t('common.pleaseRetry'),
+					duration: 3000,
+				});
+				onFinish();
+				return;
+			}
+			downloadBlob(blob, `${sanitizedName}-${Date.now()}.png`);
+			toast.success(t('toast.export.snapshot.successTitle'), {
+				description: t('toast.export.snapshot.successDesc'),
+				duration: 2000,
+			});
+			playSound('success');
+			onFinish();
+		}, 'image/png');
 	} catch (e) {
 		console.error("Export PNG failed", e);
 		toast.error(t('toast.export.snapshot.errorTitle'), {
 			description: t('common.pleaseRetry'),
 			duration: 3000,
 		});
+		onFinish();
 	}
-	onFinish();
 };
 
 /**
@@ -451,12 +463,7 @@ export const exportAsSVG = async (
 			filename = `${sanitizedName}-${Date.now()}.svg`;
 		}
 
-		const url = URL.createObjectURL(blob);
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = filename;
-		link.click();
-		URL.revokeObjectURL(url);
+		downloadBlob(blob, filename);
 
 		const isCompressed = exportRequest === 'svgz' && typeof CompressionStream !== 'undefined';
 		toast.success(t('toast.export.vector.successTitle'), {
@@ -549,16 +556,11 @@ export const exportAsMP4 = (
 				animation.dispatch({ type: 'SET_ANIMATION_PLAYING', payload: false });
 			}
 			const blob = new Blob(recordedChunksRef.current, { type: mimeType });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement('a');
-			a.href = url;
 			const displayName = projectName === UNTITLED_PROJECT_SENTINEL
-			? t('topbar.file.untitledProject')
-			: projectName;
-		const sanitizedName = getFilenameBase(displayName);
-			a.download = `${sanitizedName}-${Date.now()}.${ext}`;
-			a.click();
-			URL.revokeObjectURL(url);
+				? t('topbar.file.untitledProject')
+				: projectName;
+			const sanitizedName = getFilenameBase(displayName);
+			downloadBlob(blob, `${sanitizedName}-${Date.now()}.${ext}`);
 			toast.success(t('toast.export.animation.successTitle'), {
 				description: t('toast.export.animation.successDesc'),
 				duration: 2000,
