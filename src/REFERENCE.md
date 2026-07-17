@@ -1,7 +1,7 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.11.0
-**Last Updated**: Junio 2026
+**Version**: 3.11.1
+**Last Updated**: Julio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
 For AI collaboration instructions (architecture rules, coding conventions, workflow), see **CLAUDE.md** in the repo root.
@@ -251,6 +251,7 @@ Two distinct actions create layers — they are **not** interchangeable:
 - **SVGZ**: Compressed SVG export (Cmd/Ctrl + Shift + E)
 - **Complexity Warning**: SVG/SVGZ exports with more than 800 shapes trigger a confirmation dialog
 - **Export Progress**: Visual progress indicator overlay during video exports
+- **Download sink (all formats)**: every export downloads through `utils/downloadBlob.ts` — blob URL + hidden anchor appended to the DOM + deferred revoke. Required for iPadOS WebKit, which silently drops `data:` URL downloads, detached-anchor clicks, and synchronously-revoked object URLs (v3.11.1). New export formats MUST use this helper.
 
 ---
 
@@ -666,7 +667,7 @@ CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
 DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
-APP_VERSION = "3.10.10"         // Current release version
+APP_VERSION                     // → src/constants/version.ts (single source; not duplicated here)
 ```
 
 ### Post-Processing Effects
@@ -707,7 +708,27 @@ APP_VERSION = "3.10.10"         // Current release version
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.11.0)
+## Appendix C: Changelog Highlights (1.7.3 → 3.11.1)
+
+### 3.11.1 — Fix export iPad: descargas silenciosamente descartadas (PNG/SVG/MP4/GIF/ZIP)
+
+**fix(export)** — En iPad (Safari y PWA standalone), exportar imagen en Modo Cine mostraba el toast de éxito pero no guardaba archivo ni abría el share sheet nativo. Desktop funcionaba. **Causa raíz doble en `exportAsPNG`, y ninguna lanza excepción — de ahí el falso éxito:**
+
+- **`toDataURL` (data: URL gigante)**: iPadOS WebKit descarta en silencio las descargas de `data:` URLs grandes (varios MB de base64; hasta 8192px de lado en HQ). Desktop Chrome las acepta — por eso el bug era invisible fuera de iPad.
+- **Anchor desacoplado del DOM**: iOS Safari no honra de forma fiable `.click()` en un `<a>` no insertado en el documento.
+
+Los otros 4 sinks de descarga (SVG, MP4, GIF, ZIP de secuencia PNG) usaban blob URL (correcto) pero compartían el anchor desacoplado + `revokeObjectURL` **síncrono** tras el click — race con el share sheet async de iOS: la URL muere antes de que WebKit la lea.
+
+**Fix**: `src/utils/downloadBlob.ts` (nuevo) replica el patrón del guardado `.dior` (`useSaveLoad.ts`), ya verificado en producción en iPad: blob URL + anchor oculto añadido al `body` + cleanup/revoke diferido (200ms, mismo valor que el flujo `.dior`). Los 5 sinks migrados al helper. `exportAsPNG` pasa de `toDataURL` a `canvas.toBlob` (async — evita además el pico de memoria del string base64 en iOS): toasts y `onFinish` resuelven en el callback, con rama de error si `toBlob` devuelve `null`.
+
+**Regla destilada** (también en CLAUDE.md): toda descarga de archivo nueva DEBE usar `downloadBlob()` — nunca `toDataURL` + anchor, nunca anchor fuera del DOM, nunca revoke síncrono.
+
+**Falso diagnóstico descartado**: no era necesario `navigator.share()` para obtener el diálogo nativo — el patrón `<a download>` bien ejecutado ya lo abre en standalone, y `navigator.share` exige activación de usuario transitoria que la cadena dispatch → useEffect → re-render HQ no garantiza (riesgo de `NotAllowedError` intermitente).
+
+- **Validado**: iPad real (export estándar + HQ en Modo Cine → aparece el share sheet nativo y el archivo se guarda de verdad); desktop sin regresión (verificación funcional en dev: anchor con `blob:` URL adjunto al body, cleanup diferido ejecutado, cero errores de consola nuevos).
+- **Files**: `src/utils/downloadBlob.ts` (nuevo), `src/components/strata/canvas/exportHandlers.ts`, `src/components/strata/canvas/gifHandler.ts`, `src/components/strata/canvas/pngSequenceHandler.ts`, `src/constants/version.ts`, `src/REFERENCE.md`.
+
+---
 
 ### 3.11.0 — Fuentes auto-hospedadas (offline) vía @fontsource
 

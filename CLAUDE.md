@@ -12,7 +12,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 | | |
 |---|---|
-| **Versión** | 3.10.10 (fuente: `src/constants/version.ts`) |
+| **Versión** | ver `src/constants/version.ts` (fuente única — no se duplica aquí) |
 | **Stack** | React 18 + TypeScript + Vite 6 + Tailwind CSS 4 + Canvas 2D API |
 | **Dev** | `npm run dev` → puerto 3000 |
 | **Build** | `npm run build` — siempre verificar antes de hacer commit |
@@ -52,6 +52,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 ### Convenciones generales
 
 - Toasts: usar `sonner@2.0.3`
+- Descargas de archivo: siempre vía `downloadBlob()` (`src/utils/downloadBlob.ts`) — blob URL + anchor insertado en el DOM + revoke diferido. Nunca `toDataURL` + `<a>.click()` desacoplado ni `revokeObjectURL` síncrono: iPadOS WebKit los descarta en silencio con toast de falso éxito (v3.11.1)
 - Imágenes raster: importar con `figma:asset/...` (sin prefijo de ruta)
 - SVGs: van en `/imports`, usar rutas relativas
 - Arrays, paletas y matrices de datos readonly: preferir tipos `readonly` (`as const` o `Readonly<>`)
