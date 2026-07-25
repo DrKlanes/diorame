@@ -85,16 +85,14 @@ export type TextSession = {
     align: 'left' | 'center' | 'right';
 };
 
+// CONTENT-ONLY contract: undo/redo restore document content, never tool state.
+// Tool/view state (brush settings, active palette, hidden/locked layers, active
+// layer) lives outside the history and survives undo untouched.
 export type HistorySnapshot = {
     shapes: Shape[];
     totalLayers: number;
-    currentLayerIndex: number;
-    hiddenLayers: number[];
-    locked3DLayers: number[];
     layerRenderModes: Record<number, 'flat' | 'grad'>;
     layerGradParams: Record<number, { angle: number; intensity: number; gradType?: 'solid' | 'fade' }>;
-    layerBrushSettings: Record<number, { thickness: number; mode: BrushMode }>;
-    activePaletteId: 'primary' | 'alternative';
 };
 
 export interface AppState {

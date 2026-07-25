@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.11.1
+**Version**: 3.11.2
 **Last Updated**: Julio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -461,7 +461,7 @@ This section is critical. These actions are **forbidden**:
 - Eraser tool logic
 - Draw Inside / Draw Behind compositing
 - Clipping / composition / rendering pipeline
-- `hiddenLayers` is excluded from undo/redo
+- Undo/redo restore CONTENT only (`shapes`, `totalLayers`, `layerRenderModes`, `layerGradParams`). Tool/view state — `hiddenLayers`, `locked3DLayers`, brush settings, active palette — is preserved live and never enters `HistorySnapshot` (v3.11.2 contract; do not revert to the 3.7.3 model)
 
 ### UX Changes
 - **No Hidden Complexity**: Every interaction must be transparent
@@ -708,7 +708,30 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.11.1)
+## Appendix C: Changelog Highlights (1.7.3 → 3.11.2)
+
+### 3.11.2 — Undo restaura contenido, nunca herramienta (contrato nuevo de historial)
+
+**fix(undo)** — Deshacer un trazo también desmarcaba el tipo de trazo elegido y devolvía la paleta activa a la anterior — antinatural frente al estándar de software de diseño (Photoshop/Procreate: undo toca el documento, no la herramienta). El audit destapó **cinco defectos de la misma familia**:
+
+1. UNDO/REDO restauraban estado de herramienta desde el snapshot: `layerBrushSettings` → `brushMode`/`currentBrushThickness`, y `activePaletteId`/`palette`.
+2. `SET_BRUSH_MODE` y `SET_ACTIVE_PALETTE` snapshoteaban `{...state, shapes: nuevas}` — shapes post-cambio con el setting pre-cambio (snapshot inconsistente: el undo del siguiente trazo "desmarcaba" el selector).
+3. `TOGGLE_3D_LOCK` no pusheaba historial pero `locked3DLayers` sí se restauraba → deshacer tras bloquear una capa en 3D revertía el candado en silencio.
+4. `DELETE_CURRENT_LAYER` snapshoteaba shapes reindexadas con `totalLayers` y mapas per-layer viejos → undo/redo cruzando un borrado resucitaba una capa fantasma con modos de render desalineados (corrupción real).
+5. Los snapshots iniciales (`initialState`, `CLEAR_CANVAS`) omitían `activePaletteId` (TS no lo caza: `vite build` no typechequea) → deshacer hasta el fondo tras un clear corrompía la paleta a `undefined`.
+
+**Contrato nuevo**: `HistorySnapshot` adelgazado a contenido puro — `{ shapes, totalLayers, layerRenderModes, layerGradParams }`. UNDO/REDO preservan en vivo todo el estado de herramienta/vista (`hiddenLayers` ya lo hacía; ahora también `locked3DLayers`, brush settings y paleta activa). Si el undo fuerza salto de capa (cambio de conteo), el brush adopta la memoria per-layer VIVA de la capa destino — mismo comportamiento que el cambio manual (`SET_CURRENT_LAYER`).
+
+**Guards anti-paso-muerto**: `SET_BRUSH_MODE`, `SET_ACTIVE_PALETTE` y `COMMIT_BRUSH_THICKNESS` solo pushean historial si realmente modificaron shapes (regeneración de trazos / remapeo de colores). Cambiar tipo de trazo en capa vacía o alternar paleta con canvas vacío = cambio de herramienta puro, cero entradas de undo.
+
+**Reversión documentada**: esto invierte deliberadamente el modelo de **3.7.3** (que hizo que undo restaurara selector de paleta y brush para "sincronizar" — ver anotación en esa entrada). El síntoma que 3.7.3 quería curar (ajuste pegado tras undo) era real, pero el remedio conflaba selector con contenido; el modelo vigente restaura el contenido (hex/geometría embebidos en las shapes) sin tocar el selector. Trade-off aceptado: deshacer MÁS ALLÁ de un restyle de trazo/paleta puede dejar capa con trazos estilo X y selector marcando Y (modos mixtos por capa son representables — cada shape hornea su `brushMode`/`brushThickness`/hex).
+
+**Pendiente conocido (fuera de scope)**: los sliders de gradiente (`SET_PALETTE_GRADIENT_ANGLE`/`INTENSITY`/`TYPE`) no crean paso de undo propio; sus ajustes viajan a caballo del siguiente snapshot de contenido y se revierten al deshacerlo. Curarlo requiere commit-on-release como el ciclo de thickness.
+
+- **Validado** (dev, funcional): toggle de paleta en canvas vacío no crea paso de undo (botón undo sigue deshabilitado); dibujar + deshacer elimina el trazo y el selector de paleta NO se mueve; toggle con contenido crea paso propio (remapeo) y deshacerlo restaura colores sin mover el selector; truncado de rama redo intacto; cero errores de consola. Pendiente validación en dispositivo: flujo de tipo de trazo, candado 3D y borrar-capa+undo.
+- **Files**: `src/types/strataTypes.ts` (HistorySnapshot), `src/components/strata/StrataContext.tsx` (createSnapshot, UNDO, REDO, SET_BRUSH_MODE, SET_ACTIVE_PALETTE, COMMIT_BRUSH_THICKNESS, DELETE_CURRENT_LAYER, initialState, CLEAR_CANVAS, LOAD_PROJECT), `src/constants/version.ts`, `package.json`.
+
+---
 
 ### 3.11.1 — Fix export iPad: descargas silenciosamente descartadas (PNG/SVG/MP4/GIF/ZIP)
 
@@ -999,6 +1022,8 @@ Sin cambios (ya escalaban solos): **chromatic aberration** usa un factor proporc
 ---
 
 ### 3.7.3 — Sincronización de ajustes de dibujo tras undo
+
+> **[MODELO REVERTIDO en 3.11.2]** — Esta entrada hizo que UNDO/REDO restauraran `activePaletteId` y brush settings. En producción resultó antinatural (deshacer un trazo desmarcaba el tipo de trazo/paleta elegidos). El contrato vigente es el inverso: undo restaura solo contenido, nunca estado de herramienta. Ver 3.11.2.
 
 **fix — Desincronización de ajustes de dibujo tras undo (patrón)**: el visual volvía atrás con undo pero el "ajuste activo" del próximo trazo quedaba pegado. Dos síntomas del mismo patrón:
 - **Paleta**: `activePaletteId` no se capturaba en el snapshot → tras undo las shapes recuperaban su color (hex embebido) pero la paleta activa y el próximo trazo quedaban en la paleta nueva. Fix: `activePaletteId` añadido a `HistorySnapshot` + `createSnapshot` + `initialSnapshot` (LOAD_PROJECT); `UNDO`/`REDO` restauran `activePaletteId` y derivan `palette`.

@@ -189,12 +189,8 @@ const initialState: AppState = {
   history: [{
       shapes: [],
       totalLayers: 1,
-      currentLayerIndex: 0,
-      hiddenLayers: [],
-      locked3DLayers: [],
       layerRenderModes: {},
-      layerGradParams: {},
-      layerBrushSettings: {}
+      layerGradParams: {}
   }],
   historyIndex: 0,
   exportRequest: null,
@@ -260,18 +256,13 @@ function pushHistory(
     };
 }
 
-// Helper to create a snapshot from current state
+// Helper to create a snapshot from current state (content only — see HistorySnapshot)
 function createSnapshot(state: AppState): HistorySnapshot {
     return {
         shapes: state.shapes,
         totalLayers: state.totalLayers,
-        currentLayerIndex: state.currentLayerIndex,
-        hiddenLayers: state.hiddenLayers,
-        locked3DLayers: state.locked3DLayers,
         layerRenderModes: state.layerRenderModes,
-        layerGradParams: state.layerGradParams,
-        layerBrushSettings: state.layerBrushSettings,
-        activePaletteId: state.activePaletteId
+        layerGradParams: state.layerGradParams
     };
 }
 
@@ -424,26 +415,24 @@ function appReducer(state: AppState, action: Action): AppState {
 
       const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
       const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
-      const restoredBrush = snapshot.layerBrushSettings[layerIndexToUse]
-        || { thickness: state.currentBrushThickness, mode: state.brushMode };
+      // Content-only restore: tool state (brush, palette, locks, visibility) stays
+      // live. If the restore forces a layer jump, adopt that layer's LIVE brush
+      // memory — same behavior as a manual layer switch (SET_CURRENT_LAYER).
+      const jumpBrush = layerIndexToUse !== state.currentLayerIndex
+        ? (state.layerBrushSettings[layerIndexToUse] || { thickness: state.currentBrushThickness, mode: state.brushMode })
+        : { thickness: state.currentBrushThickness, mode: state.brushMode };
 
-      // Restore snapshot WITHOUT changing active layer (unless layer count changed)
       return {
         ...state,
         shapes: snapshot.shapes,
         totalLayers: snapshot.totalLayers,
         currentLayerIndex: layerIndexToUse,
         camera: { ...state.camera, z: layerIndexToUse * -BASE_DEPTH_STEP, rotation: 0 },
-        hiddenLayers: state.hiddenLayers, // Preserve current visibility (view-only, not undoable)
-        locked3DLayers: snapshot.locked3DLayers,
         layerRenderModes: snapshot.layerRenderModes,
         paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
         layerGradParams: snapshot.layerGradParams,
-        layerBrushSettings: snapshot.layerBrushSettings,
-        activePaletteId: snapshot.activePaletteId,
-        palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
-        currentBrushThickness: restoredBrush.thickness,
-        brushMode: restoredBrush.mode,
+        currentBrushThickness: jumpBrush.thickness,
+        brushMode: jumpBrush.mode,
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -462,26 +451,24 @@ function appReducer(state: AppState, action: Action): AppState {
 
       const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
       const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
-      const restoredBrush = snapshot.layerBrushSettings[layerIndexToUse]
-        || { thickness: state.currentBrushThickness, mode: state.brushMode };
+      // Content-only restore: tool state (brush, palette, locks, visibility) stays
+      // live. If the restore forces a layer jump, adopt that layer's LIVE brush
+      // memory — same behavior as a manual layer switch (SET_CURRENT_LAYER).
+      const jumpBrush = layerIndexToUse !== state.currentLayerIndex
+        ? (state.layerBrushSettings[layerIndexToUse] || { thickness: state.currentBrushThickness, mode: state.brushMode })
+        : { thickness: state.currentBrushThickness, mode: state.brushMode };
 
-      // Restore snapshot WITHOUT changing active layer (unless layer count changed)
       return {
         ...state,
         shapes: snapshot.shapes,
         totalLayers: snapshot.totalLayers,
         currentLayerIndex: layerIndexToUse,
         camera: { ...state.camera, z: layerIndexToUse * -BASE_DEPTH_STEP, rotation: 0 },
-        hiddenLayers: state.hiddenLayers, // Preserve current visibility (view-only, not undoable)
-        locked3DLayers: snapshot.locked3DLayers,
         layerRenderModes: snapshot.layerRenderModes,
         paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
         layerGradParams: snapshot.layerGradParams,
-        layerBrushSettings: snapshot.layerBrushSettings,
-        activePaletteId: snapshot.activePaletteId,
-        palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
-        currentBrushThickness: restoredBrush.thickness,
-        brushMode: restoredBrush.mode,
+        currentBrushThickness: jumpBrush.thickness,
+        brushMode: jumpBrush.mode,
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -811,12 +798,8 @@ function appReducer(state: AppState, action: Action): AppState {
           history: [{
               shapes: [],
               totalLayers: 1,
-              currentLayerIndex: 0,
-              hiddenLayers: [],
-              locked3DLayers: [],
               layerRenderModes: {},
-              layerGradParams: {},
-              layerBrushSettings: {}
+              layerGradParams: {}
           }],
           historyIndex: 0,
           currentLayerIndex: 0,
@@ -934,13 +917,8 @@ function appReducer(state: AppState, action: Action): AppState {
       const initialSnapshot: HistorySnapshot = {
           shapes: safeShapes,
           totalLayers: safeTotalLayers,
-          currentLayerIndex: 0,
-          hiddenLayers: safeHiddenLayers,
-          locked3DLayers: safeLocked3DLayers,
           layerRenderModes: loadedLayerRenderModes,
-          layerGradParams: loadedLayerGradParams,
-          layerBrushSettings: loadedLayerBrushSettings,
-          activePaletteId: loadedPaletteId
+          layerGradParams: loadedLayerGradParams
       };
 
       return {
@@ -1219,13 +1197,14 @@ function appReducer(state: AppState, action: Action): AppState {
 
         // Determine new current layer
         const newCurrentLayer = Math.min(state.currentLayerIndex, state.totalLayers - 2);
-        
+
         // Sync global settings with new current layer
         const nextBrush = newBrushSettings[newCurrentLayer] || { thickness: state.currentBrushThickness, mode: state.brushMode };
-        
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
-        
-        return {
+
+        // Snapshot the FINAL state (shapes reindexed AND totalLayers/maps updated) —
+        // snapshotting {...state, shapes} here recorded the old layer count with the
+        // new shapes, so redo/undo across a delete resurrected a phantom layer.
+        const newState = {
             ...state,
             shapes: newShapes,
             totalLayers: state.totalLayers - 1,
@@ -1239,10 +1218,10 @@ function appReducer(state: AppState, action: Action): AppState {
             paletteMode: newRenderModes[newCurrentLayer] || 'flat',
             currentBrushThickness: nextBrush.thickness,
             brushMode: nextBrush.mode,
-            history,
-            historyIndex: index,
             isDirty: true,
         };
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
+        return { ...newState, history, historyIndex: index };
     }
     case 'START_TEXT_SESSION':
         return {
@@ -1354,8 +1333,14 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'COMMIT_BRUSH_THICKNESS': {
         const prevShapes = state.brushThicknessBeforePreview;
         if (prevShapes) {
-             const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
-             return { ...state, brushThicknessBeforePreview: null, history, historyIndex: index };
+             // Only commit an undo step if the thickness cycle actually restyled
+             // strokes; otherwise it was a pure tool-state change.
+             const currentLayerZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
+             const strokesWereRestyled = state.shapes.some(s => s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0);
+             if (strokesWereRestyled) {
+                 const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
+                 return { ...state, brushThicknessBeforePreview: null, history, historyIndex: index };
+             }
         }
         return { ...state, brushThicknessBeforePreview: null };
     }
@@ -1372,6 +1357,13 @@ function appReducer(state: AppState, action: Action): AppState {
         const thickness = currentSettings.thickness;
 
         const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
+        const hasRegenerableStrokes = state.shapes.some(s => s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0);
+
+        // No strokes to restyle → pure tool-state change, no undo step.
+        if (!hasRegenerableStrokes) {
+            return { ...state, brushMode: mode, layerBrushSettings: newLayerSettings };
+        }
+
         const newShapes = state.shapes.map(s => {
              if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
                  let newPoints: Point[] = [];
@@ -1380,15 +1372,15 @@ function appReducer(state: AppState, action: Action): AppState {
              }
              return s;
         });
-        
+
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
-        
-        return { 
-            ...state, 
-            brushMode: mode, 
+
+        return {
+            ...state,
+            brushMode: mode,
             layerBrushSettings: newLayerSettings,
             shapes: newShapes,
-            history, 
+            history,
             historyIndex: index
         };
     }
@@ -1669,21 +1661,28 @@ function appReducer(state: AppState, action: Action): AppState {
         
         const newPalette = newId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
         const oldPalette = state.palette;
-        
+
         // Map shapes to new palette colors based on index
+        let anyRemapped = false;
         const newShapes = state.shapes.map(shape => {
             // Find index in OLD palette
             const idx = oldPalette.indexOf(shape.color);
-            
+
             // If color exists in old palette and we have a corresponding color in new palette
-            if (idx !== -1 && idx < newPalette.length) {
+            if (idx !== -1 && idx < newPalette.length && newPalette[idx] !== shape.color) {
+                anyRemapped = true;
                 return { ...shape, color: newPalette[idx] };
             }
             return shape;
         });
-        
+
+        // No shape colors remapped → pure UI toggle, no undo step.
+        if (!anyRemapped) {
+            return { ...state, activePaletteId: newId, palette: newPalette };
+        }
+
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
-        
+
         return {
             ...state,
             activePaletteId: newId,

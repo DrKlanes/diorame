@@ -174,7 +174,7 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 - **Eraser tool** — lógica de borrado
 - **Draw Inside / Draw Behind** — compositing con alpha
 - **Clipping / pipeline de renderizado** — orden y composición de capas
-- **`hiddenLayers`** — excluido deliberadamente del undo/redo
+- **Undo = solo contenido (contrato v3.11.2)** — UNDO/REDO restauran únicamente `shapes`, `totalLayers`, `layerRenderModes` y `layerGradParams`. El estado de herramienta/vista (`hiddenLayers`, `locked3DLayers`, `layerBrushSettings`/`brushMode`/`currentBrushThickness`, `activePaletteId`/`palette`) se preserva en vivo y NUNCA entra en `HistorySnapshot`. Cambios de trazo/grosor/paleta solo crean paso de undo si modificaron shapes (regeneración/remapeo). No revertir este modelo: la versión anterior (3.7.3, undo restauraba selector) fue descartada en producción por antinatural.
 
 ### Acciones del reducer: semántica crítica
 
@@ -182,7 +182,7 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 |---|---|
 | `ADD_LAYER` | Crea capa nueva **encima de la activa** con desplazamiento de índices. **No navega.** |
 | `NEXT_LAYER` | Navega a la capa siguiente; solo crea capa nueva si ya estamos en la última. |
-| `COMMIT_BRUSH_THICKNESS` | Consolida el grosor de brush al historial de undo (crea snapshot). |
+| `COMMIT_BRUSH_THICKNESS` | Consolida el grosor de brush al historial **solo si la capa tenía trazos regenerables** (si no: cambio de herramienta puro, sin snapshot — v3.11.2). |
 | `SET_BRUSH_THICKNESS_PREVIEW` | Preview temporal durante drag del slider — no genera snapshot de undo. |
 | `SET_BRUSH_THICKNESS` | Aplica valor final del slider — complementa COMMIT en el ciclo onChange/onPointerUp. |
 
