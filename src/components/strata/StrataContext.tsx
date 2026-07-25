@@ -190,7 +190,9 @@ const initialState: AppState = {
       shapes: [],
       totalLayers: 1,
       layerRenderModes: {},
-      layerGradParams: {}
+      layerGradParams: {},
+      layerBrushSettings: {},
+      activePaletteId: 'primary'
   }],
   historyIndex: 0,
   exportRequest: null,
@@ -256,14 +258,41 @@ function pushHistory(
     };
 }
 
-// Helper to create a snapshot from current state (content only — see HistorySnapshot)
+// Helper to create a snapshot from current state (hybrid contract — see HistorySnapshot).
+// CALLERS BEWARE: pass POST-change state. An action that restyles/remaps shapes must
+// include its new layerBrushSettings/activePaletteId in the state it snapshots, or the
+// snapshot lies (that stale-pair bug caused the original undo complaints — v3.11.1 era).
 function createSnapshot(state: AppState): HistorySnapshot {
     return {
         shapes: state.shapes,
         totalLayers: state.totalLayers,
         layerRenderModes: state.layerRenderModes,
-        layerGradParams: state.layerGradParams
+        layerGradParams: state.layerGradParams,
+        // Materialize the active layer's EFFECTIVE brush pair if the map has no
+        // entry yet: layers only get an entry on their first explicit change, and
+        // a snapshot with an empty slot forces undo to fall back to live values —
+        // which are the post-change ones, so the selector would never travel back.
+        layerBrushSettings: state.layerBrushSettings[state.currentLayerIndex]
+            ? state.layerBrushSettings
+            : {
+                ...state.layerBrushSettings,
+                [state.currentLayerIndex]: { thickness: state.currentBrushThickness, mode: state.brushMode }
+            },
+        activePaletteId: state.activePaletteId
     };
+}
+
+// Last-writer-wins for pure selections (no shapes changed → no undo step): stamp the
+// new selector value onto the CURRENT snapshot so undoing back to "now" never
+// resurrects the old selection.
+function patchCurrentSnapshot(
+    history: HistorySnapshot[],
+    index: number,
+    patch: Partial<Pick<HistorySnapshot, 'layerBrushSettings' | 'activePaletteId' | 'layerRenderModes' | 'layerGradParams'>>
+): HistorySnapshot[] {
+    const newHistory = history.slice();
+    newHistory[index] = { ...newHistory[index], ...patch };
+    return newHistory;
 }
 
 // --- Reducer ---
@@ -324,11 +353,20 @@ function appReducer(state: AppState, action: Action): AppState {
           const allModes: Record<number, 'flat' | 'grad'> = {};
           for (let i = 0; i < state.totalLayers; i++) allModes[i] = action.payload;
           const nextState = { ...state, paletteMode: action.payload, layerRenderModes: allModes };
+          // No shapes anywhere → pure selection: no undo step, last-writer-wins.
+          if (state.shapes.length === 0) {
+              return { ...nextState, history: patchCurrentSnapshot(state.history, state.historyIndex, { layerRenderModes: allModes }) };
+          }
           const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(nextState));
           return { ...nextState, history, historyIndex: index };
       }
       const nextLayerRenderModes = { ...state.layerRenderModes, [state.currentLayerIndex]: action.payload };
       const nextState = { ...state, paletteMode: action.payload, layerRenderModes: nextLayerRenderModes };
+      // Current layer has no shapes to re-render → pure selection: no undo step, last-writer-wins.
+      const hasLayerShapes = state.shapes.some(s => s.zIndex === state.currentLayerIndex * -BASE_DEPTH_STEP);
+      if (!hasLayerShapes) {
+          return { ...nextState, history: patchCurrentSnapshot(state.history, state.historyIndex, { layerRenderModes: nextLayerRenderModes }) };
+      }
       const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(nextState));
       return { ...nextState, history, historyIndex: index };
     }
@@ -415,12 +453,13 @@ function appReducer(state: AppState, action: Action): AppState {
 
       const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
       const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
-      // Content-only restore: tool state (brush, palette, locks, visibility) stays
-      // live. If the restore forces a layer jump, adopt that layer's LIVE brush
-      // memory — same behavior as a manual layer switch (SET_CURRENT_LAYER).
-      const jumpBrush = layerIndexToUse !== state.currentLayerIndex
-        ? (state.layerBrushSettings[layerIndexToUse] || { thickness: state.currentBrushThickness, mode: state.brushMode })
-        : { thickness: state.currentBrushThickness, mode: state.brushMode };
+      // Hybrid restore: document-property selectors (brush settings, palette) come
+      // from the snapshot so canvas and selector never desync — snapshots are
+      // consistent (post-change pairs) and pure selections last-writer-win onto the
+      // current snapshot, so undoing a plain stroke never moves a selector. Pure
+      // view state (hiddenLayers, locked3DLayers) is not in the snapshot at all.
+      const restoredBrush = snapshot.layerBrushSettings[layerIndexToUse]
+        || { thickness: state.currentBrushThickness, mode: state.brushMode };
 
       return {
         ...state,
@@ -431,8 +470,11 @@ function appReducer(state: AppState, action: Action): AppState {
         layerRenderModes: snapshot.layerRenderModes,
         paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
         layerGradParams: snapshot.layerGradParams,
-        currentBrushThickness: jumpBrush.thickness,
-        brushMode: jumpBrush.mode,
+        layerBrushSettings: snapshot.layerBrushSettings,
+        activePaletteId: snapshot.activePaletteId,
+        palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
+        currentBrushThickness: restoredBrush.thickness,
+        brushMode: restoredBrush.mode,
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -451,12 +493,13 @@ function appReducer(state: AppState, action: Action): AppState {
 
       const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
       const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
-      // Content-only restore: tool state (brush, palette, locks, visibility) stays
-      // live. If the restore forces a layer jump, adopt that layer's LIVE brush
-      // memory — same behavior as a manual layer switch (SET_CURRENT_LAYER).
-      const jumpBrush = layerIndexToUse !== state.currentLayerIndex
-        ? (state.layerBrushSettings[layerIndexToUse] || { thickness: state.currentBrushThickness, mode: state.brushMode })
-        : { thickness: state.currentBrushThickness, mode: state.brushMode };
+      // Hybrid restore: document-property selectors (brush settings, palette) come
+      // from the snapshot so canvas and selector never desync — snapshots are
+      // consistent (post-change pairs) and pure selections last-writer-win onto the
+      // current snapshot, so redoing a plain stroke never moves a selector. Pure
+      // view state (hiddenLayers, locked3DLayers) is not in the snapshot at all.
+      const restoredBrush = snapshot.layerBrushSettings[layerIndexToUse]
+        || { thickness: state.currentBrushThickness, mode: state.brushMode };
 
       return {
         ...state,
@@ -467,8 +510,11 @@ function appReducer(state: AppState, action: Action): AppState {
         layerRenderModes: snapshot.layerRenderModes,
         paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
         layerGradParams: snapshot.layerGradParams,
-        currentBrushThickness: jumpBrush.thickness,
-        brushMode: jumpBrush.mode,
+        layerBrushSettings: snapshot.layerBrushSettings,
+        activePaletteId: snapshot.activePaletteId,
+        palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
+        currentBrushThickness: restoredBrush.thickness,
+        brushMode: restoredBrush.mode,
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -799,7 +845,9 @@ function appReducer(state: AppState, action: Action): AppState {
               shapes: [],
               totalLayers: 1,
               layerRenderModes: {},
-              layerGradParams: {}
+              layerGradParams: {},
+              layerBrushSettings: {},
+              activePaletteId: state.activePaletteId
           }],
           historyIndex: 0,
           currentLayerIndex: 0,
@@ -918,7 +966,9 @@ function appReducer(state: AppState, action: Action): AppState {
           shapes: safeShapes,
           totalLayers: safeTotalLayers,
           layerRenderModes: loadedLayerRenderModes,
-          layerGradParams: loadedLayerGradParams
+          layerGradParams: loadedLayerGradParams,
+          layerBrushSettings: loadedLayerBrushSettings,
+          activePaletteId: loadedPaletteId
       };
 
       return {
@@ -1334,7 +1384,7 @@ function appReducer(state: AppState, action: Action): AppState {
         const prevShapes = state.brushThicknessBeforePreview;
         if (prevShapes) {
              // Only commit an undo step if the thickness cycle actually restyled
-             // strokes; otherwise it was a pure tool-state change.
+             // strokes (state already holds the post-preview shapes + settings).
              const currentLayerZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
              const strokesWereRestyled = state.shapes.some(s => s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0);
              if (strokesWereRestyled) {
@@ -1342,7 +1392,12 @@ function appReducer(state: AppState, action: Action): AppState {
                  return { ...state, brushThicknessBeforePreview: null, history, historyIndex: index };
              }
         }
-        return { ...state, brushThicknessBeforePreview: null };
+        // Pure selection (no strokes restyled) → last-writer-wins onto the current snapshot.
+        return {
+            ...state,
+            brushThicknessBeforePreview: null,
+            history: patchCurrentSnapshot(state.history, state.historyIndex, { layerBrushSettings: state.layerBrushSettings })
+        };
     }
     case 'TOGGLE_HANDHELD':
         playSound('click');
@@ -1359,9 +1414,15 @@ function appReducer(state: AppState, action: Action): AppState {
         const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
         const hasRegenerableStrokes = state.shapes.some(s => s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0);
 
-        // No strokes to restyle → pure tool-state change, no undo step.
+        // No strokes to restyle → pure selection: no undo step, last-writer-wins
+        // onto the current snapshot so a later undo never reverts this choice.
         if (!hasRegenerableStrokes) {
-            return { ...state, brushMode: mode, layerBrushSettings: newLayerSettings };
+            return {
+                ...state,
+                brushMode: mode,
+                layerBrushSettings: newLayerSettings,
+                history: patchCurrentSnapshot(state.history, state.historyIndex, { layerBrushSettings: newLayerSettings })
+            };
         }
 
         const newShapes = state.shapes.map(s => {
@@ -1373,7 +1434,8 @@ function appReducer(state: AppState, action: Action): AppState {
              return s;
         });
 
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
+        // Material restyle → undo step; snapshot the POST-change pair (shapes + settings).
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes, layerBrushSettings: newLayerSettings }));
 
         return {
             ...state,
@@ -1676,12 +1738,19 @@ function appReducer(state: AppState, action: Action): AppState {
             return shape;
         });
 
-        // No shape colors remapped → pure UI toggle, no undo step.
+        // No shape colors remapped → pure selection: no undo step, last-writer-wins
+        // onto the current snapshot so a later undo never reverts this choice.
         if (!anyRemapped) {
-            return { ...state, activePaletteId: newId, palette: newPalette };
+            return {
+                ...state,
+                activePaletteId: newId,
+                palette: newPalette,
+                history: patchCurrentSnapshot(state.history, state.historyIndex, { activePaletteId: newId })
+            };
         }
 
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
+        // Material remap → undo step; snapshot the POST-change pair (shapes + palette id).
+        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes, activePaletteId: newId }));
 
         return {
             ...state,

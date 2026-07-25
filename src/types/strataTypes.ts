@@ -85,14 +85,21 @@ export type TextSession = {
     align: 'left' | 'center' | 'right';
 };
 
-// CONTENT-ONLY contract: undo/redo restore document content, never tool state.
-// Tool/view state (brush settings, active palette, hidden/locked layers, active
-// layer) lives outside the history and survives undo untouched.
+// Hybrid contract (v3.11.3): snapshots hold document content PLUS the two
+// document-property selectors (per-layer brush settings, active palette) whose
+// changes can restyle/remap shapes. When such a change is material it pushes a
+// step and the selector travels with undo/redo (canvas and selector never
+// desync). When it changes nothing (empty layer/canvas) it pushes no step and
+// instead last-writer-wins onto the CURRENT snapshot, so later undos never
+// resurrect an old selection. Pure view state (hiddenLayers, locked3DLayers,
+// active layer) never enters the history.
 export type HistorySnapshot = {
     shapes: Shape[];
     totalLayers: number;
     layerRenderModes: Record<number, 'flat' | 'grad'>;
     layerGradParams: Record<number, { angle: number; intensity: number; gradType?: 'solid' | 'fade' }>;
+    layerBrushSettings: Record<number, { thickness: number; mode: BrushMode }>;
+    activePaletteId: 'primary' | 'alternative';
 };
 
 export interface AppState {

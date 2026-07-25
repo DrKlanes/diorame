@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.11.2
+**Version**: 3.11.3
 **Last Updated**: Julio 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -461,7 +461,7 @@ This section is critical. These actions are **forbidden**:
 - Eraser tool logic
 - Draw Inside / Draw Behind compositing
 - Clipping / composition / rendering pipeline
-- Undo/redo restore CONTENT only (`shapes`, `totalLayers`, `layerRenderModes`, `layerGradParams`). Tool/view state — `hiddenLayers`, `locked3DLayers`, brush settings, active palette — is preserved live and never enters `HistorySnapshot` (v3.11.2 contract; do not revert to the 3.7.3 model)
+- Undo/redo follow the HYBRID contract (v3.11.3): brush/palette selectors display document properties — when changing them restyled/remapped shapes it is a content op (undo step; selector travels with undo/redo), when it changed nothing it is a pure selection (no step; last-writer-wins onto the current snapshot). `hiddenLayers` and `locked3DLayers` are pure view state, never in `HistorySnapshot`. Do not revert to the 3.7.3 (always-travel) or 3.11.2 (never-travel) models — both failed in production
 
 ### UX Changes
 - **No Hidden Complexity**: Every interaction must be transparent
@@ -708,9 +708,30 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.11.2)
+## Appendix C: Changelog Highlights (1.7.3 → 3.11.3)
+
+### 3.11.3 — Undo híbrido: el selector viaja solo con los pasos materiales
+
+**fix(undo)** — El contrato contenido-puro de 3.11.2 sobrecorrigió: deshacer el restyle de trazos devolvía la geometría pero dejaba el selector marcando el estilo nuevo (UI mentirosa), y deshacer un remapeo de paleta restauraba los hex viejos con el selector en la paleta nueva (mezcla de colores de ambas paletas). Validado en dispositivo como antinatural.
+
+**Insight de diseño**: los selectores de tipo de trazo y paleta de Diorame NO son preferencias de herramienta (brush size de Photoshop) — son **displays de propiedades del documento** (estilo de la capa, set de tintas), como el blend mode de una capa: cuando su cambio altera el lienzo, deshacerlo debe revertir contenido Y selector juntos.
+
+**Contrato híbrido**:
+- **Cambio material** (restyle/remapeo modificó shapes): paso de undo con snapshot del par post-cambio (`shapes` + `layerBrushSettings`/`activePaletteId`). El selector viaja con undo/redo — canvas y selector nunca se desincronizan.
+- **Selección pura** (nada que restylar/remapear): sin paso de undo, y **last-writer-wins** — `patchCurrentSnapshot()` estampa el valor nuevo sobre el snapshot presente, de modo que un undo posterior jamás resucita la selección vieja. (Esta pieza es la que faltaba en 3.7.3 y la fuga que empujó a 3.11.2.)
+- `SET_PALETTE_MODE` (plano/degradado) entra al mismo modelo: en capa vacía ya no crea paso muerto.
+- `createSnapshot` **materializa** el brush efectivo de la capa activa cuando el mapa no tiene entrada (las capas solo escriben su entrada al primer cambio explícito; sin materializar, el undo caía al valor vivo y el selector no viajaba — cazado en verificación).
+- Se mantienen de 3.11.2: `hiddenLayers`/`locked3DLayers` fuera del historial (estado de vista puro), fix de capa fantasma en `DELETE_CURRENT_LAYER`, y guards anti-paso-muerto.
+
+**Validado** (dev, instrumentando el estado real del reducer): flujo completo trazo→restyle→trazo→undo×2 (primer undo no mueve selector; segundo deshace restyle y marca el tipo anterior); redo re-aplica restyle y selector; paleta: selección pura sobrevive al undo, remapeo viaja con undo/redo sin mezcla; conteo de pasos exacto (sin pasos muertos ni pasos de más).
+
+- **Files**: `src/types/strataTypes.ts`, `src/components/strata/StrataContext.tsx`, `src/constants/version.ts`, `package.json`.
+
+---
 
 ### 3.11.2 — Undo restaura contenido, nunca herramienta (contrato nuevo de historial)
+
+> **[REFINADO en 3.11.3]** — El modelo contenido-puro de esta entrada generó selector mentiroso tras deshacer restyles y mezcla de paletas tras deshacer remapeos. Sus otras piezas (snapshot de capa fantasma, guards, hiddenLayers/locked3D fuera del historial) siguen vigentes. Ver 3.11.3.
 
 **fix(undo)** — Deshacer un trazo también desmarcaba el tipo de trazo elegido y devolvía la paleta activa a la anterior — antinatural frente al estándar de software de diseño (Photoshop/Procreate: undo toca el documento, no la herramienta). El audit destapó **cinco defectos de la misma familia**:
 
@@ -1023,7 +1044,7 @@ Sin cambios (ya escalaban solos): **chromatic aberration** usa un factor proporc
 
 ### 3.7.3 — Sincronización de ajustes de dibujo tras undo
 
-> **[MODELO REVERTIDO en 3.11.2]** — Esta entrada hizo que UNDO/REDO restauraran `activePaletteId` y brush settings. En producción resultó antinatural (deshacer un trazo desmarcaba el tipo de trazo/paleta elegidos). El contrato vigente es el inverso: undo restaura solo contenido, nunca estado de herramienta. Ver 3.11.2.
+> **[MODELO SUPERSEDIDO — ver 3.11.3]** — Esta entrada hizo que UNDO/REDO restauraran SIEMPRE `activePaletteId` y brush settings. En producción resultó antinatural (deshacer un trazo desmarcaba el tipo de trazo/paleta elegidos), pero su reemplazo puro (3.11.2, nunca restaurar) también falló (selector mentiroso, mezcla de paletas). El contrato vigente es el híbrido de 3.11.3: el selector viaja solo con los pasos que modificaron shapes.
 
 **fix — Desincronización de ajustes de dibujo tras undo (patrón)**: el visual volvía atrás con undo pero el "ajuste activo" del próximo trazo quedaba pegado. Dos síntomas del mismo patrón:
 - **Paleta**: `activePaletteId` no se capturaba en el snapshot → tras undo las shapes recuperaban su color (hex embebido) pero la paleta activa y el próximo trazo quedaban en la paleta nueva. Fix: `activePaletteId` añadido a `HistorySnapshot` + `createSnapshot` + `initialSnapshot` (LOAD_PROJECT); `UNDO`/`REDO` restauran `activePaletteId` y derivan `palette`.
