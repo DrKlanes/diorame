@@ -723,7 +723,7 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - `createSnapshot` **materializa** el brush efectivo de la capa activa cuando el mapa no tiene entrada (las capas solo escriben su entrada al primer cambio explícito; sin materializar, el undo caía al valor vivo y el selector no viajaba — cazado en verificación).
 - Se mantienen de 3.11.2: `hiddenLayers`/`locked3DLayers` fuera del historial (estado de vista puro), fix de capa fantasma en `DELETE_CURRENT_LAYER`, y guards anti-paso-muerto.
 
-**Validado** (dev, instrumentando el estado real del reducer): flujo completo trazo→restyle→trazo→undo×2 (primer undo no mueve selector; segundo deshace restyle y marca el tipo anterior); redo re-aplica restyle y selector; paleta: selección pura sobrevive al undo, remapeo viaja con undo/redo sin mezcla; conteo de pasos exacto (sin pasos muertos ni pasos de más).
+**Validado** (dev, instrumentando el estado real del reducer): flujo completo trazo→restyle→trazo→undo×2 (primer undo no mueve selector; segundo deshace restyle y marca el tipo anterior); redo re-aplica restyle y selector; paleta: selección pura sobrevive al undo, remapeo viaja con undo/redo sin mezcla; conteo de pasos exacto (sin pasos muertos ni pasos de más). **Validado en dispositivo (iPad)**: flujos de trazo y paleta confirmados naturales, sin fricción.
 
 - **Files**: `src/types/strataTypes.ts`, `src/components/strata/StrataContext.tsx`, `src/constants/version.ts`, `package.json`.
 
