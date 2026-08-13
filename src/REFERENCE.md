@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.13.1
+**Version**: 3.13.2
 **Last Updated**: Agosto 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -347,17 +347,17 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 |---|---|---|
 | `blurCompat.ts` | ~100 | `applyBlurCompat`: Gaussian-approx blur via iterative downscale/upscale `drawImage` — the ctx.filter-free path used by Glow/DoF on WebKit/iPadOS |
 | `cinematicCamera.ts` | ~290 | `computeCinematicTick`: all 11 camera modes (Forward, Spiral, Yoyo, Pulse, Twist, Arc, Orbit, Crane, Truck, Zoom, Storytelling) + handheld shake, returns new camera state |
-| `composeLayer.ts` | ~105 | Layer compositing to offscreen buffer (pixel art + fog/glow/DoF) |
+| `composeLayer.ts` | ~120 | Layer compositing to offscreen buffer (pixel art + fog/glow/DoF). The misregistration plate offset wraps the two steps that write to the offscreen |
 | `drawBackground.ts` | ~50 | Canvas background rendering (paper texture, dark mode) |
 | `drawGizmo.ts` | ~240 | Move tool gizmo handles + flip overlay buttons (incl. side-bar handles for squash & stretch) |
 | `drawSymmetryAxis.ts` | ~30 | Symmetry axis line rendering |
-| `misregistration.ts` | ~40 | `applyMisregistration`: off-register ink ghost (two fixed plates, `screen`), scales with `renderScale` |
+| `misregistration.ts` | ~65 | `getPlateOffset`: rigid per-ink plate offset for the Misprint FX. Keyed by colour (layers sharing an ink travel together), biased to the paper-feed axis, snapped to whole px (or to the pixel-art grid) |
 | `exportHandlers.ts` | ~600 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4`: all export logic |
 | `PixelArtProcessor.ts` | ~175 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
 | `postProcessing.ts` | ~430 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge`. Glow/DoF pick native `ctx.filter` or `blurCompat` per browser |
 | `quantizePixelArtCamera.ts` | ~100 | Snaps camera to pixel grid for pixel art mode |
 | `renderEraserShape.ts` | ~30 | Eraser shape rendering (destination-out compositing) |
-| `renderLayerBody.ts` | ~440 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)` |
+| `renderLayerBody.ts` | ~455 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)` |
 | `renderLiveStroke.ts` | ~150 | In-progress live stroke rendering |
 | `renderParticles.ts` | ~100 | Floating cinematic particles rendering |
 | `renderPipeline.ts` | ~565 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12) |
@@ -682,7 +682,7 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - **Particles**: Floating particles (circle, square, stroke types)
 - **Glow**: Soft glow around shapes (0-1)
 - **Riso**: Risograph halftone texture (0-1)
-- **Misprint**: Off-register ink ghost, two plates on opposing diagonals (0-1)
+- **Misprint**: Each ink's plate shifts as a rigid block, opening paper gaps where inks met (0-1)
 - **Pixel Art**: Pixelation effect (size 2-12, depth 2-16 colors, dither 0-1)
 - **Grunge**: Overlay texture (subtle, medium, intense)
 - **Wiggle**: Hand-drawn line wobble (light, medium, heavy)
@@ -711,7 +711,30 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.13.1)
+## Appendix C: Changelog Highlights (1.7.3 → 3.13.2)
+
+### 3.13.2 — Desregistro: enfoque correcto (la plancha es la tinta)
+
+**fix(fx)** — El efecto de 3.13.0 era **conceptualmente erróneo**, cazado en revisión visual: *"simula más bien mareo o ir drogado, una duplicación desenfocada de las capas con transparencia sutil"*. Diagnóstico exacto. Se conserva aquí porque es el tipo de error que se repite si no se documenta.
+
+**Qué estaba mal**: estampaba la imagen **ya compuesta** desplazada, en `screen` y al 35% de alfa. Eso duplica *todo el dibujo* como un fantasma translúcido — visión doble. Una Riso no hace nada de eso.
+
+**Cómo funciona de verdad**: la Riso imprime **una plancha por tinta**, una pasada cada una. Entre pasadas el papel se recarga y cae desviado, así que cada tinta se desplaza **como bloque rígido respecto a las demás**. No se duplica nada y nada se vuelve translúcido: cada tinta se imprime una vez, sólida. Lo que se ve es la *consecuencia* — donde dos tintas debían encontrarse se abre **una hendidura de papel desnudo**, y donde ahora se montan, la tinta se dobla y oscurece.
+
+**La traducción a Diorame estaba delante todo el tiempo: las capas SON las planchas.** El efecto es per-capa, sobre el paso de composición, no un post-proceso sobre el frame terminado. Las hendiduras de papel salen solas: al mover una capa se descubre lo que había debajo.
+
+**Dos decisiones que le dan la calidad gráfica**:
+- **La unidad que se mueve es la TINTA, no la capa.** `getPlateOffset` se indexa por color: dos capas del mismo hex se habrían impreso en la misma pasada, así que viajan juntas. Indexar por índice de capa habría delatado el truco.
+- **Sesgo al eje de avance del papel** (`CROSS_AXIS_BIAS = 0.6`): el papel pasa por rodillos, así que el desregistro real deriva sobre todo en el eje de alimentación y solo un poco en el transversal.
+
+Recorrido máximo 13 px (≈2 mm en A4 a ~1366 px de ancho, el extremo de una impresión descuidada), offsets **enteros** (un desplazamiento subpíxel remuestrea la plancha y se lee como desenfoque, no como desajuste) o alineados a la rejilla si pixel art está activo. El offset envuelve los pasos 5-6 de `composeLayer` — los únicos que escriben al offscreen — así que el glow viaja con su tinta.
+
+**Verificado** midiendo la composición real: 10.000 px pintados, **exactamente los mismos que la fuente** (cero duplicación); **cero píxeles semitransparentes** (tinta sólida); bbox trasladado exactamente por el offset (bloque rígido). Dos tintas iguales dan offsets idénticos, cuatro tintas distintas dan cuatro direcciones repartidas; intensidad 0 da (0,0) exacto y `renderScale = 2` duplica el recorrido.
+
+- **Files**: `src/components/strata/canvas/misregistration.ts` (reescrito), `src/components/strata/canvas/composeLayer.ts`, `src/components/strata/canvas/renderLayerBody.ts`, `src/components/strata/canvas/renderPipeline.ts`, `src/constants/version.ts`, `package.json`.
+
+---
+
 
 ### 3.13.1 — Commit-on-release en los sliders de gradiente
 

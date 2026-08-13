@@ -9,6 +9,7 @@ import { renderEraserShape } from './renderEraserShape';
 import { renderRegularFillShape } from './renderRegularFillShape';
 import { renderLiveStroke } from './renderLiveStroke';
 import { composeLayer } from './composeLayer';
+import { getPlateOffset, NO_PLATE_OFFSET } from './misregistration';
 import type { RenderContext, PerFrameComputed } from './renderPipeline';
 
 /**
@@ -405,6 +406,16 @@ export function renderLayer(
 			? ensureCanvas(rc.pixelCanvasRef, Math.ceil(w / pSizeForCompose), Math.ceil(h / pSizeForCompose))
 			: null;
 
+		// Misregistration keys the offset on the INK, not the layer, so layers
+		// sharing a colour print in the same pass and travel together. Erasers
+		// only subtract, so they don't define the plate's colour.
+		const plateInk = (fxEnabled && currentState.postProcessingEnabled.misregistration)
+			? shapes.find(s => !s.isEraser)?.color
+			: undefined;
+		const plateOffset = plateInk
+			? getPlateOffset(plateInk, currentState.postProcessing.misregistration, S, isPixelArt ? pSizeForCompose : 0)
+			: NO_PLATE_OFFSET;
+
 		composeLayer(
 			layerCtx,
 			offCtx,
@@ -414,6 +425,7 @@ export function renderLayer(
 				w,
 				h,
 				scale: S,
+				plateOffset,
 				shapePattern,
 				isPixelArt,
 				fxEnabled,
