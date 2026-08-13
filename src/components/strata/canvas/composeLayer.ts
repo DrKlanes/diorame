@@ -1,13 +1,9 @@
 import { applyFog, applyGlow, applyDoFBlur } from './postProcessing';
 import { processPixelArt } from './PixelArtProcessor';
-import type { PlateOffset } from './misregistration';
 
 export type ComposeLayerOpts = {
 	w: number;
 	h: number;
-	// Rigid offset of this layer's ink plate (misregistration FX). Applied to the
-	// composition only, so the layer prints once, shifted — never duplicated.
-	plateOffset: PlateOffset;
 	shapePattern: CanvasPattern | null;
 	isPixelArt: boolean;
 	fxEnabled: boolean;
@@ -44,10 +40,6 @@ export type ComposeLayerOpts = {
  *   4. Cálculo de glowInt + dofBlur (always)
  *   5. Glow (gate: fxEnabled && postProcessingEnabled.glow && glowInt > 0.01)
  *   6. DoF blur (always; no-op if dofBlur === 0)
- *
- * Steps 5-6 are the only ones that write to offCtx, so the plate offset wraps
- * exactly those two: the whole layer lands shifted, glow included (that light
- * belongs to the same ink). Everything before them stays in layer space.
  *
  * dofBlur formula is byte-perfect copy of the inline original:
  *   Math.min((Math.abs(layerAvgZ - fxFocusDist)/1000)*(FL/400)*4, 30*dof)
@@ -104,18 +96,9 @@ export const composeLayer = (
 		? Math.min((Math.abs(opts.layerAvgZ - opts.fxFocusDist)/1000)*(opts.FL/400)*4, 30*opts.postProcessing.dof) * opts.scale
 		: 0;
 
-	const { dx, dy } = opts.plateOffset;
-	const shifted = dx !== 0 || dy !== 0;
-	if (shifted) {
-		offCtx.save();
-		offCtx.translate(dx, dy);
-	}
-
 	if (opts.fxEnabled && opts.postProcessingEnabled.glow && glowInt > 0.01) {
 		applyGlow(offCtx, helperCanvas, glowInt, dofBlur, opts.isDarkMode, opts.scale);
 	}
 
 	applyDoFBlur(offCtx, helperCanvas, dofBlur);
-
-	if (shifted) offCtx.restore();
 };

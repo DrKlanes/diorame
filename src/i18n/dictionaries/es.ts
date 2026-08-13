@@ -122,8 +122,6 @@ export const es: Dictionary = {
 	'fx.texture.grunge.tooltip': 'Grunge',
 	'fx.texture.riso.label': 'Riso',
 	'fx.texture.riso.tooltip': 'Riso',
-	'fx.texture.misreg.label': 'Desregistro',
-	'fx.texture.misreg.tooltip': 'Tintas desregistradas',
 
 	// ═══════════════════════════════════════════════
 	// FX — LENS

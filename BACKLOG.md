@@ -203,7 +203,7 @@ Cuando `storytelling` + DoF modo `lock` están activos, el plano de enfoque sigu
 | Entrega | Versión | Resolución |
 |---|---|---|
 | Glow y DoF muertos en iPadOS | v3.12.0 | WebKit ignora `ctx.filter` en silencio, así que los dos FX más cinemáticos (incluido el rack focus de Storytelling) no existían en el dispositivo de trabajo. `blurCompat.ts` aproxima el blur con una mip chain de `drawImage`, calibrada contra el blur nativo (σ ≈ 0.68·downscale, error ≤ 8.3% en el rango vivo). Retirado el gate `browserUnsupported` de todo el panel. |
-| Desregistro de tintas sin control | v3.13.0 → **corregido en v3.13.2** | FX propio del grupo Texture con slider 0-1; riso conserva su versión sutil (retrocompat exacta del `.dior`). El primer enfoque (fantasma translúcido de la imagen compuesta) era **conceptualmente erróneo** — se leía como visión doble, no como imprenta. Reescrito sobre el modelo real: la plancha es la **tinta**, y se desplaza como bloque rígido en la composición per-capa. Ver changelog 3.13.2. |
+| Desregistro de tintas | v3.13.0 → v3.13.2 → **retirado en v3.13.3** | Intentado y descartado. El primer enfoque (fantasma translúcido) era conceptualmente erróneo; 3.13.2 lo dejó correcto (planchas rígidas por tinta, medido y verificado) y **aun así el efecto no aportaba**: sobre lienzo digital, sin la trama física de una imprenta, un desplazamiento de capas se lee como capas mal colocadas. El carácter risográfico de Diorame lo aportan `riso` y `grain`, que operan a escala de grano. Ver changelog 3.13.3. |
 | Sliders de gradiente sin undo propio | v3.13.1 | Commit-on-release siguiendo el contrato híbrido de 3.11.3. Cierra el único pendiente que aquella entrada dejó anotado. |
 
 ---

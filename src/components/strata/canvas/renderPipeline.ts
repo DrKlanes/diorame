@@ -18,7 +18,6 @@ import {
 	applyGrain,
 	applyGrunge,
 } from './postProcessing';
-import { buildPlateMap } from './misregistration';
 import { renderLayer } from './renderLayerBody';
 import { getOnionGhostZs } from '../../../utils/animationFrames';
 
@@ -178,10 +177,6 @@ export type PerFrameComputed = {
 
 	// Shape pattern (snapshot of shapePatternRef.current for this frame)
 	shapePattern: CanvasPattern | null;
-
-	// Misregistration: ink → plate index, in first-appearance order across the
-	// frame's layers. Empty when the FX is off.
-	plateMap: Map<string, number>;
 };
 
 /**
@@ -431,13 +426,6 @@ export function renderFrame(
 	const fxDistortion = (fxEnabled && currentState.postProcessingEnabled.distortion) ? currentState.postProcessing.distortion : 0;
 	const distortionK = Math.abs(fxDistortion) > 0.01 ? (fxDistortion * -0.8) * (500 / FL) : 0;
 
-	// Misregistration plates: one per distinct ink, in the order the layers draw.
-	// Built once per frame (O(layers), not O(shapes)) because a plate's direction
-	// depends on how many inks share the page — see getPlateOffset.
-	const plateMap = (fxEnabled && currentState.postProcessingEnabled.misregistration)
-		? buildPlateMap(renderZs.map(z => (currentShapesByZ.get(z) || []).find(s => !s.isEraser)?.color))
-		: new Map<string, number>();
-
 	// Build PerFrameComputed
 	const pfc: PerFrameComputed = {
 		isCinematic, fxEnabled, isPixelArt, pSize,
@@ -450,7 +438,6 @@ export function renderFrame(
 		activeZ,
 		wiggleFrame: rc.wiggleFrameRef.current,
 		shapePattern: rc.shapePatternRef.current,
-		plateMap,
 	};
 
 	// Onion skin: render prev/next ghost frames at reduced opacity BEFORE the

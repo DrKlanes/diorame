@@ -54,8 +54,6 @@ export const ICONS: Record<string, string> = {
 		`<path d="M12 5V3M12 21V19M5 12H3M21 12H19M7.05 7.05L5.64 5.64M18.36 18.36L16.95 16.95M7.05 16.95L5.64 18.36M18.36 5.64L16.95 7.05M12 16C14.21 16 16 14.21 16 12C16 9.79 14.21 8 12 8C9.79 8 8 9.79 8 12C8 14.21 9.79 16 12 16Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'fx-riso':
 		`<circle cx="9.5" cy="13.5" r="5" stroke="currentColor" stroke-width="1.5"/><circle cx="14.5" cy="13.5" r="5" stroke="currentColor" stroke-width="1.5" opacity="0.5"/><circle cx="12" cy="9.5" r="5" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>`,
-	'fx-misreg':
-		`<rect x="4" y="4" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="8" y="8" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5" opacity="0.45"/>`,
 	'fx-distortion':
 		`<path d="M4 8C6 7 7 9.5 9 9C11 8.5 11 6 13 6.5C15 7 15 9.5 17 9C19 8.5 20 7 21 8M4 14C5.5 13 7 16 9 15C11 14 11 12 13 12.5C15 13 16 15.5 18 15C19.5 14.5 20.5 13 21 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'fx-wiggle':
@@ -363,7 +361,7 @@ export const ICONS: Record<string, string> = {
 export const ICON_SECTIONS: Record<string, string[]> = {
 	'Navigation & Global': ['draw-mode', 'view-mode', 'hide-ui', 'sun', 'moon', 'chevron-left', 'chevron-right', 'chevron-up', 'chevron-down'],
 	'Export':              ['snapshot', 'record'],
-	'FX':                  ['fx-grain', 'fx-vignette', 'fx-chroma', 'fx-fog', 'fx-glow', 'fx-riso', 'fx-misreg', 'fx-distortion', 'fx-wiggle', 'fx-grunge', 'fx-particles', 'fx-dof', 'fx-pixel'],
+	'FX':                  ['fx-grain', 'fx-vignette', 'fx-chroma', 'fx-fog', 'fx-glow', 'fx-riso', 'fx-distortion', 'fx-wiggle', 'fx-grunge', 'fx-particles', 'fx-dof', 'fx-pixel'],
 	'Camera Presets':      ['cam-forward', 'cam-spiral', 'cam-yoyo', 'cam-pulse', 'cam-twist', 'cam-arc', 'cam-crane', 'cam-truck', 'cam-orbit', 'cam-zoom', 'cam-storytelling'],
 	'Camera Controls':     ['ctrl-speed', 'ctrl-handshake', 'ctrl-handshake-off', 'ctrl-focal', 'ctrl-distance', 'ctrl-spacing', 'ctrl-dof-free', 'ctrl-dof-lock'],
 	'Drawing Tools':       ['brush', 'eraser', 'blob', 'text', 'move', 'symmetry', 'smooth', 'organic', 'draw-behind', 'draw-inside', 'rotate', 'pen', 'line-tapered', 'line-uniform', 'line-ink'],

@@ -166,7 +166,6 @@ const initialState: AppState = {
       wiggle: 0.5, // Default to Medium (Current behavior)
       glow: 0.5, // Default glow intensity
       riso: 0.5, // Default RISO texture intensity
-      misregistration: 0.5, // Default off-register ink ghost
       pixelArtSize: 4, // Default pixel size
       pixelArtDepth: 4, // Default color depth (4 levels = 64 colors)
       pixelArtDither: 0, // Default dither (0 = Clean/None)
@@ -183,7 +182,6 @@ const initialState: AppState = {
       particles: false,
       glow: false,
       riso: false,
-      misregistration: false,
       pixelArt: false,
       grunge: false
   },
