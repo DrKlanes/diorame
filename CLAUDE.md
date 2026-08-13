@@ -118,7 +118,11 @@ Todo FX —propio o propuesto— pasa por estos filtros **antes de escribir cód
 
 **Secuencia:** llegar pronto a la validación visual con lo mínimo que demuestre el efecto; la calibración fina solo después de que el efecto se confirme viable. Verificar técnicamente prueba que el código hace lo que dice, **no que el efecto merezca existir** — esa segunda pregunta la responde el ojo.
 
-**Regla dura — mirar antes de commitear.** Un FX no se da por bueno con estadística: métricas como σ de luminancia o % de tinta conservada no distinguen una textura orgánica de ruido a bloques. Antes de commitear hay que **renderizar un frame a PNG y abrirlo**, y sobre **contenido real** (botón "Cargar escena de ejemplo"), nunca sobre un rectángulo de color plano — un artefacto visible en un cielo de 2000 px no aparece en una mancha de 400×300. Precedente: v3.14.0, revertido entero con todas las métricas en verde.
+**Regla dura — quien juzga un FX es el usuario, en `localhost:3000`.** El flujo es: construir lo mínimo que demuestre el efecto → **pedirle que lo revise en local** → su veredicto decide. Ni la estadística ni el ojo de Claude sustituyen ese paso:
+
+- **Métricas: nunca suficientes.** σ de luminancia, % de tinta conservada o coste por frame no distinguen una textura orgánica de ruido a bloques. Precedente: v3.14.0 llegó a producción con todas las métricas en verde y se revirtió entera.
+- **Renderizar y mirar: solo caza lo grosero.** Volcar un frame a PNG y abrirlo sirve para detectar artefactos rotos antes de gastarle tiempo — y siempre sobre **contenido real** (botón "Cargar escena de ejemplo"), nunca sobre un rectángulo plano. Pero pasar ese filtro no valida nada.
+- **Listón para pedirle revisión:** solo si el efecto está **realmente a nivel top**. Llevarle algo básico quema su tiempo y su confianza.
 
 ### Cambios mínimos en StrataCanvas.tsx — precedente operativo
 
