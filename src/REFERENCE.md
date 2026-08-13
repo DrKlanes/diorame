@@ -334,7 +334,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `drawing/ToolOptionsPanel.tsx` | Line thickness + mode overlay (line tool only) |
 | `viewport/ResetViewPill.tsx` | Reset drawingZoom/Pan to defaults (draw mode) |
 | `text/TextSessionPanel.tsx` | Text input overlay: fonts, textarea, align, confirm/cancel |
-| `fx/FXPanel.tsx` | FX panel (VIEW mode): 12 effects in 3 groups, master toggle FXMasterBtn, snapshot/restore. All effects work on every browser since 3.12.0 (no capability gate) |
+| `fx/FXPanel.tsx` | FX panel (VIEW mode): 13 effects in 3 groups, master toggle FXMasterBtn, snapshot/restore. All effects work on every browser since 3.12.0 (no capability gate). The collapsed pill duplicates the catalog by hand — a new FX must be added in both places |
 | `fx/FXRow.tsx` | Per-effect row: toggle + slider/discrete/composite control |
 
 **Modals (`modals/`):** ClearCanvasAlertV2, ComplexSceneModalV2, WelcomeModalV2, OnboardingOverlayV2, ExportProgressV2, MobileBlockScreenV2 + shared DiModal primitives
@@ -351,6 +351,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `drawBackground.ts` | ~50 | Canvas background rendering (paper texture, dark mode) |
 | `drawGizmo.ts` | ~240 | Move tool gizmo handles + flip overlay buttons (incl. side-bar handles for squash & stretch) |
 | `drawSymmetryAxis.ts` | ~30 | Symmetry axis line rendering |
+| `misregistration.ts` | ~40 | `applyMisregistration`: off-register ink ghost (two fixed plates, `screen`), scales with `renderScale` |
 | `exportHandlers.ts` | ~600 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4`: all export logic |
 | `PixelArtProcessor.ts` | ~175 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
 | `postProcessing.ts` | ~430 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge`. Glow/DoF pick native `ctx.filter` or `blurCompat` per browser |
@@ -681,7 +682,8 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - **Particles**: Floating particles (circle, square, stroke types)
 - **Glow**: Soft glow around shapes (0-1)
 - **Riso**: Risograph halftone texture (0-1)
-- **Pixel Art**: Pixelation effect (size 2-16, depth 2-32 colors, dither 0-1)
+- **Misprint**: Off-register ink ghost, two plates on opposing diagonals (0-1)
+- **Pixel Art**: Pixelation effect (size 2-12, depth 2-16 colors, dither 0-1)
 - **Grunge**: Overlay texture (subtle, medium, intense)
 - **Wiggle**: Hand-drawn line wobble (light, medium, heavy)
 
@@ -709,7 +711,25 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.12.0)
+## Appendix C: Changelog Highlights (1.7.3 → 3.13.0)
+
+### 3.13.0 — Desregistro de tintas como FX propio
+
+**feat(fx)** — El fantasma de tintas desalineadas vivía enterrado dentro de `applyRisoV2` como pasada 3, a opacidad fija `intensity * 0.08` y sin control: el rasgo más reconociblemente risográfico del pipeline era invisible salvo que supieras que estaba. Ahora es un efecto propio del grupo Texture con su slider 0-1.
+
+**Decisiones**:
+- **Riso conserva su pasada interna.** Delegarla obligaría a una migración en `LOAD_PROJECT` que encendería un toggle en silencio en proyectos ya guardados. Con los dos activos los fantasmas se acumulan — coherente artísticamente, y es la única opción con retrocompatibilidad exacta del `.dior`.
+- **Estático, no animado.** El desregistro real de imprenta está horneado en la copia; animarlo se lee como jitter digital, no como papel. Mantiene además el export determinista. (El grunge sí se anima, pero porque simula suciedad de proyección, que sí cambia frame a frame.)
+- **Dos placas en diagonales opuestas** `(2,1)` y `(-1,-2)`, con recorrido `(1 + intensity·3)·renderScale` y **offsets redondeados a entero** — un desplazamiento subpíxel remuestrea el fantasma y lo hace hervir cuando la cámara se mueve.
+- **Ubicación**: fase 3, sobre el offscreen, después de riso y antes de la transferencia con aberración cromática — así los fantasmas arrastran el grano riso y viñeta/grano/grunge los ven como una sola imagen.
+
+**Verificado** (midiendo el bbox de píxeles pintados sobre el módulo real): intensidad 0 deja el bbox intacto (no-op exacto); a 0.5 las placas caen en (+5,+3) y (−2,−5); a 1.0 en (+8,+4) y (−4,−8); con `renderScale = 2` se duplican exactamente. Dos invocaciones idénticas producen los mismos bytes — sin parpadeo entre frames.
+
+**Nota de arquitectura**: la píldora colapsada del FXPanel **no deriva del catálogo declarativo** — son botones escritos a mano. Un FX nuevo exige tocar los dos sitios.
+
+- **Files**: `src/components/strata/canvas/misregistration.ts` (nuevo), `src/components/strata/canvas/renderPipeline.ts`, `src/types/strataTypes.ts`, `src/components/strata/StrataContext.tsx`, `src/components/strata/fx/FXPanel.tsx`, `src/design-system/icons.ts`, `src/i18n/dictionaries/{en,es}.ts`, `src/constants/version.ts`, `package.json`.
+
+---
 
 ### 3.12.0 — Glow y DoF vivos en iPad: blur sin `ctx.filter`
 

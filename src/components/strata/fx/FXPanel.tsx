@@ -33,6 +33,7 @@ const TEXTURE_FX: FXEntry[] = [
 		{ value: 1,   labelKey: 'fx.intensity.intense' },
 	]},
 	{ fxKey: 'riso',   iconName: 'fx-riso',   labelKey: 'fx.texture.riso.label',   level: 1, valueKey: 'riso' },
+	{ fxKey: 'misregistration', iconName: 'fx-misreg', labelKey: 'fx.texture.misreg.label', level: 1, valueKey: 'misregistration' },
 ];
 
 const LENS_FX: FXEntry[] = [
@@ -246,6 +247,7 @@ export function FXPanel() {
 				<DiActionButton name="fx-grain"     onClick={fxClick('grain')} dark={dark} active={snap ? snap.grain : px.grain}  tooltip={t('fx.texture.grain.tooltip')} />
 				<DiActionButton name="fx-grunge"    onClick={fxClick('grunge')} dark={dark} active={snap ? snap.grunge : px.grunge} tooltip={t('fx.texture.grunge.tooltip')} />
 				<DiActionButton name="fx-riso"      onClick={fxClick('riso')} dark={dark} active={snap ? snap.riso : px.riso}   tooltip={t('fx.texture.riso.tooltip')} />
+				<DiActionButton name="fx-misreg"   onClick={fxClick('misregistration')} dark={dark} active={snap ? snap.misregistration : px.misregistration} tooltip={t('fx.texture.misreg.tooltip')} />
 				<PillHSep />
 				<DiActionButton name="fx-vignette"   onClick={fxClick('vignette')} dark={dark} active={snap ? snap.vignette : px.vignette}            tooltip={t('fx.lens.vignette.tooltip')} />
 				<DiActionButton name="fx-chroma"     onClick={fxClick('chromaticAberration')} dark={dark} active={snap ? snap.chromaticAberration : px.chromaticAberration} tooltip={t('fx.lens.chromaticAb.tooltip')} />

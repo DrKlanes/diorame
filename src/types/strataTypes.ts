@@ -53,6 +53,7 @@ export type PostProcessingSettings = {
     wiggle: number;     // 0 (Light), 0.5 (Medium), 1 (Heavy)
     glow: number;       // 0 to 1 (Glow intensity)
     riso: number;       // 0 to 1 (RISO texture intensity)
+    misregistration: number; // 0 to 1 (off-register ink ghost)
     pixelArtSize: number; // 2 to 16 (Pixel size)
     pixelArtDepth: number; // 2 to 32 (Color levels per channel)
     pixelArtDither: number; // 0 to 1 (Dither intensity, 0 = Off)
@@ -70,6 +71,7 @@ export type PostProcessingEnabled = {
     particles: boolean;
     glow: boolean;
     riso: boolean;
+    misregistration: boolean;
     pixelArt: boolean;
     grunge: boolean;
 };

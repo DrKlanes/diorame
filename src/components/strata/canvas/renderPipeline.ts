@@ -18,6 +18,7 @@ import {
 	applyGrain,
 	applyGrunge,
 } from './postProcessing';
+import { applyMisregistration } from './misregistration';
 import { renderLayer } from './renderLayerBody';
 import { getOnionGhostZs } from '../../../utils/animationFrames';
 
@@ -469,6 +470,12 @@ export function renderFrame(
 	// RISO Texture
 	if (fxEnabled && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && rc.risoGrain) {
 		applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, rc.risoGrain, rc.helperCanvasRef.current!.getContext('2d')!);
+	}
+
+	// Ink misregistration — after riso so the ghosts carry its grain, still on
+	// the offscreen so the vignette/grain/grunge pass sees them as one image.
+	if (fxEnabled && currentState.postProcessingEnabled.misregistration) {
+		applyMisregistration(offCtx, w, h, currentState.postProcessing.misregistration, S, rc.helperCanvasRef.current!.getContext('2d')!);
 	}
 
 	// Chromatic Aberration & Transfer to Main
