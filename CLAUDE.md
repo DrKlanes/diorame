@@ -118,6 +118,8 @@ Todo FX —propio o propuesto— pasa por estos filtros **antes de escribir cód
 
 **Secuencia:** llegar pronto a la validación visual con lo mínimo que demuestre el efecto; la calibración fina solo después de que el efecto se confirme viable. Verificar técnicamente prueba que el código hace lo que dice, **no que el efecto merezca existir** — esa segunda pregunta la responde el ojo.
 
+**Regla dura — mirar antes de commitear.** Un FX no se da por bueno con estadística: métricas como σ de luminancia o % de tinta conservada no distinguen una textura orgánica de ruido a bloques. Antes de commitear hay que **renderizar un frame a PNG y abrirlo**, y sobre **contenido real** (botón "Cargar escena de ejemplo"), nunca sobre un rectángulo de color plano — un artefacto visible en un cielo de 2000 px no aparece en una mancha de 400×300. Precedente: v3.14.0, revertido entero con todas las métricas en verde.
+
 ### Cambios mínimos en StrataCanvas.tsx — precedente operativo
 
 `StrataCanvas.tsx` es monolito de alto riesgo (render loop, gestos, proyección 3D). Regla por defecto: **no se toca**.
