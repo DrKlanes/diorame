@@ -16,7 +16,7 @@ const RISO_PLUS_LEVELS_HIGH = 170;  // above this → forced to alpha 255 (full 
 let _risoPlusCanvas: HTMLCanvasElement | null = null;
 let _risoPlusLoading = false;
 
-export function getRisoPlusTexture(): HTMLCanvasElement | null {
+function getRisoPlusTexture(): HTMLCanvasElement | null {
 	if (_risoPlusCanvas) return _risoPlusCanvas;
 	if (_risoPlusLoading || typeof window === 'undefined') return null;
 	_risoPlusLoading = true;
@@ -218,6 +218,46 @@ export const generateRisoGrain = (w: number, h: number): HTMLCanvasElement => {
 
 	ctx.putImageData(imageData, 0, 0);
 	return canvas;
+};
+
+/**
+ * Applies procedural RISO printing effect: paper grain, ink spread, misregistration.
+ * No ctx.filter (iPad compatible).
+ */
+export const applyRisoV2 = (
+	offCtx: CanvasRenderingContext2D,
+	w: number,
+	h: number,
+	intensity: number,
+	cachedGrainCanvas: HTMLCanvasElement,
+	helperCtx: CanvasRenderingContext2D
+): void => {
+	offCtx.save();
+	// Pass 1 — Paper grain
+	offCtx.globalCompositeOperation = 'destination-out';
+	offCtx.globalAlpha = intensity * 0.6;
+	offCtx.drawImage(cachedGrainCanvas, 0, 0, w, h);
+	// ─── Pass 1.5 — PNG paper wear (organic destination-out mask) ──
+	// Pre-processed texture with extreme contrast. Alpha is linear with intensity, full range.
+	const risoPlus = getRisoPlusTexture();
+	if (risoPlus) {
+		offCtx.globalCompositeOperation = 'destination-out';
+		offCtx.globalAlpha = intensity;
+		offCtx.drawImage(risoPlus, 0, 0, w, h);
+	}
+	// Snapshot post-grain into helper for passes 2 & 3
+	helperCtx.clearRect(0, 0, w, h);
+	helperCtx.drawImage(offCtx.canvas, 0, 0);
+	// Pass 2 — Ink spread
+	offCtx.globalCompositeOperation = 'multiply';
+	offCtx.globalAlpha = intensity * 0.15;
+	offCtx.drawImage(helperCtx.canvas, 0, 0);
+	// Pass 3 — Misregistration ghost (fixed offsets, no flicker)
+	offCtx.globalCompositeOperation = 'screen';
+	offCtx.globalAlpha = intensity * 0.08;
+	offCtx.drawImage(helperCtx.canvas, 2, 1);
+	offCtx.drawImage(helperCtx.canvas, -1, -2);
+	offCtx.restore();
 };
 
 /**
