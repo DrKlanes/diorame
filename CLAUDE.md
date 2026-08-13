@@ -104,6 +104,20 @@ Diorame soporta desktop y tablet. Cualquier cambio que toque interacción debe c
 
 Esto NO es preocupación añadida — es parte del filtro de decisión de cualquier prompt que toque UX.
 
+### FX: criterio de ingeniería gráfica (filtro obligatorio antes de construir)
+
+Diorame es una app de dibujo, y el **panel de FX** es donde rompe deliberadamente su simplicidad de herramientas para marcar la diferencia. Un efecto que no alcanza calidad gráfica no es un fallo menor: es el punto donde la app deja de justificar su complejidad.
+
+Todo FX —propio o propuesto— pasa por estos filtros **antes de escribir código**, y el veredicto se declara en la propuesta:
+
+1. **Banda de frecuencia del fenómeno.** Grano, semitono, fibra de papel, dithering viven en **alta frecuencia** (escala de píxel/celda). Bloom, niebla y DoF en media-baja. Distorsión de lente y parallax son geométricos globales. Implementar un fenómeno de alta frecuencia con una transformación geométrica **fracasa aunque la ejecución sea impecable** — precedente documentado: el desregistro de tintas (v3.13.0→3.13.3, retirado).
+2. **Física del modo de mezcla.** Tinta sobre papel es **sustractiva** (`multiply`); la luz es aditiva (`screen`/`lighter`). Recordar que la transferencia al canvas principal ya es `multiply` en modo claro: un efecto que aclara dentro del offscreen contradice el medio.
+3. **Mecanismo real, no apariencia.** Modelar cómo funciona el proceso físico, no cómo se ve su resultado. Suele salir más simple.
+4. **Coste en GPU móvil como entrada de diseño, no epílogo.** El iPad es TBDR: duele el **ancho de banda de las pasadas a pantalla completa**, no la aritmética. Un FX per-capa multiplica pasadas por capas visibles (hasta 10). Precedente vivo: glow y DoF funcionan en iPad desde 3.12.0 pero atascan un iPad Pro en escenas complejas (quirk aceptado). Si un efecto exige una pasada full-screen por capa, **decirlo al proponerlo**.
+5. **La paleta real es Canvas 2D, no shaders.** No hay WebGL: composite ops, `drawImage` con transformaciones, patterns, gradientes y `getImageData` (caro).
+
+**Secuencia:** llegar pronto a la validación visual con lo mínimo que demuestre el efecto; la calibración fina solo después de que el efecto se confirme viable. Verificar técnicamente prueba que el código hace lo que dice, **no que el efecto merezca existir** — esa segunda pregunta la responde el ojo.
+
 ### Cambios mínimos en StrataCanvas.tsx — precedente operativo
 
 `StrataCanvas.tsx` es monolito de alto riesgo (render loop, gestos, proyección 3D). Regla por defecto: **no se toca**.
