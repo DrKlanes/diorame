@@ -1,4 +1,9 @@
 import { FOG_DENSITY_FACTOR } from '../../../constants/renderConstants';
+import { supportsCanvasFilter } from '../../../utils/browserCapabilities';
+import { applyBlurCompat, isBlurCompatForced } from './blurCompat';
+
+// WebKit/iPadOS silently ignores ctx.filter → blur via downscale/upscale instead.
+const useNativeBlur = (): boolean => supportsCanvasFilter() && !isBlurCompatForced();
 
 // ─── Riso+ PNG texture singleton ─────────────────────────────────────
 // Lazy-loaded grayscale texture for organic paper wear.
@@ -106,10 +111,15 @@ export const applyGlow = (
 	// The base radius (35/20) is in device px and does NOT scale with the raster,
 	// so multiply it by renderScale to keep the same relative glow in HQ export.
 	// dofBlur arrives pre-scaled by the caller. scale=1 → byte-identical to before.
-	offCtx.filter = `blur(${(isDarkMode ? 35 : 20) * scale * glowInt + dofBlur}px)`;
+	const radius = (isDarkMode ? 35 : 20) * scale * glowInt + dofBlur;
 	offCtx.globalCompositeOperation = isDarkMode ? 'lighter' : 'source-over';
 	offCtx.globalAlpha = isDarkMode ? 1.0 : (0.3 + glowInt * 0.4);
-	offCtx.drawImage(helperCanvas, 0, 0);
+	if (useNativeBlur()) {
+		offCtx.filter = `blur(${radius}px)`;
+		offCtx.drawImage(helperCanvas, 0, 0);
+	} else {
+		applyBlurCompat(offCtx, helperCanvas, radius, helperCanvas.width, helperCanvas.height);
+	}
 	offCtx.restore();
 };
 
@@ -123,8 +133,12 @@ export const applyDoFBlur = (
 	dofBlur: number
 ): void => {
 	offCtx.save();
-	if (dofBlur > 0.5) offCtx.filter = `blur(${dofBlur}px)`;
-	offCtx.drawImage(helperCanvas, 0, 0);
+	if (dofBlur > 0.5 && !useNativeBlur()) {
+		applyBlurCompat(offCtx, helperCanvas, dofBlur, helperCanvas.width, helperCanvas.height);
+	} else {
+		if (dofBlur > 0.5) offCtx.filter = `blur(${dofBlur}px)`;
+		offCtx.drawImage(helperCanvas, 0, 0);
+	}
 	offCtx.restore();
 	offCtx.filter = 'none';
 };

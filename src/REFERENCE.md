@@ -1,7 +1,7 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.11.3
-**Last Updated**: Julio 2026
+**Version**: 3.12.0
+**Last Updated**: Agosto 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
 For AI collaboration instructions (architecture rules, coding conventions, workflow), see **CLAUDE.md** in the repo root.
@@ -334,7 +334,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `drawing/ToolOptionsPanel.tsx` | Line thickness + mode overlay (line tool only) |
 | `viewport/ResetViewPill.tsx` | Reset drawingZoom/Pan to defaults (draw mode) |
 | `text/TextSessionPanel.tsx` | Text input overlay: fonts, textarea, align, confirm/cancel |
-| `fx/FXPanel.tsx` | FX panel (VIEW mode): 12 effects in 3 groups, master toggle FXMasterBtn, snapshot/restore |
+| `fx/FXPanel.tsx` | FX panel (VIEW mode): 12 effects in 3 groups, master toggle FXMasterBtn, snapshot/restore. All effects work on every browser since 3.12.0 (no capability gate) |
 | `fx/FXRow.tsx` | Per-effect row: toggle + slider/discrete/composite control |
 
 **Modals (`modals/`):** ClearCanvasAlertV2, ComplexSceneModalV2, WelcomeModalV2, OnboardingOverlayV2, ExportProgressV2, MobileBlockScreenV2 + shared DiModal primitives
@@ -345,6 +345,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
+| `blurCompat.ts` | ~100 | `applyBlurCompat`: Gaussian-approx blur via iterative downscale/upscale `drawImage` — the ctx.filter-free path used by Glow/DoF on WebKit/iPadOS |
 | `cinematicCamera.ts` | ~290 | `computeCinematicTick`: all 11 camera modes (Forward, Spiral, Yoyo, Pulse, Twist, Arc, Orbit, Crane, Truck, Zoom, Storytelling) + handheld shake, returns new camera state |
 | `composeLayer.ts` | ~105 | Layer compositing to offscreen buffer (pixel art + fog/glow/DoF) |
 | `drawBackground.ts` | ~50 | Canvas background rendering (paper texture, dark mode) |
@@ -352,7 +353,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `drawSymmetryAxis.ts` | ~30 | Symmetry axis line rendering |
 | `exportHandlers.ts` | ~600 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4`: all export logic |
 | `PixelArtProcessor.ts` | ~175 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
-| `postProcessing.ts` | ~415 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge` |
+| `postProcessing.ts` | ~430 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge`. Glow/DoF pick native `ctx.filter` or `blurCompat` per browser |
 | `quantizePixelArtCamera.ts` | ~100 | Snaps camera to pixel grid for pixel art mode |
 | `renderEraserShape.ts` | ~30 | Eraser shape rendering (destination-out compositing) |
 | `renderLayerBody.ts` | ~440 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)` |
@@ -385,7 +386,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `animationFrames.ts` | ~80 | `getAnimationFrames`, `isLayerEmpty`, `getOnionGhostZs` — animation frame logic shared by the render pipeline, playback, onion skin, and exports |
 | `cinematic.ts` | ~10 | `flToMm`, `mmToFl` — focal-length conversion helpers (FL raw ↔ mm); extracted from legacy ControlsCinematic |
 | `keyboardShortcuts.ts` | ~55 | `ShortcutItem`/`ShortcutGroup` types, `formatShortcut`, `isMac`, `hasFinePointer` — shared keyboard shortcut formatting and platform detection |
-| `browserCapabilities.ts` | ~60 | `supportsCanvasFilter()` — cached functional detection for `ctx.filter` support (Safari/WebKit silently ignores filter; this avoids false-positive checks) |
+| `browserCapabilities.ts` | ~55 | `supportsCanvasFilter()` — cached functional detection for `ctx.filter` support (Safari/WebKit silently ignores filter). Consumed by `postProcessing.ts` to route Glow/DoF to `blurCompat` |
 | `downloadBlob.ts` | ~25 | `downloadBlob(blob, filename)` — Blob download via hidden appended anchor + deferred cleanup/revoke (iPadOS WebKit drops detached-anchor clicks and sync-revoked URLs); shared by PNG/SVG/MP4/GIF/ZIP export sinks |
 | `soundManager.ts` | ~140 | UI sound playback manager: click, success, brush stroke (pool of 6), mode switch via HTMLAudioElement |
 
@@ -708,7 +709,32 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.11.3)
+## Appendix C: Changelog Highlights (1.7.3 → 3.12.0)
+
+### 3.12.0 — Glow y DoF vivos en iPad: blur sin `ctx.filter`
+
+**feat(fx)** — Los dos FX más cinemáticos del catálogo (Glow y **DoF con su rack focus automático del preset Storytelling**) estaban muertos en iPadOS: WebKit acepta la asignación de `ctx.filter` y la ignora en silencio. La app lo detectaba (`supportsCanvasFilter()`) y, en vez de resolverlo, avisaba — badge de warning en la fila del panel, toast al activar, y un efecto que no hacía nada. Es decir: la profundidad de campo, el rasgo más "cine" del producto, no existía en el dispositivo principal de trabajo y validación.
+
+**Solución**: `applyBlurCompat()` en `canvas/blurCompat.ts` — aproximación de blur gaussiano por **mip chain con `drawImage`**: mitades hacia abajo hasta el nivel objetivo, reconstrucción por dobles hacia arriba. Sin `getImageData`: todo son blits acelerados por GPU, universales en cualquier navegador.
+
+**Dos trampas resueltas en la calibración** (ambas medidas, no supuestas):
+
+1. **El blur de una mip chain está cuantizado a potencias de dos** — a secas produce mesetas y saltos en el slider (la respuesta medida era no monótona: radio 20 → σ 29.6 pero radio 30 → σ 27.3). Se corrige mezclando los dos niveles adyacentes por la parte fraccionaria del nivel, lo que da una respuesta continua.
+2. **`source-over` con `globalAlpha` NO es una mezcla lineal**: atenúa el destino por `(1 − mix·srcAlpha)`, no por `(1 − mix)`, así que en las colas del blur sobrevive el nivel nítido y el radio efectivo colapsa (σ 26 donde tocaban 40). La mezcla honesta es `destination-out` con relleno alpha=mix para escalar el destino, y luego `lighter` con `globalAlpha=mix` para sumar encima.
+
+**Calibración verificada** (segundo momento de la derivada del borde, medido contra `ctx.filter` en Chrome): σ ≈ **0.68 · downscale total** ⇒ `BLUR_COMPAT_K = 0.68` hace que `radius` signifique lo mismo en ambas rutas. Error ≤ 8.3% en todo el rango vivo (4–65 px) y respuesta monótona; en el rango de export HQ (hasta 130 px) ≤ 18%.
+
+**Contrato de la función**: el draw final atraviesa el `globalCompositeOperation` y `globalAlpha` vigentes en el contexto destino — sustituye exactamente al `drawImage` que reemplaza. Esto es lo que permite que `applyDoFBlur`, que **es también la composición de la capa al offscreen**, no altere ni el orden ni el alfa de la mezcla. Verificado: con `dofBlur = 0` el resultado es idéntico bit a bit al de 3.11.3.
+
+**Fallback, no sustitución**: la ruta nativa se mantiene íntegra donde `ctx.filter` funciona (Chrome/Firefox renderizan byte-idéntico a 3.11.3); el camino nuevo solo entra donde el efecto era inservible, así que el riesgo es unidireccional. Flag de desarrollo `localStorage['diorame-force-blur-compat'] = 'true'` para forzar la ruta compat en desktop y comparar ambas lado a lado.
+
+**Coste medido**: 20 blurs a pantalla completa con radio 65 (el peor caso por frame: 10 capas × glow+dof) en **~1 ms** — las pasadas intermedias son minúsculas. Respeta `renderScale` sin contrato nuevo: los radios llegan ya escalados desde `applyGlow`/`composeLayer`, y a `scale=2` el área de bloom crece como debe.
+
+**Retirada del gate**: eliminados `browserUnsupported` del catálogo de `FXPanel`, el prop y los 6 badges de `FXRow`, los dos botones envueltos de la píldora colapsada, y la clave i18n `fx.common.browserUnsupported` en ambos diccionarios. `browserCapabilities.ts` se conserva: ahora su consumidor es el router de blur.
+
+- **Files**: `src/components/strata/canvas/blurCompat.ts` (nuevo), `src/components/strata/canvas/postProcessing.ts`, `src/components/strata/fx/FXPanel.tsx`, `src/components/strata/fx/FXRow.tsx`, `src/i18n/dictionaries/{en,es}.ts`, `src/constants/version.ts`, `package.json`.
+
+---
 
 ### 3.11.3 — Undo híbrido: el selector viaja solo con los pasos materiales
 

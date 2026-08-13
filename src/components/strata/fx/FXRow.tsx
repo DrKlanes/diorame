@@ -4,8 +4,6 @@ import { Ico, DiMiniSlider, DiSegmentControl } from '../../../design-system';
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 import { DiActionButton } from '../../../design-system';
 import { useTranslation } from '../../../i18n';
-import { supportsCanvasFilter } from '../../../utils/browserCapabilities';
-import { toast } from 'sonner@2.0.3';
 
 // ── Pixel Art depth mapping ──────────────────────────────────────────
 // Values are i18n keys, resolved via t() at render time.
@@ -94,10 +92,9 @@ interface FXRowProps {
 	valueKey?: keyof PostProcessingSettings;
 	discreteOptions?: DiscreteOption[];
 	compositeOptions?: CompositeOption[];
-	browserUnsupported?: boolean;
 }
 
-export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, level = 'special', valueKey, discreteOptions, compositeOptions, browserUnsupported = false }: FXRowProps) {
+export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, level = 'special', valueKey, discreteOptions, compositeOptions }: FXRowProps) {
 	const { state, dispatch } = useStrata();
 	const { t } = useTranslation();
 	const sliderValue = (level === 1 && valueKey) ? (state.postProcessing[valueKey] as number) : 0;
@@ -110,12 +107,6 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 	const isMuted = hasSnapshot;  // whole panel dims when master OFF
 	const accentColor = isMuted ? (dk(dark, T.muted, T.textDarkMuted) as string) : T.purple;
 	const handleClick = hasSnapshot ? () => dispatch({ type: 'TOGGLE_FX_MASTER' }) : onToggle;
-	const handleButtonClick = () => {
-		if (browserUnsupported && !supportsCanvasFilter() && !hasSnapshot && !isActive) {
-			toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 });
-		}
-		handleClick();
-	};
 
 	const tint = isActive ? T.purple : dk(dark, T.dark, T.textDark) as string;
 	const flatTint = isMuted ? (dk(dark, T.muted, T.textDarkMuted) as string) : tint;
@@ -139,7 +130,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 	// --- Level 1: header + slider (0–1) ---
 	if (showExpanded && level === 1 && valueKey) {
 		return (
-			<button onClick={handleButtonClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
@@ -148,9 +139,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						</span>
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(sliderValue * 100)}
-						</span>
-						{browserUnsupported && !supportsCanvasFilter() && <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); } }} aria-label={t('fx.common.browserUnsupported')} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', pointerEvents: 'auto' }}><Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} /></span>}
-					</div>
+						</span>					</div>
 					<div onPointerDown={stopProp} onClick={stopProp}>
 						<DiMiniSlider dark={dark} value={sliderValue} min={0} max={1} step={0.01}
 							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
@@ -164,7 +153,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 	if (showExpanded && level === 'bipolar' && valueKey) {
 		const bv = state.postProcessing[valueKey] as number;
 		return (
-			<button onClick={handleButtonClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
@@ -173,9 +162,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						</span>
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{formatBipolar(bv)}
-						</span>
-						{browserUnsupported && !supportsCanvasFilter() && <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); } }} aria-label={t('fx.common.browserUnsupported')} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', pointerEvents: 'auto' }}><Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} /></span>}
-					</div>
+						</span>					</div>
 					<div onPointerDown={stopProp} onClick={stopProp} style={{ position: 'relative' }}>
 						<DiMiniSlider dark={dark} value={bv} min={-1} max={1} step={0.01}
 							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
@@ -192,15 +179,13 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 		const dv = state.postProcessing[valueKey] as number;
 		const currentValue = findClosestOption(dv, discreteOptions).value;
 		return (
-			<button onClick={handleButtonClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
 						<span style={{ fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: accentColor }}>
 							{label}
-						</span>
-						{browserUnsupported && !supportsCanvasFilter() && <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); } }} aria-label={t('fx.common.browserUnsupported')} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', pointerEvents: 'auto' }}><Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} /></span>}
-					</div>
+						</span>					</div>
 					<div onPointerDown={stopProp} onClick={stopProp} style={{ borderRadius: RADIUS.segmentSmall + 2, overflow: 'hidden', background: dk(dark, T.white, T.panelDarkOpaque) }}>
 						<DiSegmentControl<number>
 							dark={dark}
@@ -221,7 +206,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 		const cv = state.postProcessing[valueKey] as number;
 		const pType = state.postProcessing.particleType;
 		return (
-			<button onClick={handleButtonClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
@@ -230,9 +215,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						</span>
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(cv * 100)}
-						</span>
-						{browserUnsupported && !supportsCanvasFilter() && <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); } }} aria-label={t('fx.common.browserUnsupported')} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', pointerEvents: 'auto' }}><Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} /></span>}
-					</div>
+						</span>					</div>
 					<div onPointerDown={stopProp} onClick={stopProp}>
 						<DiMiniSlider dark={dark} value={cv} min={0} max={1} step={0.01}
 							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
@@ -260,15 +243,13 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 		const depthLabel = depthKey ? t(depthKey) : '?';
 		const ditherDisplay = di < 0.05 ? t('fx.dither.clean') : `${Math.round(di * 100)}%`;
 		return (
-			<button onClick={handleButtonClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', pointerEvents: isMuted ? 'none' : undefined }}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
 						<span style={{ flex: 1, fontFamily: TYPE.controlLabel.family, fontWeight: TYPE.controlLabel.weight, fontSize: TYPE.controlLabel.size, color: accentColor }}>
 							{label}
-						</span>
-						{browserUnsupported && !supportsCanvasFilter() && <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); } }} aria-label={t('fx.common.browserUnsupported')} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', pointerEvents: 'auto' }}><Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} /></span>}
-					</div>
+						</span>					</div>
 					<SubControlBlock accentColor={accentColor} label={t('fx.subcontrol.size')} value={`${sz}px`} dark={dark}>
 						<div onPointerDown={stopProp} onClick={stopProp}>
 							<DiMiniSlider dark={dark} value={sz} min={2} max={12} step={1}
@@ -305,7 +286,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 		const focusTargetLayer = state.postProcessing.focusTargetLayer;
 		const isFree = focusTargetLayer === -1;
 		return (
-			<button onClick={handleButtonClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} style={expandedBtnStyle}>
 				<div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', pointerEvents: isMuted ? 'none' : undefined }}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
@@ -314,9 +295,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						</span>
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(dofIntensity * 100)}
-						</span>
-						{browserUnsupported && !supportsCanvasFilter() && <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); } }} aria-label={t('fx.common.browserUnsupported')} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', pointerEvents: 'auto' }}><Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} /></span>}
-					</div>
+						</span>					</div>
 					<div onPointerDown={stopProp} onClick={stopProp}>
 						<DiMiniSlider dark={dark} value={dofIntensity} min={0} max={1} step={0.01}
 							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'dof', value: v } })} />
@@ -367,7 +346,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 	// --- Flat row: inactive or special (placeholder) ---
 	return (
 		<button
-			onClick={handleButtonClick}
+			onClick={handleClick}
 			style={{
 				display: 'flex',
 				alignItems: 'center',
@@ -393,7 +372,6 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 			}}>
 				{label}
 			</span>
-			{browserUnsupported && !supportsCanvasFilter() && <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); toast.warning(t('fx.common.browserUnsupported'), { duration: 4000 }); } }} aria-label={t('fx.common.browserUnsupported')} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', pointerEvents: 'auto' }}><Ico name='info' size={12} color={dk(dark, T.warning, T.warningDark) as string} /></span>}
 		</button>
 	);
 }

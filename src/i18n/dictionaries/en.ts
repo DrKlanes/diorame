@@ -216,9 +216,6 @@ export const en: Dictionary = {
 	// Dynamic labels
 	'fx.dof.layerDynamic': 'Layer {n}',
 
-	// Browser capability warnings
-	'fx.common.browserUnsupported': 'This effect is not supported by your browser',
-
 	// PWA — service worker update / offline
 	'pwa.update.message': 'New version available',
 	'pwa.update.reload': 'Reload',
