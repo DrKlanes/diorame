@@ -82,6 +82,7 @@ type Action =
   | { type: 'SET_PALETTE_GRADIENT_ANGLE'; payload: number }
   | { type: 'SET_PALETTE_GRADIENT_INTENSITY'; payload: number }
   | { type: 'SET_PALETTE_GRADIENT_TYPE'; payload: 'solid' | 'fade' }
+  | { type: 'COMMIT_PALETTE_GRADIENT' }
   | { type: 'RESET_DRAWING_VIEW' }
   | { type: 'DELETE_CURRENT_LAYER' }
   | { type: 'START_TEXT_SESSION'; payload: { x: number; y: number } }
@@ -219,6 +220,7 @@ const initialState: AppState = {
   blobSmoothing: false,
   currentBrushThickness: 25,
   brushThicknessBeforePreview: null,
+  gradParamsPendingCommit: false,
   isHandheldEnabled: false,
   handheldIntensity: 'medium',
   brushMode: 'tapered',
@@ -372,6 +374,10 @@ function appReducer(state: AppState, action: Action): AppState {
       const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(nextState));
       return { ...nextState, history, historyIndex: index };
     }
+    // The three gradient setters mutate layerGradParams live and stay OUT of the
+    // history: they are the drag preview, same role as SET_BRUSH_THICKNESS_PREVIEW.
+    // The undo step (or the last-writer-wins patch) lands on release, in
+    // COMMIT_PALETTE_GRADIENT — see the hybrid contract in CLAUDE.md.
     case 'SET_PALETTE_GRADIENT_ANGLE': {
       const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
       if (state.paletteApplyToAllActive) {
@@ -379,10 +385,11 @@ function appReducer(state: AppState, action: Action): AppState {
           for (let i = 0; i < state.totalLayers; i++) {
               allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), angle: action.payload };
           }
-          return { ...state, layerGradParams: allParams };
+          return { ...state, layerGradParams: allParams, gradParamsPendingCommit: true };
       }
       return {
           ...state,
+          gradParamsPendingCommit: true,
           layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, angle: action.payload } }
       };
     }
@@ -393,25 +400,54 @@ function appReducer(state: AppState, action: Action): AppState {
           for (let i = 0; i < state.totalLayers; i++) {
               allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), intensity: action.payload };
           }
-          return { ...state, layerGradParams: allParams };
+          return { ...state, layerGradParams: allParams, gradParamsPendingCommit: true };
       }
       return {
           ...state,
+          gradParamsPendingCommit: true,
           layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, intensity: action.payload } }
       };
     }
     case 'SET_PALETTE_GRADIENT_TYPE': {
       const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
+      let nextParams: Record<number, LayerGradParams>;
       if (state.paletteApplyToAllActive) {
-          const allParams: Record<number, LayerGradParams> = {};
+          nextParams = {};
           for (let i = 0; i < state.totalLayers; i++) {
-              allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), gradType: action.payload };
+              nextParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), gradType: action.payload };
           }
-          return { ...state, layerGradParams: allParams };
+      } else {
+          nextParams = { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, gradType: action.payload } };
       }
+      // TYPE only ever arrives right behind SET_PALETTE_MODE (PaletteHeader fires
+      // both for one tap), and MODE already applied the contract for that gesture.
+      // Patching completes its post-change pair instead of opening a second undo
+      // step for what the user felt as a single action.
       return {
           ...state,
-          layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, gradType: action.payload } }
+          layerGradParams: nextParams,
+          history: patchCurrentSnapshot(state.history, state.historyIndex, { layerGradParams: nextParams })
+      };
+    }
+    case 'COMMIT_PALETTE_GRADIENT': {
+      // Release with nothing dragged (a tap on the track that landed on the same
+      // value) → neither a step nor a patch.
+      if (!state.gradParamsPendingCommit) return state;
+      const hasShapes = state.paletteApplyToAllActive
+          ? state.shapes.length > 0
+          : state.shapes.some(s => s.zIndex === state.currentLayerIndex * -BASE_DEPTH_STEP);
+      if (hasShapes) {
+          // Material: the gradient repaints existing ink, so the whole drag folds
+          // into ONE undo step whose snapshot already holds the post-drag params.
+          const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
+          return { ...state, gradParamsPendingCommit: false, history, historyIndex: index };
+      }
+      // Nothing to repaint → pure selection: last-writer-wins onto the current
+      // snapshot so no later undo resurrects the old gradient.
+      return {
+          ...state,
+          gradParamsPendingCommit: false,
+          history: patchCurrentSnapshot(state.history, state.historyIndex, { layerGradParams: state.layerGradParams })
       };
     }
     case 'RESET_DRAWING_VIEW':

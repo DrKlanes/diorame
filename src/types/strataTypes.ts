@@ -155,6 +155,7 @@ export interface AppState {
   blobSmoothing: boolean;
   currentBrushThickness: number; // New: Brush Thickness (continuous value)
   brushThicknessBeforePreview: Shape[] | null; // Store shapes before thickness preview
+  gradParamsPendingCommit: boolean; // A gradient slider drag is open, awaiting commit-on-release
   isHandheldEnabled: boolean; // New: Handheld camera shake
   handheldIntensity: HandheldIntensity; // New: Handheld shake intensity
   brushMode: BrushMode; // New: Brush mode (tapered or uniform)

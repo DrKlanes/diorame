@@ -711,7 +711,23 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.13.0)
+## Appendix C: Changelog Highlights (1.7.3 → 3.13.1)
+
+### 3.13.1 — Commit-on-release en los sliders de gradiente
+
+**fix(undo)** — Cierra el único pendiente que dejó abierto el contrato híbrido (anotado en la entrada de 3.11.2). Los tres ajustes de gradiente mutaban `layerGradParams` en vivo sin tocar el historial: el valor viajaba **a caballo del siguiente snapshot de contenido**, así que el próximo trazo lo horneaba y deshacer ese trazo revertía también el gradiente — un ajuste que el usuario nunca asoció a ese undo.
+
+**No es un contrato nuevo, es una instancia más del de 3.11.3.** El gradiente no regenera shapes (se aplica en render-time), así que "material" significa: *¿hay tinta a la que este gradiente repinte?* — el mismo test que ya usa `SET_PALETTE_MODE`.
+
+- Los tres setters existentes pasan a ser **el preview del drag** (fuera del historial, como `SET_BRUSH_THICKNESS_PREVIEW`) y marcan `gradParamsPendingCommit`, un flag transitorio que no entra en `HistorySnapshot` ni se serializa en `.dior`.
+- **`COMMIT_PALETTE_GRADIENT`** (nuevo, disparado en `onPointerUp`/`onPointerCancel` — pointer events, no mouse, para que funcione bajo un dedo): sin flag pendiente es no-op (un tap que no movió nada no merece paso ni patch); con shapes afectadas empuja **un único** paso de undo para todo el drag; sin shapes hace `patchCurrentSnapshot` (last-writer-wins).
+- **`SET_PALETTE_GRADIENT_TYPE`** patchea siempre. Solo llega en cascada detrás de `SET_PALETTE_MODE` (`PaletteHeader` dispara ambas para un tap), y MODE ya aplicó el contrato para ese gesto: patchear completa su par post-cambio en vez de abrir un segundo paso para lo que el usuario sintió como una sola acción.
+
+**Verificado** (instrumentando el reducer real, escena de ejemplo con 2369 shapes): capa vacía → drag de 3 pasos deja el historial en 1 entrada y estampa 270° en el snapshot presente (ningún undo posterior lo resucita). Capa con 28 shapes → el mismo drag produce **exactamente un** paso (hist 1→2) con el par post-cambio; el undo devuelve el gradiente al estado previo y el redo lo reaplica. Gesto plano→fade → un solo paso, con `gradType: 'fade'` en el snapshot (sin el patch quedaría `'solid'` y deshacer hasta ahí resucitaría el tipo equivocado). Regresión: `COMMIT_BRUSH_THICKNESS` sin preview sigue sin crear paso muerto.
+
+- **Files**: `src/components/strata/StrataContext.tsx`, `src/components/strata/colorpalette/GradientControls.tsx`, `src/types/strataTypes.ts`, `CLAUDE.md`, `src/constants/version.ts`, `package.json`.
+
+---
 
 ### 3.13.0 — Desregistro de tintas como FX propio
 
@@ -793,7 +809,7 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 **Reversión documentada**: esto invierte deliberadamente el modelo de **3.7.3** (que hizo que undo restaurara selector de paleta y brush para "sincronizar" — ver anotación en esa entrada). El síntoma que 3.7.3 quería curar (ajuste pegado tras undo) era real, pero el remedio conflaba selector con contenido; el modelo vigente restaura el contenido (hex/geometría embebidos en las shapes) sin tocar el selector. Trade-off aceptado: deshacer MÁS ALLÁ de un restyle de trazo/paleta puede dejar capa con trazos estilo X y selector marcando Y (modos mixtos por capa son representables — cada shape hornea su `brushMode`/`brushThickness`/hex).
 
-**Pendiente conocido (fuera de scope)**: los sliders de gradiente (`SET_PALETTE_GRADIENT_ANGLE`/`INTENSITY`/`TYPE`) no crean paso de undo propio; sus ajustes viajan a caballo del siguiente snapshot de contenido y se revierten al deshacerlo. Curarlo requiere commit-on-release como el ciclo de thickness.
+**Pendiente conocido (fuera de scope)** — **[RESUELTO en 3.13.1]**: los sliders de gradiente (`SET_PALETTE_GRADIENT_ANGLE`/`INTENSITY`/`TYPE`) no creaban paso de undo propio; sus ajustes viajaban a caballo del siguiente snapshot de contenido y se revertían al deshacerlo. Curado con commit-on-release, como el ciclo de thickness.
 
 - **Validado** (dev, funcional): toggle de paleta en canvas vacío no crea paso de undo (botón undo sigue deshabilitado); dibujar + deshacer elimina el trazo y el selector de paleta NO se mueve; toggle con contenido crea paso propio (remapeo) y deshacerlo restaura colores sin mover el selector; truncado de rama redo intacto; cero errores de consola. Pendiente validación en dispositivo: flujo de tipo de trazo, candado 3D y borrar-capa+undo.
 - **Files**: `src/types/strataTypes.ts` (HistorySnapshot), `src/components/strata/StrataContext.tsx` (createSnapshot, UNDO, REDO, SET_BRUSH_MODE, SET_ACTIVE_PALETTE, COMMIT_BRUSH_THICKNESS, DELETE_CURRENT_LAYER, initialState, CLEAR_CANVAS, LOAD_PROJECT), `src/constants/version.ts`, `package.json`.

@@ -185,6 +185,9 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 | `COMMIT_BRUSH_THICKNESS` | Consolida el grosor de brush al historial **solo si la capa tenía trazos regenerables** (si no: cambio de herramienta puro, sin snapshot — v3.11.2). |
 | `SET_BRUSH_THICKNESS_PREVIEW` | Preview temporal durante drag del slider — no genera snapshot de undo. |
 | `SET_BRUSH_THICKNESS` | Aplica valor final del slider — complementa COMMIT en el ciclo onChange/onPointerUp. |
+| `SET_PALETTE_GRADIENT_ANGLE` / `INTENSITY` | Preview del drag: mutan `layerGradParams` en vivo, fuera del historial, y marcan `gradParamsPendingCommit`. |
+| `SET_PALETTE_GRADIENT_TYPE` | Siempre `patchCurrentSnapshot`: solo llega en cascada tras `SET_PALETTE_MODE` (un tap = un paso), completando su par post-cambio. |
+| `COMMIT_PALETTE_GRADIENT` | Commit-on-release del drag (v3.13.1). Sin flag pendiente: no-op. Con shapes afectadas: un único paso de undo para todo el drag. Sin shapes: `patchCurrentSnapshot` (last-writer-wins). |
 
 ---
 
