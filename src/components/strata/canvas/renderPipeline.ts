@@ -12,12 +12,12 @@ import { drawGizmo } from './drawGizmo';
 import { drawSymmetryAxis } from './drawSymmetryAxis';
 import { quantizePixelArtCamera } from './quantizePixelArtCamera';
 import {
-	applyRisoV2,
 	applyChromaticAberration,
 	applyVignette,
 	applyGrain,
 	applyGrunge,
 } from './postProcessing';
+import { applyRisoPrint } from './risoInk';
 import { renderLayer } from './renderLayerBody';
 import { getOnionGhostZs } from '../../../utils/animationFrames';
 
@@ -468,7 +468,7 @@ export function renderFrame(
 
 	// RISO Texture
 	if (fxEnabled && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && rc.risoGrain) {
-		applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, rc.risoGrain, rc.helperCanvasRef.current!.getContext('2d')!);
+		applyRisoPrint(offCtx, w, h, currentState.postProcessing.riso, rc.risoGrain, rc.helperCanvasRef.current!.getContext('2d')!, S, currentState.isDarkMode);
 	}
 
 	// Chromatic Aberration & Transfer to Main

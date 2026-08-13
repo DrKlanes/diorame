@@ -1,6 +1,6 @@
 # Diorame — Project Reference Document
 
-**Version**: 3.13.3
+**Version**: 3.14.0
 **Last Updated**: Agosto 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
@@ -353,13 +353,14 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `drawSymmetryAxis.ts` | ~30 | Symmetry axis line rendering |
 | `exportHandlers.ts` | ~600 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4`: all export logic |
 | `PixelArtProcessor.ts` | ~175 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
-| `postProcessing.ts` | ~430 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge`. Glow/DoF pick native `ctx.filter` or `blurCompat` per browser |
+| `postProcessing.ts` | ~390 | `applyFog`, `applyGlow`, `applyDoFBlur`, `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge`, plus `generateRisoGrain` and the riso paper-wear texture singleton (both consumed by `risoInk.ts`). Glow/DoF pick native `ctx.filter` or `blurCompat` per browser |
 | `quantizePixelArtCamera.ts` | ~100 | Snaps camera to pixel grid for pixel art mode |
 | `renderEraserShape.ts` | ~30 | Eraser shape rendering (destination-out compositing) |
 | `renderLayerBody.ts` | ~455 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)` |
 | `renderLiveStroke.ts` | ~150 | In-progress live stroke rendering |
 | `renderParticles.ts` | ~100 | Floating cinematic particles rendering |
 | `renderPipeline.ts` | ~565 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12) |
+| `risoInk.ts` | ~190 | `applyRisoPrint`: the riso print body — content-aware edge buildup (one global blur), ink-load mottling, screen and paper wear. Theme-aware: more ink darkens on paper, brightens in the emissive dark mode |
 | `renderRegularFillShape.ts` | ~95 | Regular fill shapes (blob / tapered brush) |
 | `renderTextShape.ts` | ~175 | Text shape rendering with font + alignment |
 | `renderUniformLineShape.ts` | ~160 | Uniform-mode brush stroke rendering |
@@ -680,7 +681,7 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - **Fog**: Atmospheric depth fog (0-1)
 - **Particles**: Floating particles (circle, square, stroke types)
 - **Glow**: Soft glow around shapes (0-1)
-- **Riso**: Risograph halftone texture (0-1)
+- **Riso**: Risograph print body — loaded edges, uneven ink, halftone screen, paper wear (0-1)
 - **Pixel Art**: Pixelation effect (size 2-12, depth 2-16 colors, dither 0-1)
 - **Grunge**: Overlay texture (subtle, medium, intense)
 - **Wiggle**: Hand-drawn line wobble (light, medium, heavy)
@@ -709,7 +710,41 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.13.3)
+## Appendix C: Changelog Highlights (1.7.3 → 3.14.0)
+
+### 3.14.0 — Riso: cuerpo de tinta en vez de erosión
+
+**feat(fx)** — El riso se sentía "básico y poco realista", y el diagnóstico no era de calibrado sino de **signo**. Las cuatro pasadas del modelo anterior eran: trama `destination-out` a α 0.6, desgaste de papel `destination-out` a α **1.0**, un `multiply` de α 0.15 y un `screen` de α 0.08. Dos erosiones fuertes contra una densidad débil y un aclarado: el efecto **comía tinta**. Simulaba una impresión *gastada y desentintada*, lo contrario de una riso, que es tinta de soja espesa posada sobre el papel.
+
+Tres fallos más, todos medibles:
+- **Congelado**: `generateRisoGrain` corre una vez por resize y se dibujaba siempre en (0,0). Cada frame era la misma copia. El grunge sí posteriza el tiempo a ~3 fps; riso no.
+- **Overlay, no consciente del contenido**: la trama se aplicaba uniforme en espacio de pantalla, sin saber dónde estaba la tinta ni dónde su contorno. Los **bordes cargados** —el rasgo más reconocible de una impresión— necesitan leer la silueta real.
+- **Sin banda media**: el mapa de densidad modulaba el radio del punto entre 0.27 y 0.33, un rango tan estrecho que la trama salía casi uniforme. El moteado real de la tinta vive a 20-80 px y ahí no había nada.
+
+**`risoInk.ts`** invierte el modelo. Orden físico: la tinta se acumula y varía en densidad primero, y solo después la trama y el papel la rompen.
+
+1. **Bordes cargados** (la pieza consciente del contenido). El anillo es `alpha − blur(alpha)`, que `destination-out` calcula directo: `dst·(1 − blurred)` es ~0 en el interior y ~0 fuera, y alcanza su máximo justo dentro del contorno. **Una sola pasada de blur global** — riso ya es efecto global de fase 3, así que no entra en el bucle de capas (DoF y glow hacen hasta 10).
+2. **Moteado de carga de tinta** en tres octavas, generado a 1/10 de resolución y reescalado: el filtro bilineal del navegador convierte el hash por celda en manchas suaves por 1/100 de los píxeles.
+3. **Trama y desgaste reducidos** a 0.22 y 0.3 (desde 0.6 y 1.0), y **derivando por paso de impresión**: cada frame es una copia distinta de la tirada, con la misma posterización de 350 ms del grunge.
+
+**Consciente del tema, que era un error mío que la medición sola no caza:** "más tinta" oscurece sobre papel pero **ilumina** en el modo oscuro de Diorame, que es emisivo (tinta luminosa sobre fondo casi negro). Pintar de negro en ambos hundía los bordes cargados en el fondo. El anillo y el moteado se tiñen según el tema.
+
+**Verificado** sobre una mancha sólida de tinta:
+
+| | interior | borde 3px | borde 8px | σ luminancia | tinta conservada |
+|---|---|---|---|---|---|
+| Sin efecto | 102 | 102 | 102 | — | 100% |
+| Modo claro | 60 | **50** | 56 | 7.8 | 98.2% |
+| Modo oscuro | 107 | **125** | 112 | 7.9 | 98.2% |
+
+El borde carga en la dirección correcta en cada tema y cae con la distancia (anillo con degradado, no contorno duro); la textura de densidad pasa de σ 2.1 a 7.8 (**3.7×**); la tinta se conserva al 98.2% en vez de erosionarse; fuera de la tinta el alfa sigue en 0 (`source-atop` no mancha el papel); a intensidad 0.35 todo escala suave. **Coste: 0.06 ms por frame** a 1366×979 — el blur global era barato porque es uno solo y va por GPU. Export HQ 2×: 18.9 ms, una vez.
+
+**Pendiente de validación visual en dispositivo.** Fuera de alcance en Canvas 2D y anotado: tramas de semitono por tinta a ángulos distintos (coste per-capa) y cualquier simulación de flujo de tinta — eso exige ruta GPU.
+
+- **Files**: `src/components/strata/canvas/risoInk.ts` (nuevo), `postProcessing.ts` (retirado `applyRisoV2`; vuelve a 387 líneas, bajo el límite), `renderPipeline.ts`, `src/constants/version.ts`, `package.json`.
+
+---
+
 
 ### 3.13.3 — Desregistro eliminado del catálogo: correcto no es lo mismo que valioso
 
