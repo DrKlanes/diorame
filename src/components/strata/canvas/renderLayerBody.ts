@@ -409,11 +409,10 @@ export function renderLayer(
 		// Misregistration keys the offset on the INK, not the layer, so layers
 		// sharing a colour print in the same pass and travel together. Erasers
 		// only subtract, so they don't define the plate's colour.
-		const plateInk = (fxEnabled && currentState.postProcessingEnabled.misregistration)
-			? shapes.find(s => !s.isEraser)?.color
-			: undefined;
-		const plateOffset = plateInk
-			? getPlateOffset(plateInk, currentState.postProcessing.misregistration, S, isPixelArt ? pSizeForCompose : 0)
+		const plateInk = pfc.plateMap.size > 0 ? shapes.find(s => !s.isEraser)?.color : undefined;
+		const plateIndex = plateInk !== undefined ? pfc.plateMap.get(plateInk) : undefined;
+		const plateOffset = plateIndex !== undefined
+			? getPlateOffset(plateIndex, pfc.plateMap.size, currentState.postProcessing.misregistration, S, isPixelArt ? pSizeForCompose : 0)
 			: NO_PLATE_OFFSET;
 
 		composeLayer(

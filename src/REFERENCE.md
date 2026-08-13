@@ -351,7 +351,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `drawBackground.ts` | ~50 | Canvas background rendering (paper texture, dark mode) |
 | `drawGizmo.ts` | ~240 | Move tool gizmo handles + flip overlay buttons (incl. side-bar handles for squash & stretch) |
 | `drawSymmetryAxis.ts` | ~30 | Symmetry axis line rendering |
-| `misregistration.ts` | ~65 | `getPlateOffset`: rigid per-ink plate offset for the Misprint FX. Keyed by colour (layers sharing an ink travel together), biased to the paper-feed axis, snapped to whole px (or to the pixel-art grid) |
+| `misregistration.ts` | ~90 | `buildPlateMap` + `getPlateOffset`: rigid per-ink plate offsets for the Misprint FX. Layers sharing an ink share a plate; directions are dealt evenly across the inks present (never hashed), fanning out from the paper-feed axis, snapped to whole px or to the pixel-art grid |
 | `exportHandlers.ts` | ~600 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4`: all export logic |
 | `PixelArtProcessor.ts` | ~175 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
 | `postProcessing.ts` | ~430 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge`. Glow/DoF pick native `ctx.filter` or `blurCompat` per browser |
@@ -360,7 +360,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `renderLayerBody.ts` | ~455 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)` |
 | `renderLiveStroke.ts` | ~150 | In-progress live stroke rendering |
 | `renderParticles.ts` | ~100 | Floating cinematic particles rendering |
-| `renderPipeline.ts` | ~565 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12) |
+| `renderPipeline.ts` | ~580 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12). Builds the misregistration plate map once per frame into `PerFrameComputed` |
 | `renderRegularFillShape.ts` | ~95 | Regular fill shapes (blob / tapered brush) |
 | `renderTextShape.ts` | ~175 | Text shape rendering with font + alignment |
 | `renderUniformLineShape.ts` | ~160 | Uniform-mode brush stroke rendering |
@@ -723,13 +723,16 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 **La traducción a Diorame estaba delante todo el tiempo: las capas SON las planchas.** El efecto es per-capa, sobre el paso de composición, no un post-proceso sobre el frame terminado. Las hendiduras de papel salen solas: al mover una capa se descubre lo que había debajo.
 
-**Dos decisiones que le dan la calidad gráfica**:
-- **La unidad que se mueve es la TINTA, no la capa.** `getPlateOffset` se indexa por color: dos capas del mismo hex se habrían impreso en la misma pasada, así que viajan juntas. Indexar por índice de capa habría delatado el truco.
-- **Sesgo al eje de avance del papel** (`CROSS_AXIS_BIAS = 0.6`): el papel pasa por rodillos, así que el desregistro real deriva sobre todo en el eje de alimentación y solo un poco en el transversal.
+**Tres decisiones que le dan la calidad gráfica**:
+- **La unidad que se mueve es la TINTA, no la capa.** `buildPlateMap` agrupa las capas por color: dos capas del mismo hex se habrían impreso en la misma pasada, así que viajan juntas. Indexar por índice de capa habría delatado el truco.
+- **Las direcciones se reparten entre las tintas PRESENTES, no se hashean por color.** Primer intento: hash del hex → ángulo. Falla en silencio, y la medición lo destapó — sobre una paleta de 12 colores, **5 de 66 pares caían a menos de 4 px uno de otro**, y en la escena de ejemplo el verde y el negro quedaban a 1 px: esas planchas viajan como una sola, justo entre las que el efecto debía notarse. Repartir por rango garantiza separación 360/n sea cual sea la paleta (mínimo medido: 5-13 px para 2-6 planchas).
+- **El abanico arranca en el eje de avance del papel** (cuarto de vuelta) y el eje transversal va atenuado (`CROSS_AXIS_BIAS = 0.6`): el papel pasa por rodillos, así que el desregistro real deriva sobre todo en la dirección de alimentación. Con 2 o 3 tintas el resultado es puramente vertical, que es exactamente el aspecto de una Riso mal registrada.
+
+**La plancha 0 es la referencia y no se mueve**, así que la composición no deriva en bloque; y un dibujo de **una sola tinta no muestra nada**, que es lo correcto: una tinta no puede estar desregistrada consigo misma.
 
 Recorrido máximo 13 px (≈2 mm en A4 a ~1366 px de ancho, el extremo de una impresión descuidada), offsets **enteros** (un desplazamiento subpíxel remuestrea la plancha y se lee como desenfoque, no como desajuste) o alineados a la rejilla si pixel art está activo. El offset envuelve los pasos 5-6 de `composeLayer` — los únicos que escriben al offscreen — así que el glow viaja con su tinta.
 
-**Verificado** midiendo la composición real: 10.000 px pintados, **exactamente los mismos que la fuente** (cero duplicación); **cero píxeles semitransparentes** (tinta sólida); bbox trasladado exactamente por el offset (bloque rígido). Dos tintas iguales dan offsets idénticos, cuatro tintas distintas dan cuatro direcciones repartidas; intensidad 0 da (0,0) exacto y `renderScale = 2` duplica el recorrido.
+**Verificado** midiendo la composición real: 10.000 px pintados, **exactamente los mismos que la fuente** (cero duplicación); **cero píxeles semitransparentes** (tinta sólida); bbox trasladado exactamente por el offset (bloque rígido). Separación mínima entre planchas de 5 a 13 px para 2-6 tintas; intensidad 0 y tinta única dan (0,0) exacto; `renderScale = 2` duplica el recorrido.
 
 - **Files**: `src/components/strata/canvas/misregistration.ts` (reescrito), `src/components/strata/canvas/composeLayer.ts`, `src/components/strata/canvas/renderLayerBody.ts`, `src/components/strata/canvas/renderPipeline.ts`, `src/constants/version.ts`, `package.json`.
 
