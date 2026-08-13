@@ -5,7 +5,10 @@
 > (estado, RAF, overrides) — eso es una fase posterior. Fuente de verdad del
 > diseño durante el sprint de implementación.
 >
-> Estado: diseño de producto COMPLETO. Diseño técnico e implementación: pendientes.
+> Estado: diseño de producto COMPLETO — **entregado en v3.1.0–v3.7.x** (núcleo de
+> playback v3.1.0, pill v3.2.0, CINEMA v3.3.0, onion skin v3.4.0, PNG sequence
+> v3.6.0, GIF v3.7.0). Este documento se conserva como registro del razonamiento
+> de producto; para el estado vivo de la implementación, ver REFERENCE.md §13.
 
 ---
 
@@ -134,19 +137,26 @@ las ignora solo.
 
 ---
 
-## Pendiente: diseño técnico de implementación
+## Diseño técnico de implementación — resuelto (nota histórica)
 
-Lo siguiente NO está diseñado todavía y es una sesión propia antes de tocar código:
+Los cuatro puntos que este documento dejó abiertos se diseñaron e implementaron
+durante el sprint v3.1.0–v3.7.0. Se conservan aquí porque el orden previsto
+resultó ser el orden real, lo que valida el método:
 
-1. **Modelo de estado** de animación (campos nuevos en StrataContext:
-   `isAnimationMode`, `isOnionSkin`, `framerate`, `currentFrame`, `isPlaying`, etc.).
-2. **Manejo del RAF loop** para el playback sin pelearse con el render existente.
-3. **Uso de los 3 overrides** ya preparados en `renderFrame()`:
-   `renderZsOverride`, `skipLiveStroke`, `skipCinematicOverlays` — para esto se
-   construyó el refactor del Plan C (v3.0.0).
-4. **Orden de sub-fases del sprint** (qué se construye primero, qué valida cada
-   hito). Probable: núcleo de playback en DRAW → onion skin → playback en CINEMA
-   con profundidad/toggle → export GIF → export PNG sequence.
+1. **Modelo de estado** — campos de animación en `StrataContext` (`isAnimationMode`,
+   `isOnionSkin`, `framerate`, `currentFrame`, `isAnimationPlaying`).
+2. **RAF loop** — el playback comparte el render loop existente; el tick de
+   animación filtra los `renderZs` del frame en lugar de correr en paralelo.
+3. **Los 3 overrides** de `renderFrame()` se usaron tal como se anticipó. Matiz
+   descubierto después: `renderZsOverride` hoy no tiene consumidor vivo, y
+   `skipCinematicOverlays` solo omite gizmo y eje de simetría (las partículas se
+   gobiernan por `postProcessingEnabled.particles`).
+4. **Orden de sub-fases** — se cumplió la secuencia prevista: núcleo en DRAW →
+   pill → CINEMA → onion skin → PNG sequence → GIF.
+
+**Sigue sin implementar** de lo anotado en este documento: el frame en blanco
+intencional ("insertar pausa"), anotado como feature propia si surge la
+necesidad real, y play-once (ping-pong sí llegó en v3.2.0).
 
 ---
 

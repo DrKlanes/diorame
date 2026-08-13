@@ -1,6 +1,6 @@
 # Diorame — Backlog técnico
 
-**Actualizado:** 2026-06-07 — Post v3.10.1
+**Actualizado:** 2026-08-13 — Post v3.13.1
 
 ---
 
@@ -56,37 +56,25 @@ Resuelto en v3.9.2. **La premisa original ("framer-motion + React 19") era falsa
 
 ---
 
-### Item 12 — Integrar EnhancedTooltip en DiActionButton
+### ~~Item 12 — Integrar EnhancedTooltip en DiActionButton~~ ✅ CERRADO
 
-**Categoría:** consistencia UX
-**Riesgo:** medium (cambia el patrón de tooltip de 11 consumidores)
-**Origen:** decisión diferida en 9.8
-
-DiActionButton actualmente usa `title` attr nativo para tooltips. EnhancedTooltip (corregido en 9.6 con supresión touch) ofrece mejor UX en tablet. Integración pospuesta porque añade dependencia `RippleButton` chain al primitivo y los 11 consumidores requerirían validación visual.
+Resuelto en **v3.10.2** (commit `fe1d6d7`). `DiActionButton` usa `EnhancedTooltip` en lugar del `title` nativo; la supresión en touch corregida en 9.6 llega así a los 11 consumidores.
 
 **Path:** `src/design-system/DiActionButton.tsx`
 
 ---
 
-### Item 13 — Discrepancia `pen` en ICON_SECTIONS
+### ~~Item 13 — Discrepancia `pen` en ICON_SECTIONS~~ ✅ CERRADO
 
-**Categoría:** documentación interna
-**Riesgo:** trivial
-**Origen:** descubierto en 9.3
+Resuelto en **v3.9.1** (commit `70c67d9`). `pen` reubicado bajo el divisor "Drawing Tools" en `icons.ts`, coherente con `ICON_SECTIONS`.
 
-`pen` aparece en comentarios divisores de `icons.ts` como "Custom Additions" pero `PreviewPage.tsx` lo agrupaba en "Drawing Tools". `ICON_SECTIONS` siguió PreviewPage para no introducir cambio visual en 9.3. Decidir qué agrupación es la correcta y unificar.
-
-**Path:** `src/design-system/icons.ts` (comentario divisor), `ICON_SECTIONS`
+**Path:** `src/design-system/icons.ts`
 
 ---
 
-### Item 14 — Agrupar tokens de blur en objeto BLUR propio
+### ~~Item 14 — Agrupar tokens de blur en objeto BLUR propio~~ ✅ CERRADO
 
-**Categoría:** coherencia de tokens
-**Riesgo:** trivial
-**Origen:** observación en 9.4
-
-`T.blur` quedó en el objeto `T` cuando los demás `T.*` son colores. Análogo a `SHADOW` (introducido en 7.5.0) o `RADIUS`. Si en el futuro se añaden más valores de blur (`blurStrong`, `blurSubtle`), tiene sentido agruparlos en `BLUR` propio.
+Resuelto en **v3.9.1** (mismo commit `70c67d9` que el Item 13). Objeto `BLUR` propio en `tokens.ts`, coherente con `SHADOW` y `RADIUS`.
 
 **Path:** `src/design-system/tokens.ts`
 
@@ -96,14 +84,11 @@ DiActionButton actualmente usa `title` attr nativo para tooltips. EnhancedToolti
 
 ## 🐛 Sprint animación — Issues abiertos (v3.7.1+)
 
-### Item DoF — Bug DoF con zero-Z en CINEMA
+### ~~Item DoF — Bug DoF con zero-Z en CINEMA~~ ✅ CERRADO
 
-**Categoría:** bug render
-**Riesgo:** medium
+Resuelto en **v3.7.2** (commit `9a92dc5`) por la vía del cálculo, no la del blur: con `isAnimationMode && isAnimationFlatZ`, `renderPipeline` fuerza `fxFocusDist = dz_flat`, de modo que la distancia al plano de foco es cero para todas las capas y el DoF queda neutro.
 
-Con `isAnimationFlatZ` activo en CINEMA, el Depth of Field sale todo desenfocado en lugar de quedar enfocado. Sin profundidad relativa entre capas no hay distancia que difuminar — el DoF debería ser neutro. El fix requiere detectar el caso flat en `applyDoFBlur` o en el cálculo de `fxFocusDist`.
-
-**Path:** `src/components/strata/canvas/postProcessing.ts`
+**Path:** `src/components/strata/canvas/renderPipeline.ts`
 
 ---
 
@@ -118,12 +103,9 @@ Al cambiar de DRAW a CINEMA durante playback, el comportamiento actual no está 
 
 ---
 
-### Item Undo palette — Cambios de paletteMode fuera del historial de undo
+### ~~Item Undo palette — Cambios de paletteMode fuera del historial de undo~~ ✅ CERRADO
 
-**Categoría:** bug UX
-**Riesgo:** low-medium
-
-Cambiar el modo de color de una capa (plano/degradado/fade) o activar "aplicar a todas" no genera snapshot en el historial de undo/redo. El reducer debe crear historial en `SET_PALETTE_MODE` y acciones relacionadas.
+Primer fix en **v3.7.1** (commit `c8c1f1d`). Refinado después por el contrato híbrido de **v3.11.2/v3.11.3**: `SET_PALETTE_MODE` solo crea paso de undo si el cambio es material (hay shapes que repintar); en capa vacía hace `patchCurrentSnapshot` (last-writer-wins) en vez de un paso muerto. Los sliders de gradiente, que quedaron fuera de aquel fix, se cerraron en **v3.13.1** con commit-on-release.
 
 **Path:** `src/components/strata/StrataContext.tsx` (reducer)
 
@@ -210,7 +192,19 @@ Cuando `storytelling` + DoF modo `lock` están activos, el plano de enfoque sigu
 
 ## 🎯 En cola
 
-*(vacía — sprint del preset Storytelling cerrado)*
+*(vacía — sprint FX de puesta en escena cerrado en v3.13.1)*
+
+**Vivos, sin agenda:** Item 10 (refactor `StrataCanvas.tsx`), Item DRAW→CINEMA (continuidad de playback al cambiar de modo), Item Tweening (interpolación entre frames).
+
+---
+
+## ✅ Sprint FX de puesta en escena (v3.12.0 → v3.13.1)
+
+| Entrega | Versión | Resolución |
+|---|---|---|
+| Glow y DoF muertos en iPadOS | v3.12.0 | WebKit ignora `ctx.filter` en silencio, así que los dos FX más cinemáticos (incluido el rack focus de Storytelling) no existían en el dispositivo de trabajo. `blurCompat.ts` aproxima el blur con una mip chain de `drawImage`, calibrada contra el blur nativo (σ ≈ 0.68·downscale, error ≤ 8.3% en el rango vivo). Retirado el gate `browserUnsupported` de todo el panel. |
+| Desregistro de tintas sin control | v3.13.0 | El fantasma de tintas desalineadas vivía enterrado en la pasada 3 de `applyRisoV2` a opacidad fija 0.08. Extraído a `misregistration.ts` como FX propio del grupo Texture con slider 0-1; riso conserva su versión sutil (retrocompat exacta del `.dior`). |
+| Sliders de gradiente sin undo propio | v3.13.1 | Commit-on-release siguiendo el contrato híbrido de 3.11.3. Cierra el único pendiente que aquella entrada dejó anotado. |
 
 ---
 
