@@ -44,8 +44,13 @@ export type DioramEventMap = {
    */
   canvas_ready: Record<string, never>;
 
-  /** Se mostró la pantalla de bloqueo de móvil. Mide demanda rechazada. */
-  mobile_blocked: Record<string, never>;
+  /**
+   * Se mostró la pantalla de bloqueo de móvil. Mide demanda rechazada.
+   * `viewport_width` es imprescindible para leer el dato: el gate mide ANCHO
+   * de viewport (<768px), no dispositivo. Sin este número no se distingue un
+   * móvil real de un desktop con la ventana estrecha.
+   */
+  mobile_blocked: { viewport_width: number };
 
   /** Primer trazo de la sesión. EVENTO CLAVE: mide activación real. */
   first_stroke: { tool: string; seconds_to_first_stroke: number };
@@ -223,10 +228,10 @@ export const analytics = {
    * Llamar al mostrarse la pantalla de bloqueo de móvil.
    * Comparte flag `once` con canvasReady(): ver SessionState.entrySent.
    */
-  mobileBlocked(): void {
+  mobileBlocked(viewportWidth: number): void {
     if (state.entrySent) return;
     state.entrySent = true;
-    track('mobile_blocked', {});
+    track('mobile_blocked', { viewport_width: viewportWidth });
   },
 
   /**

@@ -120,7 +120,7 @@ function AppContentWithMobileGate() {
   // Los dos eventos comparten un único flag `once` dentro del módulo, así que
   // cruzar los 768px redimensionando no vuelve a contar a la misma persona.
   useEffect(() => {
-    if (isMobile) analytics.mobileBlocked();
+    if (isMobile) analytics.mobileBlocked(window.innerWidth);
     else analytics.canvasReady();
   }, [isMobile]);
 

@@ -412,13 +412,13 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `useIsStandalone.ts` | Reactive PWA standalone detection: combines `matchMedia('(display-mode: standalone)')` + legacy `navigator.standalone`; used by `TopBar` for iOS safe-area paddingTop |
 | `useKeyboardShortcuts.ts` | All global and drawing-mode keyboard shortcuts |
 | `useLoadExampleScene.ts` | Fetches, parses, and dispatches the example `.dior` scene |
-| `useSaveLoad.ts` | Save and load projects from IndexedDB (idb-keyval) |
+| `useSaveLoad.ts` | Save/load projects as `.dior` files: JSON `Blob` download on save, `FileReader` + `JSON.parse` on load. **Not IndexedDB** — that is `useAutoSave.ts`. Fires `project_saved` / `project_loaded` at the confirmed-success point inside each `try` |
 
 ### Analytics (`src/analytics/`)
 
 | File | Lines | Purpose |
 |---|---|---|
-| `analytics.ts` | ~340 | Sole contact point with GA4. Typed `DioramEventMap` contract + `analytics.*` API + module-level session counters (never React state, to avoid a re-render per stroke). Consumes the existing `window.gtag` from `index.html`; never calls `gtag('config')` nor injects the tag. Silent no-op when `window.gtag` is absent (ad blockers, offline) and in dev unless `VITE_GA_DEBUG=1`. `installAnalytics()` is called once from `main.tsx`. |
+| `analytics.ts` | ~375 | Sole contact point with GA4. Typed `DioramEventMap` contract + `analytics.*` API + module-level session counters (never React state, to avoid a re-render per stroke). Consumes the existing `window.gtag` from `index.html`; never calls `gtag('config')` nor injects the tag. Silent no-op when `window.gtag` is absent (ad blockers, offline) and in dev unless `VITE_GA_DEBUG=1`. `installAnalytics()` is called once from `main.tsx`. |
 
 ### Render Pipeline Architecture
 
