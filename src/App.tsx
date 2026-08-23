@@ -12,6 +12,7 @@ import { PwaUpdatePrompt } from './components/PwaUpdatePrompt';
 import { PreviewPage } from './preview/PreviewPage';
 import { useAutoSave, AUTOSAVE_KEY } from './hooks/useAutoSave';
 import { initSoundsFromStorage } from './utils/soundManager';
+import { analytics } from './analytics/analytics';
 
 function AppContent() {
   const { state, dispatch } = useStrata();
@@ -49,6 +50,7 @@ function AppContent() {
     handleDismissAutosave();
     await loadExampleScene();
     dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
+    analytics.welcomeModal('load_example');
   };
 
   const handleRestoreAutosave = () => {
@@ -69,6 +71,7 @@ function AppContent() {
 
     setAutosaveData(null);
     dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
+    analytics.welcomeModal('restore_autosave');
   };
 
   const handleDismissAutosave = () => {
@@ -92,6 +95,7 @@ function AppContent() {
         onClose={() => {
           handleDismissAutosave();
           dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
+          analytics.welcomeModal('dismissed');
         }}
         onLoadExample={handleLoadExample}
         onRestoreAutosave={autosaveData ? handleRestoreAutosave : undefined}
@@ -109,6 +113,17 @@ function AppContent() {
 
 function AppContentWithMobileGate() {
   const isMobile = useIsMobile();
+
+  // Paso 1 del embudo. En efecto (no en render) para que canvas_ready se emita
+  // con AppContent/StrataCanvas ya montados. La dependencia es el breakpoint,
+  // NO estado del canvas: esto no se re-dispara por dibujar.
+  // Los dos eventos comparten un único flag `once` dentro del módulo, así que
+  // cruzar los 768px redimensionando no vuelve a contar a la misma persona.
+  useEffect(() => {
+    if (isMobile) analytics.mobileBlocked();
+    else analytics.canvasReady();
+  }, [isMobile]);
+
   if (isMobile) return <MobileBlockScreenV2 />;
   return <AppContent />;
 }

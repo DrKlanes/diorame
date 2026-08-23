@@ -6,6 +6,7 @@ import { useStrata } from '../components/strata/StrataContext';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../constants/project';
 import { useTranslation } from '../i18n';
 import { AUTOSAVE_KEY } from './useAutoSave';
+import { analytics } from '../analytics/analytics';
 
 export function useSaveLoad() {
 	const { state, dispatch } = useStrata();
@@ -47,6 +48,7 @@ export function useSaveLoad() {
 				playSound('success');
 				dispatch({ type: 'MARK_CLEAN' });
 				del(AUTOSAVE_KEY).catch(() => {});
+				analytics.projectSaved();
 			} catch (err) {
 				toast.error(t('toast.save.errorTitle'), { description: t('common.pleaseRetry') });
 			} finally {
@@ -73,6 +75,7 @@ export function useSaveLoad() {
 				const n = json.shapes.length;
 				const desc = n === 1 ? t('toast.load.successDescOne', { n }) : t('toast.load.successDesc', { n });
 				toast.success(t('toast.load.successTitle'), { description: desc, duration: 2000 });
+				analytics.projectLoaded();
 			} catch (err) {
 				toast.error(t('toast.load.errorTitle'), { description: err instanceof Error ? err.message : t('toast.load.errorDescGeneric') });
 			}

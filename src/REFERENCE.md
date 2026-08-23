@@ -414,6 +414,12 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `useLoadExampleScene.ts` | Fetches, parses, and dispatches the example `.dior` scene |
 | `useSaveLoad.ts` | Save and load projects from IndexedDB (idb-keyval) |
 
+### Analytics (`src/analytics/`)
+
+| File | Lines | Purpose |
+|---|---|---|
+| `analytics.ts` | ~340 | Sole contact point with GA4. Typed `DioramEventMap` contract + `analytics.*` API + module-level session counters (never React state, to avoid a re-render per stroke). Consumes the existing `window.gtag` from `index.html`; never calls `gtag('config')` nor injects the tag. Silent no-op when `window.gtag` is absent (ad blockers, offline) and in dev unless `VITE_GA_DEBUG=1`. `installAnalytics()` is called once from `main.tsx`. |
+
 ### Render Pipeline Architecture
 
 **Pattern: "caller orchestrates, modules are pure"**
