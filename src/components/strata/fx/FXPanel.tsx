@@ -4,6 +4,7 @@ import { DiPill, DiPanel, DiActionButton, Ico } from '../../../design-system';
 import { T, TYPE, RADIUS, dk, SPACE } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
 import { useTranslation } from '../../../i18n';
+import { analytics } from '../../../analytics/analytics';
 import { FXRow } from './FXRow';
 
 const STORAGE_KEY = 'diorame-fx-expanded';
@@ -111,9 +112,18 @@ export function FXPanel() {
 	const { postProcessingEnabled: px, fxMasterEnabled } = state;
 	const snap = state.postProcessingSnapshot;
 	const hasSnapshot = snap !== null;
+	// Unico punto que decide si un FX cuenta como "aplicado".
+	// TOGGLE_FX es bidireccional: solo cuenta al ENCENDER (px[key] es el estado previo).
+	// TOGGLE_FX_MASTER queda fuera a proposito: encender un bloque entero no es
+	// aplicar un FX concreto.
+	const toggleFx = (key: keyof typeof px) => {
+		dispatch({ type: 'TOGGLE_FX', payload: key });
+		if (!px[key]) analytics.filterApplied(key);
+	};
+
 	const fxClick = (key: keyof typeof px) => hasSnapshot
 		? () => dispatch({ type: 'TOGGLE_FX_MASTER' })
-		: () => dispatch({ type: 'TOGGLE_FX', payload: key });
+		: () => toggleFx(key);
 
 	const toggle = (expanded: boolean) => {
 		setIsExpanded(expanded);
@@ -197,7 +207,7 @@ export function FXPanel() {
 						{TEXTURE_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} labelKey={labelKey}
 								isActive={px[fxKey]} dark={dark}
-								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
+								onToggle={() => toggleFx(fxKey)}
 								level={level} valueKey={valueKey}
 								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
 						))}
@@ -209,7 +219,7 @@ export function FXPanel() {
 						{LENS_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} labelKey={labelKey}
 								isActive={px[fxKey]} dark={dark}
-								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
+								onToggle={() => toggleFx(fxKey)}
 								level={level} valueKey={valueKey}
 								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
 						))}
@@ -221,7 +231,7 @@ export function FXPanel() {
 						{ATMOSPHERE_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions }) => (
 							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} labelKey={labelKey}
 								isActive={px[fxKey]} dark={dark}
-								onToggle={() => dispatch({ type: 'TOGGLE_FX', payload: fxKey })}
+								onToggle={() => toggleFx(fxKey)}
 								level={level} valueKey={valueKey}
 								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
 						))}

@@ -1,6 +1,7 @@
 import { toast } from 'sonner@2.0.3';
 import { playSound } from '../../../utils/soundManager';
 import { downloadBlob } from '../../../utils/downloadBlob';
+import { analytics } from '../../../analytics/analytics';
 import { Shape } from '../../../types/strataTypes';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
@@ -177,6 +178,7 @@ export const exportAsPNG = (
 				duration: 2000,
 			});
 			playSound('success');
+			analytics.exported('png');
 			onFinish();
 		}, 'image/png');
 	} catch (e) {
@@ -471,6 +473,7 @@ export const exportAsSVG = async (
 			duration: 2000,
 		});
 		playSound('success');
+		analytics.exported(exportRequest);
 	} catch (e) {
 		console.error("Export SVG failed", e);
 		toast.error(t('toast.export.vector.errorTitle'), {
@@ -566,6 +569,7 @@ export const exportAsMP4 = (
 				duration: 2000,
 			});
 			playSound('success');
+			analytics.exported('mp4');
 			onFinish();
 		};
 

@@ -12,6 +12,7 @@ import {
 	verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useStrata, BASE_DEPTH_STEP, MAX_LAYERS } from '../StrataContext';
+import { analytics } from '../../../analytics/analytics';
 import { DiPill, DiPanel, DiActionButton } from '../../../design-system';
 import { LayerRow } from './LayerRow';
 import { LayerDotsRail } from './LayerDotsRail';
@@ -135,7 +136,7 @@ export function LayersPanel() {
 						dark={dark} tooltip={t('layers.action.moveDown')} disabled={isPlaybackLocked || isAtBottom} />
 					<HSep />
 					<DiActionButton name="plus"
-						onClick={() => dispatch({ type: 'ADD_LAYER' } as any)}
+						onClick={() => { dispatch({ type: 'ADD_LAYER' } as any); analytics.layerAdded(totalLayers + 1); }}
 						dark={dark} tooltip={t('layers.action.add')} disabled={isPlaybackLocked || !canAdd} />
 				</DiPill>
 				<LayerDotsRail inline />
@@ -192,7 +193,7 @@ export function LayersPanel() {
 						{totalLayers}/10
 					</span>
 					<DiActionButton name="plus"
-						onClick={() => dispatch({ type: 'ADD_LAYER' } as any)}
+						onClick={() => { dispatch({ type: 'ADD_LAYER' } as any); analytics.layerAdded(totalLayers + 1); }}
 						dark={dark} tooltip={t('layers.action.add')} disabled={isPlaybackLocked || !canAdd} />
 					<DiActionButton name="chevron-right"
 						onClick={() => toggle(false)}

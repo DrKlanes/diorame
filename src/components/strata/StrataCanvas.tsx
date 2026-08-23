@@ -11,6 +11,7 @@ import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOve
 import { generateRisoGrain } from './canvas/postProcessing';
 import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY } from '../../constants/renderConstants';
 import { exportAsPNG, exportAsSVG, exportAsMP4 } from './canvas/exportHandlers';
+import { analytics } from '../../analytics/analytics';
 import { renderAnimationFrames } from './canvas/animationExportRender';
 import { exportAsPNGSequence } from './canvas/pngSequenceHandler';
 import { exportAsGIF } from './canvas/gifHandler';
@@ -1214,6 +1215,7 @@ export const StrataCanvas = () => {
             } else {
                 dispatch({ type: 'ADD_SHAPE', payload: shapeOriginal });
             }
+            analytics.strokeEnded(state.tool);
         }
         
         // Move flags cleanup to AFTER processing points to allow late pointerMove events

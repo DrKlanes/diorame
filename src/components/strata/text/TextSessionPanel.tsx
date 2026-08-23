@@ -3,6 +3,7 @@ import { Ico } from '../../../design-system';
 import { T, TYPE, RADIUS, SHADOW, BLUR, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { useTranslation } from '../../../i18n';
+import { analytics } from '../../../analytics/analytics';
 
 // Font CSS values keyed by TextSession font name
 const FONT_CSS: Record<string, string> = {
@@ -45,6 +46,13 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 	const activeBg      = dk(dark, T.purple10, T.purple20);
 	const activeColor   = dk(dark, T.purple, T.purpleLight) as string;
 
+	// Confirmar texto. El reducer NO crea shape si el contenido esta vacio
+	// (COMMIT_TEXT_SESSION), asi que la misma guarda decide si cuenta como trazo.
+	const commitText = () => {
+		dispatch({ type: 'COMMIT_TEXT_SESSION' });
+		if (state.textSession.isActive && state.textSession.content.trim()) analytics.strokeEnded('text');
+	};
+
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === 'Escape') {
 			e.preventDefault();
@@ -52,7 +60,7 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 		}
 		if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 			e.preventDefault();
-			dispatch({ type: 'COMMIT_TEXT_SESSION' });
+			commitText();
 		}
 	};
 
@@ -204,7 +212,7 @@ export function TextSessionPanel({ dark }: TextSessionPanelProps) {
 
 				{/* Done */}
 				<button
-					onClick={() => dispatch({ type: 'COMMIT_TEXT_SESSION' })}
+					onClick={commitText}
 					style={{
 						padding: '4px 10px',
 						borderRadius: RADIUS.pill,

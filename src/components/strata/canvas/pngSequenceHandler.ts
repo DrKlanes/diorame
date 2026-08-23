@@ -2,6 +2,7 @@ import { zipSync } from 'fflate';
 import { toast } from 'sonner@2.0.3';
 import { playSound } from '../../../utils/soundManager';
 import { downloadBlob } from '../../../utils/downloadBlob';
+import { analytics } from '../../../analytics/analytics';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
 
@@ -85,6 +86,7 @@ export async function exportAsPNGSequence(
 			duration: 2000,
 		});
 		playSound('success');
+		analytics.exported('png_sequence');
 	} catch (e) {
 		console.error('Export PNG sequence failed', e);
 		toast.error(t('toast.export.pngSequence.errorTitle'), {

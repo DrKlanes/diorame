@@ -2,6 +2,7 @@ import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { toast } from 'sonner@2.0.3';
 import { playSound } from '../../../utils/soundManager';
 import { downloadBlob } from '../../../utils/downloadBlob';
+import { analytics } from '../../../analytics/analytics';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
 
@@ -124,6 +125,7 @@ export async function exportAsGIF(
 			duration: 2000,
 		});
 		playSound('success');
+		analytics.exported('gif');
 	} catch (e) {
 		console.error('Export GIF failed', e);
 		toast.error(t('toast.export.gif.errorTitle'), {

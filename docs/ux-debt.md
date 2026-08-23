@@ -74,3 +74,23 @@ La palanca real es feedback, no guards. Cuando se aborde, el orden natural es:
 `project_saved` no lleva flag `once` por diseño. Si en GA4 aparecen guardados
 repetidos en ventanas cortas, la hipótesis principal **no es un bug de código**:
 es esto. Ver `docs/analytics.md`.
+
+---
+
+## Regla dorada 1 de CLAUDE.md desactualizada
+
+**Estado:** anotado, sin tocar. Frente aparte.
+
+CLAUDE.md sigue diciendo que `StrataCanvas.tsx` está **congelado** ("Solo
+extraer código de él; nunca agregar líneas nuevas"). Esa redacción quedó atrás
+con el refactor de v3.0.0: hoy `StrataCanvas` es thin shell y la regla vigente
+en la práctica es disciplina normal en handlers, con GO explícito solo para el
+núcleo — RAF loop, `buildRenderContext`, sincronización refs↔render, y timing
+del live stroke.
+
+Se hizo visible en v3.16.0: instrumentar el fin de trazo exigía una línea en
+`handlePointerUp`, algo que la regla escrita prohíbe y la regla real permite
+con GO. Se resolvió con GO explícito, pero la redacción sigue sin actualizar.
+
+**Pendiente:** revisar el texto de la regla dorada 1 para que diga lo que de
+verdad se aplica. No se tocó aquí para no mezclar frentes.

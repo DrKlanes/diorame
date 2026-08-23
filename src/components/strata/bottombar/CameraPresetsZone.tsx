@@ -2,6 +2,7 @@ import React from 'react';
 import { useStrata } from '../StrataContext';
 import { DiActionButton } from '../../../design-system';
 import { useTranslation } from '../../../i18n';
+import { analytics } from '../../../analytics/analytics';
 
 const PRESETS = [
 	{ type: 'forward', icon: 'cam-forward', tooltipKey: 'bottombar.view.preset.forward' },
@@ -30,7 +31,7 @@ export function CameraPresetsZone({ dark }: CameraPresetsZoneProps) {
 				<DiActionButton
 					key={p.type}
 					name={p.icon}
-					onClick={() => dispatch({ type: 'SET_CINEMATIC_TYPE', payload: p.type } as any)}
+					onClick={() => { dispatch({ type: 'SET_CINEMATIC_TYPE', payload: p.type } as any); analytics.cameraPreset(p.type); }}
 					dark={dark}
 					active={active === p.type}
 					activeStyle="solid"
