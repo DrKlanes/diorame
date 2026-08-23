@@ -178,7 +178,7 @@ export const exportAsPNG = (
 				duration: 2000,
 			});
 			playSound('success');
-			analytics.exported('png');
+			analytics.exported(quality === 'hq' ? 'png_hq' : 'png');
 			onFinish();
 		}, 'image/png');
 	} catch (e) {
@@ -569,7 +569,7 @@ export const exportAsMP4 = (
 				duration: 2000,
 			});
 			playSound('success');
-			analytics.exported('mp4');
+			analytics.exported(animation ? 'mp4_animation' : 'mp4');
 			onFinish();
 		};
 

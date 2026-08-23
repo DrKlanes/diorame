@@ -39,20 +39,51 @@ disparador salvo `stroke_milestone` (automático: 10/50/200 trazos),
 | `welcome_modal` | `src/App.tsx:53` / `:74` / `:98` | Propio | Cómo sale la gente del modal de bienvenida |
 | `session_depth` | `visibilitychange` + `pagehide`, registrados por `installAnalytics()` en `src/main.tsx` | Propio (`depthSent`) | Resumen de sesión al salir |
 
-### `artwork_exported` — los cinco puntos
+### `artwork_exported` — valores de `format`
 
-| Formato | Punto |
-|---|---|
-| `png` | `canvas/exportHandlers.ts:181` |
-| `svg` / `svgz` | `canvas/exportHandlers.ts:476` (valor real de `exportRequest`) |
-| `mp4` | `canvas/exportHandlers.ts:572` |
-| `gif` | `canvas/gifHandler.ts:128` |
-| `png_sequence` | `canvas/pngSequenceHandler.ts:89` |
+Ocho valores, no cinco. **Las variantes se separan a propósito**: PNG y MP4
+tienen cada uno dos formas de invocarse que colapsaban en la misma fila, y eso
+cegaba justo lo que más interesa saber — si alguien usa la súper resolución, y
+si alguien llega al export de animación.
+
+| `format` | Qué es | Punto |
+|---|---|---|
+| `png` | Captura a tamaño de pantalla (upscale a píxeles de dispositivo) | `canvas/exportHandlers.ts:181` |
+| `png_hq` | **Súper resolución ×2**: re-render real de la escena por el pipeline | `canvas/exportHandlers.ts:181` |
+| `svg` | Vector sin comprimir | `canvas/exportHandlers.ts:476` |
+| `svgz` | Vector comprimido | `canvas/exportHandlers.ts:476` |
+| `mp4` | Vídeo grabado desde modo CINEMA | `canvas/exportHandlers.ts:572` |
+| `mp4_animation` | Vídeo grabado desde modo ANIMACIÓN | `canvas/exportHandlers.ts:572` |
+| `gif` | GIF animado | `canvas/gifHandler.ts:128` |
+| `png_sequence` | ZIP con la secuencia de frames | `canvas/pngSequenceHandler.ts:89` |
+
+Los nombres salen del propio código, no de una convención inventada:
+`_nextPNGQuality` es `'device' | 'hq'` (`exportHandlers.ts:17`) y la variante de
+vídeo la decide el parámetro `animation` de `exportAsMP4`. `svg`/`svgz` usan el
+valor literal de `exportRequest`.
+
+⚠️ **Una vez GA4 empiece a recoger un `png` mezclado, no se puede separar
+retroactivamente.** Por eso la granularidad se decide antes de desplegar.
 
 ⚠️ **Se engancha en la rama de éxito de cada handler, NUNCA en `onFinish`.**
 `onFinish()` se llama también cuando la exportación falla (`toBlob` devuelve
 `null`, `catch`, escena vacía). Engancharlo ahí contaría todos los fallos como
 exportaciones.
+
+### El parámetro `layers`
+
+Viaja en `artwork_exported` y en `session_depth`, y es el **número total de
+capas del documento** en ese momento — no un índice, no "capas creadas a mano".
+Un documento recién abierto reporta `layers: 1`.
+
+Se mantiene al día desde `App.tsx:47` (efecto con dependencia `state.totalLayers`),
+que llama a `analytics.layerCount()`. Ese setter **no emite evento**: solo
+sincroniza el contador.
+
+Hasta v3.16.0 el contador solo se escribía dentro de `layerAdded`, así que
+cualquiera que no pulsara "añadir capa" exportaba con `layers: 0` — incluido
+quien cargara un `.dior` de ocho capas. Un cero mentiroso que dentro de seis
+meses se habría leído como "nadie usa capas".
 
 `installAnalytics()` se llama **una sola vez**, en `src/main.tsx`, antes del
 primer render.

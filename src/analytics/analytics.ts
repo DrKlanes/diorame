@@ -306,6 +306,20 @@ export const analytics = {
     }
   },
 
+  /**
+   * Sincroniza el nº REAL de capas del documento. NO emite evento: solo mantiene
+   * al día el contador que viaja como parámetro en artwork_exported y
+   * session_depth.
+   *
+   * Existe porque `layerAdded` no basta: solo se dispara al pulsar "añadir
+   * capa", así que un documento con la capa inicial —o uno cargado de un
+   * .dior con ocho— reportaba layers: 0. Un cero mentiroso se lee dentro de
+   * seis meses como "nadie usa capas".
+   */
+  layerCount(totalLayers: number): void {
+    state.layers = totalLayers;
+  },
+
   /** Llamar cuando se añade una capa. `totalLayers` = nº de capas tras añadir. */
   layerAdded(totalLayers: number): void {
     state.layers = totalLayers;

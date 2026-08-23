@@ -43,6 +43,13 @@ function AppContent() {
     document.body.style.backgroundColor = bg;
   }, [state.isDarkMode]);
 
+  // Mantiene al día el nº de capas que viaja como parámetro en artwork_exported
+  // y session_depth. Dependencia escalar (un número, no estado del canvas): no
+  // se re-dispara por dibujar. No emite ningún evento.
+  useEffect(() => {
+    analytics.layerCount(state.totalLayers);
+  }, [state.totalLayers]);
+
   // Mantener el autosave actualizado cada 30s cuando isDirty
   const { suspendAutosave, resumeAutosave } = useAutoSave();
 
