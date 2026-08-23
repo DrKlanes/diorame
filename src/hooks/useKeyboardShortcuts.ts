@@ -54,7 +54,7 @@ export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject }:
 			}
 
 			// === NEW GLOBAL SHORTCUTS ===
-			if (cmd && !shift && e.key === 's') {
+			if (cmd && !shift && e.key.toLowerCase() === 's') {
 				e.preventDefault();
 				handleSaveProject();
 				return;

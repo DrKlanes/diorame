@@ -73,21 +73,24 @@ ese parámetro, el número no dice cuánta demanda móvil real se está rechazan
 
 Es deliberado: guardar varias veces en una sesión es dato legítimo y queremos
 verlo. La contrapartida es que **no hay red de seguridad**: cualquier doble
-invocación de `handleSaveProject` se traduce directamente en un `project_saved`
-de más, y la métrica de persistencia se infla sin dejar rastro visible.
+invocación de `handleSaveProject` se traduciría directamente en un
+`project_saved` de más. Lo mismo aplica a `project_loaded`.
 
-Lo mismo aplica a `project_loaded`.
+**No se detectó ningún camino de doble invocación en el código.** Se investigó
+a fondo (2026-08-23): bubbling desde contenedores padre, las dos instancias de
+`useSaveLoad`, los handlers de `DiActionButton` y su wrapper `EnhancedTooltip`,
+React StrictMode, y llamadas desde efectos o desde el flujo de `MARK_CLEAN`.
+Todo limpio.
 
-**Riesgo real, no hipotético.** A fecha de 2026-08-23 hay un bug reportado en
-navegador real: al guardar un `.dior` aparecieron dos diálogos de guardado y el
-proyecto se guardó dos veces. `useKeyboardShortcuts.ts` no filtra `e.repeat`, y
-ni el hook ni `useSaveLoad.ts` tienen guard de "guardado en curso": mantener
-`Ctrl+S` pulsado emite `keydown` repetidos y cada uno lanza una descarga.
+**El incidente que motivó esta nota fueron dos guardados humanos, separados 95
+segundos.** Los `.dior` llevan `Date.now()` en el nombre y los timestamps lo
+zanjaron: no fue doble clic ni autorrepetición de teclado, sino que el usuario
+pulsó, la app pareció colgada, esperó y volvió a pulsar. La causa raíz es falta
+de feedback en la interfaz — ver `docs/ux-debt.md`.
 
-**Cómo vigilarlo en GA4:** si `project_saved` por sesión sale sistemáticamente
-en números pares, o si su ratio contra sesiones con trazos parece demasiado
-bueno, sospechar de doble invocación antes de celebrar. Un test sintético (un
-`keydown` programático) **no** reproduce el key-repeat del teclado real.
+**Cómo leerlo en GA4:** si aparecen guardados repetidos en ventanas cortas, la
+hipótesis principal **NO es un bug de código**: es que el usuario no sabe si
+guardó. Mirar la UX antes que el código.
 
 ---
 
