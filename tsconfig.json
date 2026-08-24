@@ -10,6 +10,24 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "strict": false,
+    // Sprint de TS (fase 4, v3.16.x): las 8 flags de "strict" medidas una a una.
+    // Las 4 de abajo dan 0 errores hoy — activadas. Las que faltan del set de
+    // "strict" quedan fuera A PROPÓSITO, no por olvido:
+    //   · strictNullChecks (10 errores, cluster de gesto táctil StrataCanvas.tsx) —
+    //     sprint propio.
+    //   · noImplicitAny (necesita un .d.ts ambiental para 'gifenc'; depende de
+    //     strictNullChecks para no mentir sobre su coste real).
+    //   · strictFunctionTypes (1 error, pero es un desacople deliberado y
+    //     documentado en exportHandlers.ts — decisión de arquitectura, no fix
+    //     mecánico).
+    //   · strictPropertyInitialization NO se activa nunca sola: TS exige
+    //     strictNullChecks para siquiera evaluarla (TS5052 si no). Y aunque se
+    //     activara junto a esa, no haría nada — este codebase no tiene ni una
+    //     sola clase. No es deuda pendiente, es estructuralmente inaplicable.
+    "noImplicitThis": true,
+    "strictBindCallApply": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
     "noEmit": true,
     "types": ["vite/client", "vite-plugin-pwa/client"],
     "paths": {
