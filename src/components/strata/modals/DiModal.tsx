@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { DiModalContext, DiModalVariant } from './DiModalContext';
 import { DiModalBackdrop } from './DiModalBackdrop';
 import { useModalBehavior } from './useModalBehavior';
@@ -12,17 +12,17 @@ const SIZE_MAP: Record<DiModalSize, number> = { sm: 340, md: 440, lg: 680 };
 
 const SPRING: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
-const dialogVariants = {
+const dialogVariants: Variants = {
 	hidden:  { opacity: 0, scale: 0.96, x: '-50%', y: '-50%', transition: { duration: 0.18, ease: 'easeOut'  } },
 	visible: { opacity: 1, scale: 1,    x: '-50%', y: '-50%', transition: { duration: 0.22, ease: SPRING     } },
 };
 
-const alertVariants = {
+const alertVariants: Variants = {
 	hidden:  { opacity: 0, scale: 0.96, x: '-50%', y: '-50%', transition: { duration: 0.14, ease: 'easeOut'  } },
 	visible: { opacity: 1, scale: 1,    x: '-50%', y: '-50%', transition: { duration: 0.16, ease: SPRING     } },
 };
 
-const bannerVariants = {
+const bannerVariants: Variants = {
 	hidden:  { opacity: 0, y: -8, x: '-50%', transition: { duration: 0.15, ease: 'easeOut' } },
 	visible: { opacity: 1, y: 0,  x: '-50%', transition: { duration: 0.18, ease: 'easeOut' } },
 };

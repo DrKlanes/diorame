@@ -43,6 +43,28 @@ export {
 
 // --- Actions ---
 
+// LOAD_PROJECT's payload is JSON.parse() of a saved .dior file (or an
+// autosave/onboarding snapshot), which may predate one or more field
+// renames. It is NOT validated AppState — the whitelist below (case
+// 'LOAD_PROJECT') re-checks every field with typeof/includes guards before
+// trusting it, so this type only needs to document which legacy shapes are
+// still read, not enforce correctness.
+// History: 'brush' (old name for 'blob') and 'line' (old name for 'brush')
+// were renamed; 'lineMode'/'currentLineThickness' were renamed to
+// 'brushMode'/'currentBrushThickness'.
+type LegacyShape = Omit<Shape, 'brushMode'> & {
+  brushMode?: BrushMode;
+  lineMode?: BrushMode;      // pre-rename key for brushMode
+  lineThickness?: number;    // pre-rename key for brushThickness
+};
+
+type LegacyProjectPayload = Partial<Omit<AppState, 'shapes' | 'tool'>> & {
+  shapes?: LegacyShape[];
+  tool?: ToolType | 'line';  // pre-rename tool value
+  lineMode?: BrushMode;      // pre-rename key for brushMode
+  currentLineThickness?: number; // pre-rename key for currentBrushThickness
+};
+
 type Action =
   | { type: 'ADD_SHAPE'; payload: Shape }
   | { type: 'ADD_SHAPES'; payload: Shape[] }
@@ -68,7 +90,7 @@ type Action =
   | { type: 'REQUEST_EXPORT'; payload: ExportType }
   | { type: 'FINISH_EXPORT' }
   | { type: 'CLEAR_CANVAS' }
-  | { type: 'LOAD_PROJECT'; payload: Partial<AppState> }
+  | { type: 'LOAD_PROJECT'; payload: LegacyProjectPayload }
   | { type: 'TOGGLE_LAYER_VISIBILITY'; payload: number }
   | { type: 'TOGGLE_3D_LOCK'; payload: number }
   | { type: 'MOVE_LAYER'; payload: { layerIndex: number; deltaX: number; deltaY: number } }

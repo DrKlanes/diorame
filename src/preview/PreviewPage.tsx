@@ -163,11 +163,11 @@ function PreviewPageContent() {
 				<Subsection title="DiSegmentControl — sizes and option counts" dark={dark}>
 					<div style={{ display: 'flex', gap: 24, alignItems: 'flex-end', flexWrap: 'wrap' }}>
 						<LabelledItem label="2 options (standard)" dark={dark}>
-							<DiSegmentControl options={['Primary', 'Alt']} value={segValue}
+							<DiSegmentControl<string> options={['Primary', 'Alt']} value={segValue}
 								onChange={setSegValue} dark={dark} />
 						</LabelledItem>
 						<LabelledItem label="2 options (small)" dark={dark}>
-							<DiSegmentControl options={['Flat', 'Grad']} value={segValueSmall}
+							<DiSegmentControl<string> options={['Flat', 'Grad']} value={segValueSmall}
 								onChange={setSegValueSmall} dark={dark} small />
 						</LabelledItem>
 						<LabelledItem label="3 options" dark={dark}>

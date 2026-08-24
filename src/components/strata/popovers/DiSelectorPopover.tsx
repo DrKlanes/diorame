@@ -1,18 +1,18 @@
 import React, { useRef, useEffect, RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { T, RADIUS, SHADOW, Z_INDEX, dk } from '../../../design-system/tokens';
 import { DiSelectorContext } from './DiSelectorOption';
 import { usePopoverPosition, PopoverPlacement, PopoverAlign } from './usePopoverPosition';
 
 // ── Animation variants (no scale — popovers don't scale like modals) ──────────
 
-const bottomVariants = {
+const bottomVariants: Variants = {
 	hidden:  { opacity: 0, y: -4, transition: { duration: 0.10, ease: 'easeOut' } },
 	visible: { opacity: 1, y:  0, transition: { duration: 0.14, ease: 'easeOut' } },
 };
 
-const topVariants = {
+const topVariants: Variants = {
 	hidden:  { opacity: 0, y:  4, transition: { duration: 0.10, ease: 'easeOut' } },
 	visible: { opacity: 1, y:  0, transition: { duration: 0.14, ease: 'easeOut' } },
 };

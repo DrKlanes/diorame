@@ -10,7 +10,6 @@ export function ToastProvider() {
 		<Toaster
 			position="top-right"
 			theme={dark ? 'dark' : 'light'}
-			pauseWhenPageIsHidden={false}
 			closeButton
 			style={{
 				// Prevent the toaster's container <section> from blocking pointer events

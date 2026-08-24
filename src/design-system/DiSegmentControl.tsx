@@ -32,7 +32,9 @@ export function DiSegmentControl<T extends string | number = string>({
 }: DiSegmentControlProps<T>) {
 	// Normalize each option to { value, label } shape.
 	// Primitives (string or number) become { value: opt, label: String(opt) }.
-	const normalized = options.map(opt => {
+	// Explicit return type: `typeof opt` can't narrow a generic T, so without
+	// this annotation TS infers a union that still includes the primitive arm.
+	const normalized = options.map((opt): { value: T; label: string } => {
 		if (typeof opt === 'string' || typeof opt === 'number') {
 			return { value: opt as T, label: String(opt) };
 		}

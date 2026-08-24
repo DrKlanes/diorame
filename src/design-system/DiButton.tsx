@@ -4,7 +4,7 @@ import { cn } from '../components/ui/utils';
 
 type ShadcnVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
 
-interface DiButtonProps extends React.ComponentPropsWithoutRef<typeof RippleButton> {
+interface DiButtonProps extends Omit<React.ComponentPropsWithoutRef<typeof RippleButton>, 'variant'> {
 	variant?: ShadcnVariant | 'brand';
 }
 
