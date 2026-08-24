@@ -450,6 +450,25 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 **`renderFrame` phase sequence:**
 throttle → quantize cam → FL/focus → buffers → background → viewport → layer loop → post-processing → overlays → cinematic tick
 
+### Type Checking & CI Gate (v3.16.x)
+
+`tsconfig.json` (raíz) + script `npm run typecheck` (`tsc --noEmit`). `strict: false`
+con 4 de las 8 flags de `strict` activadas sueltas (ver comentario en el propio
+`tsconfig.json` para el porqué de cada una: activadas, aplazadas, o inaplicables).
+`vite build` NO comprueba tipos — esbuild los descarta sin mirarlos. `npm run
+typecheck` es la única comprobación de tipos que existe en este proyecto.
+
+**A partir de v3.16.10, `.github/workflows/deploy.yml` corre `npm run typecheck`
+entre `npm install` y `npm run build`, sin `continue-on-error`.** Si `tsc` falla,
+el job entero falla — ni `Build` ni `Deploy` se ejecutan, y no se sube nada a
+GitHub Pages. Es fallo duro a propósito: la única red automática antes de que un
+cambio llegue a producción.
+
+**Para diagnosticar un fallo de CI**: correr `npm run typecheck` en local
+reproduce EXACTAMENTE lo que hace CI — mismo comando, mismo `tsconfig.json`,
+misma versión de `typescript` (fijada en `package.json`/`package-lock.json`, no
+"latest" en el runner). Si pasa en local, pasa en CI.
+
 ---
 
 ## 11. What NOT To Do
