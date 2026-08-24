@@ -308,7 +308,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
-| `StrataCanvas.tsx` | ~1450 | Thin React shell: render loop, event handlers, gesture input. **Frozen** — extract only, never add. |
+| `StrataCanvas.tsx` | ~1430 | Thin React shell: render loop, event handlers, gesture input. **Frozen** — extract only, never add. Gesture/pointer types live in `types/strataTypes.ts` (`GestureState`, `CanvasPointerInput`). |
 | `StrataContext.tsx` | ~1800 | React Context + useReducer: app reducer, constants, re-exports all types |
 | `ControlsV2.tsx` | ~165 | Thin root compositor for both modes. Mounts all UI atoms; enforces `isUIHidden`; hosts 3 global side-effects (keyboard shortcuts, sessionStorage cleanup, mode-change camera reset). |
 
@@ -374,7 +374,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
-| `strataTypes.ts` | ~170 | All TypeScript interfaces and types: `Point`, `Shape`, `AppState`, `AppMode`, `ToolType`, `HistorySnapshot`, post-processing types, etc. Re-exported from `StrataContext.tsx` for backwards compatibility. |
+| `strataTypes.ts` | ~220 | All TypeScript interfaces and types: `Point`, `Shape`, `AppState`, `AppMode`, `ToolType`, `HistorySnapshot`, post-processing types, plus the canvas-input types extracted from `StrataCanvas.tsx` in v3.16.5 (`GestureState`, `CanvasPointerInput`). Re-exported from `StrataContext.tsx` for backwards compatibility. |
 
 ### Utilities (`src/utils/`)
 
@@ -528,7 +528,7 @@ This section is critical. These actions are **forbidden**:
 
 | File | Lines | Reason |
 |---|---|---|
-| `src/components/strata/StrataCanvas.tsx` | ~1450 | Legacy monolith — subject of ongoing extraction (Plan C). Never add to it. |
+| `src/components/strata/StrataCanvas.tsx` | ~1430 | Legacy monolith — subject of ongoing extraction (Plan C). Never add to it. |
 | `src/components/strata/canvas/renderPipeline.ts` | ~565 | Frame orchestrator. Accepted oversize: its purpose is to sequence all render sub-modules in the correct order. Splitting into smaller files would fragment the orchestration logic without reducing real complexity. |
 
 ---

@@ -76,6 +76,52 @@ export type PostProcessingEnabled = {
 
 export type HandheldIntensity = 'low' | 'medium' | 'high';
 
+// Canvas gesture state (pinch / orbit / two- and three-finger taps), held in a ref
+// by StrataCanvas. The optional groups mirror how the object is actually populated
+// at runtime — they are NOT "maybe missing by accident":
+//   · tap*  — written only when a 2- or 3-finger touch starts (handleTouchStart).
+//     Absent from the initial value, so the first read on a 1-finger gesture is
+//     undefined; handleTouchEnd guards on tapTouchCount === 2 / === 3 before using
+//     tapStartTime, so undefined falls through harmlessly.
+//   · isOrbitTouch / orbitTouch* — dropped when the middle-mouse-button branch of
+//     handlePointerDown replaces the whole object with a pan/zoom-only literal.
+//     Every read is behind an `if (gestureRef.current.isOrbitTouch)` check.
+export type GestureState = {
+    isPinching: boolean;
+    startDist: number;
+    startZoom: number;
+    startPan: { x: number, y: number };
+    startCenter: { x: number, y: number };
+    // Orbit touch gesture state
+    isOrbitTouch?: boolean;
+    orbitTouchStartAzimuth?: number;
+    orbitTouchStartElevation?: number;
+    orbitTouchStartPanX?: number;
+    orbitTouchStartPanY?: number;
+    orbitTouchStartZoom?: number;
+    orbitTouchLastPos?: { x: number, y: number };
+    // Two/three-finger tap detection (undo / redo)
+    tapStartTime?: number;
+    tapMoved?: boolean;
+    tapTouchCount?: number;
+};
+
+// The subset of a pointer event that StrataCanvas's pointer-down path actually
+// reads. Declared structurally so the hand-built synthetic event used for the iOS
+// Apple Pencil path (native capture listener re-invoking the React handler) can
+// satisfy it without faking the whole React.PointerEvent surface. A real
+// React.PointerEvent<HTMLCanvasElement> is assignable to this.
+export type CanvasPointerInput = {
+    pointerId: number;
+    pointerType: string;
+    isPrimary: boolean;
+    button: number;
+    clientX: number;
+    clientY: number;
+    preventDefault: () => void;
+    currentTarget: { setPointerCapture: (pointerId: number) => void };
+};
+
 export type TextSession = {
     isActive: boolean;
     x: number;

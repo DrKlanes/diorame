@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
 import { useCanvasRecovery } from '../../hooks/useCanvasRecovery';
 import { generateStrokeForMode } from '../../utils/strokeGenerators';
-import { Shape, Point, Waypoint } from '../../types/strataTypes';
+import { Shape, Point, Waypoint, GestureState, CanvasPointerInput } from '../../types/strataTypes';
 import paperTexture from "figma:asset/texture-paper.png";
 import grungeTexture from "figma:asset/texture-grunge.png";
 import { cn } from '../ui/utils';
@@ -48,21 +48,8 @@ export const StrataCanvas = () => {
   const pinchEndTimestampRef = useRef(0); // Cooldown after pinch to prevent ghost strokes
   const drawingPressureRef = useRef(0.5);
   
-  const gestureRef = useRef<{
-      isPinching: boolean;
-      startDist: number;
-      startZoom: number;
-      startPan: { x: number, y: number };
-      startCenter: { x: number, y: number };
-      // Orbit touch gesture state
-      isOrbitTouch: boolean;
-      orbitTouchStartAzimuth: number;
-      orbitTouchStartElevation: number;
-      orbitTouchStartPanX: number;
-      orbitTouchStartPanY: number;
-      orbitTouchStartZoom: number;
-      orbitTouchLastPos: { x: number, y: number };
-  }>({
+  // Type extracted to types/strataTypes.ts (GestureState)
+  const gestureRef = useRef<GestureState>({
       isPinching: false,
       startDist: 0,
       startZoom: 1,
@@ -208,7 +195,7 @@ export const StrataCanvas = () => {
                   preventDefault: () => e.preventDefault(),
                   stopPropagation: () => e.stopPropagation(),
                   nativeEvent: e
-              } as React.PointerEvent<HTMLCanvasElement>;
+              } as CanvasPointerInput;
               
               handlePointerDown(syntheticEvent);
           }
@@ -774,7 +761,7 @@ export const StrataCanvas = () => {
       gestureRef.current.tapTouchCount = 0;
   };
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handlePointerDown = (e: CanvasPointerInput) => {
     // Pen Priority: If using a pen, ignore/cancel pinch and allow secondary pointer (palm rejection)
     if (e.pointerType === 'pen') {
         gestureRef.current.isPinching = false;
