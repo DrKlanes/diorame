@@ -143,7 +143,12 @@ export type HistorySnapshot = {
     shapes: Shape[];
     totalLayers: number;
     layerRenderModes: Record<number, 'flat' | 'grad'>;
-    layerGradParams: Record<number, { angle: number; intensity: number; gradType?: 'solid' | 'fade' }>;
+    // Same shape as AppState.layerGradParams. Every writer of this field copies
+    // straight from AppState (createSnapshot) or builds entries from
+    // GRADIENT_DEFAULTS, so gradType is never actually absent — the older
+    // `gradType?` here was looser than anything ever stored, and made UNDO/REDO
+    // fail to restore the map back into AppState.
+    layerGradParams: Record<number, LayerGradParams>;
     layerBrushSettings: Record<number, { thickness: number; mode: BrushMode }>;
     activePaletteId: 'primary' | 'alternative';
 };
