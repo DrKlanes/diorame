@@ -1,6 +1,6 @@
 import { drawSmoothLine, drawStraightLine } from '../../../utils/canvasUtils';
 import { hexToRgba, getVibrantVariant } from '../../../utils/colorUtils';
-import { BASE_DEPTH_STEP } from '../StrataContext';
+import { BASE_DEPTH_STEP, GRADIENT_DEFAULTS } from '../StrataContext';
 import type { Shape, LayerGradParams } from '../../../types/strataTypes';
 import type { Projection } from './transformPoint';
 
@@ -128,7 +128,7 @@ export const renderUniformLineShape = (
 				if (py < minY) minY = py; if (py > maxY) maxY = py;
 			}
 			const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-			const gradParams = opts.layerGradParams?.[shapeLayerIndex] || { angle: 90, intensity: 0.2 };
+			const gradParams = opts.layerGradParams?.[shapeLayerIndex] || GRADIENT_DEFAULTS;
 			const ang = (gradParams.angle * Math.PI) / 180;
 			const r = Math.hypot(maxX - minX, maxY - minY) / 2;
 			const grad = layerCtx.createLinearGradient(
