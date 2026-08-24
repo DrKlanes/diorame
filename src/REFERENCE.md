@@ -308,7 +308,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
-| `StrataCanvas.tsx` | ~1430 | Thin React shell: render loop, event handlers, gesture input. **Frozen** — extract only, never add. Gesture/pointer types live in `types/strataTypes.ts` (`GestureState`, `CanvasPointerInput`). |
+| `StrataCanvas.tsx` | ~1425 | Thin React shell: render loop, event handlers, gesture input. **Frozen** — extract only, never add. Gesture/pointer types live in `types/strataTypes.ts` (`GestureState`, `CanvasPointerInput`); the move-tool transform type in `canvas/renderPipeline.ts` (`TransformRefState`). |
 | `StrataContext.tsx` | ~1800 | React Context + useReducer: app reducer, constants, re-exports all types |
 | `ControlsV2.tsx` | ~165 | Thin root compositor for both modes. Mounts all UI atoms; enforces `isUIHidden`; hosts 3 global side-effects (keyboard shortcuts, sessionStorage cleanup, mode-change camera reset). |
 
@@ -434,7 +434,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 |---|---|
 | `RenderContext` | Bundle of all refs, state snapshots, frame-persistent refs, canvas refs, and overrides |
 | `PerFrameComputed` | Values computed once per frame and shared across all layer render calls |
-| `TransformRefState` | Per-ref transform state for the current frame |
+| `TransformRefState` | Per-ref transform state for the current frame. Shared with `StrataCanvas.tsx` (its `transformRef` imports it, so the two can't drift). `layerBB` is `… \| null` — null means "no bounding box for the active layer" and makes `drawGizmo` early-return |
 
 **RenderContext overrides:**
 
@@ -528,7 +528,7 @@ This section is critical. These actions are **forbidden**:
 
 | File | Lines | Reason |
 |---|---|---|
-| `src/components/strata/StrataCanvas.tsx` | ~1430 | Legacy monolith — subject of ongoing extraction (Plan C). Never add to it. |
+| `src/components/strata/StrataCanvas.tsx` | ~1425 | Legacy monolith — subject of ongoing extraction (Plan C). Never add to it. |
 | `src/components/strata/canvas/renderPipeline.ts` | ~565 | Frame orchestrator. Accepted oversize: its purpose is to sequence all render sub-modules in the correct order. Splitting into smaller files would fragment the orchestration logic without reducing real complexity. |
 
 ---

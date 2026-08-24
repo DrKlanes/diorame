@@ -19,7 +19,7 @@ import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
 import { hitTestGizmo, computeMoveTransform, isSignificantTransform } from './canvas/moveGizmoInteraction';
 import { getAnimationFrames } from '../../utils/animationFrames';
-import { renderFrame, type RenderContext } from './canvas/renderPipeline';
+import { renderFrame, type RenderContext, type TransformRefState } from './canvas/renderPipeline';
 import { CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
 
 export const StrataCanvas = () => {
@@ -131,19 +131,12 @@ export const StrataCanvas = () => {
   const shapePatternRef = useRef<CanvasPattern | null>(null);
 
   // Transform Tool State
-  const transformRef = useRef<{
-      isActive: boolean;
-      mode: 'none' | 'move' | 'scale_tl' | 'scale_tr' | 'scale_br' | 'scale_bl' | 'rotate' | 'scale_t' | 'scale_b' | 'scale_l' | 'scale_r';
-      startP: { x: number, y: number };
-      startTransform: { x: number, y: number, scale: number, rotation: number, scaleX?: number, scaleY?: number };
-      centerX: number; centerY: number;
-      layerBB: { minX: number, maxX: number, minY: number, maxY: number };
-      currentTransform: { x: number, y: number, scale: number, rotation: number, scaleX?: number, scaleY?: number };
-  }>({
+  // Type extracted to canvas/renderPipeline.ts (TransformRefState)
+  const transformRef = useRef<TransformRefState>({
       isActive: false, mode: 'none', startP: {x:0,y:0},
       startTransform: {x:0,y:0,scale:1,rotation:0},
       centerX: 0, centerY: 0,
-      layerBB: {minX:0, maxX:0, minY:0, maxY:0},
+      layerBB: null,
       currentTransform: {x:0,y:0,scale:1,rotation:0}
   });
 
@@ -286,7 +279,6 @@ export const StrataCanvas = () => {
           transformRef.current.centerX = bb.cx;
           transformRef.current.centerY = bb.cy;
       } else {
-          // @ts-ignore
           transformRef.current.layerBB = null;
       }
   }, [state.shapes, state.currentLayerIndex, state.tool, state.mode]);

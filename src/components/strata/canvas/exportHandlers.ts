@@ -70,7 +70,7 @@ const renderSnapshotAtScale = (
 			startTransform: { x: 0, y: 0, scale: 1, rotation: 0 },
 			centerX: 0,
 			centerY: 0,
-			layerBB: { minX: 0, maxX: 0, minY: 0, maxY: 0 },
+			layerBB: null,
 			currentTransform: { x: 0, y: 0, scale: 1, rotation: 0 },
 		},
 

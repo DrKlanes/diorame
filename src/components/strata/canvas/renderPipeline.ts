@@ -37,7 +37,13 @@ export type TransformRefState = {
 	startTransform: { x: number; y: number; scale: number; rotation: number; scaleX?: number; scaleY?: number };
 	centerX: number;
 	centerY: number;
-	layerBB: { minX: number; maxX: number; minY: number; maxY: number };
+	// null means "no bounding box for the active layer" — the state before the sync
+	// effect has run, and whenever the layer has no visible pixels. Every consumer
+	// already handles it: drawGizmo gates on it (early return), handleFlip and
+	// handleCenterLayer guard with `if (!bb) return`. cx/cy are the box centre,
+	// computed by getLayerBoundingBox alongside the bounds and read by drawGizmo to
+	// place the four mid-edge handles.
+	layerBB: { minX: number; maxX: number; minY: number; maxY: number; cx: number; cy: number } | null;
 	currentTransform: { x: number; y: number; scale: number; rotation: number; scaleX?: number; scaleY?: number };
 };
 
