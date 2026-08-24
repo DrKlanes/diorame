@@ -1,6 +1,6 @@
 {
   "name": "Diorame",
-  "version": "3.16.2",
+  "version": "3.16.3",
   "private": true,
   "type": "module",
   "dependencies": {
@@ -65,6 +65,8 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@types/node": "^20.10.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
     "tailwindcss": "4.1.12",
     "typescript": "^7.0.2",
