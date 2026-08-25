@@ -17,7 +17,7 @@ import { exportAsPNGSequence } from './canvas/pngSequenceHandler';
 import { exportAsGIF } from './canvas/gifHandler';
 import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
-import { hitTestGizmo, computeMoveTransform, isSignificantTransform, type TransformMode } from './canvas/moveGizmoInteraction';
+import { hitTestGizmo, computeMoveTransform, isSignificantTransform, isDragEngaged, type TransformMode } from './canvas/moveGizmoInteraction';
 import { cursorClassForGizmoMode } from './canvas/gizmoCursor';
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { renderFrame, type RenderContext, type TransformRefState } from './canvas/renderPipeline';
@@ -138,7 +138,8 @@ export const StrataCanvas = () => {
       startTransform: {x:0,y:0,scale:1,rotation:0},
       centerX: 0, centerY: 0,
       layerBB: null,
-      currentTransform: {x:0,y:0,scale:1,rotation:0}
+      currentTransform: {x:0,y:0,scale:1,rotation:0},
+      engaged: false,
   });
 
   // Handheld Shake State (to sync with orbit logic)
@@ -884,7 +885,8 @@ export const StrataCanvas = () => {
                     startTransform: { x: 0, y: 0, scale: 1, rotation: 0 },
                     centerX: bb.cx, centerY: bb.cy,
                     layerBB: bb,
-                    currentTransform: { x: 0, y: 0, scale: 1, rotation: 0 }
+                    currentTransform: { x: 0, y: 0, scale: 1, rotation: 0 },
+                    engaged: false,
                 };
             } else {
                  moveRef.current = { startX: worldX, startY: worldY, offsetX: 0, offsetY: 0 };
@@ -937,18 +939,30 @@ export const StrataCanvas = () => {
         const pointerX = e.clientX - rect.left;
         const pointerY = e.clientY - rect.top;
 
-        transformRef.current.currentTransform = computeMoveTransform({
-            mode: t.mode,
-            startTransform: t.startTransform,
-            startP: t.startP,
-            pointerX,
-            pointerY,
-            handles: transformHandlesRef.current,
-            focalLength: state.focalLength,
-            cameraZ: state.camera.z,
-            activeZ: state.currentLayerIndex * -BASE_DEPTH_STEP,
-            drawingZoom: state.drawingZoom,
-        });
+        // Dead-zone gate (canvas/moveGizmoInteraction.ts, isDragEngaged). startP is the
+        // pointerdown position, fixed for the whole gesture, so this always measures the
+        // TOTAL screen-space displacement — never a frame-to-frame delta, which would let
+        // a slow deliberate drag never cross the threshold. `t.engaged` carries the
+        // hysteresis forward: once true it can only stay true, so a drag that swings back
+        // near its start mid-gesture does not un-engage. Below the threshold,
+        // currentTransform is simply never written, so it stays at the identity set at
+        // pointerdown — no jitter reaches the preview or the pointerup significance check.
+        const engaged = isDragEngaged(t.startP, pointerX, pointerY, t.engaged);
+        transformRef.current.engaged = engaged;
+        if (engaged) {
+            transformRef.current.currentTransform = computeMoveTransform({
+                mode: t.mode,
+                startTransform: t.startTransform,
+                startP: t.startP,
+                pointerX,
+                pointerY,
+                handles: transformHandlesRef.current,
+                focalLength: state.focalLength,
+                cameraZ: state.camera.z,
+                activeZ: state.currentLayerIndex * -BASE_DEPTH_STEP,
+                drawingZoom: state.drawingZoom,
+            });
+        }
         return;
     }
 

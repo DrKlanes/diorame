@@ -140,6 +140,39 @@ export const computeMoveTransform = (p: ComputeMoveTransformParams): Transform =
 	return newT;
 };
 
+// Screen-space drag dead-zone, in CSS px. Same criterion the project already uses to
+// discard accidental input (micro-stroke discard, palm-rejection stroke length) — a
+// deliberate 3px move reads as intentional, a click that drifts by a fraction of a
+// pixel does not. Below this, a Move-tool click anywhere on the canvas (there is no
+// containment check — see hitTestGizmo's 'move' fallback) used to still count as a
+// drag: the old gate compared the RESULTING transform in world units (0.1), which a
+// sub-pixel screen jitter clears trivially once zoom or projection scale divides it
+// down further. Measuring the raw screen delta first closes that regardless of zoom.
+const DRAG_DEAD_ZONE_PX = 3;
+
+/**
+ * Whether a gizmo drag counts as "engaged" — has moved far enough from its start to
+ * be a deliberate drag rather than a stationary click.
+ *
+ * Two properties the caller must preserve, both required for the tool to stay usable
+ * for its main job (fine-grained adjustment):
+ *  - `startP` is fixed at pointerdown and must NEVER be updated between calls — each
+ *    call re-measures the TOTAL displacement since the drag began. Comparing against
+ *    the previous pointermove's position instead would measure per-frame delta, which
+ *    stays under the threshold for an arbitrarily long slow, deliberate drag.
+ *  - `alreadyEngaged` gives this hysteresis: once true, it stays true for the rest of
+ *    the gesture regardless of what the distance does afterwards. Without it, a drag
+ *    that happens to swing back near its start point mid-gesture would disengage on
+ *    its own and start ignoring further movement.
+ */
+export const isDragEngaged = (
+	startP: { x: number; y: number },
+	pointerX: number,
+	pointerY: number,
+	alreadyEngaged: boolean,
+): boolean =>
+	alreadyEngaged || Math.hypot(pointerX - startP.x, pointerY - startP.y) >= DRAG_DEAD_ZONE_PX;
+
 /**
  * True when the transform departs enough from identity to be worth committing
  * to history (same thresholds as the original inline guard).

@@ -72,6 +72,7 @@ const renderSnapshotAtScale = (
 			centerY: 0,
 			layerBB: null,
 			currentTransform: { x: 0, y: 0, scale: 1, rotation: 0 },
+			engaged: false,
 		},
 
 		// Read-write refs (fake — mutations stay local to this single render)

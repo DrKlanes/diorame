@@ -45,6 +45,12 @@ export type TransformRefState = {
 	// place the four mid-edge handles.
 	layerBB: { minX: number; maxX: number; minY: number; maxY: number; cx: number; cy: number } | null;
 	currentTransform: { x: number; y: number; scale: number; rotation: number; scaleX?: number; scaleY?: number };
+	// Screen-space drag dead-zone (see canvas/moveGizmoInteraction.ts, isDragEngaged).
+	// false until the pointer has travelled far enough from startP; true for the rest
+	// of the gesture once it does (hysteresis — never re-checked downward). Gates
+	// whether pointermove writes currentTransform at all, so an accidental sub-pixel
+	// click never deforms the preview or reaches the pointerup significance check.
+	engaged: boolean;
 };
 
 /**
