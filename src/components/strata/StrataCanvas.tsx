@@ -1294,6 +1294,30 @@ export const StrataCanvas = () => {
   // Recover orphaned gesture state when the app returns to the foreground.
   useCanvasRecovery(resetGestureState);
 
+  // Escape cancels an in-flight gizmo drag: isActive=false, no dispatch — the shapes
+  // were never touched (TRANSFORM_LAYER only fires on pointerup), so this discards the
+  // live preview exactly like the pointercancel path above, just from the keyboard.
+  // Scoped tightly to "a drag is active" so it can never intercept Escape meant for a
+  // modal or the text session (those own their own handlers and are not reachable
+  // while a gizmo drag holds pointer capture on the canvas).
+  //
+  // KEYBOARD-ONLY: this does nothing for the touch/pen gesture that provoked writing
+  // isDragEngaged in the first place — a tablet user with no physical keyboard has no
+  // way to reach Escape. The tablet-side equivalent isn't a cancel gesture; it's that
+  // v3.17.4's dead-zone already keeps an accidental touch from ever engaging the drag,
+  // so there is usually nothing here left to cancel. A deliberate touch-drag the user
+  // wants to abort mid-gesture is not covered by either fix — not addressed here.
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (state.tool !== 'move' || !transformRef.current.isActive) return;
+      transformRef.current.isActive = false;
+      transformRef.current.mode = 'none';
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [state.tool]);
+
   // --- Render Loop ---
   useEffect(() => {
     const canvas = canvasRef.current;
