@@ -1260,6 +1260,17 @@ export const StrataCanvas = () => {
     setCursorOverride(null);
     currentPointsRef.current = [];
     drawingPointerTypeRef.current = null;
+
+    // In-progress gizmo drag. Same reasoning as the stroke above: no dispatch, so the
+    // shapes are never touched — but unlike the stroke, an abandoned drag also leaves
+    // isActive=true with a live currentTransform, which the render loop keeps painting
+    // as a deformed preview with nothing pending underneath it. A cancel/background
+    // gesture on iPad (palm rejection, app backgrounding mid-drag) hits exactly this
+    // path with no pointerup to clear it otherwise — it previously sat wrong until the
+    // next pointerdown on the canvas overwrote the whole ref.
+    transformRef.current.isActive = false;
+    transformRef.current.mode = 'none';
+
     if (isDrawingRef.current) {
       isDrawingRef.current = false;
       dispatch({ type: 'SET_DRAWING_ACTIVE', payload: false });
