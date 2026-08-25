@@ -17,7 +17,8 @@ import { exportAsPNGSequence } from './canvas/pngSequenceHandler';
 import { exportAsGIF } from './canvas/gifHandler';
 import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
-import { hitTestGizmo, computeMoveTransform, isSignificantTransform } from './canvas/moveGizmoInteraction';
+import { hitTestGizmo, computeMoveTransform, isSignificantTransform, type TransformMode } from './canvas/moveGizmoInteraction';
+import { cursorClassForGizmoMode } from './canvas/gizmoCursor';
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { renderFrame, type RenderContext, type TransformRefState } from './canvas/renderPipeline';
 import { CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
@@ -155,6 +156,13 @@ export const StrataCanvas = () => {
   // Pan & Zoom Desktop State
   const isPanningRef = useRef(false);
   const [cursorOverride, setCursorOverride] = useState<string | null>(null);
+
+  // Move-gizmo hover cursor. Kept separate from cursorOverride (pan/zoom) so it is
+  // only ever read while tool === 'move': a value left over from a hover cannot leak
+  // onto another tool. The ref mirrors the state so a pointermove that stays over the
+  // same node costs one hit-test and no setState.
+  const hoverGizmoModeRef = useRef<TransformMode | null>(null);
+  const [gizmoCursor, setGizmoCursor] = useState<string | null>(null);
 
   // Last captured pointer id — lets resetGestureState release an orphaned capture
   // when the app returns from background mid-gesture (no pointerup/cancel delivered).
@@ -944,6 +952,27 @@ export const StrataCanvas = () => {
         return;
     }
 
+    // --- Move gizmo hover cursor --- (mapping extracted to canvas/gizmoCursor.ts)
+    // Runs ONLY when no drag is in flight: during a transform the cursor stays pinned
+    // to the mode grabbed at pointerdown, so it cannot flicker mid-resize. Falls
+    // through without returning — every path below is reached exactly as before.
+    if (state.tool === 'move' && !transformRef.current.isActive) {
+        // Cache the rect on first hover rather than measuring per event: the RAF loop
+        // invalidates layout every frame, so a getBoundingClientRect() here would be a
+        // real reflow on a hot path. pointerdown always refreshes it before an actual
+        // transform, so a stale rect can only ever misplace the cursor HINT.
+        if (!canvasRectRef.current && canvasRef.current) canvasRectRef.current = canvasRef.current.getBoundingClientRect();
+        const hoverRect = canvasRectRef.current;
+        if (hoverRect) {
+            const hoverMode = hitTestGizmo(e.clientX - hoverRect.left, e.clientY - hoverRect.top, transformHandlesRef.current);
+            // Touch React only when the hovered node CHANGES — not once per pointermove.
+            if (hoverMode !== hoverGizmoModeRef.current) {
+                hoverGizmoModeRef.current = hoverMode;
+                setGizmoCursor(cursorClassForGizmoMode(hoverMode, transformHandlesRef.current));
+            }
+        }
+    }
+
     if (!isDrawingRef.current || gestureRef.current.isPinching) return;
 
     if (state.mode === 'drawing') {
@@ -1358,7 +1387,7 @@ export const StrataCanvas = () => {
   };
 
   return (
-    <div ref={containerRef} className={cn("absolute inset-0 z-0 overflow-hidden touch-none", state.mode === 'drawing' ? (cursorOverride ? cursorOverride : (state.tool === 'move' ? "cursor-move" : "cursor-crosshair")) : "cursor-default")} style={{ touchAction: 'none' }}>
+    <div ref={containerRef} className={cn("absolute inset-0 z-0 overflow-hidden touch-none", state.mode === 'drawing' ? (cursorOverride ? cursorOverride : (state.tool === 'move' ? (gizmoCursor || "cursor-move") : "cursor-crosshair")) : "cursor-default")} style={{ touchAction: 'none' }}>
       <canvas ref={canvasRef} tabIndex={0} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} onPointerCancel={resetGestureState} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel} className="block w-full h-full" style={{ touchAction: 'none', outline: 'none' }} />
       {/* Flip buttons overlay - positioned via render loop */}
       <div

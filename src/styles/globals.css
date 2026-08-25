@@ -250,6 +250,18 @@ html {
   animation: uiShowSonarPulse 0.75s ease-out 2;
 }
 
+/* Rotate cursor for the Move gizmo's rotation handle.
+   CSS has no native rotate cursor, so this is a 24x24 data-URI: a circular arc with
+   a solid arrowhead, drawn black over a white halo — the same construction every
+   system cursor uses to stay legible on any background. Deliberately neutral rather
+   than matching Diorame's hand-drawn icon style: it sits pixel-to-pixel next to the
+   OS cursors, and Windows and macOS do not draw theirs alike, so belonging to
+   neither reads better than imitating one. Hotspot centered (12 12), native
+   fallback after the comma. Static rule → zero runtime cost. */
+.cursor-rotate {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M8.25 5.51A7.5 7.5 0 1 0 18.14 7.70" fill="none" stroke="%23fff" stroke-width="3.6" stroke-linecap="round"/><path d="M15.96 4.59 20.27 6.21 16.01 9.19Z" fill="%23fff" stroke="%23fff" stroke-width="2.2" stroke-linejoin="round"/><path d="M8.25 5.51A7.5 7.5 0 1 0 18.14 7.70" fill="none" stroke="%23000" stroke-width="1.7" stroke-linecap="round"/><path d="M15.96 4.59 20.27 6.21 16.01 9.19Z" fill="%23000" stroke="%23000" stroke-width="0.6" stroke-linejoin="round"/></svg>') 12 12, grab;
+}
+
 /* Smooth scrollbar hide */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
