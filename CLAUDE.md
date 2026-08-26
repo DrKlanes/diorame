@@ -32,7 +32,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 ### Reglas doradas
 
-1. **StrataCanvas.tsx está congelado** — Solo extraer código de él; nunca agregar líneas nuevas.
+1. **StrataCanvas.tsx: shell fino con núcleo protegido** — Ya NO está congelado. Disciplina normal en los handlers; GO explícito solo para el núcleo. Ver «Tocar StrataCanvas.tsx».
 2. **Máximo 400 líneas por archivo** — Si un archivo nuevo se acerca al límite, dividirlo antes de continuar. Excepción documentada: `renderPipeline.ts` como orquestador de frame (aceptado en v3.0.0) — tamaño vivo en REFERENCE.md §12.
 3. **Tabs para indentación** — El codebase entero usa tabs. Nunca mezclar spaces.
 4. **No abstracciones especulativas** — Tres líneas similares son mejores que una abstracción prematura.
@@ -124,23 +124,22 @@ Todo FX —propio o propuesto— pasa por estos filtros **antes de escribir cód
 - **Renderizar y mirar: solo caza lo grosero.** Volcar un frame a PNG y abrirlo sirve para detectar artefactos rotos antes de gastarle tiempo — y siempre sobre **contenido real** (botón "Cargar escena de ejemplo"), nunca sobre un rectángulo plano. Pero pasar ese filtro no valida nada.
 - **Listón para pedirle revisión:** solo si el efecto está **realmente a nivel top**. Llevarle algo básico quema su tiempo y su confianza.
 
-### Cambios mínimos en StrataCanvas.tsx — precedente operativo
+### Tocar StrataCanvas.tsx
 
-`StrataCanvas.tsx` es monolito de alto riesgo (render loop, gestos, proyección 3D). Regla por defecto: **no se toca**.
+**Estado real: shell fino, no monolito congelado.** La regla anterior ("congelado, solo se extrae, nunca se añaden líneas") describía el archivo de ANTES del refactor v3.0.0, que sacó el pipeline de render a `canvas/`. Mantenerla como absoluto costaba una interrupción por cambio: paradas correctas ante líneas que sí había que añadir, resueltas con un GO manual cada vez. Lo que sigue es la regla vigente.
 
-Excepción documentada (precedente sub-fase 8.6): **swap de import con alias** es aceptable.
+**Zona normal — disciplina de siempre, sin permiso especial.** Handlers de evento, refs de estado local, JSX de overlays, imports. Aplican las reglas generales del proyecto: leer antes de tocar, cambio mínimo, verificar. Precedentes: la deselección del Move (v3.17.6-3.17.8), el dead-zone (v3.17.4), los cursores contextuales (v3.17.0).
 
-```typescript
-// Cambio de 1 línea con alias, JSX intacto, lógica intacta — OK
-import { ComponentConnected as Component } from './ComponentConnected';
-```
+**Núcleo — requiere GO explícito de Moisés antes de escribir código:**
 
-Cualquier otra modificación (añadir import nuevo, cambiar JSX, tocar listeners, modificar lógica de render) requiere:
-- Modelo Opus (no Sonnet)
-- Análisis previo explícito de impacto
-- Validación visual exhaustiva post-cambio
+- El bucle RAF y su ciclo de vida
+- `buildRenderContext` y la forma de `RenderContext`
+- La sincronización refs↔render (qué ref lee cada fase, y cuándo)
+- El timing del live stroke
 
-Si dudas si tu cambio es "swap de import" o algo más, asume que es más y escala a Opus.
+Para el núcleo: modelo Opus, análisis de impacto por escrito antes de tocar, y validación visual de Moisés después. Si dudas de si tu cambio entra en el núcleo, asume que sí y pregunta.
+
+**Independiente de la zona:** si un cambio reordena, envuelve o altera el timing de un pointer handler, se para y se decide aparte — aunque el handler esté en la zona normal. Reescribir la *decisión* que toma un handler (v3.17.8) no es lo mismo que mover *cuándo* se ejecuta.
 
 ---
 
@@ -228,7 +227,7 @@ NEAR_CLIP           = 50         // clipping mínimo de capa en proyección 3D
 
 ## Qué NO hacer
 
-- Agregar código nuevo a `StrataCanvas.tsx`
+- Tocar el núcleo de `StrataCanvas.tsx` (RAF, `buildRenderContext`, sincronización refs↔render, timing del live stroke) sin GO explícito — ver «Tocar StrataCanvas.tsx»
 - Refactorizar código que no fue pedido
 - Añadir manejo de errores para escenarios imposibles
 - Crear helpers/utilidades para operaciones de un solo uso
