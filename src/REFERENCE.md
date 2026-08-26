@@ -308,8 +308,8 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
-| `StrataCanvas.tsx` | ~1425 | Thin React shell: render loop, event handlers, gesture input. **Frozen** — extract only, never add. Gesture/pointer types live in `types/strataTypes.ts` (`GestureState`, `CanvasPointerInput`); the move-tool transform type in `canvas/renderPipeline.ts` (`TransformRefState`). |
-| `StrataContext.tsx` | ~1800 | React Context + useReducer: app reducer, constants, re-exports all types |
+| `StrataCanvas.tsx` | ~1545 | Thin React shell: render loop, event handlers, gesture input. **Not frozen** (that rule described the pre-v3.0.0 file): normal discipline in the handlers, explicit GO only for the core — RAF loop, `buildRenderContext`, refs↔render sync, live-stroke timing. See CLAUDE.md § "Tocar StrataCanvas.tsx". Gesture/pointer types live in `types/strataTypes.ts` (`GestureState`, `CanvasPointerInput`); the move-tool transform type in `canvas/renderPipeline.ts` (`TransformRefState`). |
+| `StrataContext.tsx` | ~1970 | React Context + useReducer: app reducer, constants, re-exports all types |
 | `ControlsV2.tsx` | ~165 | Thin root compositor for both modes. Mounts all UI atoms; enforces `isUIHidden`; hosts 3 global side-effects (keyboard shortcuts, sessionStorage cleanup, mode-change camera reset). |
 
 **Drawing mode atoms (`topbar/`, `bottombar/`, `layers/`, `colorpalette/`, `drawing/`, `viewport/`, `text/`):**
@@ -345,7 +345,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
-| `blurCompat.ts` | ~100 | `applyBlurCompat`: Gaussian-approx blur via iterative downscale/upscale `drawImage` — the ctx.filter-free path used by Glow/DoF on WebKit/iPadOS |
+| `blurCompat.ts` | ~135 | `applyBlurCompat`: Gaussian-approx blur via iterative downscale/upscale `drawImage` — the ctx.filter-free path used by Glow/DoF on WebKit/iPadOS |
 | `cinematicCamera.ts` | ~290 | `computeCinematicTick`: all 11 camera modes (Forward, Spiral, Yoyo, Pulse, Twist, Arc, Orbit, Crane, Truck, Zoom, Storytelling) + handheld shake, returns new camera state |
 | `composeLayer.ts` | ~105 | Layer compositing to offscreen buffer (pixel art + fog/glow/DoF) |
 | `drawBackground.ts` | ~50 | Canvas background rendering (paper texture, dark mode) |
@@ -421,6 +421,17 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 |---|---|---|
 | `analytics.ts` | ~420 | Sole contact point with GA4. Typed `DioramEventMap` contract + `analytics.*` API + module-level session counters (never React state, to avoid a re-render per stroke). Consumes the existing `window.gtag` from `index.html`; never calls `gtag('config')` nor injects the tag. Silent no-op when `window.gtag` is absent (ad blockers, offline) and in dev unless `VITE_GA_DEBUG=1`. `installAnalytics()` is called once from `main.tsx`. Also owns the internal-traffic flag (`diorame_internal` in localStorage, armed via `?internal=1`), which tags every event with `traffic_type: 'internal'`. |
 
+### Project Docs (`docs/`)
+
+Prose docs that live outside `src/`. Not code, but part of the file map: they hold
+decisions that the code cannot express on its own.
+
+| File | Purpose |
+|---|---|
+| `analytics.md` | The GA4 measurement plan: which events exist and why, the 8 `format` values of `artwork_exported` and why the PNG/MP4 variants are kept apart, the real meaning of the `layers` parameter, and the "hook into the success branch, never `onFinish`" rule. Read before touching `src/analytics/analytics.ts` — GA4 data cannot be split retroactively once it starts arriving merged. |
+| `ux-debt.md` | Running list of known UX debt, with the reasoning behind each accepted quirk. |
+| `BRIEF-CLAUDE-CODE.md` | Project brief. |
+
 ### Render Pipeline Architecture
 
 **Pattern: "caller orchestrates, modules are pure"**
@@ -477,7 +488,7 @@ misma versión de `typescript` (fijada en `package.json`/`package-lock.json`, no
 This section is critical. These actions are **forbidden**:
 
 ### Code Changes
-- **No New Code in StrataCanvas.tsx**: Only extract code out; never add lines
+- **No Ungated Changes to the StrataCanvas.tsx Core**: RAF loop, `buildRenderContext`, refs↔render sync and live-stroke timing need an explicit GO. The handlers take normal discipline — the old "never add lines" rule described the pre-v3.0.0 file. See CLAUDE.md § "Tocar StrataCanvas.tsx"
 - **No Large Refactors**: Do not rewrite entire files or systems
 - **No Speculative Optimization**: Only optimize proven bottlenecks
 - **No Experimental Features**: Every feature must be justified and tested
@@ -548,7 +559,7 @@ This section is critical. These actions are **forbidden**:
 
 | File | Lines | Reason |
 |---|---|---|
-| `src/components/strata/StrataCanvas.tsx` | ~1425 | Legacy monolith — subject of ongoing extraction (Plan C). Never add to it. |
+| `src/components/strata/StrataCanvas.tsx` | ~1545 | Thin React shell after the v3.0.0 extraction; still oversize. Extraction remains the preferred direction, but it is no longer frozen — see CLAUDE.md § "Tocar StrataCanvas.tsx" for what needs an explicit GO. |
 | `src/components/strata/canvas/renderPipeline.ts` | ~565 | Frame orchestrator. Accepted oversize: its purpose is to sequence all render sub-modules in the correct order. Splitting into smaller files would fragment the orchestration logic without reducing real complexity. |
 
 ---
