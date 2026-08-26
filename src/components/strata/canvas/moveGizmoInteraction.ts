@@ -58,6 +58,51 @@ export const hitTestGizmo = (
 	return mode;
 };
 
+/**
+ * Whether a screen-space point falls inside the gizmo's bounding box.
+ *
+ * Sibling of hitTestGizmo, and it must be asked SECOND: several handles live
+ * OUTSIDE the box (the rotate handle sits ~120px above the top edge, and every
+ * handle has a 40px hit radius that overflows the edges), so a caller that tested
+ * containment first would swallow handle grabs that legitimately start outside.
+ *
+ * The four corners arrive already projected by drawGizmo, so the layer rotation,
+ * the non-uniform (squash & stretch) scale and the drawing zoom/pan are baked into
+ * them. project() is affine, so the quad is always convex — a rotated/sheared
+ * parallelogram, never self-intersecting — which is what makes the cheap
+ * same-sign test below valid without triangulating anything.
+ *
+ * Walks the four edges and takes the cross product of each edge vector with the
+ * vector from that edge's start to the point. For a convex quad the point is
+ * inside exactly when none of those cross products disagree in sign. Comparing
+ * signs rather than requiring "all positive" is deliberate: a mirrored layer
+ * (FLIP_LAYER) or a negative axis scale reverses the winding order, and this
+ * handles both windings with no special case.
+ *
+ * A point exactly ON an edge yields cross === 0, which is neither positive nor
+ * negative and therefore counts as inside — the border belongs to the box, which
+ * is what a user aiming at the outline expects.
+ */
+export const isPointInsideGizmoBox = (
+	pointerX: number,
+	pointerY: number,
+	handles: GizmoHandles | null,
+): boolean => {
+	if (!handles) return false;
+
+	const side = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+		(b.x - a.x) * (pointerY - a.y) - (b.y - a.y) * (pointerX - a.x);
+
+	const s1 = side(handles.tl, handles.tr);
+	const s2 = side(handles.tr, handles.br);
+	const s3 = side(handles.br, handles.bl);
+	const s4 = side(handles.bl, handles.tl);
+
+	const anyNegative = s1 < 0 || s2 < 0 || s3 < 0 || s4 < 0;
+	const anyPositive = s1 > 0 || s2 > 0 || s3 > 0 || s4 > 0;
+	return !(anyNegative && anyPositive);
+};
+
 export type ComputeMoveTransformParams = {
 	mode: string;
 	startTransform: Transform;
