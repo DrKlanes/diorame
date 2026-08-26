@@ -17,7 +17,7 @@ import { exportAsPNGSequence } from './canvas/pngSequenceHandler';
 import { exportAsGIF } from './canvas/gifHandler';
 import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
-import { hitTestGizmo, computeMoveTransform, isSignificantTransform, isDragEngaged, type TransformMode } from './canvas/moveGizmoInteraction';
+import { hitTestGizmo, isPointInsideGizmoBox, computeMoveTransform, isSignificantTransform, isDragEngaged, type TransformMode } from './canvas/moveGizmoInteraction';
 import { cursorClassForGizmoMode } from './canvas/gizmoCursor';
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { renderFrame, type RenderContext, type TransformRefState } from './canvas/renderPipeline';
@@ -868,12 +868,53 @@ export const StrataCanvas = () => {
             return;
         }
         if (state.tool === 'move') {
+            // --- Selection decision (v3.17.8) ---
+            //                | inside the box        | outside
+            //   selected     | drag (as before)      | deselect, do NOT move
+            //   deselected   | select AND drag, one gesture | no-op
+            //
+            // Runs FIRST so a click that only changes the selection never captures the
+            // pointer, never sets isDrawing and never opens a transform. Everything
+            // after this block is the pre-existing drag start, unchanged.
+            //
+            // handles === null means no gizmo is possible at all (empty layer, or the
+            // very first frame before the RAF has projected one). Nothing to select or
+            // deselect there, so the legacy path runs untouched.
+            const handles = transformHandlesRef.current;
+            const wasSelected = state.isLayerSelected;
+            if (handles) {
+                const insideBox = isPointInsideGizmoBox(pointerX, pointerY, handles);
+                // Handles only count when the gizmo is actually VISIBLE. Deselected,
+                // drawGizmo still computes them (that is what makes the containment
+                // test possible) but draws nothing — and an invisible handle must not
+                // be grabbable, least of all the rotate one sitting ~120px above a box
+                // the user cannot see.
+                const grabbedHandle = wasSelected
+                    && hitTestGizmo(pointerX, pointerY, handles) !== 'move';
+
+                if (wasSelected) {
+                    if (!grabbedHandle && !insideBox) {
+                        dispatch({ type: 'SET_LAYER_SELECTED', payload: false });
+                        return;
+                    }
+                } else {
+                    if (!insideBox) return;
+                    // Select AND drag in the SAME gesture (Figma model). The dispatch
+                    // only flips a view flag that makes the gizmo paint; the drag itself
+                    // runs from refs set below in this very event, so nothing waits on
+                    // React and the user perceives one continuous action.
+                    dispatch({ type: 'SET_LAYER_SELECTED', payload: true });
+                }
+            }
+
             e.currentTarget.setPointerCapture(e.pointerId);
             setIsDrawing(true);
             drawingPointerTypeRef.current = e.pointerType;
-            
+
             // Gizmo Interaction — extracted to canvas/moveGizmoInteraction.ts
-            const mode = hitTestGizmo(pointerX, pointerY, transformHandlesRef.current);
+            // Same visibility rule as above: a gesture that began on a deselected layer
+            // is always a plain 'move', never a handle grab.
+            const mode = wasSelected ? hitTestGizmo(pointerX, pointerY, handles) : 'move';
 
             const activeLayerZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
             const bb = getLayerBoundingBox(state.shapes.filter(s => s.zIndex === activeLayerZ));
