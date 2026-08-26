@@ -349,7 +349,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `cinematicCamera.ts` | ~290 | `computeCinematicTick`: all 11 camera modes (Forward, Spiral, Yoyo, Pulse, Twist, Arc, Orbit, Crane, Truck, Zoom, Storytelling) + handheld shake, returns new camera state |
 | `composeLayer.ts` | ~105 | Layer compositing to offscreen buffer (pixel art + fog/glow/DoF) |
 | `drawBackground.ts` | ~50 | Canvas background rendering (paper texture, dark mode) |
-| `drawGizmo.ts` | ~240 | Move tool gizmo handles + flip overlay buttons (incl. side-bar handles for squash & stretch) |
+| `drawGizmo.ts` | ~265 | Move tool gizmo handles + flip overlay buttons (incl. side-bar handles for squash & stretch). Return contract since v3.17.7: `null` only when the gate fails (not drawing / not move / no `layerBB`); when the layer is **deselected** (`isLayerSelected === false`) it still COMPUTES and returns the handles but draws nothing and hides the flip buttons — so a non-null `transformHandlesRef` no longer implies the gizmo is visible, and callers must gate handle hit-tests on selection separately |
 | `drawSymmetryAxis.ts` | ~30 | Symmetry axis line rendering |
 | `exportHandlers.ts` | ~600 | `exportAsPNG`, `exportAsSVG`, `exportAsMP4`: all export logic |
 | `PixelArtProcessor.ts` | ~175 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |

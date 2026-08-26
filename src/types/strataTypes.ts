@@ -181,6 +181,15 @@ export interface AppState {
   isExporting: boolean;
   hiddenLayers: number[]; // Indices of hidden layers
   locked3DLayers: number[]; // Indices of layers with 3D Lock (fixed in VIEW mode)
+  // Whether the active layer is SELECTED, as distinct from which layer is active
+  // (currentLayerIndex, always a valid index). Every other editor shows a transform
+  // gizmo because something is selected, not because a tool is active; Diorame had
+  // no such concept, so with Move active the gizmo could never go away. This is the
+  // resting state it was missing. Pure view state — NEVER enters HistorySnapshot
+  // (same category as hiddenLayers / locked3DLayers / active layer, see the contract
+  // docblock above) and NOT serialized into .dior: entering a project always starts
+  // selected. Read only by the drawGizmo gate and the Move pointerdown decision.
+  isLayerSelected: boolean;
   isWelcomeModalOpen: boolean;
   isOnboardingVisible: boolean; // New: Onboarding overlay on canvas
   isUIHidden: boolean; // New: Toggle UI visibility in View mode

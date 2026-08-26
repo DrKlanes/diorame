@@ -537,6 +537,7 @@ export function renderFrame(
 			rc.flipButtonsEl,
 			BASE_DEPTH_STEP,
 			isActiveLayerPureText,
+			currentState.isLayerSelected,
 		);
 
 		// --- Symmetry Axis Guide ---

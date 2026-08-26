@@ -91,6 +91,7 @@ type Action =
   | { type: 'FINISH_EXPORT' }
   | { type: 'CLEAR_CANVAS' }
   | { type: 'LOAD_PROJECT'; payload: LegacyProjectPayload }
+  | { type: 'SET_LAYER_SELECTED'; payload: boolean }
   | { type: 'TOGGLE_LAYER_VISIBILITY'; payload: number }
   | { type: 'TOGGLE_3D_LOCK'; payload: number }
   | { type: 'MOVE_LAYER'; payload: { layerIndex: number; deltaX: number; deltaY: number } }
@@ -222,6 +223,11 @@ const initialState: AppState = {
   isExporting: false,
   hiddenLayers: [],
   locked3DLayers: [],
+  // Starts selected. The app boots with tool: 'blob', so this is only ever read once
+  // the user reaches Move — and every route into Move (SET_TOOL, the layer panel,
+  // [ / ]) reselects anyway, so `true` is the value that agrees with all of them.
+  // Booting deselected would also cost a click before the tool could do anything.
+  isLayerSelected: true,
   isWelcomeModalOpen: true,
   isOnboardingVisible: true, // New: Onboarding overlay on canvas
   isUIHidden: false,
@@ -587,6 +593,12 @@ function appReducer(state: AppState, action: Action): AppState {
           return {
               ...state,
               tool: 'move',
+              // Reaching for Move means wanting to transform the layer, so it arrives
+              // selected. The toolbar dispatches SET_TOOL unconditionally (no "already
+              // on this tool" guard in DrawingToolbar), so re-tapping Move while
+              // already in Move runs this again — that is the cheapest way back from a
+              // deselected state, with no extra UI.
+              isLayerSelected: true,
               isDrawBehind: false,
               isDrawInside: false,
               isSymmetryEnabled: false,
@@ -617,6 +629,9 @@ function appReducer(state: AppState, action: Action): AppState {
           return {
               ...state,
               currentLayerIndex: nextIndex,
+              // Navigating to a layer ([ / ]) is wanting to work on it — same reading
+              // as clicking its row in the panel.
+              isLayerSelected: true,
               camera: { ...state.camera, z: newZ, rotation: 0 },
               isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
               isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
@@ -649,6 +664,7 @@ function appReducer(state: AppState, action: Action): AppState {
           const newState = {
               ...state,
               currentLayerIndex: nextIndex,
+              isLayerSelected: true,
               totalLayers: state.totalLayers + 1,
               camera: { ...state.camera, z: newZ, rotation: 0 },
               isDrawInside: false,
@@ -683,6 +699,7 @@ function appReducer(state: AppState, action: Action): AppState {
             return {
                 ...state,
                 currentLayerIndex: prevIndex,
+                isLayerSelected: true,
                 camera: { ...state.camera, z: newZ, rotation: 0 },
                 isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
                 isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
@@ -766,6 +783,12 @@ function appReducer(state: AppState, action: Action): AppState {
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
         return { ...newState, history, historyIndex: index };
     }
+    case 'SET_LAYER_SELECTED':
+      // Pure view state: no pushHistory, no createSnapshot, no patchCurrentSnapshot.
+      // Deselecting is not an edit to the document — the geometry was already baked
+      // at the last pointerup — so it must not be undoable, exactly like hiddenLayers.
+      if (state.isLayerSelected === action.payload) return state;
+      return { ...state, isLayerSelected: action.payload };
     case 'SET_CURRENT_LAYER': {
         const targetIndex = action.payload;
         if (targetIndex === state.currentLayerIndex) return state;
@@ -777,6 +800,8 @@ function appReducer(state: AppState, action: Action): AppState {
         return {
             ...state,
             currentLayerIndex: targetIndex,
+            // Clicking a row in the layer panel means "I want to work on this".
+            isLayerSelected: true,
             camera: { ...state.camera, z: newZ, rotation: 0 },
             isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
             isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
@@ -915,6 +940,7 @@ function appReducer(state: AppState, action: Action): AppState {
           isExporting: false,
           hiddenLayers: [],
           locked3DLayers: [],
+          isLayerSelected: true,
           drawingZoom: 1,
           drawingPan: { x: 0, y: 0 },
           layerRenderModes: {},
@@ -1049,6 +1075,9 @@ function appReducer(state: AppState, action: Action): AppState {
           tool: safeTool,
           hiddenLayers: safeHiddenLayers,
           locked3DLayers: safeLocked3DLayers,
+          // Re-derived, never restored from the file — it is not serialized. Opening a
+          // project always starts selected, like a fresh session.
+          isLayerSelected: true,
           drawingZoom: 1,
           drawingPan: { x: 0, y: 0 },
           layerRenderModes: loadedLayerRenderModes,

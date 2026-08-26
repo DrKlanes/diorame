@@ -43,6 +43,10 @@ type TransformState = {
  * - Returns null when the gate fails (mode != drawing, tool != move, or
  *   no layerBB). The caller assigns null to the ref, which pointer
  *   handlers treat as "no gizmo present" via `if (handles)` checks.
+ * - ALSO returns the handles, without drawing anything, when the layer is
+ *   deselected (isLayerSelected === false). Non-null therefore does NOT
+ *   imply "visible" — see the comment at that early return for why, and
+ *   for what callers must do about it.
  *
  * The gate runs INSIDE this function (early return), so the caller does
  * not need to wrap the call in a conditional.
@@ -75,6 +79,7 @@ export const drawGizmo = (
 	flipButtonsEl: HTMLDivElement | null,
 	baseDepthStep: number,
 	isActiveLayerPureText: boolean = false,
+	isLayerSelected: boolean = true,
 ): GizmoHandles | null => {
 	if (!(mode === 'drawing' && tool === 'move' && transformState.layerBB)) {
 		// Hide flip buttons when gizmo is not visible
@@ -159,6 +164,26 @@ export const drawGizmo = (
 		ml: showSides ? pML : undefined,
 		mr: showSides ? pMR : undefined,
 	};
+
+	// Deselected: the box is COMPUTED but not DRAWN, and the flip/center buttons go
+	// with it (they act on "the selected layer" — showing them with nothing selected
+	// would misname what they'd touch).
+	//
+	// Returning the handles anyway is deliberate and load-bearing: the Move pointerdown
+	// needs them to run isPointInsideGizmoBox and tell "clicked on the layer, reselect"
+	// from "clicked in empty space, stay deselected". Returning null here would make
+	// that test impossible and strand the user with no way back onto the canvas.
+	//
+	// CONSEQUENCE for every caller: a non-null transformHandlesRef NO LONGER means the
+	// gizmo is visible. Handle hit-tests must be gated on selection separately — an
+	// invisible rotate handle must not be grabbable.
+	if (!isLayerSelected) {
+		if (flipButtonsEl) {
+			flipButtonsEl.style.opacity = '0';
+			flipButtonsEl.style.pointerEvents = 'none';
+		}
+		return handles;
+	}
 
 	// Draw
 	ctx.setTransform(1, 0, 0, 1, 0, 0);
