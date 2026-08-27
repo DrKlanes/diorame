@@ -1,4 +1,15 @@
-export interface ShortcutItem { labelKey: string; shortcut: string; }
+export interface ShortcutItem {
+	labelKey: string;
+	shortcut: string;
+	/**
+	 * i18n key for a qualifier rendered after the key name, e.g. Space (hold).
+	 * Exists because `shortcut` is printed raw, never through t(): key names like
+	 * Ctrl+S or [ are the same in every language and translating them would be
+	 * wrong. "hold" / "tap" are prose, so they need their own key rather than
+	 * being baked into the literal.
+	 */
+	qualifierKey?: string;
+}
 export interface ShortcutGroup { categoryKey: string; items: ShortcutItem[]; }
 
 /**
@@ -100,6 +111,9 @@ export const SHORTCUTS_GROUPS: ShortcutGroup[] = [
 		{ labelKey: 'shortcuts.label.nextLayer',     shortcut: ']' },
 	] },
 	{ categoryKey: 'shortcuts.category.canvasDraw', items: [
-		{ labelKey: 'shortcuts.label.resetView', shortcut: 'Space' },
+		// Two rows for one key on purpose: tap-to-centre already existed and was just
+		// as hidden as the new pan. Announcing only the pan would leave it undiscovered.
+		{ labelKey: 'shortcuts.label.panCanvas',    shortcut: 'Space', qualifierKey: 'shortcuts.qualifier.hold' },
+		{ labelKey: 'shortcuts.label.centerCanvas', shortcut: 'Space', qualifierKey: 'shortcuts.qualifier.tap' },
 	] },
 ];

@@ -455,7 +455,10 @@ export const es: Dictionary = {
 	'shortcuts.label.move': 'Mover',
 	'shortcuts.label.previousLayer': 'Capa anterior',
 	'shortcuts.label.nextLayer': 'Capa siguiente',
-	'shortcuts.label.resetView': 'Restablecer vista',
+	'shortcuts.label.panCanvas': 'Desplazar lienzo',
+	'shortcuts.label.centerCanvas': 'Centrar lienzo',
+	'shortcuts.qualifier.hold': 'mantener',
+	'shortcuts.qualifier.tap': 'toque',
 
 	// ═══════════════════════════════════════════════
 	// COMMON

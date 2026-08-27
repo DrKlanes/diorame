@@ -493,7 +493,10 @@ export const en: Dictionary = {
 	'shortcuts.label.move': 'Move',
 	'shortcuts.label.previousLayer': 'Previous layer',
 	'shortcuts.label.nextLayer': 'Next layer',
-	'shortcuts.label.resetView': 'Reset view',
+	'shortcuts.label.panCanvas': 'Pan canvas',
+	'shortcuts.label.centerCanvas': 'Center canvas',
+	'shortcuts.qualifier.hold': 'hold',
+	'shortcuts.qualifier.tap': 'tap',
 
 	// ═══════════════════════════════════════════════
 	// COMMON (strings reutilizables)

@@ -309,7 +309,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 															{t(item.labelKey)}
 														</span>
 														<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: 500, fontSize: 10, color: muted, letterSpacing: '0.02em' }}>
-															{formatShortcut(item.shortcut)}
+															{formatShortcut(item.shortcut)}{item.qualifierKey ? ` (${t(item.qualifierKey)})` : ''}
 														</span>
 													</div>
 												))}
