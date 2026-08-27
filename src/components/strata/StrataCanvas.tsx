@@ -911,6 +911,15 @@ export const StrataCanvas = () => {
                 (i) => !isLayerEmpty(state, i),
                 BASE_DEPTH_STEP,
             );
+            // Same gates and the same formula the renderer uses (renderPipeline:
+            // fxEnabled / fxDistortion / distortionK). A lens that bends the image has
+            // to bend the un-projection too, or the click lands where the pixel WOULD
+            // have been without the lens.
+            const fxOn = state.fxMasterEnabled && state.postProcessingEnabled.distortion;
+            const fxDistortion = fxOn ? state.postProcessing.distortion : 0;
+            const distortionK = Math.abs(fxDistortion) > 0.01
+                ? (fxDistortion * -0.8) * (500 / state.focalLength)
+                : 0;
             const framed = unprojectCinematicPoint({
                 screenX: pointerX,
                 screenY: pointerY,
@@ -923,6 +932,10 @@ export const StrataCanvas = () => {
                 referenceZ: refZ,
                 viewZoom: 1,
                 viewPan: { x: 0, y: 0 },
+                // Mirrors renderPipeline's distortionK. Kept in step by hand rather than
+                // shared, to avoid reaching into the render pipeline for a scalar — if
+                // that formula ever moves, this is the other place that reads it.
+                distortionK: distortionK,
             });
             lastClickTimeRef.current = 0;
             // null = that plane sits at/behind the near clip, so the forward projection
