@@ -397,7 +397,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
-| `renderConstants.ts` | ~30 | `PARTICLE_COUNT`, `MIN_TOUCH_STROKE_POINTS`, `FOG_DENSITY_FACTOR`, `HANDHELD_SWAY_FREQ`, `HANDHELD_TREMOR_FREQ`, `DOUBLE_CLICK_DELAY`, `RENDER_THROTTLE_MS`, `DRAW_FOCAL_LENGTH`, `NEAR_CLIP` |
+| `renderConstants.ts` | ~40 | `PARTICLE_COUNT`, `MIN_TOUCH_STROKE_POINTS`, `FOG_DENSITY_FACTOR`, `HANDHELD_SWAY_FREQ`, `HANDHELD_TREMOR_FREQ`, `DOUBLE_CLICK_DELAY`, `DOUBLE_CLICK_MAX_DISTANCE`, `RENDER_THROTTLE_MS`, `DRAW_FOCAL_LENGTH`, `NEAR_CLIP` |
 | `palette.ts` | ~90 | `PALETTE_PRIMARY`, `PALETTE_ALTERNATIVE` (24 colors each, `{hex, nameKey, isDark}`), `GRADIENT_DEFAULTS`, `DARK_COLORS` — canonical color system, immutable by design |
 | `version.ts` | ~5 | `APP_VERSION` — single source of truth for the current release version |
 | `project.ts` | ~30 | `UNTITLED_PROJECT_SENTINEL` (`'__UNTITLED__'`) + `getFilenameBase()` — NFD-normalized filename sanitizer for exports and .dior saves |

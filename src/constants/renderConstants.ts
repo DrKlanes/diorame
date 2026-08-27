@@ -18,6 +18,16 @@ export const HANDHELD_TREMOR_FREQ = 8.0;
 /** Max time (ms) between two clicks to be considered a double-click */
 export const DOUBLE_CLICK_DELAY = 300;
 
+/**
+ * Max distance (screen px) between the two clicks of a double-click. Without it,
+ * only the delay was checked, so two taps 300ms apart in opposite corners counted
+ * as one double-click and the camera framed the SECOND one — a stray finger on an
+ * iPad was enough. Generous on purpose: a deliberate double-tap with a finger
+ * scatters far more than a mouse double-click, and being strict here would cost a
+ * gesture that the user did mean.
+ */
+export const DOUBLE_CLICK_MAX_DISTANCE = 40;
+
 /** Minimum ms between render frames while drawing (~120 fps cap) */
 export const RENDER_THROTTLE_MS = 8;
 

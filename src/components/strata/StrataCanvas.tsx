@@ -9,7 +9,7 @@ import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOverlayConnected';
 import { generateRisoGrain } from './canvas/postProcessing';
-import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY } from '../../constants/renderConstants';
+import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, DOUBLE_CLICK_MAX_DISTANCE } from '../../constants/renderConstants';
 import { exportAsPNG, exportAsSVG, exportAsMP4 } from './canvas/exportHandlers';
 import { analytics } from '../../analytics/analytics';
 import { renderAnimationFrames } from './canvas/animationExportRender';
@@ -127,6 +127,9 @@ export const StrataCanvas = () => {
 
   // Double Click State for Point of Interest
   const lastClickTimeRef = useRef(0);
+  // Position of the click that armed lastClickTimeRef, in canvas px. Pairs with it
+  // so a double-click has to be close in space as well as in time.
+  const lastClickPosRef = useRef({ x: 0, y: 0 });
   // DOUBLE_CLICK_DELAY moved to src/constants/renderConstants.ts
 
   // Organic Brush State
@@ -884,7 +887,13 @@ export const StrataCanvas = () => {
 
     if (state.mode === 'cinematic') {
         const now = Date.now();
-        if (now - lastClickTimeRef.current < DOUBLE_CLICK_DELAY) {
+        // Both tests, not just the clock: two taps far apart are two taps, however
+        // quickly they follow each other.
+        const nearLast = Math.hypot(
+            pointerX - lastClickPosRef.current.x,
+            pointerY - lastClickPosRef.current.y,
+        ) <= DOUBLE_CLICK_MAX_DISTANCE;
+        if (now - lastClickTimeRef.current < DOUBLE_CLICK_DELAY && nearLast) {
             // Framing, not focus: where the camera aims in X/Y. Nothing to do with the
             // DoF's Z. Uses the real inverse projection (canvas/unprojectPoint.ts)
             // instead of the DRAW-mode maths computed above — worldX/worldY are wrong
@@ -924,7 +933,11 @@ export const StrataCanvas = () => {
             }
             return;
         } else {
+            // Arms the next candidate. Runs when the gesture failed EITHER test, so a
+            // far-away second tap becomes the start of a new pair instead of being
+            // swallowed — tap A, tap far B, tap B again still frames B.
             lastClickTimeRef.current = now;
+            lastClickPosRef.current = { x: pointerX, y: pointerY };
         }
     }
 
