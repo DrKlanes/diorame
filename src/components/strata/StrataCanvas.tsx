@@ -20,7 +20,8 @@ import { getLayerBoundingBox } from './canvas/transformUtils';
 import { hitTestGizmo, isPointInsideGizmoBox, computeMoveTransform, isSignificantTransform, isDragEngaged, type TransformMode } from './canvas/moveGizmoInteraction';
 import { cursorClassForGizmoMode } from './canvas/gizmoCursor';
 import { shouldIgnoreGlobalKey } from '../../utils/keyboardShortcuts';
-import { getAnimationFrames } from '../../utils/animationFrames';
+import { getAnimationFrames, isLayerEmpty } from '../../utils/animationFrames';
+import { unprojectCinematicPoint, referencePlaneZ } from './canvas/unprojectPoint';
 import { renderFrame, type RenderContext, type TransformRefState } from './canvas/renderPipeline';
 import { CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
 
@@ -884,15 +885,43 @@ export const StrataCanvas = () => {
     if (state.mode === 'cinematic') {
         const now = Date.now();
         if (now - lastClickTimeRef.current < DOUBLE_CLICK_DELAY) {
-            let closestZ = 0; let minDist = Infinity;
-            state.shapes.forEach(shape => {
-                shape.points.forEach(pt => {
-                    const dist = Math.hypot(pt.x - worldX, pt.y - worldY);
-                    if (dist < minDist) { minDist = dist; closestZ = shape.zIndex; }
-                });
+            // Framing, not focus: where the camera aims in X/Y. Nothing to do with the
+            // DoF's Z. Uses the real inverse projection (canvas/unprojectPoint.ts)
+            // instead of the DRAW-mode maths computed above — worldX/worldY are wrong
+            // here, they assume a different camera. See that module's header.
+            //
+            // The reference plane is the mid-plane of the layers holding content, NOT
+            // the active layer the old code used: in CINEMA that is an invisible
+            // leftover from DRAW mode, and letting it govern framing was the bug.
+            //
+            // No content hit-test any more. Framing does not consult the drawing —
+            // where you tap is where the camera goes, gato or empty canvas. It also
+            // drops a scan over every point of every shape from inside a pointerdown.
+            const refZ = referencePlaneZ(
+                state.totalLayers,
+                (i) => !isLayerEmpty(state, i),
+                BASE_DEPTH_STEP,
+            );
+            const framed = unprojectCinematicPoint({
+                screenX: pointerX,
+                screenY: pointerY,
+                centerXScreen: cx,
+                centerYScreen: cy,
+                camera: state.camera,
+                focalLength: state.focalLength,
+                viewZoomOffset: state.viewZoomOffset,
+                layerSpacingFactor: state.layerSpacingFactor,
+                referenceZ: refZ,
+                viewZoom: 1,
+                viewPan: { x: 0, y: 0 },
             });
-            dispatch({ type: 'SET_POINT_OF_INTEREST', payload: { x: worldX, y: worldY, z: closestZ } });
             lastClickTimeRef.current = 0;
+            // null = that plane sits at/behind the near clip, so the forward projection
+            // would not have drawn anything there either. Leave the framing untouched
+            // rather than aiming the camera at a point that cannot be seen.
+            if (framed) {
+                dispatch({ type: 'SET_POINT_OF_INTEREST', payload: { x: framed.x, y: framed.y, z: refZ } });
+            }
             return;
         } else {
             lastClickTimeRef.current = now;
