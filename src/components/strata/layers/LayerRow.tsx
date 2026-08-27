@@ -62,12 +62,13 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 			layout={!isDragging}
 			transition={SPRING}
 			onClick={!isDragging ? () => dispatch({ type: 'SET_CURRENT_LAYER', payload: index } as any) : undefined}
-			onKeyDown={!isDragging ? (e) => {
-				if (e.key === 'Enter' || e.key === ' ') {
-					e.preventDefault();
-					dispatch({ type: 'SET_CURRENT_LAYER', payload: index } as any);
-				}
-			} : undefined}
+			// An onKeyDown for Enter / Space was removed here in v3.17.14: this div has
+			// neither tabIndex nor role, so it can never take keyboard focus and the
+			// handler could not fire. It was not a working shortcut, it was dead code
+			// that read like one. Making the row properly focusable is a real
+			// accessibility improvement, but it is its own task — it needs tabIndex, a
+			// role, a visible focus ring and arrow-key navigation, not just this
+			// handler back.
 			style={{
 				width: '100%',
 				padding: '5px 6px 5px 4px',

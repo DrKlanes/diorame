@@ -43,6 +43,11 @@ export function DiSelectorOption({
 		if (disabled) return;
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
+			// preventDefault alone does NOT stop the event: it kept bubbling to the
+			// window listener in useKeyboardShortcuts, so choosing an option with the
+			// keyboard also re-centred the canvas (' ' → RESET_DRAWING_VIEW). This key
+			// is consumed here and belongs to nobody else.
+			e.stopPropagation();
 			handleSelect();
 		}
 	};
