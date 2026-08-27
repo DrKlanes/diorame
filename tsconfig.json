@@ -11,17 +11,18 @@
     "jsx": "react-jsx",
     "strict": false,
     // Sprint de TS: las 8 flags de "strict" medidas una a una, activadas por
-    // separado en vez de poner "strict": true de golpe. Las 5 de abajo dan 0
-    // errores. Lo que queda fuera, queda A PROPÓSITO:
-    //   · noImplicitAny — pendiente, es la siguiente (v3.17.13).
-    //   · strictFunctionTypes (1 error, pero es un desacople deliberado y
-    //     documentado en exportHandlers.ts — decisión de arquitectura, no fix
-    //     mecánico).
-    //   · strictPropertyInitialization NO se activa nunca sola: TS exige
-    //     strictNullChecks para siquiera evaluarla (TS5052 si no). Ahora que
-    //     strictNullChecks está activa ya SÍ se podría, pero seguiría sin hacer
-    //     nada: este codebase no tiene ni una sola clase. No es deuda pendiente,
-    //     es estructuralmente inaplicable.
+    // separado en vez de poner "strict": true de golpe. Las 6 de abajo dan 0
+    // errores. Solo DOS quedan fuera, y ninguna por olvido:
+    //   · strictFunctionTypes — 1 error, y es un desacople deliberado y
+    //     documentado en exportHandlers.ts (AnimationRecordOptions.dispatch).
+    //     Decisión de arquitectura, no fix mecánico: activarla obligaría a
+    //     reacoplar algo que se desacopló a propósito.
+    //   · strictPropertyInitialization — exige strictNullChecks para siquiera
+    //     evaluarse (TS5052), así que desde v3.17.12 ya SÍ se podría activar.
+    //     Sigue sin hacer nada: este codebase no tiene ni una sola clase. No es
+    //     deuda pendiente, es estructuralmente inaplicable.
+    // Con esto el sprint queda cerrado: lo que falta es una decisión tomada y una
+    // imposibilidad estructural, no trabajo pendiente.
     "noImplicitThis": true,
     "strictBindCallApply": true,
     "useUnknownInCatchVariables": true,
@@ -31,6 +32,12 @@
     // estado de gesto táctil en StrataCanvas que el runtime nunca producía como
     // undefined. Se arregló el modelo, no las lecturas — ni un solo `?? 0`.
     "strictNullChecks": true,
+    // Activada en v3.17.13. Su único error era TS7016 por 'gifenc', que no trae
+    // typings ni tiene @types en npm: resuelto con src/types/gifenc.d.ts, escrito
+    // leyendo las firmas del propio paquete y declarando SOLO lo que gifHandler.ts
+    // usa. Un `declare module 'gifenc';` a secas habría callado el error dejando
+    // todo en any — el mismo agujero, más silencioso.
+    "noImplicitAny": true,
     "noEmit": true,
     "types": ["vite/client", "vite-plugin-pwa/client"],
     "paths": {

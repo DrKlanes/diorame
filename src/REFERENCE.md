@@ -375,7 +375,8 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
-| `strataTypes.ts` | ~220 | All TypeScript interfaces and types: `Point`, `Shape`, `AppState`, `AppMode`, `ToolType`, `HistorySnapshot`, post-processing types, plus the canvas-input types extracted from `StrataCanvas.tsx` in v3.16.5 (`GestureState`, `CanvasPointerInput`). Re-exported from `StrataContext.tsx` for backwards compatibility. |
+| `strataTypes.ts` | ~245 | All TypeScript interfaces and types: `Point`, `Shape`, `AppState`, `AppMode`, `ToolType`, `HistorySnapshot`, post-processing types, plus the canvas-input types extracted from `StrataCanvas.tsx` in v3.16.5 (`GestureState`, `CanvasPointerInput`). Re-exported from `StrataContext.tsx` for backwards compatibility. Every `GestureState` field is required since v3.17.11 — see the note on the type itself. |
+| `gifenc.d.ts` | ~70 | Ambient module declaration for `gifenc` (no shipped typings, no `@types` on npm). Deliberately partial: declares only `GIFEncoder` / `quantize` / `applyPalette` and the three encoder methods `gifHandler.ts` calls, with signatures read off the package source. Return types are `Uint8Array<ArrayBuffer>` (not the bare `Uint8Array`, which means `ArrayBufferLike` and is not a valid `BlobPart` since TS 5.7). Required by `noImplicitAny`, enabled in v3.17.13. |
 
 ### Utilities (`src/utils/`)
 
@@ -465,8 +466,11 @@ throttle → quantize cam → FL/focus → buffers → background → viewport �
 ### Type Checking & CI Gate (v3.16.x)
 
 `tsconfig.json` (raíz) + script `npm run typecheck` (`tsc --noEmit`). `strict: false`
-con 5 de las 8 flags de `strict` activadas sueltas (ver comentario en el propio
-`tsconfig.json` para el porqué de cada una: activadas, aplazadas, o inaplicables).
+con **6 de las 8** flags de `strict` activadas sueltas (ver comentario en el propio
+`tsconfig.json` para el porqué de cada una). Las dos que faltan no son deuda:
+`strictFunctionTypes` choca con un desacople deliberado (`AnimationRecordOptions.dispatch`
+en `exportHandlers.ts`) y `strictPropertyInitialization` es inaplicable — no hay ni una
+clase en el codebase.
 `vite build` NO comprueba tipos — esbuild los descarta sin mirarlos. `npm run
 typecheck` es la única comprobación de tipos que existe en este proyecto.
 
