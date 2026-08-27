@@ -465,7 +465,7 @@ throttle → quantize cam → FL/focus → buffers → background → viewport �
 ### Type Checking & CI Gate (v3.16.x)
 
 `tsconfig.json` (raíz) + script `npm run typecheck` (`tsc --noEmit`). `strict: false`
-con 4 de las 8 flags de `strict` activadas sueltas (ver comentario en el propio
+con 5 de las 8 flags de `strict` activadas sueltas (ver comentario en el propio
 `tsconfig.json` para el porqué de cada una: activadas, aplazadas, o inaplicables).
 `vite build` NO comprueba tipos — esbuild los descarta sin mirarlos. `npm run
 typecheck` es la única comprobación de tipos que existe en este proyecto.
