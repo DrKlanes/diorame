@@ -387,7 +387,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `strokeGenerators.ts` | ~295 | `generateTaperedStroke`, `generateUniformStroke`, `generateInkStroke`, `generateStrokeForMode` |
 | `animationFrames.ts` | ~80 | `getAnimationFrames`, `isLayerEmpty`, `getOnionGhostZs` — animation frame logic shared by the render pipeline, playback, onion skin, and exports |
 | `cinematic.ts` | ~10 | `flToMm`, `mmToFl` — focal-length conversion helpers (FL raw ↔ mm); extracted from legacy ControlsCinematic |
-| `keyboardShortcuts.ts` | ~55 | `ShortcutItem`/`ShortcutGroup` types, `formatShortcut`, `isMac`, `hasFinePointer` — shared keyboard shortcut formatting and platform detection |
+| `keyboardShortcuts.ts` | ~105 | `ShortcutItem`/`ShortcutGroup` types, `formatShortcut`, `isMac`, `hasFinePointer` — shared keyboard shortcut formatting and platform detection. Also `shouldIgnoreGlobalKey`: the focus / text-session / animation guards for global KEYDOWNs, shared by `useKeyboardShortcuts` and the Space pan in `StrataCanvas` so the two window listeners cannot drift apart. Never applied to a keyup — releasing state is unconditional |
 | `browserCapabilities.ts` | ~55 | `supportsCanvasFilter()` — cached functional detection for `ctx.filter` support (Safari/WebKit silently ignores filter). Consumed by `postProcessing.ts` to route Glow/DoF to `blurCompat` |
 | `downloadBlob.ts` | ~25 | `downloadBlob(blob, filename)` — Blob download via hidden appended anchor + deferred cleanup/revoke (iPadOS WebKit drops detached-anchor clicks and sync-revoked URLs); shared by PNG/SVG/MP4/GIF/ZIP export sinks |
 | `soundManager.ts` | ~140 | UI sound playback manager: click, success, brush stroke (pool of 6), mode switch via HTMLAudioElement |
@@ -412,7 +412,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `useExportFlow.ts` | SVG/SVGZ complexity gate: checks visible shape count against 800-shape threshold before dispatching `REQUEST_EXPORT`; shows `ComplexSceneModalV2` on overflow |
 | `useIsMobile.ts` | Mobile device detection via `matchMedia` |
 | `useIsStandalone.ts` | Reactive PWA standalone detection: combines `matchMedia('(display-mode: standalone)')` + legacy `navigator.standalone`; used by `TopBar` for iOS safe-area paddingTop |
-| `useKeyboardShortcuts.ts` | All global and drawing-mode keyboard shortcuts |
+| `useKeyboardShortcuts.ts` | All global and drawing-mode keyboard shortcuts, except Space — that moved to `StrataCanvas` in v3.17.15 (hold to pan / tap to reset needs the pan refs and a keyup) |
 | `useLoadExampleScene.ts` | Fetches, parses, and dispatches the example `.dior` scene |
 | `useSaveLoad.ts` | Save/load projects as `.dior` files: JSON `Blob` download on save, `FileReader` + `JSON.parse` on load. **Not IndexedDB** — that is `useAutoSave.ts`. Fires `project_saved` / `project_loaded` at the confirmed-success point inside each `try` |
 

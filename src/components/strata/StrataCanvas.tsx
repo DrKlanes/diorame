@@ -19,6 +19,7 @@ import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
 import { hitTestGizmo, isPointInsideGizmoBox, computeMoveTransform, isSignificantTransform, isDragEngaged, type TransformMode } from './canvas/moveGizmoInteraction';
 import { cursorClassForGizmoMode } from './canvas/gizmoCursor';
+import { shouldIgnoreGlobalKey } from '../../utils/keyboardShortcuts';
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { renderFrame, type RenderContext, type TransformRefState } from './canvas/renderPipeline';
 import { CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
@@ -166,6 +167,15 @@ export const StrataCanvas = () => {
   // Pan & Zoom Desktop State
   const isPanningRef = useRef(false);
   const [cursorOverride, setCursorOverride] = useState<string | null>(null);
+
+  // Space = hold to pan, tap to reset the view. Exists because a graphics tablet has
+  // no middle button: without it, panning meant putting the pen down and reaching for
+  // a mouse, which breaks the drawing flow. Refs, not state — only the cursor needs a
+  // render, and that rides on the cursorOverride that already exists.
+  const isSpaceDownRef = useRef(false);
+  // Whether this Space press ever became a real pan (crossed the 3px dead zone).
+  // Decides hold vs tap on release: a press that never moved is a tap → reset view.
+  const spacePanEngagedRef = useRef(false);
 
   // Move-gizmo hover cursor. Kept separate from cursorOverride (pan/zoom) so it is
   // only ever read while tool === 'move': a value left over from a hover cannot leak
@@ -827,6 +837,25 @@ export const StrataCanvas = () => {
         return;
     }
 
+    // Space held → this press pans instead of drawing. Seeded HERE rather than on the
+    // keydown on purpose: a key event carries no pointer position, so the pan would
+    // have to start from a stale one. Anchoring it to the pen's first contact makes
+    // the canvas follow exactly from where the user put the pen down.
+    // Reuses the middle-button pan wholesale — same refs, same pointermove branch,
+    // same pointerup teardown. Nothing new to maintain.
+    if (isSpaceDownRef.current && state.mode === 'drawing') {
+        e.preventDefault();
+        isPanningRef.current = true;
+        setCursorOverride('cursor-grabbing');
+        gestureRef.current = {
+            ...gestureRef.current,
+            startPan: { ...state.drawingPan },
+            startCenter: { x: e.clientX, y: e.clientY },
+        };
+        e.currentTarget.setPointerCapture(e.pointerId);
+        return;
+    }
+
     e.preventDefault();
     if (canvasRef.current) canvasRectRef.current = canvasRef.current.getBoundingClientRect();
     const rect = canvasRectRef.current || canvasRef.current!.getBoundingClientRect();
@@ -974,7 +1003,18 @@ export const StrataCanvas = () => {
     if (isPanningRef.current) {
         const dx = e.clientX - gestureRef.current.startCenter.x;
         const dy = e.clientY - gestureRef.current.startCenter.y;
-        
+
+        // Space pan only: has this become a real pan? Reuses the Move tool's 3px
+        // screen-space dead zone with its hysteresis, so "moved" means the same
+        // thing everywhere in the app. Measured against startCenter (fixed at
+        // pointerdown), never frame to frame. Middle-button pan is untouched — it
+        // has no tap meaning to decide.
+        if (isSpaceDownRef.current) {
+            spacePanEngagedRef.current = isDragEngaged(
+                gestureRef.current.startCenter, e.clientX, e.clientY, spacePanEngagedRef.current,
+            );
+        }
+
         // In Orbit mode with middle button, use vertical movement for zoom
         if (state.mode === 'cinematic' && state.cinematicType === 'orbit') {
             const zoomSensitivity = 10; // 10 units per pixel
@@ -1139,7 +1179,9 @@ export const StrataCanvas = () => {
 
     if (isPanningRef.current) {
         isPanningRef.current = false;
-        setCursorOverride(null);
+        // Space still held → back to 'grab' (ready to pan again), not to no cursor.
+        // The pan ends with the pen, the ARMED state ends with the key.
+        setCursorOverride(isSpaceDownRef.current ? 'cursor-grab' : null);
         return;
     }
     if (!isDrawingRef.current) return;
@@ -1375,6 +1417,69 @@ export const StrataCanvas = () => {
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [state.tool]);
+
+  // Space: hold to pan, tap to reset the view. The industry-standard shortcut
+  // (Photoshop, Illustrator, Figma, Blender, Procreate) and the reason it is worth
+  // the conflict with the existing tap-to-reset.
+  useEffect(() => {
+    // Releases the pan. `fireTap` is the hold-vs-tap verdict: a press that never
+    // crossed the dead zone was a tap, and taps keep the old meaning (reset view).
+    const releaseSpace = (fireTap: boolean) => {
+      if (!isSpaceDownRef.current) return;
+      const wasTap = !spacePanEngagedRef.current;
+      isSpaceDownRef.current = false;
+      spacePanEngagedRef.current = false;
+      isPanningRef.current = false;
+      setCursorOverride(null);
+      if (fireTap && wasTap) dispatch({ type: 'RESET_DRAWING_VIEW' });
+    };
+
+    const handleSpaceDown = (e: KeyboardEvent) => {
+      if (e.key !== ' ') return;
+      // Holding a key autorepeats keydown at the OS rate. Harmless while Space only
+      // did RESET_DRAWING_VIEW (idempotent), fatal now: every repeat would re-seed
+      // the pan origin and pin the canvas in place.
+      if (e.repeat) return;
+      if (shouldIgnoreGlobalKey(e, {
+        textSessionActive: state.textSession.isActive,
+        animationBlocking: state.isAnimationMode && state.isAnimationPlaying && state.mode === 'drawing',
+      })) return;
+      if (state.mode !== 'drawing') return;
+      // Mid-stroke: the pen is down and points are being collected. Taking over now
+      // would pan the canvas out from under an unfinished stroke and bake the jump
+      // into its geometry. Ignore the press entirely — no armed state, so the keyup
+      // has nothing to release and the stroke finishes untouched.
+      if (isDrawingRef.current) return;
+      e.preventDefault();
+      isSpaceDownRef.current = true;
+      spacePanEngagedRef.current = false;
+      setCursorOverride('cursor-grab');
+    };
+
+    // NO GUARDS HERE, AND THAT IS DELIBERATE — do not "fix" this by adding them.
+    // Every guard on the keydown asks "should this gesture start?". This asks
+    // "has the key been let go?", and the answer can never be conditional: the
+    // state was already armed, and whatever is true NOW cannot un-arm it. Guard
+    // this on textSession and a user who pans, then opens the text tool without
+    // releasing Space, is left with a pan stuck on forever. Releasing state is
+    // unconditional. Same reason `blur` is wired below: Alt+Tab mid-pan means the
+    // keyup is delivered to another window and never arrives here at all.
+    const handleSpaceUp = (e: KeyboardEvent) => {
+      if (e.key !== ' ') return;
+      releaseSpace(true);
+    };
+    // A lost window is not a tap: release without re-centring.
+    const handleBlur = () => releaseSpace(false);
+
+    window.addEventListener('keydown', handleSpaceDown);
+    window.addEventListener('keyup', handleSpaceUp);
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      window.removeEventListener('keydown', handleSpaceDown);
+      window.removeEventListener('keyup', handleSpaceUp);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [dispatch, state.mode, state.textSession.isActive, state.isAnimationMode, state.isAnimationPlaying]);
 
   // --- Render Loop ---
   useEffect(() => {
