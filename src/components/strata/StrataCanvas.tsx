@@ -62,7 +62,16 @@ export const StrataCanvas = () => {
       orbitTouchStartPanX: 0,
       orbitTouchStartPanY: 0,
       orbitTouchStartZoom: 0,
-      orbitTouchLastPos: { x: 0, y: 0 }
+      orbitTouchLastPos: { x: 0, y: 0 },
+      // Tap-detection fields. These were missing here while GestureState had them
+      // optional, so on a fresh mount `Date.now() - tapStartTime` evaluated to NaN
+      // until the first two/three-finger touch. Harmless in practice — the
+      // `tapTouchCount === 2` guard runs first and was also undefined — but the
+      // correctness depended on a DIFFERENT field's guard, which is the kind of
+      // coupling that breaks silently when someone reorders the conditions.
+      tapStartTime: 0,
+      tapMoved: false,
+      tapTouchCount: 0
   });
   
   // Optimization: Cached Shapes by Z
@@ -785,7 +794,13 @@ export const StrataCanvas = () => {
             // We'll handle zoom in pointer move, just set flag
             isPanningRef.current = true;
             setCursorOverride('cursor-ns-resize'); // vertical resize cursor for zoom
+            // Spread, not a wholesale replace: this handler owns the five pan/zoom
+            // fields below and nothing else. Replacing the object dropped every orbit
+            // and tap field — an accidental side effect of the literal, never a
+            // decision. A mouse click has no business erasing the trace of a touch
+            // gesture. (v3.17.11)
             gestureRef.current = {
+                ...gestureRef.current,
                 isPinching: false,
                 startDist: 0,
                 startZoom: state.viewZoomOffset, // Store starting zoom offset
@@ -799,7 +814,9 @@ export const StrataCanvas = () => {
         // In Drawing mode, middle button does pan
         isPanningRef.current = true;
         setCursorOverride('cursor-grabbing');
+        // Same reasoning as the orbit-mode branch above: spread, not replace.
         gestureRef.current = {
+            ...gestureRef.current,
             isPinching: false,
             startDist: 0,
             startZoom: state.drawingZoom || 1,

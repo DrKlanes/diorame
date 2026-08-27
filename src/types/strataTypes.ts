@@ -86,6 +86,16 @@ export type HandheldIntensity = 'low' | 'medium' | 'high';
 //   · isOrbitTouch / orbitTouch* — dropped when the middle-mouse-button branch of
 //     handlePointerDown replaces the whole object with a pan/zoom-only literal.
 //     Every read is behind an `if (gestureRef.current.isOrbitTouch)` check.
+// Every field is REQUIRED on purpose (they were optional until v3.17.11). Nothing
+// here is ever legitimately absent: the ref is seeded with a full object at mount
+// and each gesture only overwrites the fields it owns. Optional was never modelling
+// "may be missing", it was modelling "whoever wrote the object literal did not list
+// it" — so the type asked every reader to handle an undefined that the runtime does
+// not produce, while quietly allowing a writer to drop a field with no complaint.
+// Required inverts that: the compiler now polices the writers instead of the readers,
+// which is where the invariant actually lives. It is what lets the reads stay bare
+// (`gestureRef.current.orbitTouchStartPanX`) under strictNullChecks without a single
+// `?? 0` papering over a value that would have been wrong anyway.
 export type GestureState = {
     isPinching: boolean;
     startDist: number;
@@ -93,17 +103,17 @@ export type GestureState = {
     startPan: { x: number, y: number };
     startCenter: { x: number, y: number };
     // Orbit touch gesture state
-    isOrbitTouch?: boolean;
-    orbitTouchStartAzimuth?: number;
-    orbitTouchStartElevation?: number;
-    orbitTouchStartPanX?: number;
-    orbitTouchStartPanY?: number;
-    orbitTouchStartZoom?: number;
-    orbitTouchLastPos?: { x: number, y: number };
+    isOrbitTouch: boolean;
+    orbitTouchStartAzimuth: number;
+    orbitTouchStartElevation: number;
+    orbitTouchStartPanX: number;
+    orbitTouchStartPanY: number;
+    orbitTouchStartZoom: number;
+    orbitTouchLastPos: { x: number, y: number };
     // Two/three-finger tap detection (undo / redo)
-    tapStartTime?: number;
-    tapMoved?: boolean;
-    tapTouchCount?: number;
+    tapStartTime: number;
+    tapMoved: boolean;
+    tapTouchCount: number;
 };
 
 // The subset of a pointer event that StrataCanvas's pointer-down path actually
