@@ -39,6 +39,8 @@ export function LayerDotsRail({ inline = false }: LayerDotsRailProps) {
 					<button
 						key={i}
 						onClick={() => dispatch({ type: 'SET_CURRENT_LAYER', payload: i } as any)}
+						// Immediate action — no focus retention. See DiActionButton.
+						onMouseDown={(e) => e.preventDefault()}
 						aria-label={t('layers.row.goTo', { n: i + 1 })}
 						title={t('layers.row.name', { n: i + 1 })}
 						style={{

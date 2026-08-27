@@ -78,6 +78,9 @@ function Swatch({ color, isActive, blobPath, dark, onClick }: SwatchProps) {
 	return (
 		<button
 			onClick={onClick}
+			// Picking a colour is an immediate action: it must not keep the focus, or the
+			// global Space/Enter shortcuts stay disabled afterwards. See DiActionButton.
+			onMouseDown={(e) => e.preventDefault()}
 			title={displayName}
 			style={{
 				width: 24,

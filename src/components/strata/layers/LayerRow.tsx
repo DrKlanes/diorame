@@ -146,6 +146,8 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 
 				<button
 					onClick={e => { e.stopPropagation(); dispatch({ type: 'TOGGLE_LAYER_VISIBILITY', payload: index } as any); }}
+					// Immediate action — no focus retention. See DiActionButton.
+					onMouseDown={(e) => e.preventDefault()}
 					style={{
 						width: 20,
 						height: 20,
@@ -169,6 +171,8 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 
 				<button
 					onClick={e => { e.stopPropagation(); dispatch({ type: 'TOGGLE_3D_LOCK', payload: index } as any); }}
+					// Immediate action — no focus retention. See DiActionButton.
+					onMouseDown={(e) => e.preventDefault()}
 					style={{
 						width: 20,
 						height: 20,

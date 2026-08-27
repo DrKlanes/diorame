@@ -81,6 +81,9 @@ export function BrushModeButton({ dark }: BrushModeButtonProps) {
 	return (
 		<button
 			onClick={handleClick}
+			// Immediate action — no focus retention, or the global Space/Enter shortcuts
+			// stay disabled afterwards. See DiActionButton.
+			onMouseDown={(e) => e.preventDefault()}
 			title={t('bottombar.draw.lineMode.title', { label: t(`bottombar.draw.lineMode.${currentMode}`), n: currentIndex + 1 })}
 			style={{
 				width: 30,

@@ -130,7 +130,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 	// --- Level 1: header + slider (0–1) ---
 	if (showExpanded && level === 1 && valueKey) {
 		return (
-			<button onClick={handleClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} onMouseDown={(e) => e.preventDefault()} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
@@ -153,7 +153,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 	if (showExpanded && level === 'bipolar' && valueKey) {
 		const bv = state.postProcessing[valueKey] as number;
 		return (
-			<button onClick={handleClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} onMouseDown={(e) => e.preventDefault()} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
@@ -179,7 +179,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 		const dv = state.postProcessing[valueKey] as number;
 		const currentValue = findClosestOption(dv, discreteOptions).value;
 		return (
-			<button onClick={handleClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} onMouseDown={(e) => e.preventDefault()} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
@@ -206,7 +206,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 		const cv = state.postProcessing[valueKey] as number;
 		const pType = state.postProcessing.particleType;
 		return (
-			<button onClick={handleClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} onMouseDown={(e) => e.preventDefault()} style={expandedBtnStyle}>
 				<div style={colStyle}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
@@ -243,7 +243,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 		const depthLabel = depthKey ? t(depthKey) : '?';
 		const ditherDisplay = di < 0.05 ? t('fx.dither.clean') : `${Math.round(di * 100)}%`;
 		return (
-			<button onClick={handleClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} onMouseDown={(e) => e.preventDefault()} style={expandedBtnStyle}>
 				<div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', pointerEvents: isMuted ? 'none' : undefined }}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
@@ -286,7 +286,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 		const focusTargetLayer = state.postProcessing.focusTargetLayer;
 		const isFree = focusTargetLayer === -1;
 		return (
-			<button onClick={handleClick} style={expandedBtnStyle}>
+			<button onClick={handleClick} onMouseDown={(e) => e.preventDefault()} style={expandedBtnStyle}>
 				<div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', pointerEvents: isMuted ? 'none' : undefined }}>
 					<div style={headerRowStyle}>
 						<Ico name={iconName} size={16} color={accentColor} />
@@ -347,6 +347,9 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 	return (
 		<button
 			onClick={handleClick}
+			// Immediate action — no focus retention, or the global Space/Enter shortcuts
+			// stay disabled afterwards. See DiActionButton.
+			onMouseDown={(e) => e.preventDefault()}
 			style={{
 				display: 'flex',
 				alignItems: 'center',

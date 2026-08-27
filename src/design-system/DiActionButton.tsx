@@ -42,6 +42,16 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 	const btn = (
 		<button
 			onClick={onClick}
+			// An immediate-action button must not keep the DOM focus after its click.
+			// Keeping it makes the global shortcut guard (useKeyboardShortcuts) stand
+			// down for Space and Enter for as long as the button stays focused — which
+			// is forever — so Space-to-pan died the moment you picked a tool (v3.17.14
+			// regression). preventDefault on mousedown stops the focus being taken in
+			// the first place: it does NOT touch the keyboard route, so Tab still
+			// reaches this button and Space still activates it. Do not "simplify" this
+			// away, and do not swap it for blur(): blur fires after the fact and dumps
+			// focus on <body>.
+			onMouseDown={(e) => e.preventDefault()}
 			onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHov(true); }}
 			onPointerLeave={() => setHov(false)}
 			style={{

@@ -74,6 +74,9 @@ function FXMasterBtn({ dark, active, onClick }: { dark: boolean; active: boolean
 	return (
 		<button
 			onClick={onClick}
+			// Immediate action — no focus retention, or the global Space/Enter shortcuts
+			// stay disabled afterwards. See DiActionButton.
+			onMouseDown={(e) => e.preventDefault()}
 			onPointerEnter={() => setHov(true)}
 			onPointerLeave={() => setHov(false)}
 			title={t('fx.panel.toggleAll')}
