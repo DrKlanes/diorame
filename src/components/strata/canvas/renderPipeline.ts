@@ -80,6 +80,23 @@ export type DrawnFrameOptics = {
 	camera: { x: number; y: number; z: number; rotation: number };
 	viewZoomOffset: number;
 	focalLength: number;
+	// Arc/orbit pivot, as applied to THIS frame. transformPoint shifts every point by
+	// (camera − poi)·arcPivotScale on those two presets, and the inverse has to undo
+	// exactly that shift.
+	//
+	// There is no circular dependency here, which is what made this look harder than it
+	// is: the pivot uses the POI that was ALREADY in state when the frame was drawn, not
+	// the one the click is about to compute. That old POI is fully known at click time,
+	// so the undo is one subtraction — no iteration, no convergence to worry about.
+	isArcOrOrbit: boolean;
+	arcPivotScale: number;
+	pivotPoiX: number;
+	pivotPoiY: number;
+	/** Only 'orbit' pivots vertically; 'arc' shifts in X alone. */
+	cinematicType: string;
+	/** Handheld shake, already folded into `camera` — transformPoint subtracts it back
+	 *  out to recover the ideal camera before pivoting, so the inverse must too. */
+	shake: { x: number; y: number };
 };
 
 /**
@@ -336,11 +353,6 @@ export function renderFrame(
 	// override, so from this line on these are the numbers the artwork is painted with.
 	// HERE and not later either: the cinematic tick in phase 5 advances the camera for
 	// the NEXT frame, so anything read after it is one frame ahead of the screen.
-	rc.drawnFrameRef.current = {
-		camera: { x: currentCamera.x, y: currentCamera.y, z: currentCamera.z, rotation: currentCamera.rotation || 0 },
-		viewZoomOffset,
-		focalLength: FL,
-	};
 
 	// Dynamic Focus Logic
 	let fxFocusDist = isCinematic ? currentState.postProcessing.focusDist : 800;
@@ -483,6 +495,23 @@ export function renderFrame(
 	const isArcOrOrbit = (currentState.cinematicType === 'arc' || currentState.cinematicType === 'orbit') && isCinematic;
 	const dzCenter = isArcOrOrbit ? centerZ - effectiveCameraZ : 0;
 	const arcPivotScale = isArcOrOrbit ? FL / (FL + dzCenter) : 0;
+
+	// Stamp the optics this frame is about to be drawn with. HERE and not earlier:
+	// currentCamera has been through quantizePixelArtCamera, FL through the zoom
+	// override, and the arc/orbit pivot is only known once poi/centerZ are resolved.
+	// HERE and not later either: the cinematic tick in phase 5 advances the camera for
+	// the NEXT frame, so anything read after it is one frame ahead of the screen.
+	rc.drawnFrameRef.current = {
+		camera: { x: currentCamera.x, y: currentCamera.y, z: currentCamera.z, rotation: currentCamera.rotation || 0 },
+		viewZoomOffset,
+		focalLength: FL,
+		isArcOrOrbit,
+		arcPivotScale,
+		pivotPoiX: poiX,
+		pivotPoiY: poiY,
+		cinematicType: currentState.cinematicType,
+		shake: { ...rc.lastShakeRef.current },
+	};
 
 	const fxDistortion = (fxEnabled && currentState.postProcessingEnabled.distortion) ? currentState.postProcessing.distortion : 0;
 	const distortionK = Math.abs(fxDistortion) > 0.01 ? (fxDistortion * -0.8) * (500 / FL) : 0;

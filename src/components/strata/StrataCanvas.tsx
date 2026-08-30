@@ -935,8 +935,25 @@ export const StrataCanvas = () => {
             const distortionK = Math.abs(fxDistortion) > 0.01
                 ? (fxDistortion * -0.8) * (500 / frameFocalLength)
                 : 0;
+            // Deshacer el pivote de arc/orbit ANTES de invertir. transformPoint desplaza
+            // cada punto por (cámara ideal − POI)·arcPivotScale en esos dos presets, así
+            // que el píxel tocado viene corrido en esa misma cantidad.
+            // El POI que usa el pivote es el ANTERIOR —el que ya estaba en state cuando
+            // se dibujó el frame—, no el que se está calculando: no hay dependencia
+            // circular y basta una resta, sin iterar. La sacudida (handheld) va incluida
+            // en la cámara, y transformPoint se la resta para recuperar la ideal, así que
+            // aquí se hace igual.
+            let pivotDX = 0, pivotDY = 0;
+            if (optics && optics.isArcOrOrbit) {
+                const idealCamX = optics.camera.x - optics.shake.x;
+                const idealCamY = optics.camera.y - optics.shake.y;
+                pivotDX = (idealCamX - optics.pivotPoiX) * optics.arcPivotScale;
+                if (optics.cinematicType === 'orbit') {
+                    pivotDY = (idealCamY - optics.pivotPoiY) * optics.arcPivotScale;
+                }
+            }
             const unprojectOn = (referenceZ: number) => unprojectCinematicPoint({
-                screenX: pointerX, screenY: pointerY,
+                screenX: pointerX - pivotDX, screenY: pointerY - pivotDY,
                 centerXScreen: cx, centerYScreen: cy,
                 camera: frameCamera,
                 focalLength: frameFocalLength,
