@@ -314,8 +314,8 @@ export const es: Dictionary = {
 	'viewport.flipHorizontal': 'Voltear horizontal',
 	'viewport.flipVertical': 'Voltear vertical',
 	'viewport.centerLayer': 'Centrar capa',
-	'viewport.cinema.doubleTapHint': 'Doble tap para centrar',
-	'viewport.cinema.resetPoi': 'Quitar punto',
+	'viewport.cinema.doubleTapHint': 'Doble toque para encuadrar',
+	'viewport.cinema.resetPoi': 'Quitar encuadre',
 
 	// ═══════════════════════════════════════════════
 	// MODALS

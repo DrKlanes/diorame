@@ -13,8 +13,13 @@ import {
 
 /**
  * POIPill — compact hint pill shown to the right of CameraBar in Cinema mode.
- * Always shows "Double tap to focus" hint; reveals an X button only when a
+ * Always shows the "Double tap to frame" hint; reveals an X button only when a
  * point of interest is currently set. Semi-transparent at rest, opaque on hover.
+ *
+ * Copy says "frame"/"framing" (v3.17.27), never "focus" — that word is DoF's
+ * (`postProcessing.focusDist`/`focusTargetLayer`, a Z-depth blur control). The POI
+ * is a camera X/Y position, a different axis entirely; sharing the word invited
+ * confusing the two.
  */
 export function POIPill() {
 	const { state, dispatch } = useStrata();
