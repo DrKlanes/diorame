@@ -22,6 +22,7 @@ import { cursorClassForGizmoMode } from './canvas/gizmoCursor';
 import { shouldIgnoreGlobalKey } from '../../utils/keyboardShortcuts';
 import { getAnimationFrames, isLayerEmpty } from '../../utils/animationFrames';
 import { unprojectCinematicPoint, referencePlaneZ } from './canvas/unprojectPoint';
+import { pickLayerAtPoint } from './canvas/pickLayerAtPoint';
 import { renderFrame, type RenderContext, type TransformRefState } from './canvas/renderPipeline';
 import { CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
 
@@ -903,50 +904,74 @@ export const StrataCanvas = () => {
             // instead of the DRAW-mode maths computed above — worldX/worldY are wrong
             // here, they assume a different camera. See that module's header.
             //
-            // The reference plane is the mid-plane of the layers holding content, NOT
-            // the active layer the old code used: in CINEMA that is an invisible
-            // leftover from DRAW mode, and letting it govern framing was the bug.
-            //
-            // No content hit-test any more. Framing does not consult the drawing —
-            // where you tap is where the camera goes, gato or empty canvas. It also
-            // drops a scan over every point of every shape from inside a pointerdown.
-            const refZ = referencePlaneZ(
-                state.totalLayers,
-                (i) => !isLayerEmpty(state, i),
-                BASE_DEPTH_STEP,
-            );
-            // Same gates and the same formula the renderer uses (renderPipeline:
-            // fxEnabled / fxDistortion / distortionK). A lens that bends the image has
-            // to bend the un-projection too, or the click lands where the pixel WOULD
-            // have been without the lens.
+            // PICKING PER LAYER (v3.17.23): un-project the touched pixel onto EVERY
+            // candidate layer and ask which one has content there. A fixed reference
+            // plane could not do this — the same pixel on the mid-plane is a different
+            // world position than on layer 10, so touching a nose framed a point on the
+            // same line of sight but at the wrong depth. Deterministic and still useless.
             const fxOn = state.fxMasterEnabled && state.postProcessingEnabled.distortion;
             const fxDistortion = fxOn ? state.postProcessing.distortion : 0;
+            // Mirrors renderPipeline's distortionK. Kept in step by hand rather than
+            // shared, to avoid reaching into the render pipeline for a scalar — if that
+            // formula ever moves, this is the other place that reads it. A lens that
+            // bends the image has to bend the un-projection too.
             const distortionK = Math.abs(fxDistortion) > 0.01
                 ? (fxDistortion * -0.8) * (500 / state.focalLength)
                 : 0;
-            const framed = unprojectCinematicPoint({
-                screenX: pointerX,
-                screenY: pointerY,
-                centerXScreen: cx,
-                centerYScreen: cy,
+            const unprojectOn = (referenceZ: number) => unprojectCinematicPoint({
+                screenX: pointerX, screenY: pointerY,
+                centerXScreen: cx, centerYScreen: cy,
                 camera: state.camera,
                 focalLength: state.focalLength,
                 viewZoomOffset: state.viewZoomOffset,
                 layerSpacingFactor: state.layerSpacingFactor,
-                referenceZ: refZ,
+                referenceZ,
                 viewZoom: 1,
                 viewPan: { x: 0, y: 0 },
-                // Mirrors renderPipeline's distortionK. Kept in step by hand rather than
-                // shared, to avoid reaching into the render pipeline for a scalar — if
-                // that formula ever moves, this is the other place that reads it.
-                distortionK: distortionK,
+                distortionK,
             });
+
+            // Candidates, front to back by REAL distance to the camera. Not by layer
+            // index: with the camera moving in z and layerSpacingFactor variable, index
+            // order and depth order are not the same. Empty layers (nothing to hit) and
+            // hidden ones (cannot point at what you cannot see) are dropped first.
+            const effCamZ = state.camera.z + state.viewZoomOffset;
+            const candidates: number[] = [];
+            for (let i = 0; i < state.totalLayers; i++) {
+                if (state.hiddenLayers.includes(i)) continue;
+                if (isLayerEmpty(state, i)) continue;
+                candidates.push(i);
+            }
+            const dzOf = (i: number) =>
+                (i * -BASE_DEPTH_STEP) * state.layerSpacingFactor * CINEMATIC_DEPTH_MULTIPLIER - effCamZ;
+            candidates.sort((a, b) => dzOf(a) - dzOf(b));
+
+            const activeLayerZ = (i: number) => i * -BASE_DEPTH_STEP;
+            const hit = pickLayerAtPoint(
+                candidates,
+                (i) => state.shapes.filter(sh => sh.zIndex === activeLayerZ(i)),
+                (i) => unprojectOn(activeLayerZ(i)),
+                BASE_DEPTH_STEP,
+            );
+
+            // Nothing under the pointer → the mid-plane of the layers with content.
+            // It stops being the main answer and becomes the fallback, which is where it
+            // always belonged: the honest reply when there is nothing to point at.
+            let framed: { x: number; y: number } | null = null;
+            let framedZ = 0;
+            if (hit) {
+                framed = { x: hit.x, y: hit.y };
+                framedZ = hit.z;
+            } else {
+                framedZ = referencePlaneZ(state.totalLayers, (i) => !isLayerEmpty(state, i), BASE_DEPTH_STEP);
+                framed = unprojectOn(framedZ);
+            }
             lastClickTimeRef.current = 0;
             // null = that plane sits at/behind the near clip, so the forward projection
             // would not have drawn anything there either. Leave the framing untouched
             // rather than aiming the camera at a point that cannot be seen.
             if (framed) {
-                dispatch({ type: 'SET_POINT_OF_INTEREST', payload: { x: framed.x, y: framed.y, z: refZ } });
+                dispatch({ type: 'SET_POINT_OF_INTEREST', payload: { x: framed.x, y: framed.y, z: framedZ } });
             }
             return;
         } else {
