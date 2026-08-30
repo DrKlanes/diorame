@@ -366,7 +366,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `renderUniformLineShape.ts` | ~160 | Uniform-mode brush stroke rendering |
 | `transformPoint.ts` | ~130 | `createTransformPoint` factory for 3D projection |
 | `pickLayerAtPoint.ts` | ~150 | `pickLayerAtPoint`: which layer holds content under a screen point. Ray casting on `shape.points` — which IS the filled contour, not the spine, so the test is exact with nothing precomputed (measured cheaper AND more accurate than per-shape bounding boxes). Text gets its own box from fontSize/text/align since its `points` is a lone anchor. Erasers SUBTRACT, decided in paint order, so a rubbed-out hole behaves like a hole. Caller passes candidates already ordered front-to-back by real dz and already stripped of empty and hidden layers |
-| `unprojectPoint.ts` | ~260 | `unprojectCinematicPoint`, `referencePlaneZ`: screen → world for CINEMA, the algebraic inverse of `transformPoint.ts`'s cinematic branch (viewport, **lens distortion**, camera rotation, perspective scale, camera translation). MIRROR THE TWO FILES — if the forward projection changes this breaks silently, and the round-trip test is what catches it. Distortion is inverted by Newton on the cubic `D = r(1+Kr)²`, 6 iterations, with an analytic existence test for the barrel fold (returns null where no well-behaved pre-image exists). The arc/orbit pivot is NOT inverted (circular dependency on the POI). `referencePlaneZ` picks the mid-plane of the layers holding content, never the active layer |
+| `unprojectPoint.ts` | ~260 | `unprojectCinematicPoint`, `referencePlaneZ`: screen → world for CINEMA, the algebraic inverse of `transformPoint.ts`'s cinematic branch (viewport, **lens distortion**, camera rotation, perspective scale, camera translation). MIRROR THE TWO FILES — if the forward projection changes this breaks silently, and the round-trip test is what catches it (but see "CINEMA Framing Invariants" below for why that test alone is not sufficient). Distortion is inverted by Newton on the cubic `D = r(1+Kr)²`, 6 iterations, with an analytic existence test for the barrel fold (returns null where no well-behaved pre-image exists). The arc/orbit pivot is inverted by the CALLER (`StrataCanvas`, one subtraction using the pivot POI in `drawnFrameRef`) before calling this function — earlier docs here called that a circular dependency; it is not, see point 6 below. `referencePlaneZ` picks the mid-plane of the layers holding content, never the active layer |
 | `transformUtils.ts` | ~135 | `getLayerBoundingBox`: pixel-accurate bounding box for Move tool gizmo |
 | `moveGizmoInteraction.ts` | ~230 | `hitTestGizmo`, `isPointInsideGizmoBox`, `computeMoveTransform`, `isDragEngaged`: Move tool hit-testing + transform math (translate/rotate/scale uniform + scaleX/scaleY non-uniform for squash & stretch), the screen-space drag dead-zone (3px from pointerdown, hysteresis once crossed) that gates whether a gesture writes `currentTransform` at all, and the box-containment test (convex same-sign cross products over the 4 projected corners; must be asked AFTER `hitTestGizmo` because handles live outside the box). Pure module extracted from StrataCanvas |
 | `gizmoCursor.ts` | ~115 | `cursorClassForGizmoMode`: maps a gizmo hit-test mode to the CSS cursor that announces the drag before the press. Rotation-aware throughout (the handles arrive already projected). Corners → always a diagonal cursor (`nwse`/`nesw`), picked from the box diagonal's own screen angle, so no aspect ratio can put an axis cursor on a proportional handle; mid-sides → `handle − center` rounded to one of the 8 native directional cursors; rotation handle → `cursor-rotate` (custom data-URI rule in `styles/globals.css`). Pure module |
@@ -465,6 +465,91 @@ decisions that the code cannot express on its own.
 
 **`renderFrame` phase sequence:**
 throttle → quantize cam → FL/focus → buffers → background → viewport → layer loop → post-processing → overlays → cinematic tick
+
+### CINEMA Framing (POI) — Invariants
+
+The double-click framing point (`state.pointOfInterest`) went through several
+rounds of "fixed" that weren't (v3.17.17 → v3.17.25) before the real bug was
+found. The invariants below exist to stop that from happening again — every
+one of them was violated at some point, silently, while every automated check
+in play kept passing.
+
+**1. `state.camera` is FROZEN once CINEMA starts — by design, not by bug.**
+`ControlsV2` dispatches `UPDATE_CAMERA` once on entering CINEMA and never
+again. The cinematic tick (`renderPipeline` phase 5) moves the camera every
+frame by writing `rc.cameraRef.current` directly — it does NOT dispatch,
+on purpose: dispatching every frame would mean a React re-render every frame
+for the whole CINEMA animation loop, to move a value nothing in the render
+tree needs as state. So `state.camera` is correct in DRAWING and stale from
+the first tick onward in CINEMA. **Any code path that needs the real camera
+while in CINEMA must not read `state.camera` — read `drawnFrameRef` (next
+point) or `cameraRef` with the frame-timing caveat in point 3.**
+
+**2. `renderFrame` stamps `drawnFrameRef` with the optics ACTUALLY used to
+draw the current frame — camera, `focalLength`, `viewZoomOffset`, and (for
+`arc`/`orbit`) the pivot POI and `arcPivotScale`. This looks redundant with
+`cameraRef` and is not — do not remove it.** It is written after
+`quantizePixelArtCamera` and after the `zoom` preset's focal-length override,
+so it is the exact numbers the frame on screen was painted with, not an
+approximation of them. `DrawnFrameOptics` (type in `renderPipeline.ts`) is
+the contract; `unprojectCinematicPoint`'s correctness for a POI click depends
+on every field of it being sourced from here, never recomputed from `state`.
+
+**3. The cinematic tick runs AFTER drawing (it is phase 5, the last phase of
+`renderFrame`).** So by the time a frame has finished rendering,
+`cameraRef.current` already holds the NEXT frame's camera, not the one on
+screen. This is the reason point 2 exists: reading `cameraRef` directly from
+a click handler is one frame stale (irrelevant at ~1-2 units of drift for
+most presets, ~98 units of Z per frame for `twist` — enough to matter).
+Stamping mid-frame, before the tick runs, is what removes the lag instead of
+bounding it.
+
+**4. The `zoom` preset overwrites `focalLength` every frame** with an
+exponential sweep (1250 → 40000, `renderPipeline.ts` right before the
+`drawnFrameRef` stamp). `state.focalLength` never learns this value — it
+still holds whatever the user set in the FX panel. Un-projecting with
+`state.focalLength` during `zoom` is invisible in the math (both numbers are
+"a focal length", nothing type-checks the mismatch) and produces 40-90 units
+of world-space error depending on where in the sweep the click landed.
+
+**5. ⚠️ THE POI MARKER (`drawPoiMarker.ts`) CANNOT VALIDATE THAT FRAMING IS
+CORRECT — this is the point that actually cost the most time, so read it
+twice.** The marker is drawn AT the POI, projected through the exact same
+forward projection that moves the camera toward that POI. Camera converges to
+POI, marker sits at POI: the two will coincide by construction, forever,
+regardless of whether the POI itself is the right point. The marker measures
+**the render pipeline's self-consistency**, not whether the double-click
+picked the pixel the user actually touched. The same failure shape sank a
+verification pass twice in this project's history:
+
+- The marker (v3.17.22) shipped as "the instrument" and drew a perfectly
+  stable dot through three later commits (v3.17.23/24/25) while the framing
+  underneath it was still wrong in 8 of 11 CINEMA presets.
+- A 4,140-combination round-trip test (`unprojectPoint.ts`, v3.17.17) reported
+  zero error the whole time for the same reason: it fed the SAME camera to
+  both the forward projection and the inverse. That is a test of the algebra
+  being self-consistent, not of the algebra matching what was drawn.
+
+**The only test that actually catches a framing bug feeds the two directions
+from DIFFERENT sources**: project a known world point using the LIVE camera
+from a running `computeCinematicTick` loop (not a value you hand-picked), then
+un-project the resulting screen pixel through the exact production code path
+(`StrataCanvas`'s double-click handler logic, or an equivalent that reads
+`drawnFrameRef` the same way), and check the point lands back inside the
+original shape in world space. If both sides of a test can be traced to one
+shared camera variable, the test cannot fail even when the feature is broken.
+
+**6. The `arc`/`orbit` pivot has NO circular dependency on the POI being
+computed — it was documented as one (v3.17.20) and that was wrong.**
+`transformPoint` shifts every screen point by `(idealCamera − POI) ×
+arcPivotScale` on those two presets. The POI in that formula is the one
+ALREADY in `state` when the frame was drawn (captured in `drawnFrameRef`) —
+never the new POI a click is about to produce. Since the old POI is fully
+known at click time, undoing the shift is one subtraction before calling
+`unprojectCinematicPoint`, not an iterative solve. `orbit` shifts both X and
+Y; `arc` shifts X only. Both must subtract the handheld shake from the camera
+first (`camera − shake`) to recover the ideal camera the forward pass pivots
+around, mirroring what `transformPoint` does.
 
 ### Type Checking & CI Gate (v3.16.x)
 

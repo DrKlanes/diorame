@@ -94,3 +94,64 @@ con GO. Se resolvió con GO explícito, pero la redacción sigue sin actualizar.
 
 **Pendiente:** revisar el texto de la regla dorada 1 para que diga lo que de
 verdad se aplica. No se tocó aquí para no mezclar frentes.
+
+---
+
+## El punto de encuadre (POI) no sobrevive a recargar
+
+**Estado:** documentado, sin arreglar. Consecuencia aceptada, no bug.
+
+`state.pointOfInterest` no aparece ni en `useSaveLoad.ts` ni en
+`useAutoSave.ts`. Es coherente con que sea estado de vista puro —tampoco entra
+en `HistorySnapshot`, así que Undo/Redo lo dejan intacto por el mismo motivo—
+pero tiene un coste real: un encuadre bien elegido a base de tocar exactamente
+la figura correcta se pierde al recargar la página o al reabrir el `.dior`.
+
+**Pendiente:** si se decide que merece persistir, entra en el mismo lugar que
+`hiddenLayers`/`locked3DLayers` en el payload de guardado — no en
+`HistorySnapshot`. Es una decisión de producto (¿quiere Moisés que un
+encuadre guardado sobreviva al archivo, o es intencionadamente efímero como
+una posición de scroll?), no una omisión técnica.
+
+---
+
+## STORYTELLING ignora el POI sin decirlo
+
+**Estado:** documentado, sin arreglar. Confirmado en código
+(`cinematicCamera.ts`).
+
+Con cualquier otro preset, doblemente tocar el lienzo en CINEMA mueve la
+cámara al punto tocado — verificado y corregido de fondo entre v3.17.17 y
+v3.17.25 (ver REFERENCE.md §10, "CINEMA Framing (POI) — Invariants"). Con
+`storytelling` el gesto no hace NADA visible: la cámara sigue el recorrido de
+los waypoints (centroides de cada capa) y solo cae en `poiX`/`poiY` en el
+caso degenerado de cero waypoints, que en la práctica no ocurre con contenido
+real.
+
+El síntoma para el usuario: el marcador del POI (`drawPoiMarker.ts`) SÍ
+aparece —se fija igual que en cualquier otro preset, `SET_POINT_OF_INTEREST`
+no distingue por `cinematicType`— pero la cámara no responde a él. Parece un
+segundo bug de encuadre encima del ya arreglado.
+
+**Pendiente:** decidir si `storytelling` debe (a) ignorar el doble click de
+forma explícita —deshabilitando el gesto o el marcador en ese preset, para
+que la ausencia de efecto no se lea como un fallo— o (b) incorporar el POI al
+recorrido de alguna forma (p. ej. como parada extra). Es diseño del preset,
+no un fix mecánico.
+
+---
+
+## POIPill dice "focus", y es encuadre
+
+**Estado:** anotado, sin tocar. Copy pendiente de Moisés.
+
+El pill de ayuda en CINEMA usa el texto "Double tap to focus" / su
+equivalente en español, y el propio nombre del componente (`POIPill.tsx`) usa
+"focus" en el código. Es justo la palabra que puede confundir esto con el
+sistema de DoF (`postProcessing.focusDist`/`focusTargetLayer`), que es un
+control completamente distinto —profundidad de campo en Z, no posición de
+cámara en X/Y— y que efectivamente se llama "focus" en la UI de FX.
+
+**Pendiente:** copy nuevo en EN y ES para el pill (y, si se quiere ir a fondo,
+renombrar el componente). No se toca aquí porque es texto de producto en la
+voz de Moisés, no una decisión técnica.
