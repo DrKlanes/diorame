@@ -23,7 +23,7 @@ import { shouldIgnoreGlobalKey } from '../../utils/keyboardShortcuts';
 import { getAnimationFrames, isLayerEmpty } from '../../utils/animationFrames';
 import { unprojectCinematicPoint, referencePlaneZ } from './canvas/unprojectPoint';
 import { pickLayerAtPoint } from './canvas/pickLayerAtPoint';
-import { renderFrame, type RenderContext, type TransformRefState } from './canvas/renderPipeline';
+import { renderFrame, type RenderContext, type TransformRefState, type DrawnFrameOptics } from './canvas/renderPipeline';
 import { CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
 
 export const StrataCanvas = () => {
@@ -135,6 +135,10 @@ export const StrataCanvas = () => {
   // 0 = nunca fijado. Ref y no estado: cambia una vez por doble click y solo lo lee
   // el bucle de render, así que un re-render de React no aportaría nada.
   const poiMarkerSetAtRef = useRef(0);
+  // Ópticas del último frame dibujado (cámara ya cuantizada, viewZoomOffset y focal
+  // length efectivos). Lo estampa renderFrame a mitad de frame; lo lee el doble click
+  // de CINEMA para invertir exactamente el frame que el usuario está viendo.
+  const drawnFrameRef = useRef<DrawnFrameOptics | null>(null);
   // DOUBLE_CLICK_DELAY moved to src/constants/renderConstants.ts
 
   // Organic Brush State
@@ -909,6 +913,19 @@ export const StrataCanvas = () => {
             // plane could not do this — the same pixel on the mid-plane is a different
             // world position than on layer 10, so touching a nose framed a point on the
             // same line of sight but at the wrong depth. Deterministic and still useless.
+            // Las ópticas del frame que el usuario ESTÁ VIENDO, no las de AppState.
+            // state.camera se congela al entrar en CINEMA —ControlsV2 la fija en
+            // {0,0,500} y nadie la vuelve a escribir, mientras el tick mueve cameraRef
+            // cada frame—, state.focalLength no conoce el barrido del preset 'zoom', y
+            // ninguno de los dos sabe de la cuantización de pixel art. Invertir con
+            // esos valores es invertir un frame que no existe.
+            // Sin frame dibujado todavía (primer pointerdown antes del primer RAF) se
+            // cae a AppState, que es lo mejor disponible en ese instante.
+            const optics = drawnFrameRef.current;
+            const frameCamera = optics ? optics.camera : state.camera;
+            const frameFocalLength = optics ? optics.focalLength : state.focalLength;
+            const frameViewZoomOffset = optics ? optics.viewZoomOffset : state.viewZoomOffset;
+
             const fxOn = state.fxMasterEnabled && state.postProcessingEnabled.distortion;
             const fxDistortion = fxOn ? state.postProcessing.distortion : 0;
             // Mirrors renderPipeline's distortionK. Kept in step by hand rather than
@@ -916,14 +933,14 @@ export const StrataCanvas = () => {
             // formula ever moves, this is the other place that reads it. A lens that
             // bends the image has to bend the un-projection too.
             const distortionK = Math.abs(fxDistortion) > 0.01
-                ? (fxDistortion * -0.8) * (500 / state.focalLength)
+                ? (fxDistortion * -0.8) * (500 / frameFocalLength)
                 : 0;
             const unprojectOn = (referenceZ: number) => unprojectCinematicPoint({
                 screenX: pointerX, screenY: pointerY,
                 centerXScreen: cx, centerYScreen: cy,
-                camera: state.camera,
-                focalLength: state.focalLength,
-                viewZoomOffset: state.viewZoomOffset,
+                camera: frameCamera,
+                focalLength: frameFocalLength,
+                viewZoomOffset: frameViewZoomOffset,
                 layerSpacingFactor: state.layerSpacingFactor,
                 referenceZ,
                 viewZoom: 1,
@@ -935,7 +952,7 @@ export const StrataCanvas = () => {
             // index: with the camera moving in z and layerSpacingFactor variable, index
             // order and depth order are not the same. Empty layers (nothing to hit) and
             // hidden ones (cannot point at what you cannot see) are dropped first.
-            const effCamZ = state.camera.z + state.viewZoomOffset;
+            const effCamZ = frameCamera.z + frameViewZoomOffset;
             const candidates: number[] = [];
             for (let i = 0; i < state.totalLayers; i++) {
                 if (state.hiddenLayers.includes(i)) continue;
@@ -1620,6 +1637,7 @@ export const StrataCanvas = () => {
       lastShakeRef,
       transformHandlesRef,
       poiMarkerSetAtRef,
+      drawnFrameRef,
       lastRenderTimeRef,
       orbitRef,
       accumulatedTimeRef,

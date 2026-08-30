@@ -82,6 +82,8 @@ const renderSnapshotAtScale = (
 		transformHandlesRef,
 		// Overlays are skipped in exports, so the marker never draws. 0 = never set.
 		poiMarkerSetAtRef: { current: 0 },
+		// Escrito por renderFrame; en export no lo lee nadie.
+		drawnFrameRef: { current: null },
 		lastRenderTimeRef: { current: 0 },
 		orbitRef: { current: { azimuth: 0, elevation: 0.2, targetAzimuth: 0, targetElevation: 0.2, panOffsetX: 0, panOffsetY: 0 } },
 

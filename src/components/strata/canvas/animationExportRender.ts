@@ -150,6 +150,8 @@ export async function renderAnimationFrames(
 			transformHandlesRef,
 		// Overlays are skipped in exports, so the marker never draws. 0 = never set.
 		poiMarkerSetAtRef: { current: 0 },
+		// Escrito por renderFrame; en export no lo lee nadie.
+		drawnFrameRef: { current: null },
 			lastRenderTimeRef,
 			orbitRef,
 

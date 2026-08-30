@@ -56,6 +56,33 @@ export type TransformRefState = {
 };
 
 /**
+ * The optics a frame was ACTUALLY drawn with — not what AppState holds.
+ *
+ * Three things drift apart from `state` while CINEMA runs, and every one of them
+ * silently poisoned the framing double-click:
+ *
+ *   1. camera — the cinematic tick writes `cameraRef.current` every frame and NOTHING
+ *      writes it back to `state.camera`, which is frozen at {0,0,500} from the moment
+ *      CINEMA is entered (ControlsV2). Un-projecting a click with that frozen camera
+ *      while the image was drawn with the live one is a systematic error that changes
+ *      as the camera animates — the lottery, and it happens with a single layer too.
+ *   2. focalLength — the `zoom` preset overrides it per frame with an exponential
+ *      sweep (1250 → 40000). `state.focalLength` never learns.
+ *   3. viewZoomOffset / camera — quantizePixelArtCamera mutates both in pixel-art mode.
+ *
+ * Reading the raw `cameraRef` would fix only the first, and even then one frame late:
+ * the tick runs in phase 5, AFTER drawing, so once a frame ends the ref already holds
+ * the NEXT frame's camera. Stamping the values mid-frame instead — after quantisation
+ * and after the FL override, before anything is painted — makes the record exactly the
+ * frame on screen, with no lag to reason about.
+ */
+export type DrawnFrameOptics = {
+	camera: { x: number; y: number; z: number; rotation: number };
+	viewZoomOffset: number;
+	focalLength: number;
+};
+
+/**
  * RenderContext bundles every input that renderFrame and renderLayer need:
  * AppState snapshot, refs (some read-only, some written by the pipeline),
  * frame-persistent state refs (the 5 migrated from useEffect-local `let`),
@@ -90,6 +117,10 @@ export type RenderContext = {
 	storyFocusRef: React.MutableRefObject<number | null>;
 	lastShakeRef: React.MutableRefObject<{ x: number; y: number; z: number }>;
 	transformHandlesRef: React.MutableRefObject<GizmoHandles | null>;
+	// The projection parameters this frame was ACTUALLY drawn with, stamped mid-frame
+	// (see DrawnFrameOptics). Written every frame, read by the CINEMA double-click so
+	// its inverse undoes the exact frame the user is looking at.
+	drawnFrameRef: React.MutableRefObject<DrawnFrameOptics | null>;
 	// performance.now() at the moment the POI was last set, driving the framing
 	// marker's fade (canvas/drawPoiMarker.ts). Read-only here — StrataCanvas stamps
 	// it from an effect on state.pointOfInterest. 0 means "never set", which the
@@ -299,6 +330,17 @@ export function renderFrame(
 		const sineNorm = (Math.sin(rc.accumulatedTimeRef.current * 0.4) + 1) / 2;
 		FL = minFL * Math.pow(ratio, sineNorm);
 	}
+
+	// Stamp the optics this frame is about to be drawn with. HERE and not earlier:
+	// currentCamera has been through quantizePixelArtCamera and FL through the zoom
+	// override, so from this line on these are the numbers the artwork is painted with.
+	// HERE and not later either: the cinematic tick in phase 5 advances the camera for
+	// the NEXT frame, so anything read after it is one frame ahead of the screen.
+	rc.drawnFrameRef.current = {
+		camera: { x: currentCamera.x, y: currentCamera.y, z: currentCamera.z, rotation: currentCamera.rotation || 0 },
+		viewZoomOffset,
+		focalLength: FL,
+	};
 
 	// Dynamic Focus Logic
 	let fxFocusDist = isCinematic ? currentState.postProcessing.focusDist : 800;

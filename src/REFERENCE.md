@@ -360,7 +360,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `renderLayerBody.ts` | ~455 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)` |
 | `renderLiveStroke.ts` | ~150 | In-progress live stroke rendering |
 | `renderParticles.ts` | ~100 | Floating cinematic particles rendering |
-| `renderPipeline.ts` | ~565 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12) |
+| `renderPipeline.ts` | ~620 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12) |
 | `renderRegularFillShape.ts` | ~95 | Regular fill shapes (blob / tapered brush) |
 | `renderTextShape.ts` | ~175 | Text shape rendering with font + alignment |
 | `renderUniformLineShape.ts` | ~160 | Uniform-mode brush stroke rendering |
