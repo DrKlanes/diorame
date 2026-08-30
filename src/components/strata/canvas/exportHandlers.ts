@@ -80,6 +80,8 @@ const renderSnapshotAtScale = (
 		storyFocusRef: { current: null },
 		lastShakeRef: { current: { x: 0, y: 0, z: 0 } },
 		transformHandlesRef,
+		// Overlays are skipped in exports, so the marker never draws. 0 = never set.
+		poiMarkerSetAtRef: { current: 0 },
 		lastRenderTimeRef: { current: 0 },
 		orbitRef: { current: { azimuth: 0, elevation: 0.2, targetAzimuth: 0, targetElevation: 0.2, panOffsetX: 0, panOffsetY: 0 } },
 

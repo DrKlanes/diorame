@@ -148,6 +148,8 @@ export async function renderAnimationFrames(
 			storyFocusRef: { current: null },
 			lastShakeRef,
 			transformHandlesRef,
+		// Overlays are skipped in exports, so the marker never draws. 0 = never set.
+		poiMarkerSetAtRef: { current: 0 },
 			lastRenderTimeRef,
 			orbitRef,
 

@@ -130,6 +130,10 @@ export const StrataCanvas = () => {
   // Position of the click that armed lastClickTimeRef, in canvas px. Pairs with it
   // so a double-click has to be close in space as well as in time.
   const lastClickPosRef = useRef({ x: 0, y: 0 });
+  // performance.now() de cuando se fijó el POI, para el desvanecido del marcador.
+  // 0 = nunca fijado. Ref y no estado: cambia una vez por doble click y solo lo lee
+  // el bucle de render, así que un re-render de React no aportaría nada.
+  const poiMarkerSetAtRef = useRef(0);
   // DOUBLE_CLICK_DELAY moved to src/constants/renderConstants.ts
 
   // Organic Brush State
@@ -1449,6 +1453,14 @@ export const StrataCanvas = () => {
   // Recover orphaned gesture state when the app returns to the foreground.
   useCanvasRecovery(resetGestureState);
 
+  // Stamps when the framing point was set, so the marker knows when to fade
+  // (canvas/drawPoiMarker.ts). Keyed on the POI object identity: the reducer builds a
+  // new one on every SET_POINT_OF_INTEREST, so re-framing the same spot twice still
+  // re-arms the marker. Clearing the POI stamps 0 — nothing to point at, nothing drawn.
+  useEffect(() => {
+    poiMarkerSetAtRef.current = state.pointOfInterest ? performance.now() : 0;
+  }, [state.pointOfInterest]);
+
   // Escape cancels an in-flight gizmo drag: isActive=false, no dispatch — the shapes
   // were never touched (TRANSFORM_LAYER only fires on pointerup), so this discards the
   // live preview exactly like the pointercancel path above, just from the keyboard.
@@ -1582,6 +1594,7 @@ export const StrataCanvas = () => {
       storyFocusRef,
       lastShakeRef,
       transformHandlesRef,
+      poiMarkerSetAtRef,
       lastRenderTimeRef,
       orbitRef,
       accumulatedTimeRef,

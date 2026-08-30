@@ -9,6 +9,8 @@ import type { OrbitState } from './cinematicCamera';
 import { CINEMATIC_DEPTH_MULTIPLIER, computeCinematicTick } from './cinematicCamera';
 import { drawBackground } from './drawBackground';
 import { drawGizmo } from './drawGizmo';
+import { drawPoiMarker } from './drawPoiMarker';
+import { createTransformPoint } from './transformPoint';
 import { drawSymmetryAxis } from './drawSymmetryAxis';
 import { quantizePixelArtCamera } from './quantizePixelArtCamera';
 import {
@@ -88,6 +90,11 @@ export type RenderContext = {
 	storyFocusRef: React.MutableRefObject<number | null>;
 	lastShakeRef: React.MutableRefObject<{ x: number; y: number; z: number }>;
 	transformHandlesRef: React.MutableRefObject<GizmoHandles | null>;
+	// performance.now() at the moment the POI was last set, driving the framing
+	// marker's fade (canvas/drawPoiMarker.ts). Read-only here — StrataCanvas stamps
+	// it from an effect on state.pointOfInterest. 0 means "never set", which the
+	// marker reads as long expired and skips.
+	poiMarkerSetAtRef: React.MutableRefObject<number>;
 	lastRenderTimeRef: React.MutableRefObject<number>;
 	orbitRef: React.MutableRefObject<OrbitState>;
 
@@ -539,6 +546,28 @@ export function renderFrame(
 			isActiveLayerPureText,
 			currentState.isLayerSelected,
 		);
+
+		// --- POI framing marker (CINEMA) ---
+		// Projected fresh every frame through the SAME forward projection the artwork
+		// uses, so it sits on the POI's own plane and drifts exactly as the camera
+		// breathes around it. That drift is the point: it is what lets a human tell a
+		// mis-computed point from a correct one the camera is orbiting.
+		if (isCinematic && poi && rc.poiMarkerSetAtRef.current > 0) {
+			const poiShapeZ = poi.z * currentState.layerSpacingFactor * CINEMATIC_DEPTH_MULTIPLIER;
+			const poiDz = poiShapeZ - effectiveCameraZ;
+			if (FL + poiDz > NEAR_CLIP) {
+				const poiProject = createTransformPoint(
+					{ z: poiShapeZ, isLocked3D: false, camX: currentCamera.x, camY: currentCamera.y,
+					  layerScale: FL / (FL + poiDz), layerOpacity: 1 },
+					{ isCinematic, camera: currentCamera, viewZoom, viewPan,
+					  centerXScreen, centerYScreen, distortCenterX: logicalCenterX, distortCenterY: logicalCenterY,
+					  camRot, cosR, sinR, poiX, poiY, isArcOrOrbit, arcPivotScale, distortionK,
+					  cinematicType: currentState.cinematicType, shake: rc.lastShakeRef.current },
+				);
+				const p = poiProject(poi.x, poi.y);
+				drawPoiMarker(ctx, p.x, p.y, rc.poiMarkerSetAtRef.current, performance.now());
+			}
+		}
 
 		// --- Symmetry Axis Guide ---
 		if (currentState.mode === 'drawing' && currentState.isSymmetryEnabled) {
