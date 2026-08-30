@@ -316,6 +316,7 @@ export const es: Dictionary = {
 	'viewport.centerLayer': 'Centrar capa',
 	'viewport.cinema.doubleTapHint': 'Doble toque para encuadrar',
 	'viewport.cinema.resetPoi': 'Quitar encuadre',
+	'viewport.cinema.storytellingHint': 'Storytelling sigue su propio recorrido',
 
 	// ═══════════════════════════════════════════════
 	// MODALS

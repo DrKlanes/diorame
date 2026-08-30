@@ -20,6 +20,16 @@ import {
  * (`postProcessing.focusDist`/`focusTargetLayer`, a Z-depth blur control). The POI
  * is a camera X/Y position, a different axis entirely; sharing the word invited
  * confusing the two.
+ *
+ * DISABLED IN STORYTELLING (v3.17.28), derived from `state.cinematicType` — no new
+ * AppState field. That preset drives the camera along its own waypoint tour and
+ * never reads the POI (`cinematicCamera.ts`), so the double-tap gesture there does
+ * nothing visible. Before this, the pill kept advertising it anyway: same hint,
+ * same live X button, both promising a gesture that had no effect — which read as
+ * a second bug stacked on top of the framing fix (v3.17.17-25), not as "this preset
+ * doesn't use it". Hiding the pill outright was considered and rejected: an element
+ * that vanishes teaches nothing, it just relocates the confusion to "where did it
+ * go". Disabled-with-explanation says the true thing instead.
  */
 export function POIPill() {
 	const { state, dispatch } = useStrata();
@@ -27,14 +37,15 @@ export function POIPill() {
 	const { t } = useTranslation();
 	const [hovered, setHovered] = useState(false);
 	const isPoiSet = state.pointOfInterest !== null;
+	const isStorytelling = state.cinematicType === 'storytelling';
 
 	return (
 		<div
 			style={{
-				opacity: hovered ? 1 : 0.7,
+				opacity: isStorytelling ? 0.4 : (hovered ? 1 : 0.7),
 				transition: 'opacity 0.2s ease',
 			}}
-			onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHovered(true); }}
+			onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !isStorytelling) setHovered(true); }}
 			onPointerLeave={() => setHovered(false)}
 		>
 			<DiPill dark={dark} height={32} padding="0 10px" gap={6}>
@@ -48,9 +59,9 @@ export function POIPill() {
 						userSelect: 'none',
 					}}
 				>
-					{t('viewport.cinema.doubleTapHint')}
+					{isStorytelling ? t('viewport.cinema.storytellingHint') : t('viewport.cinema.doubleTapHint')}
 				</span>
-				{isPoiSet && (
+				{isPoiSet && !isStorytelling && (
 					<>
 						<DiVSep dark={dark} />
 						<DiActionButton

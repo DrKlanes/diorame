@@ -340,6 +340,7 @@ export const en: Dictionary = {
 	'viewport.centerLayer': 'Center layer',
 	'viewport.cinema.doubleTapHint': 'Double tap to frame',
 	'viewport.cinema.resetPoi': 'Clear framing',
+	'viewport.cinema.storytellingHint': 'Storytelling follows its own path',
 
 	// ═══════════════════════════════════════════════
 	// MODALS
