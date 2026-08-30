@@ -50,6 +50,7 @@ export function useAutoSave() {
 				handheldIntensity: currentState.handheldIntensity,
 				paletteApplyToAllActive: currentState.paletteApplyToAllActive,
 				paletteApplyToAllSnapshot: currentState.paletteApplyToAllSnapshot,
+				pointOfInterest: currentState.pointOfInterest,
 			};
 
 			try {

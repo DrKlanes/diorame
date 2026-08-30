@@ -27,6 +27,11 @@ export function useSaveLoad() {
 			isHandheldEnabled: state.isHandheldEnabled, handheldIntensity: state.handheldIntensity,
 			paletteApplyToAllActive: state.paletteApplyToAllActive,
 			paletteApplyToAllSnapshot: state.paletteApplyToAllSnapshot,
+			// View state, not undo state — same category as hiddenLayers/locked3DLayers
+			// above. Worth persisting: choosing a good CINEMA framing point takes real
+			// work now that the picking is accurate (v3.17.17-25), and losing it on
+			// reload was real pain, not a theoretical one.
+			pointOfInterest: state.pointOfInterest,
 		};
 		const displayName = state.projectName === UNTITLED_PROJECT_SENTINEL
 			? t('topbar.file.untitledProject')

@@ -1044,6 +1044,13 @@ function appReducer(state: AppState, action: Action): AppState {
       const safePaletteApplyToAllSnapshot = ((action.payload as any).paletteApplyToAllSnapshot &&
           typeof (action.payload as any).paletteApplyToAllSnapshot === 'object')
           ? (action.payload as any).paletteApplyToAllSnapshot : null;
+      // Pre-v3.17.26 .dior files carry no pointOfInterest at all — the field is new.
+      // undefined must resolve to null (no CINEMA framing point), never leak a partial
+      // or malformed object through: the CINEMA render path reads poi.x/y/z unchecked.
+      const rawPoi: any = (action.payload as any).pointOfInterest;
+      const safePointOfInterest = (rawPoi && typeof rawPoi === 'object'
+          && typeof rawPoi.x === 'number' && typeof rawPoi.y === 'number' && typeof rawPoi.z === 'number')
+          ? { x: rawPoi.x, y: rawPoi.y, z: rawPoi.z } : null;
 
       // Create initial history snapshot with loaded state
       const initialSnapshot: HistorySnapshot = {
@@ -1098,6 +1105,7 @@ function appReducer(state: AppState, action: Action): AppState {
           isDrawing: false,
           paletteApplyToAllActive: safePaletteApplyToAllActive,
           paletteApplyToAllSnapshot: safePaletteApplyToAllSnapshot,
+          pointOfInterest: safePointOfInterest,
           isDirty: false,
       };
     case 'COMPLETE_FIT_TO_VIEW':
