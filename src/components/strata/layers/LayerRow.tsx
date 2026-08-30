@@ -50,6 +50,27 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 	const nameColor = isActive ? T.purple : (isEmpty ? mutedColor : textColor);
 	const nameOpacity = isActive && isEmpty ? 0.6 : 1;
 
+	const selectThisLayer = () => {
+		if (isDragging) return;
+		dispatch({ type: 'SET_CURRENT_LAYER', payload: index } as any);
+	};
+
+	// Enter/Space select the layer, mirroring DiSelectorOption's handleKeyDown. Reachable
+	// at all now that the row is properly focusable (tabIndex/role below) — v3.17.14's
+	// removed onKeyDown was dead code specifically BECAUSE the row could never take focus,
+	// not because activating-by-keyboard was the wrong idea.
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			// preventDefault alone does not stop the event reaching the window-level
+			// shortcut listener — see the identical note in DiSelectorOption.tsx, the
+			// precedent this mirrors. Space bubbling out would pan the canvas instead of
+			// selecting the layer.
+			e.stopPropagation();
+			selectThisLayer();
+		}
+	};
+
 	const badgeIsFilled = !isEmpty;
 	const badgeBg = badgeIsFilled
 		? dk(dark, T.purple10, T.purple20) as string
@@ -61,14 +82,20 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 			ref={setNodeRef}
 			layout={!isDragging}
 			transition={SPRING}
-			onClick={!isDragging ? () => dispatch({ type: 'SET_CURRENT_LAYER', payload: index } as any) : undefined}
-			// An onKeyDown for Enter / Space was removed here in v3.17.14: this div has
-			// neither tabIndex nor role, so it can never take keyboard focus and the
-			// handler could not fire. It was not a working shortcut, it was dead code
-			// that read like one. Making the row properly focusable is a real
-			// accessibility improvement, but it is its own task — it needs tabIndex, a
-			// role, a visible focus ring and arrow-key navigation, not just this
-			// handler back.
+			{...attributes}
+			// AFTER {...attributes}, not before: dnd-kit's useSortable defaults it to
+			// role="button" tabIndex={0} (verified in @dnd-kit/core's source — the row was
+			// already Tab-reachable before this change, just as the wrong role and with no
+			// keydown handling and no visible ring). Spread order is what decides which
+			// value wins in JSX, so ours has to come last to actually take effect instead
+			// of silently losing to dnd-kit's.
+			onClick={!isDragging ? selectThisLayer : undefined}
+			onKeyDown={handleKeyDown}
+			role="option"
+			aria-selected={isActive}
+			aria-label={t('layers.row.name', { n: index + 1 })}
+			tabIndex={0}
+			className="di-layer-row"
 			style={{
 				width: '100%',
 				padding: '5px 6px 5px 4px',
@@ -88,7 +115,6 @@ export function LayerRow({ index, dark, sortableId }: LayerRowProps) {
 				zIndex: isDragging ? 10 : undefined,
 				position: isDragging ? 'relative' : undefined,
 			}}
-			{...attributes}
 		>
 			{/* Drag handle — only this element initiates drag */}
 			<span

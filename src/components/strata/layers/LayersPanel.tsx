@@ -214,6 +214,26 @@ export function LayersPanel() {
 					}} />
 					<div
 						className="di-panel-scroll"
+						role="listbox"
+						aria-label={t('layers.panel.header')}
+						// ArrowUp/Down move focus between rows; Enter/Space (handled per-row in
+						// LayerRow) selects. Deliberately NOT "selection follows focus" — arrowing
+						// through the list without pressing anything does not change the active
+						// layer, matching DiSelectorPopover's existing arrow/Enter split rather
+						// than inventing a second navigation model in the same codebase.
+						onKeyDown={(e) => {
+							if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+							const rows = Array.from(
+								e.currentTarget.querySelectorAll<HTMLElement>('[role="option"]'),
+							);
+							const idx = rows.indexOf(document.activeElement as HTMLElement);
+							if (idx === -1) return;
+							e.preventDefault();
+							const nextIdx = e.key === 'ArrowDown'
+								? Math.min(idx + 1, rows.length - 1)
+								: Math.max(idx - 1, 0);
+							rows[nextIdx]?.focus();
+						}}
 						style={{
 							display: 'flex',
 							flexDirection: 'column',

@@ -293,3 +293,15 @@ html {
   scrollbar-width: thin;
   scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
 }
+
+/* Focus ring for keyboard-navigable listbox rows (LayerRow, v3.17.30). Deliberately
+   :focus-visible, not :focus: the browser decides whether the focus was a Tab/arrow-key
+   move or a mouse click, so this never fires on a plain click — no JS needed to tell the
+   two apart, and no preventDefault-on-mousedown trick like the immediate-action buttons
+   use (this row RETAINS focus for arrow navigation; it is not one of those). Independent
+   from the purple "active layer" treatment already on the row: a Tab-focused row and the
+   currently selected layer are not always the same row. */
+.di-layer-row:focus-visible {
+  outline: 2px solid rgb(154, 15, 249);
+  outline-offset: -2px;
+}

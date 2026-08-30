@@ -327,8 +327,8 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `bottombar/BottomBar.tsx` | Slot router: DrawingToolbar (draw) / CameraBar (view) |
 | `bottombar/DrawingToolbar.tsx` | 5-tool selector + modifiers + LineModeButton (line tool) |
 | `bottombar/CameraBar.tsx` | Camera presets + speed + sliders; responsive desktop/tablet layout |
-| `layers/LayersPanel.tsx` | Layer management (collapsed pill + expanded panel) with dnd-kit drag-reorder |
-| `layers/LayerRow.tsx` | Per-layer row: Empty/Flat/Grad/Fade chip, visibility, 3D lock |
+| `layers/LayersPanel.tsx` | Layer management (collapsed pill + expanded panel) with dnd-kit drag-reorder. The expanded row list is `role="listbox"` (v3.17.30): ArrowUp/Down move focus between rows, clamped at the ends — selection does NOT follow focus, only Enter/Space (handled per-row) selects |
+| `layers/LayerRow.tsx` | Per-layer row: Empty/Flat/Grad/Fade chip, visibility, 3D lock. Keyboard-navigable `role="option"` (v3.17.30) — `tabIndex`/`role` set explicitly AFTER `{...attributes}` in JSX so they win over dnd-kit's own defaults (`role="button"`, silently reapplied every render otherwise); Enter/Space select via a local handler that stops propagation, same pattern as `DiSelectorOption`. Focus ring is `.di-layer-row:focus-visible` in `globals.css`, not JS state — native `:focus-visible` already tells a Tab/arrow move from a mouse click apart. The row itself does NOT get the `DiActionButton`-style `onMouseDown` `preventDefault` (v3.17.21) — it is a focus-retaining control, not an immediate action; the inner eye/lock buttons still do |
 | `layers/LayerDotsRail.tsx` | Dot indicator rail, inline or fixed |
 | `colorpalette/ColorPalette.tsx` | Palette panel: header + gradient controls + swatch grid |
 | `drawing/ToolOptionsPanel.tsx` | Line thickness + mode overlay (line tool only) |
