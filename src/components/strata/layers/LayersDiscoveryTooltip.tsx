@@ -35,7 +35,15 @@ export function LayersDiscoveryTooltip({ anchorRef, open, dark, onDismiss }: Pro
 			const target = e.target as Node;
 			const inside = popoverRef.current?.contains(target);
 			const onAnchor = anchorRef.current?.contains(target);
-			if (!inside && !onAnchor) onDismiss('click_outside');
+			// Apoyar el lápiz/dedo en el lienzo para dibujar es un pointerdown fuera
+			// del tooltip, pero es dibujar, no descartar. Sin esto, el propio gesto
+			// de trazo cerraba el tooltip antes de que se pudiera leer — el mismo
+			// síntoma que el auto-cierre por trazo que ya se quitó, solo que por
+			// esta vía en vez de aquella. `data-drawing-canvas` marca el <canvas>
+			// real de StrataCanvas.tsx; el canvas de CompositionGuideOverlay que
+			// se pinta encima es pointer-events:none y nunca es target.
+			const onDrawingCanvas = target instanceof Element && target.closest('[data-drawing-canvas]');
+			if (!inside && !onAnchor && !onDrawingCanvas) onDismiss('click_outside');
 		};
 		document.addEventListener('pointerdown', handler);
 		return () => document.removeEventListener('pointerdown', handler);
