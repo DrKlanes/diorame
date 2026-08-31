@@ -423,7 +423,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
-| `analytics.ts` | ~420 | Sole contact point with GA4. Typed `DioramEventMap` contract + `analytics.*` API + module-level session counters (never React state, to avoid a re-render per stroke). Consumes the existing `window.gtag` from `index.html`; never calls `gtag('config')` nor injects the tag. Silent no-op when `window.gtag` is absent (ad blockers, offline) and in dev unless `VITE_GA_DEBUG=1`. `installAnalytics()` is called once from `main.tsx`. Also owns the internal-traffic flag (`diorame_internal` in localStorage, armed via `?internal=1`), which tags every event with `traffic_type: 'internal'`. |
+| `analytics.ts` | ~440 | Sole contact point with GA4. Typed `DioramEventMap` contract + `analytics.*` API + module-level session counters (never React state, to avoid a re-render per stroke). Consumes the existing `window.gtag` from `index.html`; never calls `gtag('config')` nor injects the tag. Silent no-op when `window.gtag` is absent (ad blockers, offline) and in dev unless `VITE_GA_DEBUG=1`. `installAnalytics()` is called once from `main.tsx`. Also owns the internal-traffic flag (`diorame_internal` in localStorage, armed via `?internal=1`), which tags every event with `traffic_type: 'internal'`. `layers_tooltip_shown`/`layers_tooltip_dismissed` (v3.17.31) instrument the layers-discovery tooltip introduced in v3.17.32 — cross with `layer_added` in the same session to measure conversion. |
 
 ### Project Docs (`docs/`)
 

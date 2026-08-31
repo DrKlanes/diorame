@@ -82,6 +82,16 @@ export type DioramEventMap = {
   /** Cierre del modal de bienvenida, por cualquiera de sus tres salidas. */
   welcome_modal: { action: 'load_example' | 'restore_autosave' | 'dismissed' };
 
+  /**
+   * Se mostró el tooltip contextual de descubrimiento de capas (primera
+   * sesión real, dibujando sin haber añadido capa). Cruzar con layer_added
+   * de la misma sesión para saber cuántos lo convierten.
+   */
+  layers_tooltip_shown: { shapes_at_trigger: number; seconds_at_trigger: number };
+
+  /** Cierre del tooltip de descubrimiento de capas, por cualquiera de sus salidas. */
+  layers_tooltip_dismissed: { method: 'close_button' | 'click_outside' | 'started_drawing' };
+
   /** Errores de UI capturados. No uses el nombre "error": está reservado. */
   ui_error: { where: string; message: string };
 
@@ -373,6 +383,21 @@ export const analytics = {
     if (state.welcomeModalSent) return;
     state.welcomeModalSent = true;
     track('welcome_modal', { action });
+  },
+
+  /** Llamar cuando se muestra el tooltip de descubrimiento de capas. */
+  layersTooltipShown(shapesAtTrigger: number, secondsAtTrigger: number): void {
+    track('layers_tooltip_shown', {
+      shapes_at_trigger: shapesAtTrigger,
+      seconds_at_trigger: secondsAtTrigger,
+    });
+  },
+
+  /** Llamar al cerrarse el tooltip de descubrimiento de capas. */
+  layersTooltipDismissed(
+    method: DioramEventMap['layers_tooltip_dismissed']['method'],
+  ): void {
+    track('layers_tooltip_dismissed', { method });
   },
 
   /** Errores capturados en UI. `where` identifica el punto del código. */
