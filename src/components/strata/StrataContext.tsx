@@ -232,6 +232,7 @@ const initialState: AppState = {
   isOnboardingVisible: true, // New: Onboarding overlay on canvas
   isUIHidden: false,
   isDrawing: false,
+  projectWasLoaded: false,
   isSymmetryEnabled: false,
   gridEnabled: typeof window !== 'undefined' && window.localStorage?.getItem('diorame-grid-enabled') === 'true',
   paletteMode: 'flat',
@@ -1107,6 +1108,7 @@ function appReducer(state: AppState, action: Action): AppState {
           paletteApplyToAllSnapshot: safePaletteApplyToAllSnapshot,
           pointOfInterest: safePointOfInterest,
           isDirty: false,
+          projectWasLoaded: true,
       };
     case 'COMPLETE_FIT_TO_VIEW':
         return { ...state, shouldFitToView: false };

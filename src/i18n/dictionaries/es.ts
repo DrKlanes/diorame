@@ -225,6 +225,9 @@ export const es: Dictionary = {
 	'layers.badge.grad': 'Grad',
 	'layers.badge.fade': 'Fade',
 
+	'layers.discoveryTooltip.title': 'Prueba las capas',
+	'layers.discoveryTooltip.body': 'Cada capa vive en un punto distinto del espacio 3D. Es lo que convierte tu dibujo en un diorama.',
+
 	// ═══════════════════════════════════════════════
 	// PALETTE
 	// ═══════════════════════════════════════════════

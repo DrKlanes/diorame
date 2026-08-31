@@ -204,6 +204,7 @@ export interface AppState {
   isOnboardingVisible: boolean; // New: Onboarding overlay on canvas
   isUIHidden: boolean; // New: Toggle UI visibility in View mode
   isDrawing: boolean; // Transient: true during active pointer drag (draw/move/orbit). NOT serialized.
+  projectWasLoaded: boolean; // Transient: true once LOAD_PROJECT ran this session (.dior or autosave restore). NOT serialized.
   isSymmetryEnabled: boolean; // New: Vertical Symmetry Mode
   gridEnabled: boolean; // Composition guide overlay (3x3 dot grid). Persisted in localStorage. NOT serialized in .dior.
   paletteMode: 'flat' | 'grad'; // New: Palette Rendering Mode

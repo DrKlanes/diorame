@@ -246,6 +246,9 @@ export const en: Dictionary = {
 	'layers.badge.grad': 'Grad',
 	'layers.badge.fade': 'Fade',
 
+	'layers.discoveryTooltip.title': 'Try layers',
+	'layers.discoveryTooltip.body': 'Each layer sits at a different point in 3D space. That\'s what turns your drawing into a diorama.',
+
 	// ═══════════════════════════════════════════════
 	// PALETTE
 	// ═══════════════════════════════════════════════

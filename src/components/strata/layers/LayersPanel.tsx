@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
 	DndContext,
 	DragEndEvent,
@@ -16,6 +16,8 @@ import { analytics } from '../../../analytics/analytics';
 import { DiPill, DiPanel, DiActionButton } from '../../../design-system';
 import { LayerRow } from './LayerRow';
 import { LayerDotsRail } from './LayerDotsRail';
+import { LayersDiscoveryTooltip } from './LayersDiscoveryTooltip';
+import { useLayersDiscoveryTooltip } from '../../../hooks/useLayersDiscoveryTooltip';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
 import { useTranslation } from '../../../i18n';
@@ -30,6 +32,8 @@ export function LayersPanel() {
 		try { return localStorage.getItem(STORAGE_KEY) === 'true'; }
 		catch { return false; }
 	});
+	const anchorRef = useRef<HTMLDivElement>(null);
+	const { isOpen: tooltipOpen, dismiss: dismissTooltip } = useLayersDiscoveryTooltip();
 
 	// dnd-kit sensors — distance:5 avoids drag activation on short clicks
 	const sensors = useSensors(
@@ -73,7 +77,8 @@ export function LayersPanel() {
 
 	if (!isExpanded) {
 		return (
-			<div style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50, display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', opacity: isPlaybackLocked ? 0.3 : undefined, pointerEvents: isPlaybackLocked ? 'none' : undefined }}>
+			<>
+			<div ref={anchorRef} style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50, display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', opacity: isPlaybackLocked ? 0.3 : undefined, pointerEvents: isPlaybackLocked ? 'none' : undefined }}>
 				<DiPill
 					dark={dark}
 					padding="8px 0"
@@ -141,6 +146,8 @@ export function LayersPanel() {
 				</DiPill>
 				<LayerDotsRail inline />
 			</div>
+			<LayersDiscoveryTooltip anchorRef={anchorRef} open={tooltipOpen} dark={dark} onDismiss={dismissTooltip} />
+			</>
 		);
 	}
 
@@ -169,7 +176,8 @@ export function LayersPanel() {
 	};
 
 	return (
-		<div style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50, display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', opacity: isPlaybackLocked ? 0.3 : undefined, pointerEvents: isPlaybackLocked ? 'none' : undefined }}>
+		<>
+		<div ref={anchorRef} style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50, display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', opacity: isPlaybackLocked ? 0.3 : undefined, pointerEvents: isPlaybackLocked ? 'none' : undefined }}>
 			<DiPanel dark={dark} width={220} radius={20} padding="10px" style={{ maxHeight: 'calc(100vh - 420px)', overflow: 'hidden' }}>
 				{/* Header — chevron-right always top right */}
 				<div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -295,5 +303,7 @@ export function LayersPanel() {
 			</DiPanel>
 			<LayerDotsRail inline />
 		</div>
+		<LayersDiscoveryTooltip anchorRef={anchorRef} open={tooltipOpen} dark={dark} onDismiss={dismissTooltip} />
+		</>
 	);
 }

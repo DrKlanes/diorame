@@ -327,9 +327,10 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `bottombar/BottomBar.tsx` | Slot router: DrawingToolbar (draw) / CameraBar (view) |
 | `bottombar/DrawingToolbar.tsx` | 5-tool selector + modifiers + LineModeButton (line tool) |
 | `bottombar/CameraBar.tsx` | Camera presets + speed + sliders; responsive desktop/tablet layout |
-| `layers/LayersPanel.tsx` | Layer management (collapsed pill + expanded panel) with dnd-kit drag-reorder. The expanded row list is `role="listbox"` (v3.17.30): ArrowUp/Down move focus between rows, clamped at the ends — selection does NOT follow focus, only Enter/Space (handled per-row) selects |
+| `layers/LayersPanel.tsx` | Layer management (collapsed pill + expanded panel) with dnd-kit drag-reorder. The expanded row list is `role="listbox"` (v3.17.30): ArrowUp/Down move focus between rows, clamped at the ends — selection does NOT follow focus, only Enter/Space (handled per-row) selects. Owns the `anchorRef` for `LayersDiscoveryTooltip` (v3.17.32), attached to whichever of the two root divs (collapsed pill / expanded panel) is currently rendered |
 | `layers/LayerRow.tsx` | Per-layer row: Empty/Flat/Grad/Fade chip, visibility, 3D lock. Keyboard-navigable `role="option"` (v3.17.30) — `tabIndex`/`role` set explicitly AFTER `{...attributes}` in JSX so they win over dnd-kit's own defaults (`role="button"`, silently reapplied every render otherwise); Enter/Space select via a local handler that stops propagation, same pattern as `DiSelectorOption`. Focus ring is `.di-layer-row:focus-visible` in `globals.css`, not JS state — native `:focus-visible` already tells a Tab/arrow move from a mouse click apart. The row itself does NOT get the `DiActionButton`-style `onMouseDown` `preventDefault` (v3.17.21) — it is a focus-retaining control, not an immediate action; the inner eye/lock buttons still do |
 | `layers/LayerDotsRail.tsx` | Dot indicator rail, inline or fixed |
+| `layers/LayersDiscoveryTooltip.tsx` | First-session layers-discovery tooltip UI (v3.17.32): reuses `usePopoverPosition` + `createPortal` directly (not the full `DiSelectorPopover`, which is listbox-shaped) with `placement="top"` hardcoded — `'auto'` resolved `'bottom'` against the viewport edge and overlapped the bottom-right `ColorPalette` pill, since the positioning hook has no notion of other fixed panels |
 | `colorpalette/ColorPalette.tsx` | Palette panel: header + gradient controls + swatch grid |
 | `drawing/ToolOptionsPanel.tsx` | Line thickness + mode overlay (line tool only) |
 | `viewport/ResetViewPill.tsx` | Reset drawingZoom/Pan to defaults (draw mode) |
@@ -403,6 +404,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `palette.ts` | ~90 | `PALETTE_PRIMARY`, `PALETTE_ALTERNATIVE` (24 colors each, `{hex, nameKey, isDark}`), `GRADIENT_DEFAULTS`, `DARK_COLORS` — canonical color system, immutable by design |
 | `version.ts` | ~5 | `APP_VERSION` — single source of truth for the current release version |
 | `project.ts` | ~30 | `UNTITLED_PROJECT_SENTINEL` (`'__UNTITLED__'`) + `getFilenameBase()` — NFD-normalized filename sanitizer for exports and .dior saves |
+| `layersDiscoveryTooltip.ts` | ~10 | `TOOLTIP_TRIGGER_SHAPES`/`TOOLTIP_TRIGGER_SECONDS` thresholds + the two localStorage key names for the layers-discovery tooltip (v3.17.32) |
 
 ### Hooks (`src/hooks/`)
 
@@ -416,6 +418,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `useIsMobile.ts` | Mobile device detection via `matchMedia` |
 | `useIsStandalone.ts` | Reactive PWA standalone detection: combines `matchMedia('(display-mode: standalone)')` + legacy `navigator.standalone`; used by `TopBar` for iOS safe-area paddingTop |
 | `useKeyboardShortcuts.ts` | All global and drawing-mode keyboard shortcuts, except Space — that moved to `StrataCanvas` in v3.17.15 (hold to pan / tap to reset needs the pan refs and a keyup) |
+| `useLayersDiscoveryTooltip.ts` | First-session-only contextual tooltip pointing at the layers panel (v3.17.32): fires once a user who drew a first real stroke (module-level flag, immune to `LayersPanel` remounts on `isUIHidden` toggle — see note in the file) crosses `TOOLTIP_TRIGGER_SHAPES`/`_SECONDS` with a single layer, no modal open, and no `.dior`/autosave load this session. Returns `{ isOpen, dismiss }` to `LayersPanel` |
 | `useLoadExampleScene.ts` | Fetches, parses, and dispatches the example `.dior` scene |
 | `useSaveLoad.ts` | Save/load projects as `.dior` files: JSON `Blob` download on save, `FileReader` + `JSON.parse` on load. **Not IndexedDB** — that is `useAutoSave.ts`. Fires `project_saved` / `project_loaded` at the confirmed-success point inside each `try` |
 
