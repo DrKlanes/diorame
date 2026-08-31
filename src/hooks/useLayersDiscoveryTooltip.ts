@@ -4,11 +4,12 @@ import { analytics } from '../analytics/analytics';
 import {
 	TOOLTIP_TRIGGER_SHAPES,
 	TOOLTIP_TRIGGER_SECONDS,
+	TOOLTIP_VISIBLE_SECONDS,
 	LAYERS_TOOLTIP_VISITED_KEY,
 	LAYERS_TOOLTIP_SEEN_KEY,
 } from '../constants/layersDiscoveryTooltip';
 
-export type LayersTooltipDismissMethod = 'close_button' | 'click_outside' | 'started_drawing';
+export type LayersTooltipDismissMethod = 'close_button' | 'click_outside' | 'timeout' | 'layer_added';
 
 // Nivel de módulo, no de componente: evaluado UNA vez por carga real de
 // página. LayersPanel (y este hook con él) se desmonta y remonta dentro de
@@ -88,14 +89,26 @@ export function useLayersDiscoveryTooltip() {
 		state.totalLayers, state.projectWasLoaded, meetsShapeThreshold,
 	]);
 
-	// Si empieza a dibujar con el tooltip abierto, se va solo: dato útil que
-	// distingue "lo ignoró siguiendo a lo suyo" de un descarte activo.
+	// Se desvanece solo a los TOOLTIP_VISIBLE_SECONDS de abrirse. Dibujar
+	// mientras está visible ya NO lo cierra (v3.17.33) — el auto-cierre al
+	// primer trazo garantizaba que nadie lo leyera: el tooltip aparece
+	// mientras el usuario dibuja, así que el siguiente trazo lo mataba antes
+	// de que levantara la vista.
 	useEffect(() => {
-		if (isOpenRef.current && state.isDrawing) {
-			dismiss('started_drawing');
+		if (!isOpen) return;
+		const id = setTimeout(() => dismiss('timeout'), TOOLTIP_VISIBLE_SECONDS * 1000);
+		return () => clearTimeout(id);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isOpen]);
+
+	// Si añade una capa mientras está visible, se va solo: ya cumplió su
+	// función y dejarlo ahí sería ruido.
+	useEffect(() => {
+		if (isOpenRef.current && state.totalLayers > 1) {
+			dismiss('layer_added');
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [state.isDrawing]);
+	}, [state.totalLayers]);
 
 	function dismiss(method: LayersTooltipDismissMethod) {
 		if (!isOpenRef.current) return;

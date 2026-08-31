@@ -63,8 +63,12 @@ export function LayersDiscoveryTooltip({ anchorRef, open, dark, onDismiss }: Pro
 						display: 'flex',
 						flexDirection: 'column',
 						gap: 6,
-						background: dk(dark, T.white, T.panelDarkOpaque) as string,
-						border: `1px solid ${dk(dark, T.border, T.borderDark)}`,
+						// Fondo morado sólido — mismo token que DiButton variant="brand" y los
+						// botones primarios de DiModalActions (T.purple / #9a0ff9). Un tooltip
+						// que usa el color de superficie del panel se lee como "otro panel más";
+						// esto tiene que leerse como mensaje. Sin borde: el color saturado ya
+						// es su propio límite visual contra el papel.
+						background: T.purple,
 						borderRadius: RADIUS.panel,
 						boxShadow: dk(dark, SHADOW.modal, SHADOW.modalDark) as string,
 					}}
@@ -74,17 +78,19 @@ export function LayersDiscoveryTooltip({ anchorRef, open, dark, onDismiss }: Pro
 							fontFamily: TYPE.panelHeader.family,
 							fontWeight: 700,
 							fontSize: 13,
-							color: dk(dark, T.dark, T.textDark) as string,
+							color: T.white,
 							flexGrow: 1,
 							paddingTop: 4,
 						}}>
 							{t('layers.discoveryTooltip.title')}
 						</span>
+						{/* dark={true} fijo, no el tema de la app: este botón vive siempre
+						    sobre el morado sólido de arriba, nunca sobre el panel del tema. */}
 						<DiActionButton
 							name="x"
 							iconSize={14}
 							onClick={() => onDismiss('close_button')}
-							dark={dark}
+							dark={true}
 						/>
 					</div>
 					<p style={{
@@ -93,7 +99,7 @@ export function LayersDiscoveryTooltip({ anchorRef, open, dark, onDismiss }: Pro
 						fontWeight: 400,
 						fontSize: 12,
 						lineHeight: 1.45,
-						color: dk(dark, T.muted, T.textDarkMuted) as string,
+						color: T.white,
 					}}>
 						{t('layers.discoveryTooltip.body')}
 					</p>

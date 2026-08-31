@@ -89,8 +89,11 @@ export type DioramEventMap = {
    */
   layers_tooltip_shown: { shapes_at_trigger: number; seconds_at_trigger: number };
 
-  /** Cierre del tooltip de descubrimiento de capas, por cualquiera de sus salidas. */
-  layers_tooltip_dismissed: { method: 'close_button' | 'click_outside' | 'started_drawing' };
+  /**
+   * Cierre del tooltip de descubrimiento de capas. 'layer_added' es la
+   * conversión, 'timeout' es indiferencia, 'close_button' es rechazo activo.
+   */
+  layers_tooltip_dismissed: { method: 'close_button' | 'click_outside' | 'timeout' | 'layer_added' };
 
   /** Errores de UI capturados. No uses el nombre "error": está reservado. */
   ui_error: { where: string; message: string };
