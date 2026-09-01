@@ -558,6 +558,16 @@ export const StrataCanvas = () => {
           if (e.touches.length === 2) {
               setIsDrawing(false);
               currentPointsRef.current = [];
+              // A second finger turns this into a multi-touch gesture, so the
+              // single-pointer gizmo drag is ABANDONED — never committed. Same contract
+              // as pointercancel and as Escape: TRANSFORM_LAYER only fires on pointerup,
+              // so the shapes were never touched and there is nothing to undo.
+              // Without this the drag is orphaned: setIsDrawing(false) above makes
+              // handlePointerUp bail at its isDrawingRef guard, which is the very line
+              // that would have cleared isActive.
+              transformRef.current.isActive = false;
+              transformRef.current.mode = 'none';
+              transformRef.current.engaged = false;
               const t1 = e.touches[0];
               const t2 = e.touches[1];
               const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
@@ -578,6 +588,10 @@ export const StrataCanvas = () => {
               setIsDrawing(false);
               currentPointsRef.current = [];
               drawingPointerTypeRef.current = null;
+              // Same abandonment as the 2-touch branch above.
+              transformRef.current.isActive = false;
+              transformRef.current.mode = 'none';
+              transformRef.current.engaged = false;
               const t1 = e.touches[0];
               const t2 = e.touches[1];
               const t3 = e.touches[2];
@@ -1161,7 +1175,15 @@ export const StrataCanvas = () => {
     }
 
     // --- Transform Logic --- (math extracted to canvas/moveGizmoInteraction.ts)
-    if (state.tool === 'move' && transformRef.current.isActive) {
+    // isDrawingRef gates this on a gesture actually being in flight. isActive alone was
+    // not enough: an orphaned transform made every pointermove drag the layer with no
+    // pointer pressed at all (measured: 260x220px from a bare hover). The two are written
+    // consecutively in the same pointerdown (setIsDrawing at the top of the move branch,
+    // isActive right below it, both synchronous), so a legitimate drag can never have one
+    // without the other — this narrows the entry, it does not change the order of
+    // anything. When it now falls through, the hover-cursor block below is skipped by its
+    // own !isActive guard and the isDrawingRef guard after it returns: nothing new runs.
+    if (state.tool === 'move' && transformRef.current.isActive && isDrawingRef.current) {
         const t = transformRef.current;
         const rect = canvasRectRef.current || canvasRef.current!.getBoundingClientRect();
         const pointerX = e.clientX - rect.left;
