@@ -232,3 +232,30 @@ v3.17.8 diseñó explícitamente —el gizmo no aparecería hasta soltar—.
 **Pendiente:** mirarlo con datos de uso real. Si molesta, la salida no es
 aplazar la selección sino no abrirla cuando el gesto resulte ser multitáctil,
 que es lo que ya hace la Fase 3 con el arrastre.
+
+---
+
+## Mover una capa vacía crea un paso de undo que no hace nada
+
+**Estado:** documentado, sin arreglar. Trivial de arreglar, molesto de sufrir.
+
+Con el Move sobre una capa sin trazos, `handlePointerDown` no encuentra bounding
+box y cae a la rama de `moveRef`. El arrastre acumula sus offsets con
+normalidad, y `handlePointerUp` despacha `MOVE_LAYER` en cuanto superan 0.1px —
+sin comprobar antes si hay algo que mover. El reducer empuja su paso al
+historial igualmente.
+
+Medido en v3.17.36: un arrastre sobre una capa con cero shapes → 1 paso nuevo en
+`state.history`.
+
+Consecuencia: cada arrastre en vacío —fácil de hacer sin querer mientras se
+busca la capa correcta— gasta un hueco de los `MAX_HISTORY_STEPS = 50`, y
+deshacer no produce ningún cambio visible, que es exactamente lo que hace que un
+undo se sienta roto. En una sesión larga puede empujar fuera de la ventana pasos
+que sí importaban.
+
+**Pendiente:** la guarda natural es la misma que ya existe para el transform
+(`isSignificantTransform` protege la otra rama): no despachar `MOVE_LAYER` si la
+capa activa no tiene shapes. Ojo a no confundirlo con el caso legítimo de una
+capa cuyo contenido es solo borrador, que sí tiene shapes aunque
+`getLayerBoundingBox` devuelva null.
