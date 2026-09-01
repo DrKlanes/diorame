@@ -1094,6 +1094,18 @@ export const StrataCanvas = () => {
                     engaged: false,
                 };
             } else {
+                 // An empty layer has no gizmo, so this gesture is a plain layer move and
+                 // the transform ref must be left INERT — not merely unused. Skipping this
+                 // was the one path able to corrupt the artwork: a transform orphaned by an
+                 // earlier gesture (see resetGestureState's note) keeps isActive=true, and
+                 // handlePointerUp tests isActive BEFORE moveRef — so the release committed
+                 // a TRANSFORM_LAYER built from the PREVIOUS gesture's startP to history,
+                 // and the move the user actually made never ran. isActive alone gates the
+                 // preview in renderLayerBody, but engaged is cleared too so a later drag
+                 // still has to earn its dead zone.
+                 transformRef.current.isActive = false;
+                 transformRef.current.mode = 'none';
+                 transformRef.current.engaged = false;
                  moveRef.current = { startX: worldX, startY: worldY, offsetX: 0, offsetY: 0 };
             }
             return;
