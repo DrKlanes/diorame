@@ -201,6 +201,11 @@ export const StrataCanvas = () => {
   // when the app returns from background mid-gesture (no pointerup/cancel delivered).
   const activePointerIdRef = useRef<number | null>(null);
 
+  // A deselection the Move tool has decided but not yet committed — see the selection
+  // decision table in handlePointerDown, and the release that confirms it in
+  // handlePointerUp.
+  const pendingDeselectRef = useRef(false);
+
   // --- Event Listeners & Initialization ---
 
   // Ensure canvas is focusable and regains focus after external interactions
@@ -568,6 +573,10 @@ export const StrataCanvas = () => {
               transformRef.current.isActive = false;
               transformRef.current.mode = 'none';
               transformRef.current.engaged = false;
+              // And the deselection the first finger may have recorded: a multi-touch
+              // gesture cancels it for the same reason it cancels the drag above — this
+              // was never the tap the table thought it was.
+              pendingDeselectRef.current = false;
               const t1 = e.touches[0];
               const t2 = e.touches[1];
               const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
@@ -592,6 +601,7 @@ export const StrataCanvas = () => {
               transformRef.current.isActive = false;
               transformRef.current.mode = 'none';
               transformRef.current.engaged = false;
+              pendingDeselectRef.current = false;
               const t1 = e.touches[0];
               const t2 = e.touches[1];
               const t3 = e.touches[2];
@@ -1072,7 +1082,19 @@ export const StrataCanvas = () => {
 
                 if (wasSelected) {
                     if (!grabbedHandle && !insideBox) {
-                        dispatch({ type: 'SET_LAYER_SELECTED', payload: false });
+                        // Deselecting is a TAP, and at pointerdown we cannot yet know
+                        // whether this finger is the first of a two-finger gesture. So it
+                        // is recorded and confirmed on the release, which is where every
+                        // other tap in this app is decided (two-finger undo, three-finger
+                        // redo, Space-tap to centre). Committing it here made every pinch
+                        // and every undo tap whose first finger landed outside the box
+                        // deselect the layer, after which the Move tool looked dead until
+                        // you touched inside the box again — measured, isLayerSelected
+                        // going true → false on a single touch pointerdown, and invisible
+                        // on desktop because no desktop gesture has a second pointer.
+                        // The cell itself is unchanged: same condition, same outcome, same
+                        // early return with no capture, no isDrawing and no transform.
+                        pendingDeselectRef.current = true;
                         return;
                     }
                 } else {
@@ -1329,6 +1351,15 @@ export const StrataCanvas = () => {
     try { if(e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
     activePointerIdRef.current = null;
 
+    // The release that confirms a deselection recorded by the Move selection table, if no
+    // second touch cancelled it in the meantime. Self-contained and unreachable by every
+    // other path: that pointerdown returned early without setting isDrawing or isPanning,
+    // so nothing below this ever ran for it and nothing below it is reordered by this.
+    if (pendingDeselectRef.current) {
+        pendingDeselectRef.current = false;
+        dispatch({ type: 'SET_LAYER_SELECTED', payload: false });
+    }
+
     if (isPanningRef.current) {
         isPanningRef.current = false;
         // Space still held → back to 'grab' (ready to pan again), not to no cursor.
@@ -1541,6 +1572,8 @@ export const StrataCanvas = () => {
     // 3px threshold from the very first pixel — the cancelled gesture silently
     // disarms the guard for the one after it.
     transformRef.current.engaged = false;
+    // An interrupted gesture must not deselect once it is over.
+    pendingDeselectRef.current = false;
 
     if (isDrawingRef.current) {
       isDrawingRef.current = false;

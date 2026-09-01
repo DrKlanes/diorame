@@ -135,3 +135,100 @@ cámara en X/Y— y que efectivamente se llama "focus" en la UI de FX.
 **Pendiente:** copy nuevo en EN y ES para el pill (y, si se quiere ir a fondo,
 renombrar el componente). No se toca aquí porque es texto de producto en la
 voz de Moisés, no una decisión técnica.
+
+---
+
+## El pinch simétrico no dispara el zoom
+
+**Estado:** preexistente, sin arreglar. Medido en v3.17.38.
+
+`handleTouchMove` decide que un gesto de dos dedos es un pinch mirando cuánto
+se ha desplazado el **centro** de los dos toques respecto a `startCenter`
+(`StrataCanvas.tsx`, rama de `e.touches.length === 2`: si la distancia del
+centro no supera 10px, `tapMoved` nunca se pone a `true` y `isPinching` nunca
+se enciende). La separación entre los dedos —que es lo que define un pinch—
+solo se consulta *después*, para decidir el factor de escala.
+
+Consecuencia: separar los dos dedos **a la vez y de forma simétrica**, que es
+el gesto de libro, deja el centro quieto y **no hace zoom**. Medido: dos
+toques a 100px separándose hasta 540px sin mover el centro →
+`isPinching: false`, `drawingZoom` sin cambiar. El mismo gesto hecho de forma
+asimétrica (que es como sale de la mano la mayoría de las veces) sí funciona:
+`isPinching: true`, zoom 1 → 3.
+
+Esto no lo reportó nadie: apareció midiendo la no-regresión del pinch al
+cerrar la Fase 3 del arreglo del Move. Pero es un gesto que alguien puede
+estar intentando hoy y viendo que no responde, y el fallo es intermitente por
+naturaleza —depende de lo simétrica que salga la mano—, que es la peor forma
+de romperse.
+
+**Pendiente:** el umbral debería mirar el **cambio de distancia entre los
+dedos**, no (solo) el desplazamiento del centro. Ojo al hacerlo: ese mismo
+`tapMoved` es lo que distingue un tap de dos dedos (undo) de un arrastre, así
+que tocarlo afecta al gesto de undo. No es un cambio de una línea.
+
+---
+
+## El dead-zone de 3px está calibrado para ratón
+
+**Estado:** anotado, sin tocar. Calibración, no bug estructural.
+
+`DRAG_DEAD_ZONE_PX = 3` (`canvas/moveGizmoInteraction.ts`). Apple usa ~10px de
+slop para decidir que un toque es un tap y no un arrastre. Con el dedo, 3px se
+cruzan casi siempre; con Pencil no.
+
+Consecuencia: un tap con el dedo para **seleccionar** una capa puede cruzar el
+umbral, escribir un `currentTransform` de 3px y —como
+`isSignificantTransform` solo exige `>0.1`— commitear ese desplazamiento al
+historial. Un empujón silencioso sobre la obra, más un paso de undo que el
+usuario no pidió.
+
+**Pendiente:** decidir el valor con la mano de Moisés en un iPad, no por
+cálculo. Probablemente un umbral distinto por `pointerType` (dedo vs pen vs
+ratón) en vez de un número único. Se aparcó a propósito durante el arreglo del
+Move (v3.17.36-39) para no mezclar calibración con lo estructural.
+
+---
+
+## `activePointerIdRef` se borra con el pointerup de cualquier dedo
+
+**Estado:** documentado, sin arreglar. Ventana estrecha.
+
+`handlePointerUp` pone `activePointerIdRef.current = null` como segunda
+instrucción, antes de cualquier guarda — también cuando el `pointerup` es de un
+puntero que `handlePointerDown` ignoró (un segundo dedo, que sale por el
+`!e.isPrimary`). Si el primer dedo tiene una captura viva y se levanta el
+segundo, se pierde el rastro de esa captura.
+
+Consecuencia: si la app se va a segundo plano justo ahí, `resetGestureState` ya
+no puede liberar la captura huérfana, porque el `pid` que guardaba es `null`.
+El resto del reset (flags de gesto, transform, stroke) sí corre, así que el
+daño se limita a una captura de puntero colgada.
+
+**Pendiente:** o llevar la cuenta de los punteros vivos en vez de guardar solo
+el último, o no borrar el rastro cuando el `pointerup` es de un puntero que
+nunca se capturó. Lo segundo es más barato y cubre el caso real.
+
+---
+
+## La celda "deseleccionada × dentro" decide en el press
+
+**Estado:** decisión consciente, no arreglar sin datos.
+
+La tabla de decisión del Move (`handlePointerDown`) resuelve tres de sus cuatro
+celdas de forma inmediata. La deselección se movió al `pointerup` en v3.17.39
+—era la única decisión tipo tap que se resolvía en el press, y por eso el
+primer dedo de un gesto de dos deseleccionaba— pero la **selección** sigue
+ocurriendo en el press.
+
+Consecuencia: un pinch cuyo primer dedo caiga encima de la capa la
+**selecciona**. Es un cambio de estado que el usuario no pidió.
+
+Se deja así a propósito: enseña el gizmo en vez de esconderlo (no deja el Move
+aparentemente muerto, que era el síntoma grave), y aplazarlo al release
+rompería el modelo Figma de seleccionar-y-arrastrar en un solo gesto que
+v3.17.8 diseñó explícitamente —el gizmo no aparecería hasta soltar—.
+
+**Pendiente:** mirarlo con datos de uso real. Si molesta, la salida no es
+aplazar la selección sino no abrirla cuando el gesto resulte ser multitáctil,
+que es lo que ya hace la Fase 3 con el arrastre.
