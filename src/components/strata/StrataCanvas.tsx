@@ -1514,6 +1514,11 @@ export const StrataCanvas = () => {
     // next pointerdown on the canvas overwrote the whole ref.
     transformRef.current.isActive = false;
     transformRef.current.mode = 'none';
+    // The dead zone's hysteresis is per-gesture state, so it has to die with the
+    // gesture. Left at true it survives into the NEXT drag, which then skips its
+    // 3px threshold from the very first pixel — the cancelled gesture silently
+    // disarms the guard for the one after it.
+    transformRef.current.engaged = false;
 
     if (isDrawingRef.current) {
       isDrawingRef.current = false;
