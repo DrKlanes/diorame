@@ -4,7 +4,8 @@ import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { BrushModeButton } from '../bottombar/_shared';
 import { useTranslation } from '../../../i18n';
-import { BRUSH_THICKNESS_MIN, BRUSH_THICKNESS_MAX, BRUSH_THICKNESS_STEP } from '../../../constants/brush';
+import { BRUSH_SLIDER_POSITION_MIN, BRUSH_SLIDER_POSITION_MAX, BRUSH_SLIDER_POSITION_STEP } from '../../../constants/brush';
+import { sliderPositionToThickness, thicknessToSliderPosition } from '../../../utils/brushThicknessCurve';
 
 interface ToolOptionsPanelProps {
 	dark: boolean;
@@ -38,13 +39,16 @@ export function ToolOptionsPanel({ dark }: ToolOptionsPanelProps) {
 			</span>
 			<input
 				type="range"
-				min={BRUSH_THICKNESS_MIN}
-				max={BRUSH_THICKNESS_MAX}
-				step={BRUSH_THICKNESS_STEP}
-				value={thickness}
+				min={BRUSH_SLIDER_POSITION_MIN}
+				max={BRUSH_SLIDER_POSITION_MAX}
+				step={BRUSH_SLIDER_POSITION_STEP}
+				// The handle's position is the INVERSE curve of the real thickness, recomputed
+				// every render — so it lands correctly regardless of why currentBrushThickness
+				// changed (drag, layer switch, undo/redo, .dior load), with no extra wiring.
+				value={thicknessToSliderPosition(thickness)}
 				disabled={isPlaybackLocked}
-				onInput={(e) => dispatch({ type: 'SET_BRUSH_THICKNESS_PREVIEW', payload: parseInt((e.target as HTMLInputElement).value) })}
-				onChange={(e) => dispatch({ type: 'SET_BRUSH_THICKNESS', payload: parseInt(e.target.value) })}
+				onInput={(e) => dispatch({ type: 'SET_BRUSH_THICKNESS_PREVIEW', payload: sliderPositionToThickness(parseInt((e.target as HTMLInputElement).value)) })}
+				onChange={(e) => dispatch({ type: 'SET_BRUSH_THICKNESS', payload: sliderPositionToThickness(parseInt(e.target.value)) })}
 				onPointerUp={() => dispatch({ type: 'COMMIT_BRUSH_THICKNESS' })}
 				style={{
 					width: 80,

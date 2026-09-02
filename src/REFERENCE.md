@@ -395,6 +395,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `browserCapabilities.ts` | ~55 | `supportsCanvasFilter()` — cached functional detection for `ctx.filter` support (Safari/WebKit silently ignores filter). Consumed by `postProcessing.ts` to route Glow/DoF to `blurCompat` |
 | `downloadBlob.ts` | ~25 | `downloadBlob(blob, filename)` — Blob download via hidden appended anchor + deferred cleanup/revoke (iPadOS WebKit drops detached-anchor clicks and sync-revoked URLs); shared by PNG/SVG/MP4/GIF/ZIP export sinks |
 | `soundManager.ts` | ~140 | UI sound playback manager: click, success, brush stroke (pool of 6), mode switch via HTMLAudioElement |
+| `brushThicknessCurve.ts` | ~30 | `sliderPositionToThickness`/`thicknessToSliderPosition` (v3.17.41) — exponent-1.5 curve converting the thickness slider's 0-100 physical position to/from real world-px thickness, and back. Confined to `ToolOptionsPanel.tsx`: only the slider's `value`/dispatch cross this boundary, nothing downstream (reducer, shapes, .dior) ever sees a position |
 
 ### Constants (`src/constants/`)
 
