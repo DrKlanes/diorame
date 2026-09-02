@@ -348,7 +348,7 @@ export const exportAsSVG = async (
 
 					if (shape.type === 'stroke') {
 						const pathData = createSmoothOpenPath(adjustedPoints);
-						const sw = shape.brushThickness ?? 8;
+						const sw = shape.brushThickness ?? 20;
 						parts.push(`  <path d="${pathData}" fill="none" stroke="${shape.color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"${clipAttr} />\n`);
 					} else {
 						const pathData = createSmoothClosedPath(adjustedPoints);
