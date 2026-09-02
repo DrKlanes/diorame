@@ -259,3 +259,28 @@ que sí importaban.
 capa activa no tiene shapes. Ojo a no confundirlo con el caso legítimo de una
 capa cuyo contenido es solo borrador, que sí tiene shapes aunque
 `getLayerBoundingBox` devuelva null.
+
+---
+
+## El borrador no tiene control propio de grosor
+
+**Estado:** aceptado por ahora, anotado al bajar el techo del pincel a 70
+(v3.17.40).
+
+`ToolOptionsPanel.tsx` — el único slider de grosor de la app— solo se renderiza
+con `state.tool === 'brush'` (`if (state.tool !== 'brush') return null;`). El
+eraser comparte la misma variable de estado
+(`brushThickness: (isBrushTool || isEraserTool) ? state.currentBrushThickness :
+undefined`, `StrataCanvas.tsx:1487`) pero no tiene forma de ajustarla mientras
+está activo: hereda lo que quedó puesto la última vez que se usó el pincel, sin
+ningún control visible que lo confirme ni lo contradiga.
+
+Con el rango 1-100 esto ya era una limitación silenciosa. Con el techo bajado a
+70 y la curva de v3.17.41 sigue siendo exactamente la misma limitación, solo
+que ahora el borrador hereda además el techo más bajo — cambio correcto (es el
+mismo control, no debería haber dos fuentes de verdad) pero que nadie decidió
+mirando el borrador en concreto.
+
+**Pendiente:** decidir si el borrador necesita su propio control visible, o si
+compartir el ajuste del pincel sin más aviso es aceptable en la práctica.
+Producto, no mecánica.
