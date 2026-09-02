@@ -4,6 +4,7 @@ import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { BrushModeButton } from '../bottombar/_shared';
 import { useTranslation } from '../../../i18n';
+import { BRUSH_THICKNESS_MIN, BRUSH_THICKNESS_MAX, BRUSH_THICKNESS_STEP } from '../../../constants/brush';
 
 interface ToolOptionsPanelProps {
 	dark: boolean;
@@ -37,9 +38,9 @@ export function ToolOptionsPanel({ dark }: ToolOptionsPanelProps) {
 			</span>
 			<input
 				type="range"
-				min={1}
-				max={100}
-				step={1}
+				min={BRUSH_THICKNESS_MIN}
+				max={BRUSH_THICKNESS_MAX}
+				step={BRUSH_THICKNESS_STEP}
 				value={thickness}
 				disabled={isPlaybackLocked}
 				onInput={(e) => dispatch({ type: 'SET_BRUSH_THICKNESS_PREVIEW', payload: parseInt((e.target as HTMLInputElement).value) })}

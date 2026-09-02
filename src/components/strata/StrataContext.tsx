@@ -5,6 +5,7 @@ import {
 	TextSession, HistorySnapshot, AppState, LayerGradParams,
 } from '../../types/strataTypes';
 import { UNTITLED_PROJECT_SENTINEL } from '../../constants/project';
+import { BRUSH_THICKNESS_MIN, BRUSH_THICKNESS_MAX } from '../../constants/brush';
 
 export type {
 	Point, Shape, AppMode, ToolType, CinematicType, ExportType, BrushMode,
@@ -1024,7 +1025,15 @@ function appReducer(state: AppState, action: Action): AppState {
           : (typeof action.payload.currentLineThickness === 'number' && action.payload.currentLineThickness > 0)
               ? action.payload.currentLineThickness
               : 25;
-      const safeBrushThickness = rawBrushThickness;
+      // Clamp to the current tool range (v3.17.40 lowered MAX from 100 to 70). This is
+      // TOOL STATE, not geometry — a .dior saved under the old range can carry
+      // currentBrushThickness up to 100, and the slider control has to land somewhere
+      // sane on it, not on a value its own max attribute disagrees with. Shapes are
+      // untouched either way: their baked points/brushThickness are never reinterpreted
+      // on load (see constants/brush.ts). layerBrushSettings needs no equivalent clamp —
+      // useSaveLoad.ts has never included it in a saved payload (verified via
+      // `git log -S`), so action.payload.layerBrushSettings is always undefined here.
+      const safeBrushThickness = Math.min(Math.max(rawBrushThickness, BRUSH_THICKNESS_MIN), BRUSH_THICKNESS_MAX);
       const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : state.isDarkMode;
       const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom', 'storytelling'].includes(action.payload.cinematicType))
           ? action.payload.cinematicType as CinematicType : state.cinematicType;

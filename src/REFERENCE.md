@@ -404,6 +404,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `palette.ts` | ~90 | `PALETTE_PRIMARY`, `PALETTE_ALTERNATIVE` (24 colors each, `{hex, nameKey, isDark}`), `GRADIENT_DEFAULTS`, `DARK_COLORS` — canonical color system, immutable by design |
 | `version.ts` | ~5 | `APP_VERSION` — single source of truth for the current release version |
 | `project.ts` | ~30 | `UNTITLED_PROJECT_SENTINEL` (`'__UNTITLED__'`) + `getFilenameBase()` — NFD-normalized filename sanitizer for exports and .dior saves |
+| `brush.ts` | ~20 | `BRUSH_THICKNESS_MIN/MAX/STEP` (1/70/1, v3.17.40) — world-space pixel range for the brush/eraser thickness slider; values dispatched downstream are never abstract slider positions |
 | `layersDiscoveryTooltip.ts` | ~12 | `TOOLTIP_TRIGGER_SHAPES`/`TOOLTIP_TRIGGER_SECONDS` thresholds, `TOOLTIP_VISIBLE_SECONDS` auto-fade delay (v3.17.33), + the two localStorage key names for the layers-discovery tooltip (v3.17.32) |
 
 ### Hooks (`src/hooks/`)
