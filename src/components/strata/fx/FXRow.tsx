@@ -24,6 +24,17 @@ type DiscreteOption = { value: number; labelKey: string };
 type CompositeOption = { value: 'circle' | 'square' | 'stroke'; labelKey: string };
 
 // ── Helpers ─────────────────────────────────────────────────────────
+// Shields a nested control from the outer row <button>'s onClick — otherwise
+// interacting with it would also toggle the row collapsed. Every DiMiniSlider
+// wrapper below ALSO needs onMouseDown={stopProp}, not just onClick/onPointerDown:
+// the outer button's onMouseDown calls preventDefault() (v3.17.21, so the button
+// itself never retains focus), and preventDefault() on a mousedown anywhere in the
+// bubble chain cancels the range input's OWN native drag-to-set-value behavior —
+// with mouse only; pointerdown/touch never fire a mousedown at all, which is why
+// dragging with Pencil or a finger was never affected (v3.17.43 regression fix).
+// DiSegmentControl and the DiActionButton chevrons don't need it: they're
+// immediate-action clicks, not drags, and a cancelled mousedown default doesn't
+// stop the click that follows on mouseup.
 const stopProp = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
 
 const findClosestOption = (value: number, options: DiscreteOption[]): DiscreteOption =>
@@ -140,7 +151,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(sliderValue * 100)}
 						</span>					</div>
-					<div onPointerDown={stopProp} onClick={stopProp}>
+					<div onPointerDown={stopProp} onClick={stopProp} onMouseDown={stopProp}>
 						<DiMiniSlider dark={dark} value={sliderValue} min={0} max={1} step={0.01}
 							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
 					</div>
@@ -163,7 +174,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{formatBipolar(bv)}
 						</span>					</div>
-					<div onPointerDown={stopProp} onClick={stopProp} style={{ position: 'relative' }}>
+					<div onPointerDown={stopProp} onClick={stopProp} onMouseDown={stopProp} style={{ position: 'relative' }}>
 						<DiMiniSlider dark={dark} value={bv} min={-1} max={1} step={0.01}
 							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
 						<div style={{ position: 'absolute', left: 'calc(50% - 0.5px)', top: 5, height: 4, width: 1, backgroundColor: accentColor, opacity: 0.4, pointerEvents: 'none' }} />
@@ -216,7 +227,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(cv * 100)}
 						</span>					</div>
-					<div onPointerDown={stopProp} onClick={stopProp}>
+					<div onPointerDown={stopProp} onClick={stopProp} onMouseDown={stopProp}>
 						<DiMiniSlider dark={dark} value={cv} min={0} max={1} step={0.01}
 							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: valueKey, value: v } })} />
 					</div>
@@ -251,7 +262,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 							{label}
 						</span>					</div>
 					<SubControlBlock accentColor={accentColor} label={t('fx.subcontrol.size')} value={`${sz}px`} dark={dark}>
-						<div onPointerDown={stopProp} onClick={stopProp}>
+						<div onPointerDown={stopProp} onClick={stopProp} onMouseDown={stopProp}>
 							<DiMiniSlider dark={dark} value={sz} min={2} max={12} step={1}
 								onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtSize', value: v } })} />
 						</div>
@@ -269,7 +280,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						</div>
 					</SubControlBlock>
 					<SubControlBlock accentColor={accentColor} label={t('fx.subcontrol.dither')} value={ditherDisplay} dark={dark}>
-						<div onPointerDown={stopProp} onClick={stopProp}>
+						<div onPointerDown={stopProp} onClick={stopProp} onMouseDown={stopProp}>
 							<DiMiniSlider dark={dark} value={di} min={0} max={1} step={0.1}
 								onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'pixelArtDither', value: v } })} />
 						</div>
@@ -296,7 +307,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 						<span style={{ fontFamily: TYPE.numericValue.family, fontWeight: TYPE.numericValue.weight, fontSize: TYPE.numericValue.size, color: accentColor }}>
 							{Math.round(dofIntensity * 100)}
 						</span>					</div>
-					<div onPointerDown={stopProp} onClick={stopProp}>
+					<div onPointerDown={stopProp} onClick={stopProp} onMouseDown={stopProp}>
 						<DiMiniSlider dark={dark} value={dofIntensity} min={0} max={1} step={0.01}
 							onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'dof', value: v } })} />
 					</div>
@@ -318,7 +329,7 @@ export function FXRow({ fxKey, iconName, labelKey, isActive, dark, onToggle, lev
 					</div>
 					{isFree ? (
 						<SubControlBlock accentColor={accentColor} label={t('fx.subcontrol.zPlane')} value={formatZPlane(focusDist)} dark={dark}>
-							<div onPointerDown={stopProp} onClick={stopProp} style={{ position: 'relative' }}>
+							<div onPointerDown={stopProp} onClick={stopProp} onMouseDown={stopProp} style={{ position: 'relative' }}>
 								<DiMiniSlider dark={dark} value={focusDist} min={-5000} max={5000} step={50}
 									onChange={v => dispatch({ type: 'SET_FX_INTENSITY', payload: { fx: 'focusDist', value: v } })} />
 								<div style={{ position: 'absolute', left: 'calc(50% - 0.5px)', top: 5, height: 4, width: 1, backgroundColor: accentColor, opacity: 0.4, pointerEvents: 'none' }} />
