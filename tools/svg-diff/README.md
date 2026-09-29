@@ -11,5 +11,5 @@ discrepan sin que haya un píxel coincidente a 2 px — el antialias de los bord
 Verde (≤10 px) = fiel. Rojo en las imágenes = tinta que solo está en el SVG; azul = tinta que
 solo está en Canvas.
 
-Pasar la tabla antes y después de tocar `exportAsSVG` (`src/components/strata/canvas/exportHandlers.ts`).
+Pasar la tabla antes y después de tocar `exportAsSVG` (`src/components/strata/canvas/svgExport.ts`).
 Detalle técnico en `src/REFERENCE.md` §10 «Dev Tools».

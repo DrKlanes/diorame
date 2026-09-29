@@ -3,7 +3,7 @@
 //   candidate = exportAsSVG output, rasterized by the browser
 // Everything is flattened to a binary ink mask so the diff measures geometry, not color/FX.
 import { renderFrame, type RenderContext } from '../../src/components/strata/canvas/renderPipeline';
-import { exportAsSVG } from '../../src/components/strata/canvas/exportHandlers';
+import { exportAsSVG } from '../../src/components/strata/canvas/svgExport';
 import { initialState, BASE_DEPTH_STEP } from '../../src/components/strata/StrataContext';
 import type { Shape } from '../../src/types/strataTypes';
 
