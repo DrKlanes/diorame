@@ -96,8 +96,8 @@ export const exportAsSVG = async (
 		// Sort layers from back to front (most negative zIndex first)
 		const sortedZIndices = Array.from(shapesByLayer.keys()).sort((a, b) => b - a);
 
-		let clipPathCounter = 0;
 		let maskCounter = 0;
+		let insideMaskCounter = 0;
 		let processedShapeCount = 0;
 
 		// Process each layer
@@ -105,37 +105,8 @@ export const exportAsSVG = async (
 			const zIndex = sortedZIndices[layerIdx];
 			const layerShapes = shapesByLayer.get(zIndex)!;
 
-			// Single-pass: process shapes in draw order; erasers split the sequence into masked groups
-			type LayerEntry =
-				| { kind: 'shape'; shape: Shape; clipId?: string; clipShapes?: Shape[] }
-				| { kind: 'eraser'; shape: Shape };
-			const layerEntries: LayerEntry[] = [];
-			const normalShapesSoFar: Shape[] = [];
-
-			layerShapes.forEach(shape => {
-				if (shape.isEraser) {
-					layerEntries.push({ kind: 'eraser', shape });
-				} else if (shape.isDrawBehind) {
-					normalShapesSoFar.push(shape);
-					layerEntries.push({ kind: 'shape', shape });
-				} else if (shape.isDrawInside) {
-					// Clip to all non-drawInside shapes drawn so far
-					if (normalShapesSoFar.length > 0) {
-						const clipId = `clip-${zIndex}-${clipPathCounter++}`;
-						layerEntries.push({ kind: 'shape', shape, clipId, clipShapes: [...normalShapesSoFar] });
-					} else {
-						layerEntries.push({ kind: 'shape', shape });
-					}
-				} else {
-					normalShapesSoFar.push(shape);
-					layerEntries.push({ kind: 'shape', shape });
-				}
-			});
-
-			// Helper function to render a shape
-			const renderShape = (shape: Shape, clipPathId?: string) => {
-				const clipAttr = clipPathId ? ` clip-path="url(#${clipPathId})"` : '';
-
+			// Helper function to render a shape into `out`. color override = white copies for drawInside masks.
+			const renderShape = (out: string[], shape: Shape, color = shape.color) => {
 				if (shape.type === 'text' && shape.text) {
 					const x = shape.points[0].x + offsetX;
 					const y = shape.points[0].y + offsetY;
@@ -152,7 +123,7 @@ export const exportAsSVG = async (
 						transform += ` rotate(${(rotation * 180) / Math.PI})`;
 					}
 
-					parts.push(`  <text x="0" y="0" fill="${shape.color}" font-size="${fontSize}" text-anchor="${textAnchor}" font-family="sans-serif" transform="${transform}"${clipAttr}>${shape.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>\n`);
+					out.push(`  <text x="0" y="0" fill="${color}" font-size="${fontSize}" text-anchor="${textAnchor}" font-family="sans-serif" transform="${transform}">${shape.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>\n`);
 				} else if (shape.points.length > 0) {
 					const adjustedPoints = shape.points.map(p => ({
 						x: p.x + offsetX,
@@ -162,91 +133,84 @@ export const exportAsSVG = async (
 					if (shape.type === 'stroke') {
 						const pathData = createSmoothOpenPath(adjustedPoints);
 						const sw = shape.brushThickness ?? 20;
-						parts.push(`  <path d="${pathData}" fill="none" stroke="${shape.color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"${clipAttr} />\n`);
+						out.push(`  <path d="${pathData}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" />\n`);
 					} else {
 						const pathData = createSmoothClosedPath(adjustedPoints);
-						parts.push(`  <path d="${pathData}" fill="${shape.color}" stroke="none"${clipAttr} />\n`);
+						out.push(`  <path d="${pathData}" fill="${color}" stroke="none" />\n`);
 					}
 				}
 			};
 
-			// Helper: emit clipPath defs + shape for a shape entry
-			const emitShapeEntry = (entry: { kind: 'shape'; shape: Shape; clipId?: string; clipShapes?: Shape[] }) => {
-				if (entry.clipId && entry.clipShapes) {
-					parts.push(`  <defs>\n`);
-					parts.push(`    <clipPath id="${entry.clipId}">\n`);
-					entry.clipShapes.forEach(cs => {
-						if (cs.type === 'text' && cs.text) {
-							const x = cs.points[0].x + offsetX;
-							const y = cs.points[0].y + offsetY;
-							const fontSize = cs.fontSize || 40;
-							const textWidth = cs.text.length * fontSize * 0.6;
-							parts.push(`      <rect x="${x - 10}" y="${y - fontSize}" width="${textWidth + 20}" height="${fontSize + 10}" />\n`);
-						} else if (cs.points.length > 0) {
-							const ap = cs.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
-							parts.push(`      <path d="${createSmoothClosedPath(ap)}" />\n`);
-						}
-					});
-					parts.push(`    </clipPath>\n`);
-					parts.push(`  </defs>\n`);
-				}
-				renderShape(entry.shape, entry.clipId);
-			};
-
-			// Nested groups: each eraser wraps all preceding content in its mask
-			type ShapeEntry = { kind: 'shape'; shape: Shape; clipId?: string; clipShapes?: Shape[] };
-			type Group = { shapes: ShapeEntry[]; erasers: Shape[] };
+			// Groups: shapes in draw order, closed by the erasers that follow them
+			type Group = { shapes: Shape[]; erasers: Shape[] };
 			const groups: Group[] = [{ shapes: [], erasers: [] }];
 
-			layerEntries.forEach(entry => {
-				if (entry.kind === 'eraser') {
-					groups[groups.length - 1].erasers.push(entry.shape);
+			layerShapes.forEach(shape => {
+				if (shape.isEraser) {
+					groups[groups.length - 1].erasers.push(shape);
 				} else {
 					if (groups[groups.length - 1].erasers.length > 0) {
 						groups.push({ shapes: [], erasers: [] });
 					}
-					groups[groups.length - 1].shapes.push(entry as ShapeEntry);
+					groups[groups.length - 1].shapes.push(shape);
 				}
 			});
 
+			// drawInside is source-atop: it paints only where the layer ALREADY has ink, i.e. prior
+			// shapes minus prior erasers plus whatever was drawn after them. `alpha` mirrors the layer
+			// output so far in white (same eraser masks) and becomes each drawInside's luminance mask.
+			// A clipPath cannot express erasers; mask-type="alpha" is skipped by Illustrator.
+			let alpha: string[] = [];
+			const isInside = (s: Shape) => !!s.isDrawInside && !s.isDrawBehind;
+
 			// Emit: iterate first to last; groups with erasers wrap all previous output
-			let layerPartsStart = parts.length;
+			const layerPartsStart = parts.length;
 
 			groups.forEach(group => {
-				if (group.erasers.length > 0) {
-					const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
-					const eraserPaths = group.erasers
-						.map(e => createSmoothClosedPath(e.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }))))
-						.filter(Boolean);
-					if (eraserPaths.length > 0) {
-						const prevParts = parts.splice(layerPartsStart);
-						parts.push(`  <defs>\n`);
-						parts.push(`    <mask id="${eraserMaskId}">\n`);
-						// One nonzero path per eraser: destination-out is a union. A single evenodd
-						// path un-erases overlaps (incl. symmetry mirrors crossing the axis), and a
-						// single nonzero path cancels them (mirrors have opposite winding).
-						parts.push(`      <rect width="${width}" height="${height}" fill="white"/>\n`);
-						eraserPaths.forEach(d => parts.push(`      <path d="${d}" fill="black"/>\n`));
-						parts.push(`    </mask>\n`);
-						parts.push(`  </defs>\n`);
-						parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
-						group.shapes.filter(e => e.shape.isDrawBehind).forEach(emitShapeEntry);
-						parts.push(...prevParts);
-						group.shapes.filter(e => !e.shape.isDrawBehind).forEach(emitShapeEntry);
-						parts.push(`  </g>\n`);
-					}
-				} else {
-					const behind = group.shapes.filter(e => e.shape.isDrawBehind);
-					const normal = group.shapes.filter(e => !e.shape.isDrawBehind);
-					if (behind.length > 0 && layerPartsStart < parts.length) {
-						// drawBehind shapes must go before all existing layer content
-						const prevParts = parts.splice(layerPartsStart);
-						behind.forEach(emitShapeEntry);
-						parts.push(...prevParts);
+				const behindOut: string[] = [];
+				const normalOut: string[] = [];
+				const groupAlpha: string[] = [];
+				let insideMaskId: string | null = null;
+
+				group.shapes.forEach(shape => {
+					if (isInside(shape)) {
+						// Nothing on the layer yet: source-atop paints nothing
+						if (alpha.length + groupAlpha.length === 0) return;
+						if (!insideMaskId) {
+							insideMaskId = `inside-${zIndex}-${insideMaskCounter++}`;
+							normalOut.push(`  <defs>\n`, `    <mask id="${insideMaskId}">\n`, ...alpha, ...groupAlpha, `    </mask>\n`, `  </defs>\n`);
+						}
+						normalOut.push(`  <g mask="url(#${insideMaskId})">\n`);
+						renderShape(normalOut, shape);
+						normalOut.push(`  </g>\n`);
 					} else {
-						behind.forEach(emitShapeEntry);
+						// drawBehind shapes must go before all existing layer content
+						renderShape(shape.isDrawBehind ? behindOut : normalOut, shape);
+						renderShape(groupAlpha, shape, 'white');
+						insideMaskId = null;
 					}
-					normal.forEach(emitShapeEntry);
+				});
+
+				const eraserPaths = group.erasers
+					.map(e => createSmoothClosedPath(e.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }))))
+					.filter(Boolean);
+				const prevParts = parts.splice(layerPartsStart);
+				if (eraserPaths.length > 0) {
+					const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
+					parts.push(`  <defs>\n`);
+					parts.push(`    <mask id="${eraserMaskId}">\n`);
+					// One nonzero path per eraser: destination-out is a union. A single evenodd
+					// path un-erases overlaps (incl. symmetry mirrors crossing the axis), and a
+					// single nonzero path cancels them (mirrors have opposite winding).
+					parts.push(`      <rect width="${width}" height="${height}" fill="white"/>\n`);
+					eraserPaths.forEach(d => parts.push(`      <path d="${d}" fill="black"/>\n`));
+					parts.push(`    </mask>\n`);
+					parts.push(`  </defs>\n`);
+					parts.push(`  <g mask="url(#${eraserMaskId})">\n`, ...behindOut, ...prevParts, ...normalOut, `  </g>\n`);
+					alpha = [`  <g mask="url(#${eraserMaskId})">\n`, ...alpha, ...groupAlpha, `  </g>\n`];
+				} else {
+					parts.push(...behindOut, ...prevParts, ...normalOut);
+					alpha.push(...groupAlpha);
 				}
 			});
 

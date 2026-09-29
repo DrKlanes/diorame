@@ -354,7 +354,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `drawPoiMarker.ts` | ~100 | `drawPoiMarker`: the CINEMA framing point drawn as a small ring + four ticks, fading out ~3s after it is set. An INSTRUMENT first — without it there is no way to tell a mis-computed POI from a correct one the camera is orbiting. Projected fresh every frame by `renderPipeline` through the same forward projection the artwork uses, so it drifts with the camera's breathing (that drift is signal, not noise). Flat geometry only: a light halo stroked under a dark core, never `ctx.filter` (no-op on WebKit) |
 | `drawSymmetryAxis.ts` | ~30 | Symmetry axis line rendering |
 | `exportHandlers.ts` | ~320 | `exportAsPNG` (device upscale / HQ re-render via `renderFrame`), `exportAsMP4` |
-| `svgExport.ts` | ~310 | `exportAsSVG` (+ SVGZ): per-layer vector export. Erasers = nested `<mask>` groups (each eraser group masks all prior layer content; one `<path fill="black">` per eraser, v3.17.44). Fidelity measured by `tools/svg-diff` |
+| `svgExport.ts` | ~270 | `exportAsSVG` (+ SVGZ): per-layer vector export. Erasers = nested `<mask>` groups (each eraser group masks all prior layer content; one `<path fill="black">` per eraser, v3.17.44). drawInside = luminance `<mask>` built from a white copy of the layer output so far, same eraser masks (source-atop paints only where the layer already has ink; v3.17.45 — a `clipPath` cannot express erasers, and `mask-type="alpha"` is skipped by Illustrator). Fidelity measured by `tools/svg-diff` |
 | `PixelArtProcessor.ts` | ~175 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
 | `postProcessing.ts` | ~430 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge`. Glow/DoF pick native `ctx.filter` or `blurCompat` per browser |
 | `quantizePixelArtCamera.ts` | ~100 | Snaps camera to pixel grid for pixel art mode |
@@ -452,7 +452,7 @@ import change.
 |---|---|---|
 | `svg-diff/index.html` | ~30 | Page shell. Open `http://localhost:3000/tools/svg-diff/` with the dev server running. |
 | `svg-diff/harness.ts` | ~230 | SVG export fidelity instrument. Reference = `renderFrame` (the HQ PNG pipeline) one layer at a time; candidate = the real `exportAsSVG` output (download intercepted) rasterized by the browser. Both reduced to a binary ink mask; the world→pixel map is **measured** per layer with a calibration square (layers behind 0 are perspective-scaled even in DRAW). Reports structural mismatches (no agreeing pixel within 2 px → immune to antialias). |
-| `svg-diff/cases.ts` | ~60 | The synthetic scenes of the table (T0–T9): eraser alone, overlapping erasers, self-crossing eraser, content over eraser, symmetry mirror crossing the axis, drawInside after eraser, tapered tap, uniform brush ends. |
+| `svg-diff/cases.ts` | ~60 | The synthetic scenes of the table (T0–T9 + variants): eraser alone, overlapping erasers, self-crossing eraser, content over eraser, drawBehind after eraser, symmetry mirror crossing the axis, drawInside after eraser / on an empty layer / followed by drawBehind, tapered tap, uniform brush ends. |
 | `svg-diff/main.ts` | ~80 | Runs every case on load, renders the table + diff images (red = ink only in SVG, blue = ink only in Canvas); a file input adds a real `.dior` scene per layer. Result also on `window.__svgDiff` for automated runs. **Run it before and after any change to `exportAsSVG`.** |
 
 ### Render Pipeline Architecture

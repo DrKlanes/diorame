@@ -46,6 +46,11 @@ export const CASES: ReadonlyArray<{ id: string; label: string; shapes: Shape[] }
 	{ id: 'T5', label: 'goma sobre contenido sobre goma', shapes: [base(), eraser(circle(0, 0, 150)), blob(circle(0, 0, 100)), eraser(circle(80, 0, 60))] },
 	{ id: 'T6', label: 'goma con simetría cruzando el eje', shapes: [base(), crossing, mirror(crossing)] },
 	{ id: 'T7', label: 'drawInside tras goma', shapes: [base(), eraser(circle(0, 0, 150)), blob(circle(0, 0, 250), { isDrawInside: true })] },
+	// Alpha = (base − goma) ∪ relleno: restar las gomas previas al recorte no basta.
+	{ id: 'T7b', label: 'drawInside tras goma + relleno parcial del agujero', shapes: [base(), eraser(circle(0, 0, 150)), blob(circle(-100, 0, 90)), blob(circle(0, 0, 250), { isDrawInside: true })] },
+	{ id: 'T7c', label: 'drawInside en capa vacía', shapes: [blob(circle(0, 0, 250), { isDrawInside: true })] },
+	{ id: 'T7d', label: 'drawBehind después de drawInside', shapes: [base(), blob(circle(0, 0, 400), { isDrawInside: true }), blob(circle(250, 0, 150), { isDrawBehind: true })] },
+	{ id: 'T4b', label: 'drawBehind tras goma (rellena el agujero)', shapes: [base(), eraser(circle(0, 0, 150)), blob(circle(60, 0, 120), { isDrawBehind: true })] },
 	{ id: 'T8', label: 'tap de brush tapered', shapes: [blob(generateStrokeForMode('tapered', tap, 40), { brushMode: 'tapered', brushThickness: 40, originalPoints: tap })] },
 	{ id: 'T9', label: 'brush uniform (extremos)', shapes: [blob(generateStrokeForMode('uniform', spine, 40), { brushMode: 'uniform', brushThickness: 40, originalPoints: spine })] },
 ];
