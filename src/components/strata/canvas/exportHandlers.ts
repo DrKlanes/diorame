@@ -404,13 +404,16 @@ export const exportAsSVG = async (
 					const eraserMaskId = `mask-${zIndex}-${maskCounter++}`;
 					const eraserPaths = group.erasers
 						.map(e => createSmoothClosedPath(e.points.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }))))
-						.filter(Boolean)
-						.join(' ');
-					if (eraserPaths) {
+						.filter(Boolean);
+					if (eraserPaths.length > 0) {
 						const prevParts = parts.splice(layerPartsStart);
 						parts.push(`  <defs>\n`);
 						parts.push(`    <mask id="${eraserMaskId}">\n`);
-						parts.push(`      <path d="M0,0 H${width} V${height} H0 Z ${eraserPaths}" fill="white" fill-rule="evenodd"/>\n`);
+						// One nonzero path per eraser: destination-out is a union. A single evenodd
+						// path un-erases overlaps (incl. symmetry mirrors crossing the axis), and a
+						// single nonzero path cancels them (mirrors have opposite winding).
+						parts.push(`      <rect width="${width}" height="${height}" fill="white"/>\n`);
+						eraserPaths.forEach(d => parts.push(`      <path d="${d}" fill="black"/>\n`));
 						parts.push(`    </mask>\n`);
 						parts.push(`  </defs>\n`);
 						parts.push(`  <g mask="url(#${eraserMaskId})">\n`);
