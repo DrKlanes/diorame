@@ -125,6 +125,15 @@ export const exportAsSVG = async (
 
 					out.push(`  <text x="0" y="0" fill="${color}" font-size="${fontSize}" text-anchor="${textAnchor}" font-family="sans-serif" transform="${transform}">${shape.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>\n`);
 				} else if (shape.points.length > 0) {
+					// Tapered tap: its polygon has zero area; Canvas paints a round dot of full
+					// thickness instead. Same predicate as isTaperedDot in renderLayerBody.ts.
+					const o = shape.originalPoints;
+					if (shape.brushMode === 'tapered' && o != null && o.length >= 2
+						&& Math.hypot(o[0].x - o[o.length - 1].x, o[0].y - o[o.length - 1].y) < 0.15) {
+						out.push(`  <circle cx="${o[0].x + offsetX}" cy="${o[0].y + offsetY}" r="${(shape.brushThickness || 20) / 2}" fill="${color}" />\n`);
+						return;
+					}
+
 					const adjustedPoints = shape.points.map(p => ({
 						x: p.x + offsetX,
 						y: p.y + offsetY
