@@ -151,7 +151,7 @@ type Action =
 
 // --- Initial State ---
 
-const initialState: AppState = {
+export const initialState: AppState = {
   shapes: [],
   palette: FIXED_PALETTE,
   activePaletteId: 'primary',

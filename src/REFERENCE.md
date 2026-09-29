@@ -441,6 +441,19 @@ decisions that the code cannot express on its own.
 | `ux-debt.md` | Running list of known UX debt, with the reasoning behind each accepted quirk. |
 | `BRIEF-CLAUDE-CODE.md` | Project brief. |
 
+### Dev Tools (`tools/`)
+
+Dev-only pages served by `npm run dev`, never bundled: `vite build` only takes `index.html`
+as input. Still typechecked by `npm run typecheck`, so they break loudly if the APIs they
+import change.
+
+| File | Lines | Purpose |
+|---|---|---|
+| `svg-diff/index.html` | ~30 | Page shell. Open `http://localhost:3000/tools/svg-diff/` with the dev server running. |
+| `svg-diff/harness.ts` | ~230 | SVG export fidelity instrument. Reference = `renderFrame` (the HQ PNG pipeline) one layer at a time; candidate = the real `exportAsSVG` output (download intercepted) rasterized by the browser. Both reduced to a binary ink mask; the world→pixel map is **measured** per layer with a calibration square (layers behind 0 are perspective-scaled even in DRAW). Reports structural mismatches (no agreeing pixel within 2 px → immune to antialias). |
+| `svg-diff/cases.ts` | ~60 | The synthetic scenes of the table (T0–T9): eraser alone, overlapping erasers, self-crossing eraser, content over eraser, symmetry mirror crossing the axis, drawInside after eraser, tapered tap, uniform brush ends. |
+| `svg-diff/main.ts` | ~80 | Runs every case on load, renders the table + diff images (red = ink only in SVG, blue = ink only in Canvas); a file input adds a real `.dior` scene per layer. Result also on `window.__svgDiff` for automated runs. **Run it before and after any change to `exportAsSVG`.** |
+
 ### Render Pipeline Architecture
 
 **Pattern: "caller orchestrates, modules are pure"**
