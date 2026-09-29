@@ -35,6 +35,8 @@ const base = () => blob(circle(0, 0, 300));
 const crossing = eraser(circle(60, 0, 120));
 const tap: Point[] = [{ x: 0, y: 0 }, { x: 0.1, y: 0.1 }];
 const far: Point[] = [{ x: 150, y: 0 }, { x: 150.1, y: 0.1 }];
+const sharp: Point[] = [{ x: -250, y: 100 }, { x: -120, y: -150 }, { x: 0, y: 120 }, { x: 40, y: -60 }, { x: 60, y: 140 }, { x: 250, y: -100 }, { x: 180, y: 100 }];
+const uniform = (pts: Point[], extra: Partial<Shape> = {}) => blob(generateStrokeForMode('uniform', pts, 40), { brushMode: 'uniform', brushThickness: 40, originalPoints: pts, ...extra });
 const spine: Point[] = Array.from({ length: 21 }, (_, i) => ({ x: -250 + i * 25, y: 0 }));
 
 export const CASES: ReadonlyArray<{ id: string; label: string; shapes: Shape[] }> = [
@@ -55,4 +57,6 @@ export const CASES: ReadonlyArray<{ id: string; label: string; shapes: Shape[] }
 	{ id: 'T8', label: 'tap de brush tapered', shapes: [blob(generateStrokeForMode('tapered', tap, 40), { brushMode: 'tapered', brushThickness: 40, originalPoints: tap })] },
 	{ id: 'T8b', label: 'taps tapered: en el agujero de una goma y como drawInside', shapes: [base(), eraser(circle(0, 0, 150)), blob(generateStrokeForMode('tapered', tap, 40), { brushMode: 'tapered', brushThickness: 40, originalPoints: tap }), blob(generateStrokeForMode('tapered', far, 60), { brushMode: 'tapered', brushThickness: 60, originalPoints: far, isDrawInside: true })] },
 	{ id: 'T9', label: 'brush uniform (extremos)', shapes: [blob(generateStrokeForMode('uniform', spine, 40), { brushMode: 'uniform', brushThickness: 40, originalPoints: spine })] },
+	{ id: 'T9b', label: 'tap de brush uniform', shapes: [uniform(tap)] },
+	{ id: 'T9c', label: 'brush uniform con giros bruscos + drawInside tras goma', shapes: [uniform(sharp), eraser(circle(0, 0, 100)), uniform(spine, { isDrawInside: true })] },
 ];

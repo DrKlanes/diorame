@@ -95,24 +95,30 @@ export const maskFromReference = (canvas: HTMLCanvasElement): Mask => {
 // World→pixel map of layer z, measured (not derived) from a known square: layers
 // behind the active one are scaled by perspective even in DRAW mode.
 export const calibrate = (z: number, size: number): Calibration => {
+	// Densely sampled edges: the blob's quadratic smoothing then only rounds the corners negligibly.
+	const edge = (ax: number, ay: number, bx: number, by: number) =>
+		Array.from({ length: 400 }, (_, i) => ({ x: ax + (bx - ax) * i / 400, y: ay + (by - ay) * i / 400 }));
+	const h = CAL_HALF;
 	const sq: Shape = {
 		id: 'calibration',
 		zIndex: z,
 		color: '#000000',
-		points: [{ x: -CAL_HALF, y: -CAL_HALF }, { x: CAL_HALF, y: -CAL_HALF }, { x: CAL_HALF, y: CAL_HALF }, { x: -CAL_HALF, y: CAL_HALF }],
+		points: [...edge(-h, -h, h, -h), ...edge(h, -h, h, h), ...edge(h, h, -h, h), ...edge(-h, h, -h, -h)],
 	};
-	const m = maskFromReference(renderReference([sq], z, size));
-	let x0 = size, x1 = -1, y0 = size;
+	// Sub-pixel: area and centroid from antialiased coverage, not the integer bbox (a 1/800
+	// scale error is ~1 px at the edge of a big scene — enough to flag thin slivers).
+	const canvas = renderReference([sq], z, size);
+	const d = canvas.getContext('2d')!.getImageData(0, 0, size, size).data;
+	const bg = (d[0] + d[1] + d[2]) / 3;
+	let area = 0, sx = 0, sy = 0;
 	for (let y = 0; y < size; y++) {
 		for (let x = 0; x < size; x++) {
-			if (!m.data[y * size + x]) continue;
-			if (x < x0) x0 = x;
-			if (x > x1) x1 = x;
-			if (y < y0) y0 = y;
+			const i = (y * size + x) * 4;
+			const cov = Math.min(1, Math.max(0, (bg - (d[i] + d[i + 1] + d[i + 2]) / 3) / bg));
+			area += cov; sx += cov * (x + 0.5); sy += cov * (y + 0.5);
 		}
 	}
-	const sc = (x1 + 1 - x0) / (2 * CAL_HALF);
-	return { sc, tx: x0 + CAL_HALF * sc, ty: y0 + CAL_HALF * sc };
+	return { sc: Math.sqrt(area) / (2 * h), tx: sx / area, ty: sy / area };
 };
 
 // Runs the real exportAsSVG and captures the blob instead of downloading it.

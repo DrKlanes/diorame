@@ -83,6 +83,39 @@ export const exportAsSVG = async (
 			const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
 			return d + ' Z';
 		};
+		// Filled outline of a round-capped, round-joined stroke along the spine drawSmoothLine
+		// draws: the quadratic-through-midpoints curve is sampled every ~3 units, each sample gets
+		// a disc and each chord a quad. All pieces wind the same way, so nonzero fill = union.
+		const createRoundStrokeOutline = (points: Array<{x: number, y: number}>, r: number) => {
+			const f = (v: number) => +v.toFixed(2);
+			const samples = [points[0]];
+			if (points.length >= 3) {
+				let start = points[0];
+				for (let i = 1; i < points.length - 1; i++) {
+					const c = points[i];
+					const end = { x: (c.x + points[i + 1].x) / 2, y: (c.y + points[i + 1].y) / 2 };
+					const len = Math.hypot(c.x - start.x, c.y - start.y) + Math.hypot(end.x - c.x, end.y - c.y);
+					const n = Math.max(1, Math.ceil(len / 3));
+					for (let k = 1; k <= n; k++) {
+						const t = k / n, u = 1 - t;
+						samples.push({ x: u * u * start.x + 2 * u * t * c.x + t * t * end.x, y: u * u * start.y + 2 * u * t * c.y + t * t * end.y });
+					}
+					start = end;
+				}
+			}
+			if (points.length >= 2) samples.push(points[points.length - 1]);
+			let d = '';
+			// sweep-flag 0 = same (counter-clockwise on screen) winding as the quads below
+			samples.forEach(p => { d += `M${f(p.x + r)},${f(p.y)} A${r},${r} 0 1 0 ${f(p.x - r)},${f(p.y)} A${r},${r} 0 1 0 ${f(p.x + r)},${f(p.y)} Z `; });
+			for (let i = 0; i < samples.length - 1; i++) {
+				const p = samples[i], q = samples[i + 1];
+				const len = Math.hypot(q.x - p.x, q.y - p.y);
+				if (len < 1e-6) continue;
+				const nx = -(q.y - p.y) / len * r, ny = (q.x - p.x) / len * r;
+				d += `M${f(p.x + nx)},${f(p.y + ny)} L${f(q.x + nx)},${f(q.y + ny)} L${f(q.x - nx)},${f(q.y - ny)} L${f(p.x - nx)},${f(p.y - ny)} Z `;
+			}
+			return d.trim();
+		};
 
 		// Group shapes by zIndex
 		const shapesByLayer = new Map<number, Shape[]>();
@@ -131,6 +164,14 @@ export const exportAsSVG = async (
 					if (shape.brushMode === 'tapered' && o != null && o.length >= 2
 						&& Math.hypot(o[0].x - o[o.length - 1].x, o[0].y - o[o.length - 1].y) < 0.15) {
 						out.push(`  <circle cx="${o[0].x + offsetX}" cy="${o[0].y + offsetY}" r="${(shape.brushThickness || 20) / 2}" fill="${color}" />\n`);
+						return;
+					}
+					// Uniform brush: Canvas strokes the ORIGINAL spine with round caps/joins
+					// (renderUniformLineShape); the stored outline polygon has neither. Emitted as a
+					// filled shape, not a stroke, for the Illustrator workflow.
+					if (o != null && o.length > 0 && shape.brushMode === 'uniform') {
+						const spine = o.map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
+						out.push(`  <path d="${createRoundStrokeOutline(spine, (shape.brushThickness || 20) / 2)}" fill="${color}" stroke="none" />\n`);
 						return;
 					}
 
