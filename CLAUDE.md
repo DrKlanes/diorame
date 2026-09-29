@@ -239,6 +239,18 @@ NEAR_CLIP           = 50         // clipping mínimo de capa en proyección 3D
 
 ---
 
+## Verificación
+
+**Export SVG:** antes y después de tocar `exportAsSVG`, `svgExport.ts` o `svgGeometry.ts`, pasar la tabla de `tools/svg-diff` (`npm run dev` → `localhost:3000/tools/svg-diff/`; para escenas reales, cargar su `.dior`). Invariantes de `svgGeometry.ts` en REFERENCE.md §10 — leerlos antes de "optimizar".
+
+Lecciones de método (serie v3.17.43–48):
+- Un SVG que "se ve perfecto" no demuestra nada: hacen falta **dos fuentes distintas** (render de Canvas vs SVG rasterizado) **y la prueba en la herramienta de destino** (Illustrator: Ctrl+Y y Buscatrazos ignoran máscaras).
+- Las métricas globales diluyen fallos locales (un remate perdido entre 2 000 formas) → auditoría pieza a pieza.
+- Las métricas en escenas reducidas dan falsos positivos subpíxel → confirmar ampliando (×4–8).
+- Antes de fiarse de un instrumento, **reintroducir el fallo y ver que lo caza**.
+
+---
+
 ## Workflow de cambios
 
 1. Leer los archivos relevantes

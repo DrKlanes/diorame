@@ -355,7 +355,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `drawSymmetryAxis.ts` | ~30 | Symmetry axis line rendering |
 | `exportHandlers.ts` | ~320 | `exportAsPNG` (device upscale / HQ re-render via `renderFrame`), `exportAsMP4` |
 | `svgExport.ts` | ~180 | `exportAsSVG` (+ SVGZ): bounds, one `<g id="layer-N">` per layer (back to front, same order as `renderFrame`), `<text>`, download. Geometry comes from `svgGeometry.ts` — **no masks**: Illustrator's Outline view (Ctrl+Y) and Pathfinder only see paths, so eraser-carved details must be real holes (v3.17.48). Yields every ~30 ms through `MessageChannel` (a hidden tab clamps `setTimeout` to ≥1 s). Fidelity measured by `tools/svg-diff` |
-| `svgGeometry.ts` | ~260 | Real-geometry layers with **paper.js** (lazy `import()` → own chunk, precached by the SW, works offline). Per layer in draw order: eraser = subtract from earlier pieces, drawInside = intersect with the layer's ink (per crossing piece), drawBehind = piece at the bottom. `nesting()` settles non-crossing pairs with one point per contour (holes included) — no running union (that cost 100 s on the onboarding scene). Self-crossing outlines are flattened before resolving (paper.js loses area on curves that cross themselves many times). Tapered tap = disc; uniform brush = ribbons + discs along the drawSmoothLine curve. Eraser crumbs < 4 units² dropped. Fallbacks (text; failed boolean op) keep a mask/clip for that one piece and are counted |
+| `svgGeometry.ts` | ~260 | Real-geometry layers with **paper.js** (lazy `import()` → own chunk, precached by the SW, works offline). Per layer in draw order: eraser = subtract from earlier pieces, drawInside = intersect with the layer's ink (per crossing piece), drawBehind = piece at the bottom. `nesting()` settles non-crossing pairs with one point per contour (holes included) — no running union (that cost 100 s on the onboarding scene). Self-crossing outlines are flattened before resolving (paper.js loses area on curves that cross themselves many times). Tapered tap = disc; uniform brush = ribbons + discs along the drawSmoothLine curve. Eraser crumbs < 4 units² dropped. Fallbacks (text; failed boolean op) keep a mask/clip for that one piece and are counted. **Invariantes: ver bloque bajo esta tabla** |
 | `PixelArtProcessor.ts` | ~175 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
 | `postProcessing.ts` | ~430 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge`. Glow/DoF pick native `ctx.filter` or `blurCompat` per browser |
 | `quantizePixelArtCamera.ts` | ~100 | Snaps camera to pixel grid for pixel art mode |
@@ -376,6 +376,19 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `animationExportRender.ts` | ~195 | `renderAnimationFrames`: shared frame-by-frame render infrastructure; builds fake `RenderContext` with dedicated canvases per frame, async yield between frames |
 | `pngSequenceHandler.ts` | ~100 | `exportAsPNGSequence`: `ImageData[]` → PNG bytes → ZIP via `fflate`; files `{project}_frame_01.png`, ZIP `{project}_frames.zip` |
 | `gifHandler.ts` | ~140 | `exportAsGIF`: `ImageData[]` → animated GIF via `gifenc`; per-frame palette quantization, scale presets 1/0.5/0.25, infinite native loop |
+
+#### `svgGeometry.ts` — invariantes (no simplificar)
+
+Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"; tras cualquier cambio, pasar la tabla y cargar un `.dior` real (la auditoría del brush corre sola).
+
+- **Disco de remate con radio `r + 0.01`.** Un borde de cinta exactamente tangente a su disco hace que paper.js descarte el remate entero; sin el +0,01 la auditoría marca 22 trazos rotos (peor 10 487 px) en la escena de ejemplo.
+- **`nesting()` con un punto por contorno, NO `interiorPoint`.** El `interiorPoint` de un disco puede ser su centro y caer en el agujero de la goma: el atajo creía la pieza "entera dentro" y borraba discos completos (≈200 000 px en la tabla).
+- **Sin unión acumulada de la tinta de la capa.** drawInside se interseca solo con las piezas cuyo contorno cruza el suyo; la unión acumulada costaba >100 s en la escena de ejemplo (hoy ~1,5 s).
+- **Aplanado a polígono solo en formas que se cruzan a sí mismas** (`getCrossings`). paper.js pierde área con curvas muy autocruzadas (goma frotada: −41 %); aplanar todo haría perder las curvas editables a todas las formas.
+- **Brush uniform = cintas poligonales + pocos discos, nunca unir cientos de discos.** Resolver el compuesto de discos solapados perdía remates; unirlos de a pares tardaba 1–2 s por trazo.
+- **Migas de goma < 4 u² se descartan.** Invisibles en pantalla, pero cada una es un fragmento basura al Dividir en Illustrator; quitarlas cambia ~1 px en la tabla.
+- **paper.js por `import()` dinámico.** Chunk propio fuera del bundle principal (solo lo paga quien exporta SVG) y dentro del precache del SW → el export funciona sin conexión. Si se importa estático, entra en el bundle de arranque.
+- **(En `svgExport.ts`) ceder con `MessageChannel`, NO `setTimeout`.** En una pestaña oculta `setTimeout` tarda ≥1 s por tick: el export se arrastraba minutos si el usuario cambiaba de pestaña.
 
 ### Type System (`src/types/`)
 

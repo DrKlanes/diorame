@@ -284,3 +284,44 @@ mirando el borrador en concreto.
 **Pendiente:** decidir si el borrador necesita su propio control visible, o si
 compartir el ajuste del pincel sin más aviso es aceptable en la práctica.
 Producto, no mecánica.
+
+---
+
+## Export SVG: límites conocidos tras la geometría real (v3.17.48)
+
+**Estado:** anotado al cerrar la serie v3.17.43–48. Nada de esto se ha tocado.
+Medir cualquier arreglo con `tools/svg-diff` (ver CLAUDE.md «Verificación»).
+
+### ⚠️ El texto sale en sans-serif, no en las fuentes de la app — candidato prioritario
+
+`renderTextShape.ts:100-107` pinta en bold con Inter / Courier Prime / Cinzel /
+Bangers / Inknut Antiqua según `shape.font`, y reparte las líneas. `svgExport.ts`
+emite un único `<text font-family="sans-serif">` sin bold ni saltos de línea. En
+Illustrator el texto queda mal. Además, al no ser geometría, las booleanas no lo
+tocan (ver abajo).
+
+**Solución candidata:** convertir el texto a contornos en el export (las fuentes
+ya se sirven desde la app; hay que obtener los glifos como trazados). Resuelve
+de paso fuente, bold, saltos de línea y la goma sobre texto.
+
+### Las formas que se cruzan consigo mismas salen con nodos rectos
+
+paper.js pierde área con curvas muy autocruzadas, así que `svgGeometry.ts` las
+aplana a polígono (tolerancia 0,25) antes de resolver. Se ven igual, pero en
+Illustrator son cientos de nodos rectos en vez de curvas: peor para editar nodo a
+nodo. Afecta sobre todo a gomas frotadas y a blobs en forma de lazo; las formas
+simples conservan sus curvas.
+
+### El texto con una goma encima conserva máscara
+
+Es el único caso en que el SVG sigue llevando `<mask>` (junto con los fallos de
+booleana, que se cuentan y hoy son 0 en todas las escenas medidas). Con Ctrl+Y o
+Buscatrazos, ese recorte de la goma sobre el texto no existe. Se resolvería con
+el texto a contornos.
+
+### Rendimiento de las booleanas en iPad: sin probar
+
+En escritorio, la escena de ejemplo (2 369 formas, 798 drawInside) exporta en
+~1,5 s aislada y ~5 s dentro de la app con el lienzo pintando. En iPad no se ha
+medido; será más lento. El export cede el hilo cada ~30 ms, así que no debería
+congelar la UI, pero puede tardar.
