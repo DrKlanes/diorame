@@ -47,10 +47,14 @@ export const CASES: ReadonlyArray<{ id: string; label: string; shapes: Shape[] }
 	{ id: 'T3b', label: 'goma frotada (zigzag)', shapes: [base(), eraser(zigzag())] },
 	{ id: 'T4', label: 'contenido encima de goma', shapes: [base(), eraser(circle(0, 0, 150)), blob(circle(0, 0, 80))] },
 	{ id: 'T5', label: 'goma sobre contenido sobre goma', shapes: [base(), eraser(circle(0, 0, 150)), blob(circle(0, 0, 100)), eraser(circle(80, 0, 60))] },
+	// Nesting shortcuts of the geometry export (svgGeometry.ts): a shape inside a hole must not count as inside the ink.
+	{ id: 'T5b', label: 'goma dentro del agujero de otra (no-op)', shapes: [base(), eraser(circle(0, 0, 150)), eraser(circle(0, 0, 60))] },
+	{ id: 'T5c', label: 'pieza dentro de otra + goma entre ambas + drawInside', shapes: [base(), blob(circle(0, 0, 80)), eraser(circle(0, 0, 200)), blob(circle(0, 0, 290), { isDrawInside: true })] },
 	{ id: 'T6', label: 'goma con simetría cruzando el eje', shapes: [base(), crossing, mirror(crossing)] },
 	{ id: 'T7', label: 'drawInside tras goma', shapes: [base(), eraser(circle(0, 0, 150)), blob(circle(0, 0, 250), { isDrawInside: true })] },
 	// Alpha = (base − goma) ∪ relleno: restar las gomas previas al recorte no basta.
 	{ id: 'T7b', label: 'drawInside tras goma + relleno parcial del agujero', shapes: [base(), eraser(circle(0, 0, 150)), blob(circle(-100, 0, 90)), blob(circle(0, 0, 250), { isDrawInside: true })] },
+	{ id: 'T7e', label: 'drawInside dentro del agujero de una goma', shapes: [base(), eraser(circle(0, 0, 150)), blob(circle(0, 0, 60), { isDrawInside: true })] },
 	{ id: 'T7c', label: 'drawInside en capa vacía', shapes: [blob(circle(0, 0, 250), { isDrawInside: true })] },
 	{ id: 'T7d', label: 'drawBehind después de drawInside', shapes: [base(), blob(circle(0, 0, 400), { isDrawInside: true }), blob(circle(250, 0, 150), { isDrawBehind: true })] },
 	{ id: 'T4b', label: 'drawBehind tras goma (rellena el agujero)', shapes: [base(), eraser(circle(0, 0, 150)), blob(circle(60, 0, 120), { isDrawBehind: true })] },

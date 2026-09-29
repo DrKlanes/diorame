@@ -4,6 +4,7 @@
 // Everything is flattened to a binary ink mask so the diff measures geometry, not color/FX.
 import { renderFrame, type RenderContext } from '../../src/components/strata/canvas/renderPipeline';
 import { exportAsSVG } from '../../src/components/strata/canvas/svgExport';
+import { loadPaper, buildLayerGeometry, smoothPathData } from '../../src/components/strata/canvas/svgGeometry';
 import { initialState, BASE_DEPTH_STEP } from '../../src/components/strata/StrataContext';
 import type { Shape } from '../../src/types/strataTypes';
 
@@ -199,7 +200,9 @@ export const diffMasks = (a: Mask, b: Mask): Omit<DiffResult, 'sc'> => {
 	};
 };
 
-export type LayerRun = DiffResult & { z: number; reference: Mask; candidate: Mask };
+// masks: <mask>/<clipPath> left in the SVG. Real-geometry export should emit none (Illustrator's
+// Outline view and Pathfinder ignore them); only text and failed boolean ops fall back to them.
+export type LayerRun = DiffResult & { z: number; masks: number; reference: Mask; candidate: Mask };
 
 // Each layer is exported and compared on its own: layers only stack, so the per-layer
 // alpha is where eraser / drawInside / drawBehind fidelity lives.
@@ -211,8 +214,10 @@ export const runScene = async (shapes: Shape[], size: number): Promise<LayerRun[
 		const own = ink.filter(s => s.zIndex === z);
 		const cal = calibrate(z, size);
 		const reference = maskFromReference(renderReference(own, z, size));
-		const candidate = await rasterizeSVG(await captureSVG(own), own, cal, size);
-		out.push({ z, reference, candidate, ...diffMasks(reference, candidate), sc: +cal.sc.toFixed(4) });
+		const svg = await captureSVG(own);
+		const candidate = await rasterizeSVG(svg, own, cal, size);
+		const masks = (svg.match(/<mask|<clipPath/g) || []).length;
+		out.push({ z, masks, reference, candidate, ...diffMasks(reference, candidate), sc: +cal.sc.toFixed(4) });
 	}
 	return out;
 };
@@ -230,4 +235,43 @@ export const diffImage = (ref: Mask, cand: Mask): HTMLCanvasElement => {
 	}
 	ctx.putImageData(img, 0, 0);
 	return canvas;
+};
+
+// Brush audit: every uniform stroke alone, geometry vs Canvas's round-capped stroke, same
+// structural metric as the table (area ratios flag antialias on 2-unit dots). Catches a dropped
+// cap or join that a whole-scene diff dilutes — it found a paper.js tangency bug.
+export const auditStrokes = async (shapes: Shape[]): Promise<{ total: number; bad: number; worstPx: number }> => {
+	const P = await loadPaper();
+	const strokes = shapes.filter(s => !s.isEraser && s.brushMode === 'uniform' && s.originalPoints && s.originalPoints.length > 0);
+	const size = 600;
+	const canvas = document.createElement('canvas');
+	canvas.width = size; canvas.height = size;
+	const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+	const mask = (): Mask => {
+		const d = ctx.getImageData(0, 0, size, size).data;
+		const data = new Uint8Array(size * size);
+		for (let i = 0; i < data.length; i++) data[i] = d[i * 4 + 3] > 127 ? 1 : 0;
+		return { w: size, h: size, data };
+	};
+	let bad = 0, worst = 0;
+	for (const s of strokes) {
+		const o = s.originalPoints!;
+		const xs = o.map(p => p.x), ys = o.map(p => p.y);
+		const th = s.brushThickness || 20;
+		const k = Math.min(4, (size - 40) / (Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) + th + 10));
+		const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+		const f = (p: { x: number; y: number }) => ({ x: (p.x - cx) * k + size / 2, y: (p.y - cy) * k + size / 2 });
+		const one: Shape = { ...s, isDrawInside: false, isDrawBehind: false, points: s.points.map(f), originalPoints: o.map(f), brushThickness: th * k };
+		ctx.clearRect(0, 0, size, size);
+		ctx.lineWidth = th * k; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+		ctx.stroke(new Path2D(smoothPathData(one.originalPoints!, false)));
+		const ref = mask();
+		const g = await buildLayerGeometry(P, [one], 0, 0, async () => {});
+		ctx.clearRect(0, 0, size, size);
+		g.pieces.forEach(pc => { if (pc.d) ctx.fill(new Path2D(pc.d)); });
+		const px = diffMasks(ref, mask()).structPx;
+		if (px > 10) bad++;
+		worst = Math.max(worst, px);
+	}
+	return { total: strokes.length, bad, worstPx: worst };
 };
