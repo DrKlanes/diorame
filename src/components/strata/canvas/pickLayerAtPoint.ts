@@ -1,4 +1,5 @@
 import type { Shape } from '../../../types/strataTypes';
+import { measureTextBlock } from '../../../utils/textMetrics';
 
 /**
  * Which layer holds content under a screen point, and where in the world that is.
@@ -60,44 +61,27 @@ const isPointInPolygon = (px: number, py: number, pts: { x: number; y: number }[
  * single point has no area. Without this they would be unframeable, which would be an
  * odd hole in a tool the product ships.
  *
- * The box is derived from the same values renderTextShape draws with (fontSize, the
- * line count, and align), using a fixed advance-width estimate per character because
- * measuring text properly would need a canvas context this pure module has no business
- * holding. That estimate is the imprecision: it is generous on narrow characters and
- * tight on wide ones, so the box can miss the very edge of a long line by a few
- * characters' worth. For aiming a camera at a block of text, that is well inside
- * tolerance.
+ * The box is the text's measured INK (utils/textMetrics.ts): the same font, letter
+ * spacing, alignment and line layout renderTextShape paints with, measured by Canvas.
+ * It used to be a fixed 0.55-em advance per character, which was tight on wide faces
+ * (Inknut fell up to 117 px short of the ink) and generous on narrow ones (Bangers
+ * overshot by up to 89 px). Measuring costs one measureText per line of each text
+ * shape the walk reaches — negligible for a tap.
  */
-const CHAR_WIDTH_RATIO = 0.55;
-const LINE_HEIGHT_RATIO = 1.2;
-
 const isPointInTextBox = (px: number, py: number, shape: Shape): boolean => {
 	const anchor = shape.points[0];
 	if (!anchor || !shape.text) return false;
-	const fontSize = shape.fontSize || 40;
-	const lines = shape.text.split('\n');
-	const lineHeight = fontSize * LINE_HEIGHT_RATIO;
-	const width = Math.max(...lines.map(l => l.length)) * fontSize * CHAR_WIDTH_RATIO;
-	const height = lines.length * lineHeight;
-
-	// renderTextShape centres the block vertically on the anchor and honours align
-	// horizontally, so the box is placed the same way.
-	const top = anchor.y - height / 2;
-	const left = shape.align === 'center' ? anchor.x - width / 2
-		: shape.align === 'right' ? anchor.x - width
-		: anchor.x;
+	const { ink } = measureTextBlock(shape);
 
 	// Rotated text is tested against its UN-rotated box: rotating the query point back
-	// is cheap and keeps the box honest for tilted text.
-	let qx = px, qy = py;
+	// around the anchor is cheap and keeps the box honest for tilted text.
+	let dx = px - anchor.x, dy = py - anchor.y;
 	const rot = shape.rotation || 0;
 	if (rot !== 0) {
-		const dx = px - anchor.x, dy = py - anchor.y;
 		const c = Math.cos(-rot), s = Math.sin(-rot);
-		qx = anchor.x + (dx * c - dy * s);
-		qy = anchor.y + (dx * s + dy * c);
+		[dx, dy] = [dx * c - dy * s, dx * s + dy * c];
 	}
-	return qx >= left && qx <= left + width && qy >= top && qy <= top + height;
+	return dx >= ink.x0 && dx <= ink.x1 && dy >= ink.y0 && dy <= ink.y1;
 };
 
 /** True when this shape puts visible content under the point. */

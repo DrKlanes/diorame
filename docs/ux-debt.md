@@ -320,8 +320,10 @@ texto que no toca nada conserva sus curvas.
 
 ### La caja del gizmo de Mover mide el texto con otra copia del layout
 
-**Estado:** el gizmo se arregló en v3.17.53; el picking de CINEMA y `svgText.textCorners`
-siguen con su copia hasta v3.17.54 y v3.17.55.
+**Estado:** el gizmo se arregló en v3.17.53 y el picking de CINEMA en v3.17.54
+(`pickLayerAtPoint` usaba una estimación de 0,55 em por carácter: se quedaba hasta 117 px
+corto en Inknut y se pasaba hasta 89 px en Bangers). `svgText.textCorners` sigue con su
+copia hasta v3.17.55.
 
 `transformUtils.ts` (`getLayerBoundingBox`) tenía su propia versión del layout de texto.
 El diagnóstico inicial fue «solo conoce tres fuentes y no aplica letterSpacing ni
