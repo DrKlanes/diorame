@@ -368,6 +368,18 @@ Límite conocido: aplastar repetidamente hasta el clamp (0,01 por gesto) puede d
 sin píxeles visibles; entonces la capa no tiene caja de gizmo y solo se recupera con deshacer
 (igual que un trazo aplastado a nada).
 
+### Las asas laterales no se alcanzan en cajas bajas (una línea de texto)
+
+Desde v3.17.58 las capas de solo texto muestran las asas laterales. Pero `hitTestGizmo`
+comprueba las esquinas ANTES que los lados, con 40 px de radio: si la caja mide menos de
+~80 px de alto en pantalla, el asa lateral izquierda/derecha queda a menos de 40 px de dos
+esquinas y el toque siempre coge la esquina (escala uniforme). Medido: título de una línea en
+Bangers 60 → caja de ~55 px → arrastrar el asa derecha escala en uniforme; con tres líneas
+(218 px) estira. Lo mismo pasa con un trazo fino (ya ocurría). Con zoom se alcanza.
+
+Arreglo posible (cambia la decisión del hit-test, no su momento): que gane el asa MÁS CERCANA
+de las que caen dentro del radio, en vez de "esquinas primero". Pendiente de decisión.
+
 ### paper.js puede vaciar un glifo al restarle una goma, sin avisar (T23)
 
 Encontrado al verificar el texto espejado (v3.17.57), pero **no lo causa el espejado**. Con la
