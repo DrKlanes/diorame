@@ -259,8 +259,12 @@ Lecciones de método (serie v3.17.43–48):
 4. Implementar en pasos pequeños
 5. **Sincronizar REFERENCE.md §10** — si el commit añade, elimina o renombra un archivo `.ts`/`.tsx`, o cambia sustancialmente lo que hace, actualizar su fila en REFERENCE.md §10 **en el mismo commit**. Conteos de línea siempre como `~NNN` aproximado, nunca exacto.
 6. `npm run build` para verificar
-7. `git add <archivos específicos>` + `git commit` + `git push`
+7. `git add <archivos específicos>` + `git commit` + tag anotado (`git tag -a vX.Y.Z -m "..."`)
 
 **Staging:** Siempre archivos específicos por nombre. Nunca `git add -A` o `git add .`.
+
+**Push:** NO se hace push salvo que Moisés lo pida en esa misma sesión. Un permiso de push no se arrastra a sesiones ni a commits posteriores.
+
+**Tags: siempre ANOTADOS** (`git tag -a vX.Y.Z -m "..."`), nunca ligeros. Moisés sube con `git push --follow-tags`, que solo lleva los tags anotados: un tag ligero se queda en local sin avisar (pasó de v3.15.0 a v3.17.58 — 64 tags sin subir).
 
 **Cierre del commit:** el resumen de cierre debe declarar explícitamente el estado de sync de §10 — p. ej. `REFERENCE.md §10 sync: updated (añadido X)` o `N/A (sin cambios de archivos .ts/.tsx)`. Sin esa declaración, el commit no está cerrado.
