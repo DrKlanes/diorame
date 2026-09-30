@@ -17,7 +17,9 @@ const CAL_HALF = 400;
 export const blackInk = (shapes: Shape[]): Shape[] => shapes.map(s => ({ ...s, color: '#000000' }));
 
 // Renders the shapes of layer z through the real pipeline: DRAW mode, light theme, no FX.
-export const renderReference = (shapes: Shape[], z: number, size: number): HTMLCanvasElement => {
+// renderScale > 1 supersamples (same pipeline as the HQ PNG): size stays the physical raster,
+// the view covers size/renderScale world units. Needed to see 1-unit dots at all.
+export const renderReference = (shapes: Shape[], z: number, size: number, renderScale = 1): HTMLCanvasElement => {
 	const own = shapes.filter(s => s.zIndex === z);
 	const canvas = document.createElement('canvas');
 	const ctx = canvas.getContext('2d', { alpha: false })!;
@@ -73,12 +75,12 @@ export const renderReference = (shapes: Shape[], z: number, size: number): HTMLC
 		grungeImg: null,
 		particles: [],
 		flipButtonsEl: null,
-		w: size,
-		h: size,
+		w: size / renderScale,
+		h: size / renderScale,
 		getActiveZ: i => i * -BASE_DEPTH_STEP,
 		skipLiveStroke: true,
 		skipCinematicOverlays: true,
-		renderScale: 1,
+		renderScale,
 	};
 	renderFrame(ctx, rc);
 	return canvas;
@@ -95,11 +97,11 @@ export const maskFromReference = (canvas: HTMLCanvasElement): Mask => {
 
 // World→pixel map of layer z, measured (not derived) from a known square: layers
 // behind the active one are scaled by perspective even in DRAW mode.
-export const calibrate = (z: number, size: number): Calibration => {
+export const calibrate = (z: number, size: number, renderScale = 1): Calibration => {
 	// Densely sampled edges: the blob's quadratic smoothing then only rounds the corners negligibly.
 	const edge = (ax: number, ay: number, bx: number, by: number) =>
 		Array.from({ length: 400 }, (_, i) => ({ x: ax + (bx - ax) * i / 400, y: ay + (by - ay) * i / 400 }));
-	const h = CAL_HALF;
+	const h = Math.min(CAL_HALF, size / renderScale * 0.4);
 	const sq: Shape = {
 		id: 'calibration',
 		zIndex: z,
@@ -108,7 +110,7 @@ export const calibrate = (z: number, size: number): Calibration => {
 	};
 	// Sub-pixel: area and centroid from antialiased coverage, not the integer bbox (a 1/800
 	// scale error is ~1 px at the edge of a big scene — enough to flag thin slivers).
-	const canvas = renderReference([sq], z, size);
+	const canvas = renderReference([sq], z, size, renderScale);
 	const d = canvas.getContext('2d')!.getImageData(0, 0, size, size).data;
 	const bg = (d[0] + d[1] + d[2]) / 3;
 	let area = 0, sx = 0, sy = 0;
@@ -206,14 +208,14 @@ export type LayerRun = DiffResult & { z: number; masks: number; reference: Mask;
 
 // Each layer is exported and compared on its own: layers only stack, so the per-layer
 // alpha is where eraser / drawInside / drawBehind fidelity lives.
-export const runScene = async (shapes: Shape[], size: number): Promise<LayerRun[]> => {
+export const runScene = async (shapes: Shape[], size: number, renderScale = 1): Promise<LayerRun[]> => {
 	const ink = blackInk(shapes);
 	const zs = [...new Set(ink.map(s => s.zIndex))].sort((a, b) => b - a);
 	const out: LayerRun[] = [];
 	for (const z of zs) {
 		const own = ink.filter(s => s.zIndex === z);
-		const cal = calibrate(z, size);
-		const reference = maskFromReference(renderReference(own, z, size));
+		const cal = calibrate(z, size, renderScale);
+		const reference = maskFromReference(renderReference(own, z, size, renderScale));
 		const svg = await captureSVG(own);
 		const candidate = await rasterizeSVG(svg, own, cal, size);
 		const masks = (svg.match(/<mask|<clipPath/g) || []).length;

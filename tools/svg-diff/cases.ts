@@ -39,7 +39,8 @@ const sharp: Point[] = [{ x: -250, y: 100 }, { x: -120, y: -150 }, { x: 0, y: 12
 const uniform = (pts: Point[], extra: Partial<Shape> = {}) => blob(generateStrokeForMode('uniform', pts, 40), { brushMode: 'uniform', brushThickness: 40, originalPoints: pts, ...extra });
 const spine: Point[] = Array.from({ length: 21 }, (_, i) => ({ x: -250 + i * 25, y: 0 }));
 
-export const CASES: ReadonlyArray<{ id: string; label: string; shapes: Shape[] }> = [
+// scale: supersampling for the table (renderScale), for cases whose detail is below 1 px at 1:1.
+export const CASES: ReadonlyArray<{ id: string; label: string; shapes: Shape[]; scale?: number }> = [
 	{ id: 'T0', label: 'sin goma (control)', shapes: [base()] },
 	{ id: 'T1', label: 'goma sola', shapes: [base(), eraser(circle(0, 0, 100))] },
 	{ id: 'T2', label: 'dos gomas solapadas', shapes: [base(), eraser(circle(-60, 0, 120)), eraser(circle(60, 0, 120))] },
@@ -60,6 +61,8 @@ export const CASES: ReadonlyArray<{ id: string; label: string; shapes: Shape[] }
 	{ id: 'T4b', label: 'drawBehind tras goma (rellena el agujero)', shapes: [base(), eraser(circle(0, 0, 150)), blob(circle(60, 0, 120), { isDrawBehind: true })] },
 	{ id: 'T8', label: 'tap de brush tapered', shapes: [blob(generateStrokeForMode('tapered', tap, 40), { brushMode: 'tapered', brushThickness: 40, originalPoints: tap })] },
 	{ id: 'T8b', label: 'taps tapered: en el agujero de una goma y como drawInside', shapes: [base(), eraser(circle(0, 0, 150)), blob(generateStrokeForMode('tapered', tap, 40), { brushMode: 'tapered', brushThickness: 40, originalPoints: tap }), blob(generateStrokeForMode('tapered', far, 60), { brushMode: 'tapered', brushThickness: 60, originalPoints: far, isDrawInside: true })] },
+	// Crumb filter must only touch erased pieces: a 1-unit tap is a legit tiny dot (BRUSH_THICKNESS_MIN = 1).
+	{ id: 'T8c', label: 'taps finos (grosor 1 y 2) tapered y uniform', shapes: [blob(generateStrokeForMode('tapered', tap, 1), { brushMode: 'tapered', brushThickness: 1, originalPoints: tap }), blob(generateStrokeForMode('tapered', far, 2), { brushMode: 'tapered', brushThickness: 2, originalPoints: far }), uniform([{ x: -150, y: 0 }, { x: -149.9, y: 0.1 }], { brushThickness: 1 }), uniform([{ x: 0, y: 150 }, { x: 0.1, y: 150.1 }], { brushThickness: 2 })], scale: 4 },
 	{ id: 'T9', label: 'brush uniform (extremos)', shapes: [blob(generateStrokeForMode('uniform', spine, 40), { brushMode: 'uniform', brushThickness: 40, originalPoints: spine })] },
 	{ id: 'T9b', label: 'tap de brush uniform', shapes: [uniform(tap)] },
 	{ id: 'T9c', label: 'brush uniform con giros bruscos + drawInside tras goma', shapes: [uniform(sharp), eraser(circle(0, 0, 100)), uniform(spine, { isDrawInside: true })] },

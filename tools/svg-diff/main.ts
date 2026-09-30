@@ -36,7 +36,7 @@ const rows: Row[] = [];
 const runCases = async () => {
 	for (const c of CASES) {
 		status.textContent = `${c.id}…`;
-		const [r] = await runScene(c.shapes, CASE_SIZE);
+		const [r] = await runScene(c.shapes, CASE_SIZE, c.scale ?? 1);
 		rows.push(toRow(c.id, c.label, r));
 		if (r.structPx > 10 || r.masks > 0) addImage(c.id, r);
 		renderTable(rows);

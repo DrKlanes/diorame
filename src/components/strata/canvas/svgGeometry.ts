@@ -6,8 +6,10 @@ import type { Point, Shape } from '../../../types/strataTypes';
 
 type Paper = typeof paper;
 
-// Eraser crumbs: islands/pinholes below this area (world units²) are dropped. Invisible on
-// screen, but each would become a stray fragment under Illustrator's Divide.
+// Eraser crumbs: islands/pinholes below this area (world units²) are dropped from pieces an
+// eraser or a drawInside clip CUT. Invisible on screen, but each would become a stray fragment
+// under Illustrator's Divide. Never from untouched pieces: a 1-unit tap (BRUSH_THICKNESS_MIN)
+// or the dot of a small 'i' is legitimate content below this area (v3.17.51).
 const MIN_CRUMB_AREA = 4;
 // Path data at 2 decimals: sub-pixel is plenty and keeps files small.
 const pathD = (item: paper.PathItem) => item.pathData.replace(/(\.\d\d)\d+/g, '$1');
@@ -170,7 +172,7 @@ const nesting = (P: Paper, a: paper.PathItem, b: paper.PathItem): 'disjoint' | '
 	return null;
 };
 
-type Work = { item?: paper.PathItem; text?: Shape; color: string; maskErasers: string[]; clipD?: string; inside?: boolean };
+type Work = { item?: paper.PathItem; text?: Shape; color: string; maskErasers: string[]; clipD?: string; inside?: boolean; cut?: boolean };
 
 /**
  * Resolves one layer in draw order, reproducing Canvas compositing as geometry:
@@ -219,6 +221,7 @@ export const buildLayerGeometry = async (
 				if (rel === 'aInB') return false; // piece entirely erased
 				try {
 					p.item = p.item.subtract(shape, { insert: false }) as paper.PathItem;
+					p.cut = true;
 					return !p.item.isEmpty();
 				} catch (e) {
 					failures++;
@@ -246,7 +249,7 @@ export const buildLayerGeometry = async (
 				}
 			}
 			const clipped = whole ? shape : hits.length > 0 ? uniteAll(hits) : null;
-			if (clipped && !clipped.isEmpty()) pieces.push({ item: clipped, color: s.color, maskErasers: [], inside: true });
+			if (clipped && !clipped.isEmpty()) pieces.push({ item: clipped, color: s.color, maskErasers: [], inside: true, cut: !whole });
 		} else {
 			const piece: Work = { item: shape, color: s.color, maskErasers: [] };
 			if (s.isDrawBehind) pieces.unshift(piece);
@@ -260,7 +263,7 @@ export const buildLayerGeometry = async (
 			out.push({ text: p.text, color: p.color, maskErasers: p.maskErasers });
 			continue;
 		}
-		const item = dropCrumbs(P, p.item!);
+		const item = p.cut ? dropCrumbs(P, p.item!) : p.item!;
 		if (item) out.push({ d: pathD(item), color: p.color, maskErasers: p.maskErasers, clipD: p.clipD });
 	}
 	P.project.clear();
