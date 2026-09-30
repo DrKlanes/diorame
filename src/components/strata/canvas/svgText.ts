@@ -6,7 +6,7 @@
 // match — a glyph the font lacks (Canvas falls back to a system font), or an outline fontkit
 // gets wrong — is exported as live <text> and counted, never as a wrong contour.
 import type { FontkitFont, FontkitGlyph, FontkitPath } from 'fontkit';
-import type { Shape } from '../../../types/strataTypes';
+import type { Shape, TextMatrix } from '../../../types/strataTypes';
 import { layoutText, TEXT_FONTS, type TextFontKey } from '../../../utils/textLayout';
 import { measureTextBlock, boxCorners } from '../../../utils/textMetrics';
 import { textMatrix } from '../../../utils/textTransform';
@@ -38,8 +38,9 @@ export type TextEngine = {
 
 // Text kept live, in SVG coordinates. Words that fail the check: anchored at their start on the
 // alphabetic baseline. Whole lines (engine unavailable): anchored like the line, on its middle.
+// matrix = the text's own (utils/textTransform.ts), applied around (x, y).
 export type TextRun = {
-	text: string; x: number; y: number; fontKey: TextFontKey; fontSize: number; rotationDeg: number;
+	text: string; x: number; y: number; fontKey: TextFontKey; fontSize: number; matrix: TextMatrix;
 	anchor: 'start' | 'middle' | 'end'; baseline: 'alphabetic' | 'middle';
 };
 
@@ -166,8 +167,10 @@ const wordMatches = (engine: TextEngine, key: TextFontKey, word: string): boolea
 
 /**
  * The text shape as outlines in SVG coordinates (world + offset), placed exactly as
- * renderTextShape places it: layoutText lines, textAlign, 'middle' baselines, rotation around
- * the anchor. Words that fail the check come back as runs of live text.
+ * renderTextShape places it: layoutText lines, textAlign, 'middle' baselines, the text's matrix
+ * around the anchor (rotation, stretch, mirror). Words that fail the check come back as runs of
+ * live text. A mirror reverses every glyph contour's winding: fine, nothing downstream decides
+ * ink vs counter by orientation (svg-diff T22–T25).
  */
 export const textOutline = (engine: TextEngine, shape: Shape, ox: number, oy: number): TextOutline => {
 	const fontSize = shape.fontSize || 40;
@@ -182,11 +185,11 @@ export const textOutline = (engine: TextEngine, shape: Shape, ox: number, oy: nu
 	// Offset of the alphabetic baseline from the 'middle' one Canvas draws lines on.
 	const alphabeticShift = -ctx.measureText('H').alphabeticBaseline;
 
-	const rot = shape.rotation || 0;
-	const cos = Math.cos(rot), sin = Math.sin(rot);
+	const m = textMatrix(shape);
+	const [ma, mb, mc, md] = m;
 	const ax = shape.points[0].x + ox, ay = shape.points[0].y + oy;
-	// local (x along the line, y down) → SVG: rotate around the anchor, like renderTextShape
-	const toSvg = (lx: number, ly: number) => ({ x: ax + lx * cos - ly * sin, y: ay + lx * sin + ly * cos });
+	// local (x along the line, y down) → SVG: the text's matrix around the anchor, like renderTextShape
+	const toSvg = (lx: number, ly: number) => ({ x: ax + lx * ma + ly * mc, y: ay + lx * mb + ly * md });
 
 	let d = '';
 	const glyphs: string[] = [];
@@ -203,12 +206,12 @@ export const textOutline = (engine: TextEngine, shape: Shape, ox: number, oy: nu
 			if (token.trim()) {
 				if (wordMatches(engine, layout.fontKey, token)) {
 					const o = toSvg(x, baseline);
-					const placed = shapeWord(font, token, fontSize, ls, [cos, sin, -sin, cos, o.x, o.y]);
+					const placed = shapeWord(font, token, fontSize, ls, [ma, mb, mc, md, o.x, o.y]);
 					d += placed.d;
 					glyphs.push(...placed.glyphs);
 				} else {
 					const o = toSvg(x, baseline);
-					runs.push({ text: token, x: o.x, y: o.y, fontKey: layout.fontKey, fontSize, rotationDeg: (rot * 180) / Math.PI, anchor: 'start', baseline: 'alphabetic' });
+					runs.push({ text: token, x: o.x, y: o.y, fontKey: layout.fontKey, fontSize, matrix: m, anchor: 'start', baseline: 'alphabetic' });
 					fallbackChars += [...token].length;
 				}
 			}
@@ -222,18 +225,18 @@ export const textOutline = (engine: TextEngine, shape: Shape, ox: number, oy: nu
 export const textAsRuns = (shape: Shape, ox: number, oy: number): TextOutline => {
 	const fontSize = shape.fontSize || 40;
 	const layout = layoutText(shape, fontSize);
-	const rot = shape.rotation || 0;
+	const m = textMatrix(shape);
 	const ax = shape.points[0].x + ox, ay = shape.points[0].y + oy;
 	const anchor = layout.align === 'center' ? 'middle' as const : layout.align === 'right' ? 'end' as const : 'start' as const;
 	const runs: TextRun[] = layout.lines.filter(l => l.text).map(l => ({
-		text: l.text, x: ax - l.y * Math.sin(rot), y: ay + l.y * Math.cos(rot), fontKey: layout.fontKey, fontSize,
-		rotationDeg: (rot * 180) / Math.PI, anchor, baseline: 'middle' as const,
+		text: l.text, x: ax + l.y * m[2], y: ay + l.y * m[3], fontKey: layout.fontKey, fontSize,
+		matrix: m, anchor, baseline: 'middle' as const,
 	}));
 	return { d: '', glyphs: [], runs, fallbackChars: runs.reduce((n, r) => n + [...r.text].length, 0) };
 };
 
 /**
- * The four corners (world units) of a text block's box, rotated like the text: what the SVG
+ * The four corners (world units) of a text block's box, mapped by the text's matrix: what the SVG
  * canvas must contain. The block is measured by utils/textMetrics.ts (advance width × total
  * height, the layout Canvas paints with). Slack on every side covers ascenders, descenders and
  * slanted overhangs (Bangers).
@@ -250,14 +253,14 @@ export const textCorners = (shape: Shape): { x: number; y: number }[] => {
 };
 
 /** Box (SVG units) a live-text run can cover: ≤ 1 em per character wide, ascender to descender
- * tall, rotated like the text. Used only to decide whether an eraser reaches the run. */
+ * tall, mapped by the text's matrix. Used only to decide whether an eraser reaches the run. */
 export const runBounds = (r: TextRun): { x: number; y: number; w: number; h: number } => {
 	const len = [...r.text].length * r.fontSize;
 	const x0 = r.anchor === 'middle' ? -len / 2 : r.anchor === 'end' ? -len : 0;
 	const y0 = r.baseline === 'middle' ? -0.8 * r.fontSize : -1.1 * r.fontSize;
 	const y1 = r.baseline === 'middle' ? 0.8 * r.fontSize : 0.4 * r.fontSize;
-	const a = (r.rotationDeg * Math.PI) / 180, cos = Math.cos(a), sin = Math.sin(a);
-	const pts = [[x0, y0], [x0 + len, y0], [x0 + len, y1], [x0, y1]].map(([lx, ly]) => [r.x + lx * cos - ly * sin, r.y + lx * sin + ly * cos]);
+	const [a, b, c, d] = r.matrix;
+	const pts = [[x0, y0], [x0 + len, y0], [x0 + len, y1], [x0, y1]].map(([lx, ly]) => [r.x + lx * a + ly * c, r.y + lx * b + ly * d]);
 	const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
 	return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
 };

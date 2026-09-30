@@ -40,7 +40,10 @@ const runElement = (r: TextRun, color: string) => {
 	const spec = TEXT_FONTS[r.fontKey];
 	const ls = spec.letterSpacingEm ? ` letter-spacing="${spec.letterSpacingEm}em"` : '';
 	const baseline = r.baseline === 'middle' ? ' dominant-baseline="central"' : '';
-	const rot = r.rotationDeg ? ` transform="rotate(${r.rotationDeg} ${r.x} ${r.y})"` : '';
+	// The text's matrix around (x, y): rotation, stretch, mirror (utils/textTransform.ts)
+	const [a, b, c, d] = r.matrix;
+	const rot = a === 1 && b === 0 && c === 0 && d === 1 ? ''
+		: ` transform="matrix(${a} ${b} ${c} ${d} ${r.x - a * r.x - c * r.y} ${r.y - b * r.x - d * r.y})"`;
 	return `<text x="${r.x}" y="${r.y}" fill="${color}" font-family="${spec.family.replace(/"/g, "'")}" font-weight="${spec.weight}" font-size="${r.fontSize}"${ls} text-anchor="${r.anchor}"${baseline}${rot}>${escapeXml(r.text)}</text>`;
 };
 

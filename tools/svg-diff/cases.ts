@@ -2,6 +2,7 @@
 // forced to black by the harness. Each case isolates one compositing mechanism.
 import { generateStrokeForMode } from '../../src/utils/strokeGenerators';
 import type { Point, Shape } from '../../src/types/strataTypes';
+import { bakeTextTransform, flipTextProps } from '../../src/utils/textTransform';
 
 let seq = 0;
 const nextId = () => `case-${seq++}`;
@@ -33,6 +34,9 @@ const zigzag = (): Point[] => {
 
 const text = (t: string, extra: Partial<Shape> = {}): Shape => ({ id: nextId(), type: 'text', text: t, font: 'pharma', align: 'left', fontSize: 60, zIndex: 0, color: '#000000', points: [{ x: -250, y: 0 }], ...extra });
 const base = () => blob(circle(0, 0, 300));
+// Text deformed exactly as the reducer bakes it (v3.17.56): stretch/squash around the anchor, true mirror.
+const stretched = (s: Shape, sx: number, sy: number, rotation = 0): Shape => ({ ...s, ...bakeTextTransform(s, { rotation, scale: 1, sx, sy, nonUniform: true }) });
+const mirrored = (s: Shape, direction: 'horizontal' | 'vertical'): Shape => ({ ...s, ...flipTextProps(s, direction) });
 const crossing = eraser(circle(60, 0, 120));
 const tap: Point[] = [{ x: 0, y: 0 }, { x: 0.1, y: 0.1 }];
 const far: Point[] = [{ x: 150, y: 0 }, { x: 150.1, y: 0.1 }];
@@ -87,4 +91,18 @@ export const CASES: ReadonlyArray<{ id: string; label: string; shapes: Shape[]; 
 	// Live-text words only get an eraser mask when the eraser reaches them.
 	{ id: 'T17', label: 'texto vivo + goma lejos (0 máscaras)', shapes: [text('Año 1º', { font: 'dungeons' }), eraser(circle(200, 250, 40))] },
 	{ id: 'T18', label: 'texto vivo + goma encima (1 máscara, permitida)', shapes: [text('Año 1º', { font: 'dungeons' }), eraser(circle(-60, 0, 30))] },
+	// Deformed text (textMatrix, v3.17.56). A mirror flips the winding of every glyph contour:
+	// T14b, T22–T25 check that nothing downstream decides hole vs ink by orientation (counters of D O B 8 %).
+	// T14b = T14 mirrored as a whole (text and erasers): same geometry, opposite winding.
+	{ id: 'T14b', label: 'texto espejado con goma encima (T14 espejado)', shapes: [{ ...mirrored(text('BORRADO', { font: 'mansion', fontSize: 110 }), 'horizontal'), points: [{ x: 250, y: 0 }] }, mirror(eraser(circle(40, 0, 70))), mirror(eraser(circle(-160, 30, 40)))] },
+	{ id: 'T19', label: 'texto estirado ×1,8', shapes: [stretched(text('ESTIRADO', { font: 'mansion', fontSize: 70 }), 1.8, 1)] },
+	{ id: 'T20', label: 'texto aplastado ×0,45 (varias líneas)', shapes: [stretched(text('APLASTADO\nsegunda línea', { font: 'comic', align: 'center', points: [{ x: 0, y: 0 }] }), 1, 0.45)] },
+	{ id: 'T21', label: 'texto rotado + estirado (cizalla)', shapes: [stretched(text('CIZALLA\ncon giro', { font: 'noir', rotation: 0.5 }), 1.7, 1)] },
+	{ id: 'T22', label: 'texto espejado H con contraformas', shapes: [mirrored(text('DOBRA 80% BOA', { font: 'dungeons', fontSize: 64, align: 'center', points: [{ x: 0, y: 0 }] }), 'horizontal')] },
+	{ id: 'T22b', label: 'texto espejado V + rotado, contraformas', shapes: [mirrored(text('BODEGA 8\nOBD', { font: 'pharma', fontSize: 70, rotation: 0.3 }), 'vertical')] },
+	// KNOWN FAILURE, not caused by the mirror: paper.js returns an EMPTY subtract for one glyph
+	// (E here; the D without the mirror, same erasers) and it is not counted — see docs/ux-debt.md.
+	{ id: 'T23', label: 'texto espejado + goma encima (fallo conocido de paper.js, también sin espejar)', shapes: [mirrored(text('BODEGA', { font: 'mansion', fontSize: 110, align: 'center', points: [{ x: 0, y: 0 }] }), 'horizontal'), eraser(circle(40, 0, 70)), eraser(circle(-160, 30, 40))] },
+	{ id: 'T24', label: 'drawInside en texto espejado y estirado', shapes: [stretched(mirrored(text('DOBLE', { font: 'pharma', fontSize: 120, align: 'center', points: [{ x: 0, y: 0 }] }), 'horizontal'), 1.4, 1), blob(circle(60, 0, 90), { isDrawInside: true })] },
+	{ id: 'T25', label: 'texto vivo espejado + estirado + goma encima', shapes: [stretched(mirrored(text('Año 1º', { font: 'dungeons' }), 'horizontal'), 1.5, 1), eraser(circle(-540, 0, 30))] },
 ];

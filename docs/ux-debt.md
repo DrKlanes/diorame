@@ -358,7 +358,7 @@ una capa mixta los trazos se estiraban y el texto se quedaba clavado; un drawIns
 un texto dejaba de encajar. Voltear tampoco espejaba el texto (negaba la rotación e
 intercambiaba la alineación), con el mismo resultado para el drawInside.
 
-Ahora el texto lleva una matriz 2×2 opcional (`textMatrix`, `utils/textTransform.ts`): un
+Ahora el texto lleva una matriz 2×2 opcional (`textMatrix`, `utils/textTransform.ts`; export SVG desde v3.17.57): un
 estiramiento de un texto rotado es una cizalla en su propio marco, y solo una 2×2 completa
 se mantiene cerrada al componer transformaciones. Voltear espeja de verdad (decisión de
 producto: voltear significa lo mismo para todo). Los ficheros antiguos no llevan matriz y se
@@ -367,6 +367,22 @@ leen por `rotation`: se abren idénticos, incluidos los textos volteados a la an
 Límite conocido: aplastar repetidamente hasta el clamp (0,01 por gesto) puede dejar un texto
 sin píxeles visibles; entonces la capa no tiene caja de gizmo y solo se recupera con deshacer
 (igual que un trazo aplastado a nada).
+
+### paper.js puede vaciar un glifo al restarle una goma, sin avisar (T23)
+
+Encontrado al verificar el texto espejado (v3.17.57), pero **no lo causa el espejado**. Con la
+goma de `svg-diff` T23 (círculo de radio 70 cruzando la palabra BODEGA en Cinzel 110),
+`solidGlyph(E).subtract(goma)` devuelve un path VACÍO: área del glifo 2 025, intersección con la
+goma 375, resta esperada ~1 650, resta real 0. Sin espejar le pasa lo mismo a la D con las
+mismas gomas (1 604 px frente a 1 629). No lanza excepción, así que no entra en `failures` ni
+cae a la máscara de reserva: el SVG pierde la letra en silencio. Depende de las coordenadas
+(con otros desplazamientos la misma resta sale bien) y aplanar la goma no lo evita. T14 no lo
+destapaba porque ninguna letra de BORRADO cae en esa posición.
+
+Arreglo propuesto, pendiente de GO (toca `svgGeometry.ts`, invariantes protegidos): comprobar la
+resta por área — si `área(resta)` se aleja de `área(pieza) − área(pieza ∩ goma)`, reintentar con
+un desplazamiento mínimo y, si sigue fallando, caer a la máscara de esa pieza y contarla, como
+cualquier otro fallo de booleana.
 
 ### Rendimiento en iPad: sin probar
 
