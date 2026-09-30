@@ -188,6 +188,13 @@ export const exportAsSVG = async (
 				duration: 6000,
 			});
 		}
+		// Failed boolean ops (masked piece) and shapes whose geometry failed: never silent.
+		if (failures > 0) {
+			toast.warning(t('toast.export.vector.geometryFallbackTitle'), {
+				description: t('toast.export.vector.geometryFallbackDesc', { count: failures }),
+				duration: 6000,
+			});
+		}
 		playSound('success');
 		analytics.exported(exportRequest);
 	} catch (e) {

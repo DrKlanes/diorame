@@ -100,9 +100,9 @@ export const CASES: ReadonlyArray<{ id: string; label: string; shapes: Shape[]; 
 	{ id: 'T21', label: 'texto rotado + estirado (cizalla)', shapes: [stretched(text('CIZALLA\ncon giro', { font: 'noir', rotation: 0.5 }), 1.7, 1)] },
 	{ id: 'T22', label: 'texto espejado H con contraformas', shapes: [mirrored(text('DOBRA 80% BOA', { font: 'dungeons', fontSize: 64, align: 'center', points: [{ x: 0, y: 0 }] }), 'horizontal')] },
 	{ id: 'T22b', label: 'texto espejado V + rotado, contraformas', shapes: [mirrored(text('BODEGA 8\nOBD', { font: 'pharma', fontSize: 70, rotation: 0.3 }), 'vertical')] },
-	// KNOWN FAILURE, not caused by the mirror: paper.js returns an EMPTY subtract for one glyph
-	// (E here; the D without the mirror, same erasers) and it is not counted — see docs/ux-debt.md.
-	{ id: 'T23', label: 'texto espejado + goma encima (fallo conocido de paper.js, también sin espejar)', shapes: [mirrored(text('BODEGA', { font: 'mansion', fontSize: 110, align: 'center', points: [{ x: 0, y: 0 }] }), 'horizontal'), eraser(circle(40, 0, 70)), eraser(circle(-160, 30, 40))] },
+	// paper.js returned an EMPTY subtract for the E here (the D without the mirror), uncounted: the
+	// letter vanished (1629 px). Caught and retried since v3.17.59 (svgGeometry.ts, eraseFrom).
+	{ id: 'T23', label: 'texto espejado + goma encima (resta vacía de paper.js)', shapes: [mirrored(text('BODEGA', { font: 'mansion', fontSize: 110, align: 'center', points: [{ x: 0, y: 0 }] }), 'horizontal'), eraser(circle(40, 0, 70)), eraser(circle(-160, 30, 40))] },
 	{ id: 'T24', label: 'drawInside en texto espejado y estirado', shapes: [stretched(mirrored(text('DOBLE', { font: 'pharma', fontSize: 120, align: 'center', points: [{ x: 0, y: 0 }] }), 'horizontal'), 1.4, 1), blob(circle(60, 0, 90), { isDrawInside: true })] },
 	{ id: 'T25', label: 'texto vivo espejado + estirado + goma encima', shapes: [stretched(mirrored(text('Año 1º', { font: 'dungeons' }), 'horizontal'), 1.5, 1), eraser(circle(-540, 0, 30))] },
 ];

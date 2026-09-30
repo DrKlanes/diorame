@@ -451,6 +451,8 @@ export const en: Dictionary = {
 	'toast.export.vector.errorTitle': 'Failed to export vector',
 	'toast.export.vector.textFallbackTitle': 'Some text stayed as live text',
 	'toast.export.vector.textFallbackDesc': '{count} characters could not be turned into outlines — they only look right where the font is installed.',
+	'toast.export.vector.geometryFallbackTitle': 'Part of the drawing did not export as clean geometry',
+	'toast.export.vector.geometryFallbackDesc': '{count} pieces carry a mask (Illustrator ignores it in Outline view and Pathfinder) or could not be converted. Check the SVG.',
 	'toast.export.animation.errorTitle': 'Failed to save animation',
 	'toast.export.pngSequence.errorTitle': 'Failed to export frames',
 	'toast.export.gif.successTitle': 'GIF exported!',

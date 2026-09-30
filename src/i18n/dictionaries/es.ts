@@ -415,6 +415,8 @@ export const es: Dictionary = {
 	'toast.export.vector.errorTitle': 'Error al exportar el vector',
 	'toast.export.vector.textFallbackTitle': 'Parte del texto queda como texto vivo',
 	'toast.export.vector.textFallbackDesc': '{count} caracteres no se pudieron pasar a contornos: solo se verán bien donde esté instalada la fuente.',
+	'toast.export.vector.geometryFallbackTitle': 'Parte del dibujo no salió como geometría limpia',
+	'toast.export.vector.geometryFallbackDesc': '{count} piezas llevan máscara (Illustrator la ignora en Contornos y Buscatrazos) o no se pudieron convertir. Revisa el SVG.',
 	'toast.export.animation.errorTitle': 'Error al guardar la animación',
 	'toast.export.pngSequence.errorTitle': 'Error al exportar los frames',
 	'toast.export.gif.successTitle': '¡GIF exportado!',

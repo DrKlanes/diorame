@@ -380,21 +380,26 @@ Bangers 60 → caja de ~55 px → arrastrar el asa derecha escala en uniforme; c
 Arreglo posible (cambia la decisión del hit-test, no su momento): que gane el asa MÁS CERCANA
 de las que caen dentro del radio, en vez de "esquinas primero". Pendiente de decisión.
 
-### paper.js puede vaciar un glifo al restarle una goma, sin avisar (T23)
+### paper.js podía vaciar un glifo al restarle una goma, sin avisar (T23) — resuelto en v3.17.59
 
-Encontrado al verificar el texto espejado (v3.17.57), pero **no lo causa el espejado**. Con la
-goma de `svg-diff` T23 (círculo de radio 70 cruzando la palabra BODEGA en Cinzel 110),
-`solidGlyph(E).subtract(goma)` devuelve un path VACÍO: área del glifo 2 025, intersección con la
-goma 375, resta esperada ~1 650, resta real 0. Sin espejar le pasa lo mismo a la D con las
-mismas gomas (1 604 px frente a 1 629). No lanza excepción, así que no entra en `failures` ni
-cae a la máscara de reserva: el SVG pierde la letra en silencio. Depende de las coordenadas
-(con otros desplazamientos la misma resta sale bien) y aplanar la goma no lo evita. T14 no lo
-destapaba porque ninguna letra de BORRADO cae en esa posición.
+`subtract` de paper.js devolvía un path VACÍO sin lanzar error cuando la goma solo cruzaba el
+glifo: la E de BODEGA (T23) desaparecía del SVG sin contarse ni avisar (1 629 px; sin espejar le
+pasaba a la D). Medido con restas aleatorias: 2 de ~490 en glifos, 0 de ~8 200 en trazos (lisos,
+tapered, aplanados por autocruce, pequeños a escala de glifo, ya cortados por otra goma).
 
-Arreglo propuesto, pendiente de GO (toca `svgGeometry.ts`, invariantes protegidos): comprobar la
-resta por área — si `área(resta)` se aleja de `área(pieza) − área(pieza ∩ goma)`, reintentar con
-un desplazamiento mínimo y, si sigue fallando, caer a la máscara de esa pieza y contarla, como
-cualquier otro fallo de booleana.
+Ahora (`svgGeometry.ts`, `eraseFrom`): resultado vacío con algún vértice de la pieza fuera de la
+goma = fallo → un reintento con pieza y goma giradas 0,05° (arregla T23: 2 px) → si sigue vacío,
+la pieza lleva máscara y se cuenta; los fallos de geometría ya salen en un toast, antes solo en
+consola. Vale para trazos y glifos.
+
+Lo que NO funcionó como reintento: desplazar ambas piezas (el fallo sigue a la geometría, no a la
+posición), aplanar la goma, cambiar la tolerancia de aplanado del glifo, restar la curva original
+sin aplanar (sale una parte, mal). Y lo que NO sirve como detector: la identidad de áreas de
+paper.js, que cuenta doble los contornos solapados de un glifo (E de Cinzel: 2 025 u² frente a
+1 913 rasterizados).
+
+Sin cubrir: la misma clase de fallo en la `intersect` de drawInside (una forma interior que
+desapareciera). No se ha medido.
 
 ### Rendimiento en iPad: sin probar
 

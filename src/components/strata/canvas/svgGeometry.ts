@@ -150,6 +150,31 @@ const shapeItem = (P: Paper, s: Shape, ox: number, oy: number): paper.PathItem |
 	return d ? resolved(P, d) : null;
 };
 
+// paper.js can return an EMPTY subtract without throwing: a glyph solid minus an eraser that only
+// crosses it lost the whole letter, uncounted (svg-diff T23; 2 in ~490 random glyph subtracts, 0 in
+// ~8 200 stroke ones — but the cause is paper.js, so every piece is checked). Empty is legitimate
+// only when the eraser covers the piece: a vertex outside it means ink is left. Then one retry with
+// both rotated a hair (a translation does not help: the failure follows the geometry, not the
+// position; rotated, T23 comes back matching the raster). Still empty → null, and the caller masks
+// the piece and counts it: a letter may fall back, never vanish silently.
+const ERASE_RETRY_DEG = 0.05;
+const isEmptyItem = (it: paper.PathItem) => it.isEmpty() || Math.abs((it as paper.Path).area) < 1e-9;
+const leavesInk = (P: Paper, piece: paper.PathItem, eraser: paper.PathItem): boolean =>
+	(piece instanceof P.CompoundPath ? piece.children as paper.Path[] : [piece as paper.Path]).some(c =>
+		c.segments.some(sg => !eraser.contains(sg.point) && eraser.getNearestPoint(sg.point).getDistance(sg.point) > 1e-6));
+const eraseFrom = (P: Paper, piece: paper.PathItem, eraser: paper.PathItem): paper.PathItem | null => {
+	const direct = piece.subtract(eraser, { insert: false }) as paper.PathItem;
+	if (!isEmptyItem(direct) || !leavesInk(P, piece, eraser)) return direct;
+	const c = piece.bounds.center;
+	const a = piece.clone({ insert: false }) as paper.PathItem, b = eraser.clone({ insert: false }) as paper.PathItem;
+	a.rotate(ERASE_RETRY_DEG, c);
+	b.rotate(ERASE_RETRY_DEG, c);
+	const retry = a.subtract(b, { insert: false }) as paper.PathItem;
+	if (isEmptyItem(retry)) return null;
+	retry.rotate(-ERASE_RETRY_DEG, c);
+	return retry;
+};
+
 const dropCrumbs = (P: Paper, item: paper.PathItem): paper.PathItem | null => {
 	if (item instanceof P.CompoundPath) {
 		(item.children.slice() as paper.Path[]).forEach(c => { if (Math.abs(c.area) < MIN_CRUMB_AREA) c.remove(); });
@@ -262,7 +287,14 @@ export const buildLayerGeometry = async (
 				if (rel === 'disjoint') return true;
 				if (rel === 'aInB') return false; // piece entirely erased
 				try {
-					p.item = p.item.subtract(shape, { insert: false }) as paper.PathItem;
+					const erased = eraseFrom(P, p.item, shape);
+					if (!erased) {
+						failures++;
+						console.warn('[svg] eraser subtract came back empty, piece masked', s.id);
+						p.maskErasers.push(eraserD);
+						return true;
+					}
+					p.item = erased;
 					p.cut = true;
 					return !p.item.isEmpty();
 				} catch (e) {
