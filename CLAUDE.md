@@ -241,7 +241,7 @@ NEAR_CLIP           = 50         // clipping mínimo de capa en proyección 3D
 
 ## Verificación
 
-**Export SVG:** antes y después de tocar `exportAsSVG`, `svgExport.ts` o `svgGeometry.ts`, pasar la tabla de `tools/svg-diff` (`npm run dev` → `localhost:3000/tools/svg-diff/`; para escenas reales, cargar su `.dior`). Invariantes de `svgGeometry.ts` en REFERENCE.md §10 — leerlos antes de "optimizar".
+**Export SVG:** antes y después de tocar `exportAsSVG`, `svgExport.ts` o `svgGeometry.ts`, pasar la tabla de `tools/svg-diff` (`npm run dev` → `localhost:3000/tools/svg-diff/`; para escenas reales, cargar su `.dior`). Invariantes de `svgGeometry.ts` / `svgText.ts` en REFERENCE.md §10 — leerlos antes de "optimizar". Si se toca texto (render o export): la página también corre la **auditoría glifo a glifo** (columna «contorno MALO» debe ser 0), y cualquier cambio en `utils/textLayout.ts` o `renderTextShape.ts` exige demostrar 0 px de cambio en pantalla (huellas SHA-256 del render con `Math.random` sembrado — ver commit v3.17.50).
 
 Lecciones de método (serie v3.17.43–48):
 - Un SVG que "se ve perfecto" no demuestra nada: hacen falta **dos fuentes distintas** (render de Canvas vs SVG rasterizado) **y la prueba en la herramienta de destino** (Illustrator: Ctrl+Y y Buscatrazos ignoran máscaras).

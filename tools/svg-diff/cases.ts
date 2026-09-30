@@ -31,6 +31,7 @@ const zigzag = (): Point[] => {
 	return pts;
 };
 
+const text = (t: string, extra: Partial<Shape> = {}): Shape => ({ id: nextId(), type: 'text', text: t, font: 'pharma', align: 'left', fontSize: 60, zIndex: 0, color: '#000000', points: [{ x: -250, y: 0 }], ...extra });
 const base = () => blob(circle(0, 0, 300));
 const crossing = eraser(circle(60, 0, 120));
 const tap: Point[] = [{ x: 0, y: 0 }, { x: 0.1, y: 0.1 }];
@@ -66,4 +67,24 @@ export const CASES: ReadonlyArray<{ id: string; label: string; shapes: Shape[]; 
 	{ id: 'T9', label: 'brush uniform (extremos)', shapes: [blob(generateStrokeForMode('uniform', spine, 40), { brushMode: 'uniform', brushThickness: 40, originalPoints: spine })] },
 	{ id: 'T9b', label: 'tap de brush uniform', shapes: [uniform(tap)] },
 	{ id: 'T9c', label: 'brush uniform con giros bruscos + drawInside tras goma', shapes: [uniform(sharp), eraser(circle(0, 0, 100)), uniform(spine, { isDrawInside: true })] },
+	// Text → outlines (v3.17.52). ª/º in Inknut and non-latin glyphs are expected as live <text>.
+	...(['pharma', 'noir', 'mansion', 'comic', 'dungeons'] as const).map((font, i) => ({
+		id: `T10${'abcde'[i]}`, label: `texto una línea · ${font}`,
+		// ×2: at 1:1 Cinzel's hairline serifs flip antialias pixels (11 px, 0 at ×2 and ×4).
+		shapes: [text('Vampira ñ, 1º nº — «Año» 100%', { font, align: 'center', fontSize: 40 })],
+		scale: 2,
+	})),
+	{ id: 'T11', label: 'texto varias líneas', shapes: [text('Primera línea\nsegunda, más larga\n¿tercera?', { font: 'pharma' })] },
+	{ id: 'T12', label: 'alineaciones izq / centro / der', shapes: [
+		text('Izquierda\nlínea dos', { font: 'noir', align: 'left', points: [{ x: -300, y: -200 }] }),
+		text('Centro\nlínea dos', { font: 'mansion', align: 'center', points: [{ x: 0, y: 0 }] }),
+		text('Derecha\nlínea dos', { font: 'dungeons', align: 'right', points: [{ x: 300, y: 200 }] }),
+	] },
+	{ id: 'T13', label: 'texto rotado', shapes: [text('Rotado 45°\ny otra línea', { font: 'comic', align: 'center', rotation: 0.8 })] },
+	{ id: 'T14', label: 'texto con goma encima', shapes: [text('BORRADO', { font: 'mansion', fontSize: 110 }), eraser(circle(40, 0, 70)), eraser(circle(-160, 30, 40))] },
+	{ id: 'T15', label: 'drawInside sobre texto', shapes: [text('DENTRO', { font: 'pharma', fontSize: 120 }), blob(circle(60, 0, 90), { isDrawInside: true })] },
+	{ id: 'T16', label: 'caracteres fuera de la fuente', shapes: [text('ok Привет ok', { font: 'noir' })] },
+	// Live-text words only get an eraser mask when the eraser reaches them.
+	{ id: 'T17', label: 'texto vivo + goma lejos (0 máscaras)', shapes: [text('Año 1º', { font: 'dungeons' }), eraser(circle(200, 250, 40))] },
+	{ id: 'T18', label: 'texto vivo + goma encima (1 máscara, permitida)', shapes: [text('Año 1º', { font: 'dungeons' }), eraser(circle(-60, 0, 30))] },
 ];

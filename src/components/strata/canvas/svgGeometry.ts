@@ -3,6 +3,7 @@
 // paper.js is loaded lazily — only an SVG export pays for it.
 import type paper from 'paper/dist/paper-core';
 import type { Point, Shape } from '../../../types/strataTypes';
+import { textOutline, textAsRuns, runBounds, type TextEngine, type TextRun } from './svgText';
 
 type Paper = typeof paper;
 
@@ -17,8 +18,8 @@ const pathD = (item: paper.PathItem) => item.pathData.replace(/(\.\d\d)\d+/g, '$
 export type GeometryPiece = {
 	color: string;
 	d?: string;             // resolved outline
-	text?: Shape;           // text cannot be booleaned: emitted as <text>
-	maskErasers: string[];  // fallback: erasers that could not be subtracted (always for text)
+	runs?: TextRun[];       // text words that could not become outlines: emitted as live <text>
+	maskErasers: string[];  // fallback: erasers that could not be subtracted (always for live text)
 	clipD?: string;         // fallback: drawInside whose intersection failed
 };
 
@@ -172,7 +173,26 @@ const nesting = (P: Paper, a: paper.PathItem, b: paper.PathItem): 'disjoint' | '
 	return null;
 };
 
-type Work = { item?: paper.PathItem; text?: Shape; color: string; maskErasers: string[]; clipD?: string; inside?: boolean; cut?: boolean };
+type Work = { item?: paper.PathItem; runs?: TextRun[]; runBox?: paper.Rectangle; color: string; maskErasers: string[]; clipD?: string; inside?: boolean; cut?: boolean; glyphs?: string[] };
+
+// Glyphs are often drawn with OVERLAPPING contours (Inter's and Cinzel's B and D): fine to fill
+// as-is, but paper.js mis-resolves those curve crossings in a boolean op (counters filled, stems
+// dropped — T14), and a boolean op against a whole text block misplaces far-away counters (a
+// drawInside circle picked up the D of DENTRO — T15). So text keeps its curves until an eraser or
+// a drawInside reaches it; then it is split into one solid (flattened, resolved) piece per glyph
+// and every op works glyph by glyph.
+const solidGlyph = (P: Paper, d: string): paper.PathItem => {
+	const g = P.PathItem.create(d);
+	g.remove();
+	g.fillRule = 'nonzero';
+	g.flatten(0.1);
+	return g.unite(new P.Path({ insert: false }), { insert: false }) as paper.PathItem;
+};
+
+const splitText = (P: Paper, pieces: Work[], area: paper.Rectangle): Work[] => pieces.flatMap(p =>
+	p.glyphs && p.item && p.item.bounds.intersects(area)
+		? p.glyphs.map(d => ({ item: solidGlyph(P, d), color: p.color, maskErasers: [...p.maskErasers] }))
+		: [p]);
 
 /**
  * Resolves one layer in draw order, reproducing Canvas compositing as geometry:
@@ -183,6 +203,8 @@ type Work = { item?: paper.PathItem; text?: Shape; color: string; maskErasers: s
  * Only pieces whose outlines actually cross the new shape get a boolean op; nested or disjoint
  * ones are settled with a point test (a running union of the layer's ink cost 100 s on the
  * onboarding scene). Boolean failures degrade to the old mask/clip for that piece and are counted.
+ * Text becomes outlines (svgText.ts) and then follows the same rules as any shape; words that
+ * cannot (glyph missing or not matching Canvas) stay live text. `text` null = engine unavailable.
  */
 export const buildLayerGeometry = async (
 	P: Paper,
@@ -190,19 +212,35 @@ export const buildLayerGeometry = async (
 	ox: number,
 	oy: number,
 	maybeYield: () => Promise<void>,
-): Promise<{ pieces: GeometryPiece[]; failures: number }> => {
+	text: TextEngine | null,
+): Promise<{ pieces: GeometryPiece[]; failures: number; fallbackChars: number }> => {
 	let pieces: Work[] = [];
 	let failures = 0;
+	let fallbackChars = 0;
 
 	for (const s of shapes) {
 		await maybeYield();
-		if (s.type === 'text' && s.text) {
-			pieces.push({ text: s, color: s.color, maskErasers: [] });
-			continue;
-		}
 		let item: paper.PathItem | null;
+		let textGlyphs: string[] | undefined;
 		try {
-			item = shapeItem(P, s, ox, oy);
+			if (s.type === 'text' && s.text) {
+				const t = text ? textOutline(text, s, ox, oy) : textAsRuns(s, ox, oy);
+				fallbackChars += t.fallbackChars;
+				if (t.runs.length > 0) {
+					// Only an eraser that reaches the live words masks them.
+					const runBox = t.runs.map(r => {
+						const b = runBounds(r);
+						return new P.Rectangle(b.x, b.y, b.w, b.h);
+					}).reduce((a, b) => a.unite(b));
+					pieces.push({ runs: t.runs, runBox, color: s.color, maskErasers: [] });
+				}
+				// Glyph outlines as they are: resolving them would flatten glyphs that overlap a neighbour.
+				item = t.d ? P.PathItem.create(t.d) : null;
+				if (item) { item.remove(); item.fillRule = 'nonzero'; }
+				textGlyphs = t.glyphs;
+			} else {
+				item = shapeItem(P, s, ox, oy);
+			}
 		} catch (e) {
 			failures++;
 			console.warn('[svg] shape geometry failed', s.id, e);
@@ -213,8 +251,12 @@ export const buildLayerGeometry = async (
 
 		if (s.isEraser) {
 			const eraserD = pathD(shape);
+			pieces = splitText(P, pieces, shape.bounds);
 			pieces = pieces.filter(p => {
-				if (p.text || !p.item) { p.maskErasers.push(eraserD); return true; }
+				if (p.runs || !p.item) {
+					if (!p.runBox || p.runBox.intersects(shape.bounds)) p.maskErasers.push(eraserD);
+					return true;
+				}
 				if (!p.item.bounds.intersects(shape.bounds)) return true;
 				const rel = nesting(P, p.item, shape);
 				if (rel === 'disjoint') return true;
@@ -232,26 +274,31 @@ export const buildLayerGeometry = async (
 			});
 		} else if (s.isDrawInside && !s.isDrawBehind) {
 			// source-atop: shape ∩ (union of the layer's ink) = union of shape ∩ each ink piece
-			const hits: paper.PathItem[] = [];
-			let whole = false;
-			for (const p of pieces) {
-				if (p.inside || p.text || !p.item || !p.item.bounds.intersects(shape.bounds)) continue;
-				const rel = nesting(P, shape, p.item);
-				if (rel === 'disjoint') continue;
-				if (rel === 'aInB') { whole = true; break; }                                  // shape lies inside ink
-				if (rel === 'bInA') { hits.push(p.item.clone({ insert: false }) as paper.PathItem); continue; } // ink inside shape
-				try {
-					hits.push(shape.intersect(p.item, { insert: false }) as paper.PathItem);
-				} catch (e) {
-					failures++;
-					console.warn('[svg] drawInside intersect failed', s.id, e);
-					pieces.push({ item: shape, color: s.color, maskErasers: [], clipD: pathD(p.item), inside: true });
+			pieces = splitText(P, pieces, shape.bounds);
+			const parts = textGlyphs ? textGlyphs.map(d => solidGlyph(P, d)) : [shape];
+			const ink = pieces.slice();
+			for (const part of parts) {
+				const hits: paper.PathItem[] = [];
+				let whole = false;
+				for (const p of ink) {
+					if (p.inside || p.runs || !p.item || !p.item.bounds.intersects(part.bounds)) continue;
+					const rel = nesting(P, part, p.item);
+					if (rel === 'disjoint') continue;
+					if (rel === 'aInB') { whole = true; break; }                                  // part lies inside ink
+					if (rel === 'bInA') { hits.push(p.item.clone({ insert: false }) as paper.PathItem); continue; } // ink inside part
+					try {
+						hits.push(part.intersect(p.item, { insert: false }) as paper.PathItem);
+					} catch (e) {
+						failures++;
+						console.warn('[svg] drawInside intersect failed', s.id, e);
+						pieces.push({ item: part, color: s.color, maskErasers: [], clipD: pathD(p.item), inside: true });
+					}
 				}
+				const clipped = whole ? part : hits.length > 0 ? uniteAll(hits) : null;
+				if (clipped && !clipped.isEmpty()) pieces.push({ item: clipped, color: s.color, maskErasers: [], inside: true, cut: !whole });
 			}
-			const clipped = whole ? shape : hits.length > 0 ? uniteAll(hits) : null;
-			if (clipped && !clipped.isEmpty()) pieces.push({ item: clipped, color: s.color, maskErasers: [], inside: true, cut: !whole });
 		} else {
-			const piece: Work = { item: shape, color: s.color, maskErasers: [] };
+			const piece: Work = { item: shape, color: s.color, maskErasers: [], glyphs: textGlyphs };
 			if (s.isDrawBehind) pieces.unshift(piece);
 			else pieces.push(piece);
 		}
@@ -259,13 +306,13 @@ export const buildLayerGeometry = async (
 
 	const out: GeometryPiece[] = [];
 	for (const p of pieces) {
-		if (p.text) {
-			out.push({ text: p.text, color: p.color, maskErasers: p.maskErasers });
+		if (p.runs) {
+			out.push({ runs: p.runs, color: p.color, maskErasers: p.maskErasers });
 			continue;
 		}
 		const item = p.cut ? dropCrumbs(P, p.item!) : p.item!;
 		if (item) out.push({ d: pathD(item), color: p.color, maskErasers: p.maskErasers, clipD: p.clipD });
 	}
 	P.project.clear();
-	return { pieces: out, failures };
+	return { pieces: out, failures, fallbackChars };
 };

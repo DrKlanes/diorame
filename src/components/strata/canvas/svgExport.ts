@@ -5,11 +5,44 @@ import { analytics } from '../../../analytics/analytics';
 import { Shape } from '../../../types/strataTypes';
 import { BASE_DEPTH_STEP } from '../StrataContext';
 import { loadPaper, buildLayerGeometry } from './svgGeometry';
+import { prepareText, textCorners, type TextEngine, type TextRun } from './svgText';
+import { TEXT_FONTS } from '../../../utils/textLayout';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
 
 // Same signature as in exportHandlers.ts: the caller passes its t() so toasts translate.
 type TFunction = (key: string, params?: TranslationParams) => string;
+
+/**
+ * World-space extent the SVG canvas must cover. Text counts by its whole block, not its anchor
+ * (before v3.17.52 a title at the edge of the scene was cut off by the SVG's own frame).
+ * Exported for tools/svg-diff, which must frame the SVG exactly like this.
+ */
+export const svgBounds = (shapes: Shape[], text: TextEngine | null) => {
+	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+	const add = (p: { x: number; y: number }) => {
+		minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+		maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
+	};
+	shapes.forEach(shape => {
+		shape.points.forEach(add);
+		if (shape.isEraser && shape.eraserPolygon) shape.eraserPolygon.forEach(add);
+		if (shape.type === 'text' && shape.text && shape.points.length > 0) textCorners(text, shape).forEach(add);
+	});
+	return { minX, minY, maxX, maxY };
+};
+
+const escapeXml = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Live text for words that could not become outlines (svgText.ts). The app's font stack is
+// named; the viewer draws it only if installed — that is why these are counted and reported.
+const runElement = (r: TextRun, color: string) => {
+	const spec = TEXT_FONTS[r.fontKey];
+	const ls = spec.letterSpacingEm ? ` letter-spacing="${spec.letterSpacingEm}em"` : '';
+	const baseline = r.baseline === 'middle' ? ' dominant-baseline="central"' : '';
+	const rot = r.rotationDeg ? ` transform="rotate(${r.rotationDeg} ${r.x} ${r.y})"` : '';
+	return `<text x="${r.x}" y="${r.y}" fill="${color}" font-family="${spec.family.replace(/"/g, "'")}" font-weight="${spec.weight}" font-size="${r.fontSize}"${ls} text-anchor="${r.anchor}"${baseline}${rot}>${escapeXml(r.text)}</text>`;
+};
 
 /**
  * Exports all visible shapes as an SVG (or SVGZ) file.
@@ -32,25 +65,16 @@ export const exportAsSVG = async (
 			return;
 		}
 
-		// Calculate bounds
-		let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+		// Text → outlines needs fontkit + the faces in use (lazy, only if the scene has text).
+		// If that fails (e.g. a font cannot be fetched), text is exported as live text and counted.
+		let textEngine: TextEngine | null = null;
+		try {
+			textEngine = await prepareText(visibleShapes);
+		} catch (e) {
+			console.warn('[svg] text engine unavailable, text stays live', e);
+		}
 
-		visibleShapes.forEach(shape => {
-			shape.points.forEach(point => {
-				minX = Math.min(minX, point.x);
-				minY = Math.min(minY, point.y);
-				maxX = Math.max(maxX, point.x);
-				maxY = Math.max(maxY, point.y);
-			});
-			if (shape.isEraser && shape.eraserPolygon) {
-				shape.eraserPolygon.forEach(point => {
-					minX = Math.min(minX, point.x);
-					minY = Math.min(minY, point.y);
-					maxX = Math.max(maxX, point.x);
-					maxY = Math.max(maxY, point.y);
-				});
-			}
-		});
+		const { minX, minY, maxX, maxY } = svgBounds(visibleShapes, textEngine);
 
 		const padding = 50;
 		const width = Math.ceil(maxX - minX + padding * 2);
@@ -93,34 +117,18 @@ export const exportAsSVG = async (
 		let defsCounter = 0;
 		let failures = 0;
 
-		const textElement = (shape: Shape) => {
-			const x = shape.points[0].x + offsetX;
-			const y = shape.points[0].y + offsetY;
-			const fontSize = shape.fontSize || 40;
-			const rotation = shape.rotation || 0;
-			const align = shape.align || 'left';
-
-			let textAnchor = 'start';
-			if (align === 'center') textAnchor = 'middle';
-			if (align === 'right') textAnchor = 'end';
-
-			let transform = `translate(${x},${y})`;
-			if (rotation !== 0) {
-				transform += ` rotate(${(rotation * 180) / Math.PI})`;
-			}
-
-			return `<text x="0" y="0" fill="${shape.color}" font-size="${fontSize}" text-anchor="${textAnchor}" font-family="sans-serif" transform="${transform}">${shape.text!.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>`;
-		};
+		let fallbackChars = 0;
 
 		for (const zIndex of sortedZIndices) {
 			const layerIndex = Math.round(Math.abs(zIndex / BASE_DEPTH_STEP));
-			const layer = await buildLayerGeometry(P, shapesByLayer.get(zIndex)!, offsetX, offsetY, maybeYield);
+			const layer = await buildLayerGeometry(P, shapesByLayer.get(zIndex)!, offsetX, offsetY, maybeYield, textEngine);
 			failures += layer.failures;
+			fallbackChars += layer.fallbackChars;
 
 			parts.push(`  <g id="layer-${layerIndex + 1}">\n`);
 			layer.pieces.forEach(piece => {
-				let body = piece.text ? textElement(piece.text) : `<path d="${piece.d}" fill="${piece.color}"/>`;
-				// Fallbacks only (text, or a failed boolean op): the old clip/mask for that one piece
+				let body = piece.runs ? piece.runs.map(r => runElement(r, piece.color)).join('') : `<path d="${piece.d}" fill="${piece.color}"/>`;
+				// Fallbacks only (live text, or a failed boolean op): the old clip/mask for that one piece
 				if (piece.clipD) {
 					const id = `clip-${defsCounter++}`;
 					parts.push(`    <defs><clipPath id="${id}"><path d="${piece.clipD}"/></clipPath></defs>\n`);
@@ -171,6 +179,12 @@ export const exportAsSVG = async (
 			description: isCompressed ? t('toast.export.vector.successDescSvgz') : t('toast.export.vector.successDescSvg'),
 			duration: 2000,
 		});
+		if (fallbackChars > 0) {
+			toast.warning(t('toast.export.vector.textFallbackTitle'), {
+				description: t('toast.export.vector.textFallbackDesc', { count: fallbackChars }),
+				duration: 6000,
+			});
+		}
 		playSound('success');
 		analytics.exported(exportRequest);
 	} catch (e) {

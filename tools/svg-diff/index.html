@@ -10,6 +10,8 @@
 		th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; }
 		tr.bad td { background: #ffe3e3; }
 		tr.ok td { background: #e8f7e8; }
+		/* live <text> fallback words: expected, counted apart (an SVG loaded as an image has no web fonts) */
+		tr.live td { background: #fff3d6; }
 		#images { display: flex; flex-wrap: wrap; gap: 12px; }
 		figure { margin: 0; }
 		figure img { width: 320px; border: 1px solid #ccc; }

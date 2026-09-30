@@ -1,6 +1,6 @@
 {
   "name": "Diorame",
-  "version": "3.17.51",
+  "version": "3.17.52",
   "private": true,
   "type": "module",
   "dependencies": {
@@ -45,6 +45,7 @@
     "cmdk": "^1.1.1",
     "embla-carousel-react": "^8.6.0",
     "fflate": "^0.8.3",
+    "fontkit": "2.0.4",
     "framer-motion": "^12.38.0",
     "gifenc": "^1.0.3",
     "idb-keyval": "^6.2.4",

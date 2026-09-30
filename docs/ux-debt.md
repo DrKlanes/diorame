@@ -287,22 +287,23 @@ Producto, no mecánica.
 
 ---
 
-## Export SVG: límites conocidos tras la geometría real (v3.17.48)
+## Export SVG: límites conocidos tras la geometría real (v3.17.48 → v3.17.52)
 
-**Estado:** anotado al cerrar la serie v3.17.43–48. Nada de esto se ha tocado.
-Medir cualquier arreglo con `tools/svg-diff` (ver CLAUDE.md «Verificación»).
+**Estado:** el texto pasó a contornos en v3.17.52 (antes: sans-serif, sin negrita
+ni saltos de línea, y con máscara si tenía goma encima). Lo que sigue abierto está
+anotado abajo. Medir cualquier arreglo con `tools/svg-diff` (ver CLAUDE.md
+«Verificación»).
 
-### ⚠️ El texto sale en sans-serif, no en las fuentes de la app — candidato prioritario
+### Palabras que no pueden pasar a contorno quedan como texto vivo
 
-`renderTextShape.ts:100-107` pinta en bold con Inter / Courier Prime / Cinzel /
-Bangers / Inknut Antiqua según `shape.font`, y reparte las líneas. `svgExport.ts`
-emite un único `<text font-family="sans-serif">` sin bold ni saltos de línea. En
-Illustrator el texto queda mal. Además, al no ser geometría, las booleanas no lo
-tocan (ver abajo).
-
-**Solución candidata:** convertir el texto a contornos en el export (las fuentes
-ya se sirven desde la app; hay que obtener los glifos como trazados). Resuelve
-de paso fuente, bold, saltos de línea y la goma sobre texto.
+Una palabra cuyo contorno no coincide con lo que pinta Canvas, o con un carácter que
+la fuente no tiene (Canvas lo pinta con una fuente del sistema: cirílico, emoji…),
+sale como `<text>` con la familia de la app, y el export avisa con un toast del
+número de caracteres. Solo se verá bien donde esa fuente esté instalada. Hoy caen
+aquí, de las fuentes de la app, `ª` y `º` en Inknut Antiqua: fontkit no compone esos
+glifos como el navegador (la forma difiere, no solo la posición) y no se ha
+encontrado la causa. Si una goma alcanza una de esas palabras, esa palabra lleva
+máscara: es el único `<mask>` que puede quedar en el SVG.
 
 ### Las formas que se cruzan consigo mismas salen con nodos rectos
 
@@ -312,16 +313,24 @@ Illustrator son cientos de nodos rectos en vez de curvas: peor para editar nodo 
 nodo. Afecta sobre todo a gomas frotadas y a blobs en forma de lazo; las formas
 simples conservan sus curvas.
 
-### El texto con una goma encima conserva máscara
+Lo mismo le pasa al **texto que toca una goma o un drawInside**: se parte en un trozo
+por glifo y cada glifo se aplana (tolerancia 0,1), porque muchas fuentes dibujan
+letras como B o D con contornos solapados que paper.js no resuelve bien en curva. El
+texto que no toca nada conserva sus curvas.
 
-Es el único caso en que el SVG sigue llevando `<mask>` (junto con los fallos de
-booleana, que se cuentan y hoy son 0 en todas las escenas medidas). Con Ctrl+Y o
-Buscatrazos, ese recorte de la goma sobre el texto no existe. Se resolvería con
-el texto a contornos.
+### La caja del gizmo de Mover mide el texto con otra copia del layout
 
-### Rendimiento de las booleanas en iPad: sin probar
+`transformUtils.ts` (`getLayerBoundingBox`) tiene su propia versión del layout de
+texto: solo conoce Inter, Courier y Cinzel (Bangers e Inknut se miden como Inter),
+sin letterSpacing ni rotación. El render y el export ya comparten
+`utils/textLayout.ts` desde v3.17.50; el gizmo no. El síntoma sería una caja que no
+abraza bien un texto en Bangers o Inknut, o rotado. Pendiente: hacer que use
+`layoutText` (cambia la caja del gizmo → verificar a ojo).
 
-En escritorio, la escena de ejemplo (2 369 formas, 798 drawInside) exporta en
-~1,5 s aislada y ~5 s dentro de la app con el lienzo pintando. En iPad no se ha
-medido; será más lento. El export cede el hilo cada ~30 ms, así que no debería
-congelar la UI, pero puede tardar.
+### Rendimiento en iPad: sin probar
+
+En escritorio (build de producción), la escena de ejemplo (2 369 formas, 798
+drawInside) exporta en ~1,5 s aislada y ~5 s dentro de la app con el lienzo
+pintando; una escena con texto exporta en ~0,1 s (fontkit + fuentes en frío). En
+iPad no se ha medido; será más lento. El export cede el hilo cada ~30 ms, así que
+no debería congelar la UI, pero puede tardar.

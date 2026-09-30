@@ -449,6 +449,8 @@ export const en: Dictionary = {
 	// Export — error
 	'toast.export.snapshot.errorTitle': 'Failed to save snapshot',
 	'toast.export.vector.errorTitle': 'Failed to export vector',
+	'toast.export.vector.textFallbackTitle': 'Some text stayed as live text',
+	'toast.export.vector.textFallbackDesc': '{count} characters could not be turned into outlines — they only look right where the font is installed.',
 	'toast.export.animation.errorTitle': 'Failed to save animation',
 	'toast.export.pngSequence.errorTitle': 'Failed to export frames',
 	'toast.export.gif.successTitle': 'GIF exported!',

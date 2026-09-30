@@ -413,6 +413,8 @@ export const es: Dictionary = {
 
 	'toast.export.snapshot.errorTitle': 'Error al guardar la captura',
 	'toast.export.vector.errorTitle': 'Error al exportar el vector',
+	'toast.export.vector.textFallbackTitle': 'Parte del texto queda como texto vivo',
+	'toast.export.vector.textFallbackDesc': '{count} caracteres no se pudieron pasar a contornos: solo se verán bien donde esté instalada la fuente.',
 	'toast.export.animation.errorTitle': 'Error al guardar la animación',
 	'toast.export.pngSequence.errorTitle': 'Error al exportar los frames',
 	'toast.export.gif.successTitle': '¡GIF exportado!',

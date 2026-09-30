@@ -3,7 +3,9 @@
 //   candidate = exportAsSVG output, rasterized by the browser
 // Everything is flattened to a binary ink mask so the diff measures geometry, not color/FX.
 import { renderFrame, type RenderContext } from '../../src/components/strata/canvas/renderPipeline';
-import { exportAsSVG } from '../../src/components/strata/canvas/svgExport';
+import { exportAsSVG, svgBounds } from '../../src/components/strata/canvas/svgExport';
+import { prepareText, textOutline } from '../../src/components/strata/canvas/svgText';
+import { TEXT_FONTS, type TextFontKey } from '../../src/utils/textLayout';
 import { loadPaper, buildLayerGeometry, smoothPathData } from '../../src/components/strata/canvas/svgGeometry';
 import { initialState, BASE_DEPTH_STEP } from '../../src/components/strata/StrataContext';
 import type { Shape } from '../../src/types/strataTypes';
@@ -141,18 +143,14 @@ export const captureSVG = async (shapes: Shape[]): Promise<string> => {
 	return (blob as Blob).text();
 };
 
-// Same bounds math as exportAsSVG: world coordinate + offset = SVG coordinate.
-export const svgOffset = (shapes: Shape[]): { ox: number; oy: number } => {
-	let minX = Infinity, minY = Infinity;
-	shapes.forEach(s => {
-		const pts = s.isEraser && s.eraserPolygon ? [...s.points, ...s.eraserPolygon] : s.points;
-		pts.forEach(p => { minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); });
-	});
+// The exporter's own bounds (svgBounds, text blocks included): world + offset = SVG coordinate.
+export const svgOffset = async (shapes: Shape[]): Promise<{ ox: number; oy: number }> => {
+	const { minX, minY } = svgBounds(shapes, await prepareText(shapes));
 	return { ox: -minX + 50, oy: -minY + 50 };
 };
 
 export const rasterizeSVG = async (svg: string, shapes: Shape[], cal: Calibration, size: number): Promise<Mask> => {
-	const { ox, oy } = svgOffset(shapes);
+	const { ox, oy } = await svgOffset(shapes);
 	const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
 	const img = new Image();
 	try {
@@ -204,7 +202,8 @@ export const diffMasks = (a: Mask, b: Mask): Omit<DiffResult, 'sc'> => {
 
 // masks: <mask>/<clipPath> left in the SVG. Real-geometry export should emit none (Illustrator's
 // Outline view and Pathfinder ignore them); only text and failed boolean ops fall back to them.
-export type LayerRun = DiffResult & { z: number; masks: number; reference: Mask; candidate: Mask };
+// texts: live <text> left in the SVG (text words that could not become outlines; counted apart).
+export type LayerRun = DiffResult & { z: number; masks: number; texts: number; reference: Mask; candidate: Mask };
 
 // Each layer is exported and compared on its own: layers only stack, so the per-layer
 // alpha is where eraser / drawInside / drawBehind fidelity lives.
@@ -219,7 +218,8 @@ export const runScene = async (shapes: Shape[], size: number, renderScale = 1): 
 		const svg = await captureSVG(own);
 		const candidate = await rasterizeSVG(svg, own, cal, size);
 		const masks = (svg.match(/<mask|<clipPath/g) || []).length;
-		out.push({ z, masks, reference, candidate, ...diffMasks(reference, candidate), sc: +cal.sc.toFixed(4) });
+		const texts = (svg.match(/<text/g) || []).length;
+		out.push({ z, masks, texts, reference, candidate, ...diffMasks(reference, candidate), sc: +cal.sc.toFixed(4) });
 	}
 	return out;
 };
@@ -268,7 +268,7 @@ export const auditStrokes = async (shapes: Shape[]): Promise<{ total: number; ba
 		ctx.lineWidth = th * k; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 		ctx.stroke(new Path2D(smoothPathData(one.originalPoints!, false)));
 		const ref = mask();
-		const g = await buildLayerGeometry(P, [one], 0, 0, async () => {});
+		const g = await buildLayerGeometry(P, [one], 0, 0, async () => {}, null);
 		ctx.clearRect(0, 0, size, size);
 		g.pieces.forEach(pc => { if (pc.d) ctx.fill(new Path2D(pc.d)); });
 		const px = diffMasks(ref, mask()).structPx;
@@ -276,4 +276,45 @@ export const auditStrokes = async (shapes: Shape[]): Promise<{ total: number; ba
 		worst = Math.max(worst, px);
 	}
 	return { total: strokes.length, bad, worstPx: worst };
+};
+
+// Glyph audit: every character of every text face, exported alone, against Canvas. Independent
+// of the exporter's own word check: a glyph is 'contour' (outline matches), 'fallback' (exported
+// as live text — acceptable, counted) or 'bad' (an outline that does NOT match: must be 0).
+export const auditGlyphs = async (): Promise<Record<string, { total: number; contour: number; fallback: string[]; bad: string[] }>> => {
+	const size = 80, W = 260, H = 200;
+	const canvas = document.createElement('canvas');
+	canvas.width = W; canvas.height = H;
+	const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+	const mask = (): Mask => {
+		const d = ctx.getImageData(0, 0, W, H).data;
+		const data = new Uint8Array(W * H);
+		for (let i = 0; i < data.length; i++) data[i] = d[i * 4 + 3] > 127 ? 1 : 0;
+		return { w: W, h: H, data };
+	};
+	const out: Record<string, { total: number; contour: number; fallback: string[]; bad: string[] }> = {};
+	for (const key of Object.keys(TEXT_FONTS) as TextFontKey[]) {
+		const probe: Shape = { id: 'glyph', type: 'text', text: 'a', font: key, align: 'left', fontSize: size, zIndex: 0, color: '#000', points: [{ x: 60, y: 100 }] };
+		const engine = (await prepareText([probe]))!;
+		const font = engine.fonts[key]!;
+		const spec = TEXT_FONTS[key];
+		const chars = font.characterSet.filter(c => c > 32 && c !== 0xad && c !== 0xa0).map(c => String.fromCodePoint(c));
+		const r = { total: chars.length, contour: 0, fallback: [] as string[], bad: [] as string[] };
+		for (const ch of chars) {
+			const t = textOutline(engine, { ...probe, text: ch }, 0, 0);
+			if (t.runs.length > 0) { r.fallback.push(ch); continue; }
+			ctx.clearRect(0, 0, W, H);
+			ctx.font = `${spec.weight} ${size}px ${spec.family}`;
+			// @ts-ignore - letterSpacing is standard in modern browsers but TS might not know
+			ctx.letterSpacing = spec.letterSpacingEm ? `${spec.letterSpacingEm}em` : '0px';
+			ctx.textBaseline = 'middle';
+			ctx.fillText(ch, 60, 100);
+			const reference = mask();
+			ctx.clearRect(0, 0, W, H);
+			ctx.fill(new Path2D(t.d));
+			if (diffMasks(reference, mask()).structPx > 4) r.bad.push(ch); else r.contour++;
+		}
+		out[key] = r;
+	}
+	return out;
 };
