@@ -365,7 +365,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `renderParticles.ts` | ~100 | Floating cinematic particles rendering |
 | `renderPipeline.ts` | ~620 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12) |
 | `renderRegularFillShape.ts` | ~95 | Regular fill shapes (blob / tapered brush) |
-| `renderTextShape.ts` | ~175 | Text shape rendering with font + alignment |
+| `renderTextShape.ts` | ~155 | Text shape rendering: affine projection of the text block, optional gradient, `fillText` per line. Font/weight/spacing/line positions come from `utils/textLayout.ts` (shared with the SVG export) |
 | `renderUniformLineShape.ts` | ~160 | Uniform-mode brush stroke rendering |
 | `transformPoint.ts` | ~130 | `createTransformPoint` factory for 3D projection |
 | `pickLayerAtPoint.ts` | ~150 | `pickLayerAtPoint`: which layer holds content under a screen point. Ray casting on `shape.points` — which IS the filled contour, not the spine, so the test is exact with nothing precomputed (measured cheaper AND more accurate than per-shape bounding boxes). Text gets its own box from fontSize/text/align since its `points` is a lone anchor. Erasers SUBTRACT, decided in paint order, so a rubbed-out hole behaves like a hole. Caller passes candidates already ordered front-to-back by real dz and already stripped of empty and hidden layers |
@@ -404,6 +404,7 @@ Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"
 | `colorUtils.ts` | ~35 | `hexToHSL`, `hslToHex`, `getVibrantVariant`, `hexToRgba` |
 | `canvasUtils.ts` | ~30 | `createNoise`, `drawSmoothLine`, `drawStraightLine` |
 | `strokeGenerators.ts` | ~295 | `generateTaperedStroke`, `generateUniformStroke`, `generateInkStroke`, `generateStrokeForMode` |
+| `textLayout.ts` | ~60 | `layoutText(shape, fontSize)` + `TEXT_FONTS`: font stack, weight, letter spacing, line breaks and per-line `middle`-baseline positions. **Single source** for the Canvas text renderer and the SVG export (v3.17.50) — change text layout here, never in only one of them. Bangers is weight 400 (v3.17.49) |
 | `animationFrames.ts` | ~80 | `getAnimationFrames`, `isLayerEmpty`, `getOnionGhostZs` — animation frame logic shared by the render pipeline, playback, onion skin, and exports |
 | `cinematic.ts` | ~10 | `flToMm`, `mmToFl` — focal-length conversion helpers (FL raw ↔ mm); extracted from legacy ControlsCinematic |
 | `keyboardShortcuts.ts` | ~105 | `ShortcutItem`/`ShortcutGroup` types, `formatShortcut`, `isMac`, `hasFinePointer` — shared keyboard shortcut formatting and platform detection. Also `shouldIgnoreGlobalKey`: the focus / text-session / animation guards for global KEYDOWNs, shared by `useKeyboardShortcuts` and the Space pan in `StrataCanvas` so the two window listeners cannot drift apart. Never applied to a keyup — releasing state is unconditional |

@@ -2,6 +2,7 @@ import { hexToRgba, getVibrantVariant } from '../../../utils/colorUtils';
 import { BASE_DEPTH_STEP, GRADIENT_DEFAULTS } from '../StrataContext';
 import type { Shape, Point, LayerGradParams } from '../../../types/strataTypes';
 import type { Projection } from './transformPoint';
+import { layoutText } from '../../../utils/textLayout';
 
 export type RenderTextShapeOpts = {
 	activeFontSizeScale: number;
@@ -97,49 +98,29 @@ export const renderTextShape = (
 		// Apply Transform: Maps World Unit -> Screen Pixel
 		layerCtx.setTransform(m11, m12, m21, m22, pOrigin.x + wiggleX, pOrigin.y + wiggleY);
 
-		let fontName = '"Inter", sans-serif';
-		if (shape.font === 'noir') fontName = '"Courier Prime", monospace';
-		else if (shape.font === 'mansion') fontName = '"Cinzel", serif';
-		else if (shape.font === 'comic') fontName = '"Bangers", system-ui';
-		else if (shape.font === 'dungeons') fontName = '"Inknut Antiqua", serif';
-
+		// Font, weight, spacing and line positions: shared with the SVG export (utils/textLayout.ts)
 		// Font size is in World Units (which setTransform maps to Screen Pixels)
-		// Bangers ships a single weight: 'bold' made each browser synthesize its own fake bold
-		// (Chrome ≠ Safari), so the same drawing looked different per device. Real 400 instead.
-		const weight = shape.font === 'comic' ? 'normal' : 'bold';
-		layerCtx.font = `${weight} ${effectiveFontSize}px ${fontName}`;
-
-		// Apply letter spacing
-		if (shape.font === 'dungeons') {
-			// @ts-ignore - letterSpacing is standard in modern browsers but TS might not know
-			layerCtx.letterSpacing = '-0.04em';
-		} else if (shape.font === 'comic') {
-			// @ts-ignore
-			layerCtx.letterSpacing = '0.05em'; // Slight spacing for comic
-		} else {
-			// @ts-ignore
-			layerCtx.letterSpacing = '0px';
-		}
+		const layout = layoutText(shape, effectiveFontSize);
+		layerCtx.font = layout.font;
+		// @ts-ignore - letterSpacing is standard in modern browsers but TS might not know
+		layerCtx.letterSpacing = layout.letterSpacing;
 
 		layerCtx.globalAlpha = pOrigin.opacity;
-		layerCtx.textAlign = shape.align || 'left';
+		layerCtx.textAlign = layout.align;
 		layerCtx.textBaseline = 'middle';
 
-		const lines = shape.text!.split('\n');
-		const lineHeight = effectiveFontSize * 1.2;
-		const totalHeight = lines.length * lineHeight;
-		const startY = -(totalHeight / 2) + (lineHeight / 2);
+		const totalHeight = layout.totalHeight;
 
 		// Apply paletteMode gradient (mirrors shape path; bbox in local text coords)
 		const shapeLayerIndex = Math.round(Math.abs(shape.zIndex / BASE_DEPTH_STEP));
 		const renderMode = opts.layerRenderModes?.[shapeLayerIndex] || 'flat';
 		if (renderMode === 'grad') {
 			let maxWidth = 0;
-			for (const l of lines) {
-				const w = layerCtx.measureText(l).width;
+			for (const l of layout.lines) {
+				const w = layerCtx.measureText(l.text).width;
 				if (w > maxWidth) maxWidth = w;
 			}
-			const align = shape.align || 'left';
+			const align = layout.align;
 			let minX = 0, maxX = maxWidth;
 			if (align === 'center') { minX = -maxWidth / 2; maxX = maxWidth / 2; }
 			else if (align === 'right') { minX = -maxWidth; maxX = 0; }
@@ -167,8 +148,8 @@ export const renderTextShape = (
 			layerCtx.fillStyle = shape.color;
 		}
 
-		lines.forEach((line, i) => {
-			layerCtx.fillText(line, 0, startY + i * lineHeight);
+		layout.lines.forEach(line => {
+			layerCtx.fillText(line.text, 0, line.y);
 		});
 
 		layerCtx.restore();
