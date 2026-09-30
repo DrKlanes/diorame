@@ -235,32 +235,17 @@ que es lo que ya hace la Fase 3 con el arrastre.
 
 ---
 
-## Mover una capa vacía crea un paso de undo que no hace nada
+## Mover una capa vacía creaba un paso de undo que no hacía nada — resuelto en v3.17.61
 
-**Estado:** documentado, sin arreglar. Trivial de arreglar, molesto de sufrir.
+**Estado:** resuelto. `MOVE_LAYER` y `TRANSFORM_LAYER` devuelven el estado intacto si la capa no
+tiene shapes: sin paso de historial, sin `isDirty`. La guarda está en el reducer, no en
+`handlePointerUp`, así que cubre cualquier origen del despacho sin tocar el handler.
 
-Con el Move sobre una capa sin trazos, `handlePointerDown` no encuentra bounding
-box y cae a la rama de `moveRef`. El arrastre acumula sus offsets con
-normalidad, y `handlePointerUp` despacha `MOVE_LAYER` en cuanto superan 0.1px —
-sin comprobar antes si hay algo que mover. El reducer empuja su paso al
-historial igualmente.
-
-Medido en v3.17.36: un arrastre sobre una capa con cero shapes → 1 paso nuevo en
-`state.history`.
-
-Consecuencia: cada arrastre en vacío —fácil de hacer sin querer mientras se
-busca la capa correcta— gasta un hueco de los `MAX_HISTORY_STEPS = 50`, y
-deshacer no produce ningún cambio visible, que es exactamente lo que hace que un
-undo se sienta roto. En una sesión larga puede empujar fuera de la ventana pasos
-que sí importaban.
-
-**Pendiente:** la guarda natural es la misma que ya existe para el transform
-(`isSignificantTransform` protege la otra rama): no despachar `MOVE_LAYER` si la
-capa activa no tiene shapes. Ojo a no confundirlo con el caso legítimo de una
-capa cuyo contenido es solo borrador, que sí tiene shapes aunque
-`getLayerBoundingBox` devuelva null.
-
----
+Medido con el fiber (v3.17.61): arrastre real del Move sobre una capa vacía → historial 1 → 1;
+`TRANSFORM_LAYER` directo sobre la capa vacía → 1 → 1; capa con contenido → +1 paso y la capa se
+mueve; capa con SOLO una goma (tiene shapes aunque `getLayerBoundingBox` devuelva null) → sigue
+moviéndose y registrándose (+1). Antes (medido en v3.17.36): un arrastre en vacío = 1 paso nuevo
+que no deshacía nada visible.
 
 ## El borrador no tiene control propio de grosor
 

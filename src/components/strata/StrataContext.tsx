@@ -1157,6 +1157,10 @@ export function appReducer(state: AppState, action: Action): AppState {
     }
     case 'MOVE_LAYER': {
         const { layerIndex, deltaX, deltaY } = action.payload;
+        // Nothing to move on an empty layer: no history step (an undo that changes nothing
+        // feels broken, and it spends one of the MAX_HISTORY_STEPS). A layer holding only
+        // eraser shapes is NOT empty and still moves.
+        if (!state.shapes.some(s => s.zIndex === layerIndex * -BASE_DEPTH_STEP)) return state;
         const newShapes = state.shapes.map(shape => {
             if (shape.zIndex === layerIndex * -BASE_DEPTH_STEP) {
                 const updatedShape = {
@@ -1190,6 +1194,8 @@ export function appReducer(state: AppState, action: Action): AppState {
     }
     case 'TRANSFORM_LAYER': {
         const { layerIndex, transform } = action.payload;
+        // Same guard as MOVE_LAYER: an empty layer gets no history step.
+        if (!state.shapes.some(s => s.zIndex === layerIndex * -BASE_DEPTH_STEP)) return state;
         const { rotation, scale, dx, dy, centerX, centerY } = transform;
         const sin = Math.sin(rotation);
         const cos = Math.cos(rotation);
