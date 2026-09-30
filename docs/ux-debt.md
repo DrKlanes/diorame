@@ -320,12 +320,32 @@ texto que no toca nada conserva sus curvas.
 
 ### La caja del gizmo de Mover mide el texto con otra copia del layout
 
-`transformUtils.ts` (`getLayerBoundingBox`) tiene su propia versión del layout de
-texto: solo conoce Inter, Courier y Cinzel (Bangers e Inknut se miden como Inter),
-sin letterSpacing ni rotación. El render y el export ya comparten
-`utils/textLayout.ts` desde v3.17.50; el gizmo no. El síntoma sería una caja que no
-abraza bien un texto en Bangers o Inknut, o rotado. Pendiente: hacer que use
-`layoutText` (cambia la caja del gizmo → verificar a ojo).
+**Estado:** el gizmo se arregló en v3.17.53; el picking de CINEMA y `svgText.textCorners`
+siguen con su copia hasta v3.17.54 y v3.17.55.
+
+`transformUtils.ts` (`getLayerBoundingBox`) tenía su propia versión del layout de texto.
+El diagnóstico inicial fue «solo conoce tres fuentes y no aplica letterSpacing ni
+rotación». Era cierto, pero **no era la causa principal**. Medido contra el render real
+(tinta de `renderTextShape` frente a la caja), lo que dominaba era otra cosa: el canvas
+temporal donde se escanea la tinta se dimensionaba solo con `shape.points` más 100 px de
+padding, y un texto tiene un único punto (el ancla). Resultado: un canvas de 200×200 que
+**recortaba el texto a ~100 px del ancla**, en cualquier fuente. Una capa con un título
+largo tenía una caja de ~100 px de ancho con hasta 414 px de tinta fuera; el clic en la
+mitad derecha del título contaba como «fuera de la caja» (deseleccionaba en vez de mover)
+y el pivote de rotación, voltear y «Centrar capa» actuaban sobre el centro de esa caja
+truncada. Las fuentes mal medidas y la rotación ignorada solo se veían en textos cortos y
+centrados, los únicos que cabían en el canvas de 200×200.
+
+Arreglo: `utils/textMetrics.ts` mide la tinta de cada línea con Canvas
+(`actualBoundingBox*`) sobre el layout de `textLayout.ts`, y esa tinta —rotada alrededor
+del ancla— entra en los límites gruesos que dimensionan el canvas. El texto se dibuja con
+`layoutText` y su rotación. La caja sigue ajustada a la TINTA (una goma que corta el
+texto la encoge) y alineada a ejes: un texto rotado tiene la caja del rectángulo que
+envuelve su tinta inclinada, igual que un trazo. Consecuencia asumida: el pivote depende
+de las letras, no del bloque tipográfico.
+
+Lección de método: el síntoma «la caja no abraza Bangers o Inknut» apuntaba a la fuente y
+no era la fuente. Medir contra el render antes de aceptar la causa que sugiere el síntoma.
 
 ### Rendimiento en iPad: sin probar
 

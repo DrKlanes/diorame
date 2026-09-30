@@ -1,4 +1,6 @@
 import { Shape } from '../../../types/strataTypes';
+import { layoutText } from '../../../utils/textLayout';
+import { measureTextBlock, rotatedCorners } from '../../../utils/textMetrics';
 
 export const getLayerBoundingBox = (shapes: Shape[]) => {
 	if (shapes.length === 0) return null;
@@ -8,7 +10,11 @@ export const getLayerBoundingBox = (shapes: Shape[]) => {
 
 	shapes.forEach(s => {
 		if (s.isEraser) return; // Skip erasers for rough bounds
-		s.points.forEach(p => {
+		// A text shape's points is a lone anchor: its extent is the measured ink, rotated like the text.
+		const extent = s.type === 'text' && s.text && s.points.length > 0
+			? [...s.points, ...rotatedCorners(measureTextBlock(s).ink, s.points[0], s.rotation || 0)]
+			: s.points;
+		extent.forEach(p => {
 			if (p.x < roughMinX) roughMinX = p.x;
 			if (p.x > roughMaxX) roughMaxX = p.x;
 			if (p.y < roughMinY) roughMinY = p.y;
@@ -40,17 +46,14 @@ export const getLayerBoundingBox = (shapes: Shape[]) => {
 		const localPoints = s.points.map(p => ({ x: p.x - roughMinX, y: p.y - roughMinY }));
 
 		if (s.type === 'text' && s.text && localPoints.length > 0) {
-			// Text rendering
-			const fontSize = s.fontSize || 40;
-			const fontName = s.font === 'noir' ? '"Courier Prime", monospace' : s.font === 'mansion' ? '"Cinzel", serif' : '"Inter", sans-serif';
-			tempCtx.font = `bold ${fontSize}px ${fontName}`;
+			// Text rendering: same layout as renderTextShape (font, spacing, lines, rotation around the anchor)
+			const layout = layoutText(s, s.fontSize || 40);
+			tempCtx.font = layout.font;
+			// @ts-ignore - letterSpacing is standard in modern browsers but TS might not know
+			tempCtx.letterSpacing = layout.letterSpacing;
 			tempCtx.fillStyle = s.color;
-			tempCtx.textAlign = (s.align || 'left') as CanvasTextAlign;
+			tempCtx.textAlign = layout.align;
 			tempCtx.textBaseline = 'middle';
-
-			const lines = s.text.split('\n');
-			const lineHeight = fontSize * 1.2;
-			const startY = localPoints[0].y - (lines.length - 1) * lineHeight / 2;
 
 			if (s.isEraser) {
 				tempCtx.globalCompositeOperation = 'destination-out';
@@ -62,9 +65,13 @@ export const getLayerBoundingBox = (shapes: Shape[]) => {
 				tempCtx.globalCompositeOperation = 'source-over';
 			}
 
-			lines.forEach((line, i) => {
-				tempCtx.fillText(line, localPoints[0].x, startY + i * lineHeight);
+			tempCtx.save();
+			tempCtx.translate(localPoints[0].x, localPoints[0].y);
+			tempCtx.rotate(s.rotation || 0);
+			layout.lines.forEach(line => {
+				tempCtx.fillText(line.text, 0, line.y);
 			});
+			tempCtx.restore();
 		} else if (localPoints.length > 0) {
 			// Stroke rendering
 			if (s.isEraser) {
