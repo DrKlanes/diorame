@@ -1,6 +1,7 @@
 import { Shape } from '../../../types/strataTypes';
 import { layoutText } from '../../../utils/textLayout';
-import { measureTextBlock, rotatedCorners } from '../../../utils/textMetrics';
+import { measureTextBlock, boxCorners } from '../../../utils/textMetrics';
+import { textMatrix } from '../../../utils/textTransform';
 
 export const getLayerBoundingBox = (shapes: Shape[]) => {
 	if (shapes.length === 0) return null;
@@ -10,9 +11,9 @@ export const getLayerBoundingBox = (shapes: Shape[]) => {
 
 	shapes.forEach(s => {
 		if (s.isEraser) return; // Skip erasers for rough bounds
-		// A text shape's points is a lone anchor: its extent is the measured ink, rotated like the text.
+		// A text shape's points is a lone anchor: its extent is the measured ink, mapped by its matrix.
 		const extent = s.type === 'text' && s.text && s.points.length > 0
-			? [...s.points, ...rotatedCorners(measureTextBlock(s).ink, s.points[0], s.rotation || 0)]
+			? [...s.points, ...boxCorners(measureTextBlock(s).ink, s.points[0], textMatrix(s))]
 			: s.points;
 		extent.forEach(p => {
 			if (p.x < roughMinX) roughMinX = p.x;
@@ -46,7 +47,7 @@ export const getLayerBoundingBox = (shapes: Shape[]) => {
 		const localPoints = s.points.map(p => ({ x: p.x - roughMinX, y: p.y - roughMinY }));
 
 		if (s.type === 'text' && s.text && localPoints.length > 0) {
-			// Text rendering: same layout as renderTextShape (font, spacing, lines, rotation around the anchor)
+			// Text rendering: same layout as renderTextShape (font, spacing, lines, matrix around the anchor)
 			const layout = layoutText(s, s.fontSize || 40);
 			tempCtx.font = layout.font;
 			// @ts-ignore - letterSpacing is standard in modern browsers but TS might not know
@@ -66,8 +67,8 @@ export const getLayerBoundingBox = (shapes: Shape[]) => {
 			}
 
 			tempCtx.save();
-			tempCtx.translate(localPoints[0].x, localPoints[0].y);
-			tempCtx.rotate(s.rotation || 0);
+			const [a, b, c, d] = textMatrix(s);
+			tempCtx.transform(a, b, c, d, localPoints[0].x, localPoints[0].y);
 			layout.lines.forEach(line => {
 				tempCtx.fillText(line.text, 0, line.y);
 			});

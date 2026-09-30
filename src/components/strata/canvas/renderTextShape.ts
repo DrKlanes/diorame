@@ -3,10 +3,9 @@ import { BASE_DEPTH_STEP, GRADIENT_DEFAULTS } from '../StrataContext';
 import type { Shape, Point, LayerGradParams } from '../../../types/strataTypes';
 import type { Projection } from './transformPoint';
 import { layoutText } from '../../../utils/textLayout';
+import { textMatrix } from '../../../utils/textTransform';
 
 export type RenderTextShapeOpts = {
-	activeFontSizeScale: number;
-	activeRotationDelta: number;
 	layerRenderModes: Record<number, 'flat' | 'grad'>;
 	layerGradParams: Record<number, LayerGradParams>;
 };
@@ -14,15 +13,13 @@ export type RenderTextShapeOpts = {
 /**
  * Renders a single text shape into a layer context.
  *
- * Computes an affine matrix from 3 transformPoint calls (origin + X-axis +
- * Y-axis tangents) to project the text in 3D-projected drawing space, then
- * applies font, rotation, optional gradient fill, and renders each line of
- * text.
+ * Computes an affine matrix from 3 transformPoint calls (origin + the text's
+ * local X and Y axes, from its matrix: rotation, stretch, mirror — see
+ * utils/textTransform.ts) to project the text in 3D-projected drawing space,
+ * then applies font, optional gradient fill, and renders each line of text.
  *
- * Uses opts.activeFontSizeScale / activeRotationDelta to apply live transform
- * preview when the move tool is active on the same layer as this shape (the
- * caller resolves transformRef.current and passes these as plain numbers,
- * defaulting to 1.0 and 0.0 when no live transform applies — both no-ops).
+ * A live Move preview arrives already baked into `shape` by the caller (the
+ * same bake the reducer commits), so preview and result cannot differ.
  *
  * Symmetry mode does NOT apply to text shapes — only live strokes use it.
  *
@@ -59,8 +56,7 @@ export const renderTextShape = (
 
 	let hasContent = false;
 
-	const effectiveFontSize = (shape.fontSize || 40) * opts.activeFontSizeScale;
-	const effectiveRotation = (shape.rotation || 0) + opts.activeRotationDelta;
+	const effectiveFontSize = shape.fontSize || 40;
 
 	// AFFINE PROJECTION APPROACH
 	// Solves "weird spacing" and "billboard" issues by projecting the text's local coordinate system
@@ -69,19 +65,18 @@ export const renderTextShape = (
 	const wx = anchorPoint.x;
 	const wy = anchorPoint.y;
 
-	// 1. Calculate Basis Vectors in World Space (rotated by text rotation)
+	// 1. Calculate Basis Vectors in World Space (the text's own axes, from its matrix)
 	// We use a small step to sample the local tangent plane
 	const step = 10;
-	const cos = Math.cos(effectiveRotation);
-	const sin = Math.sin(effectiveRotation);
+	const [ma, mb, mc, md] = textMatrix(shape);
 
 	const pOrigin = transformPoint(wx, wy);
 
 	// World point one 'step' along text's X axis
-	const pX = transformPoint(wx + step * cos, wy + step * sin);
+	const pX = transformPoint(wx + step * ma, wy + step * mb);
 
 	// World point one 'step' along text's Y axis (down)
-	const pY = transformPoint(wx - step * sin, wy + step * cos);
+	const pY = transformPoint(wx + step * mc, wy + step * md);
 
 	if (pOrigin.opacity > 0.01) {
 		hasContent = true;

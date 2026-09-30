@@ -4,6 +4,7 @@ import { DRAW_FOCAL_LENGTH, NEAR_CLIP } from '../../../constants/renderConstants
 import { createTransformPoint } from './transformPoint';
 import { renderParticles } from './renderParticles';
 import { renderTextShape } from './renderTextShape';
+import { bakeTextTransform } from '../../../utils/textTransform';
 import { renderUniformLineShape } from './renderUniformLineShape';
 import { renderEraserShape } from './renderEraserShape';
 import { renderRegularFillShape } from './renderRegularFillShape';
@@ -199,6 +200,7 @@ export function renderLayer(
 
 		// Transform Preview
 		let currentPoints = shape.points;
+		let previewShape = shape;
 		if (currentState.mode === 'drawing' && currentState.tool === 'move' && rc.transformState.isActive && shape.zIndex === currentState.currentLayerIndex * -BASE_DEPTH_STEP) {
 			 const t = rc.transformState.currentTransform;
 			 const cx = rc.transformState.centerX;
@@ -206,12 +208,14 @@ export function renderLayer(
 			 const sin = Math.sin(t.rotation);
 			 const cos = Math.cos(t.rotation);
 			 // Mirror the TRANSFORM_LAYER reducer's per-axis bake so the live preview
-			 // matches the committed result exactly (no jump on release). Text is excluded
-			 // from non-uniform deformation (sx===sy===scale), same as the reducer.
-			 const isText = shape.type === 'text';
-			 const hasNonUniform = !isText && (t.scaleX !== undefined || t.scaleY !== undefined);
+			 // matches the committed result exactly (no jump on release). Text deforms too
+			 // (v3.17.56), through the same bakeTextTransform the reducer commits.
+			 const hasNonUniform = t.scaleX !== undefined || t.scaleY !== undefined;
 			 const sx = hasNonUniform ? Math.max(0.01, t.scaleX ?? t.scale) : t.scale;
 			 const sy = hasNonUniform ? Math.max(0.01, t.scaleY ?? t.scale) : t.scale;
+			 if (shape.type === 'text') {
+				 previewShape = { ...shape, ...bakeTextTransform(shape, { rotation: t.rotation, scale: t.scale, sx, sy, nonUniform: hasNonUniform }) };
+			 }
 
 			 currentPoints = currentPoints.map(p => {
 				 const ox = p.x - cx;
@@ -228,24 +232,14 @@ export function renderLayer(
 
 		// Text Handling — extracted to canvas/renderTextShape.ts
 		if (shape.type === 'text' && shape.text) {
-			const isThisShapeActive = (
-				currentState.mode === 'drawing' &&
-				currentState.tool === 'move' &&
-				rc.transformState.isActive &&
-				shape.zIndex === currentState.currentLayerIndex * -BASE_DEPTH_STEP
-			);
-			const t = rc.transformState.currentTransform;
-
 			const textHadContent = renderTextShape(
 				layerCtx,
-				shape,
+				previewShape,
 				currentPoints[0],
 				transformPoint,
 				wiggleX,
 				wiggleY,
 				{
-					activeFontSizeScale: isThisShapeActive ? t.scale : 1.0,
-					activeRotationDelta: isThisShapeActive ? t.rotation : 0.0,
 					layerRenderModes: currentState.layerRenderModes,
 					layerGradParams: currentState.layerGradParams,
 				},

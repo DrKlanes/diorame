@@ -37,6 +37,7 @@ import {
 } from '../../utils/soundManager';
 
 import { getAnimationFrames } from '../../utils/animationFrames';
+import { bakeTextTransform, flipTextProps } from '../../utils/textTransform';
 
 export {
 	generateTaperedStroke, generateUniformStroke, generateInkStroke, generateStrokeForMode,
@@ -52,7 +53,9 @@ export {
 // still read, not enforce correctness.
 // History: 'brush' (old name for 'blob') and 'line' (old name for 'brush')
 // were renamed; 'lineMode'/'currentLineThickness' were renamed to
-// 'brushMode'/'currentBrushThickness'.
+// 'brushMode'/'currentBrushThickness'. Text shapes gained an optional
+// 'textMatrix' in v3.17.56: older files have none and are read through their
+// 'rotation' (utils/textTransform.ts), so they need no migration.
 type LegacyShape = Omit<Shape, 'brushMode'> & {
   brushMode?: BrushMode;
   lineMode?: BrushMode;      // pre-rename key for brushMode
@@ -1003,6 +1006,14 @@ function appReducer(state: AppState, action: Action): AppState {
           const result: any = { ...rest };
           if (brushMode !== undefined) result.brushMode = brushMode;
           if (brushThickness !== undefined) result.brushThickness = brushThickness;
+          // textMatrix (v3.17.56): texts saved before it have none and read their `rotation`.
+          // A malformed or degenerate one is dropped, falling back to that same rotation.
+          if ('textMatrix' in result) {
+              const m = result.textMatrix;
+              const ok = Array.isArray(m) && m.length === 4 && m.every((v: unknown) => typeof v === 'number' && Number.isFinite(v))
+                  && Math.abs(m[0] * m[3] - m[1] * m[2]) > 1e-12;
+              if (!ok) delete result.textMatrix;
+          }
           return result as Shape;
       });
       const safeTotalLayers = (typeof action.payload.totalLayers === 'number' && action.payload.totalLayers > 0)
@@ -1184,25 +1195,20 @@ function appReducer(state: AppState, action: Action): AppState {
 
         const newShapes = state.shapes.map(shape => {
             if (shape.zIndex === layerIndex * -BASE_DEPTH_STEP) {
-                // Non-uniform deformation (squash & stretch). Text is EXCLUDED — it has no
-                // point geometry to stretch, so text always uses the uniform `scale`. When
+                // Non-uniform deformation (squash & stretch), text included (v3.17.56): its
+                // anchor moves like any point and its matrix absorbs the stretch. When
                 // scaleX/scaleY are absent (every legacy uniform transform), sx===sy===scale
                 // and the formula below reduces to the original uniform bake byte-identically.
-                const isText = shape.type === 'text';
-                const hasNonUniform = !isText && (transform.scaleX !== undefined || transform.scaleY !== undefined);
+                const hasNonUniform = transform.scaleX !== undefined || transform.scaleY !== undefined;
                 // Clamp ONLY the non-uniform axes to prevent flip/collapse (scale <= 0).
                 // The uniform path is left untouched to preserve exact legacy behavior.
                 const sx = hasNonUniform ? Math.max(0.01, transform.scaleX ?? scale) : scale;
                 const sy = hasNonUniform ? Math.max(0.01, transform.scaleY ?? scale) : scale;
 
-                // Handle Text specific transforms
-                let newProps = {};
-                if (shape.type === 'text') {
-                    newProps = {
-                        fontSize: (shape.fontSize || 40) * scale,
-                        rotation: (shape.rotation || 0) + rotation
-                    };
-                }
+                // Handle Text specific transforms (utils/textTransform.ts)
+                const newProps = shape.type === 'text'
+                    ? bakeTextTransform(shape, { rotation, scale, sx, sy, nonUniform: hasNonUniform })
+                    : {};
 
                 const transformPoint = (point: Point) => {
                     // 1. Translate to origin
@@ -1268,16 +1274,8 @@ function appReducer(state: AppState, action: Action): AppState {
                 }
             };
 
-            let newProps: Partial<Shape> = {};
-            if (shape.type === 'text') {
-                // Negate rotation on flip
-                newProps.rotation = -(shape.rotation || 0);
-                // Swap text alignment on horizontal flip
-                if (direction === 'horizontal') {
-                    if (shape.align === 'left') newProps.align = 'right';
-                    else if (shape.align === 'right') newProps.align = 'left';
-                }
-            }
+            // Text mirrors for real, like every drawing on the layer (utils/textTransform.ts)
+            const newProps: Partial<Shape> = shape.type === 'text' ? flipTextProps(shape, direction) : {};
 
             const updatedShape: Shape = {
                 ...shape,

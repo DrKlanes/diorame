@@ -1,8 +1,9 @@
 // Text boxes measured with Canvas, from the SAME layout the renderer paints with
 // (utils/textLayout.ts). textLayout.ts stays pure; everything that needs a measured width or ink
 // extent — the Move gizmo, CINEMA picking, the SVG frame — asks here instead of keeping its own
-// estimate. Coordinates are anchor-local and unrotated (x right, y down), as layoutText returns them.
-import type { Shape, Point } from '../types/strataTypes';
+// estimate. Coordinates are anchor-local, before the text's matrix (x right, y down), as layoutText
+// returns them.
+import type { Shape, Point, TextMatrix } from '../types/strataTypes';
 import { layoutText, type TextLayout } from './textLayout';
 
 export type Box = { x0: number; y0: number; x1: number; y1: number };
@@ -45,11 +46,9 @@ export const measureTextBlock = (shape: Shape, fontSize: number = shape.fontSize
 	return { layout, block, ink: ink ?? block };
 };
 
-/** The four corners of an anchor-local box once rotated around the anchor, in world units. */
-export const rotatedCorners = (box: Box, anchor: Point, rotation: number): Point[] => {
-	const cos = Math.cos(rotation), sin = Math.sin(rotation);
-	return ([[box.x0, box.y0], [box.x1, box.y0], [box.x1, box.y1], [box.x0, box.y1]] as const).map(([lx, ly]) => ({
-		x: anchor.x + lx * cos - ly * sin,
-		y: anchor.y + lx * sin + ly * cos,
+/** The four corners of an anchor-local box mapped by the text's matrix (utils/textTransform.ts), in world units. */
+export const boxCorners = (box: Box, anchor: Point, [a, b, c, d]: TextMatrix): Point[] =>
+	([[box.x0, box.y0], [box.x1, box.y0], [box.x1, box.y1], [box.x0, box.y1]] as const).map(([lx, ly]) => ({
+		x: anchor.x + lx * a + ly * c,
+		y: anchor.y + lx * b + ly * d,
 	}));
-};

@@ -14,3 +14,5 @@ solo está en Canvas.
 
 Pasar la tabla antes y después de tocar `exportAsSVG` (`src/components/strata/canvas/svgExport.ts`).
 Detalle técnico en `src/REFERENCE.md` §10 «Dev Tools».
+
+`fixtures/text-legacy-v3.17.55.dior` — textos guardados antes de `textMatrix` (v3.17.56): cinco fuentes, rotados, multilínea, modo degradado y capas volteadas con el comportamiento antiguo. Debe abrirse y pintarse idéntico; cargarlo aquí con el selector para pasarlo por el export.

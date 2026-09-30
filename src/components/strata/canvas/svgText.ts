@@ -8,7 +8,8 @@
 import type { FontkitFont, FontkitGlyph, FontkitPath } from 'fontkit';
 import type { Shape } from '../../../types/strataTypes';
 import { layoutText, TEXT_FONTS, type TextFontKey } from '../../../utils/textLayout';
-import { measureTextBlock, rotatedCorners } from '../../../utils/textMetrics';
+import { measureTextBlock, boxCorners } from '../../../utils/textMetrics';
+import { textMatrix } from '../../../utils/textTransform';
 import interUrl from '@fontsource/inter/files/inter-latin-700-normal.woff2?url';
 import courierUrl from '@fontsource/courier-prime/files/courier-prime-latin-700-normal.woff2?url';
 import cinzelUrl from '@fontsource/cinzel/files/cinzel-latin-700-normal.woff2?url';
@@ -241,10 +242,10 @@ export const textCorners = (shape: Shape): { x: number; y: number }[] => {
 	const fontSize = shape.fontSize || 40;
 	const { block } = measureTextBlock(shape, fontSize);
 	const slack = fontSize * 0.3;
-	return rotatedCorners(
+	return boxCorners(
 		{ x0: block.x0 - slack, y0: block.y0 - slack, x1: block.x1 + slack, y1: block.y1 + slack },
 		shape.points[0],
-		shape.rotation || 0,
+		textMatrix(shape),
 	);
 };
 

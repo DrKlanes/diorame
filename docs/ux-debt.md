@@ -350,6 +350,24 @@ de las letras, no del bloque tipográfico.
 Lección de método: el síntoma «la caja no abraza Bangers o Inknut» apuntaba a la fuente y
 no era la fuente. Medir contra el render antes de aceptar la causa que sugiere el síntoma.
 
+### El texto no se deformaba con la capa (resuelto en v3.17.56)
+
+`TRANSFORM_LAYER` excluía el texto del estiramiento: solo horneaba `fontSize × scale` y
+`rotation + delta`, descartaba `scaleX/scaleY` y ni siquiera movía el ancla con ellos. En
+una capa mixta los trazos se estiraban y el texto se quedaba clavado; un drawInside dentro de
+un texto dejaba de encajar. Voltear tampoco espejaba el texto (negaba la rotación e
+intercambiaba la alineación), con el mismo resultado para el drawInside.
+
+Ahora el texto lleva una matriz 2×2 opcional (`textMatrix`, `utils/textTransform.ts`): un
+estiramiento de un texto rotado es una cizalla en su propio marco, y solo una 2×2 completa
+se mantiene cerrada al componer transformaciones. Voltear espeja de verdad (decisión de
+producto: voltear significa lo mismo para todo). Los ficheros antiguos no llevan matriz y se
+leen por `rotation`: se abren idénticos, incluidos los textos volteados a la antigua.
+
+Límite conocido: aplastar repetidamente hasta el clamp (0,01 por gesto) puede dejar un texto
+sin píxeles visibles; entonces la capa no tiene caja de gizmo y solo se recupera con deshacer
+(igual que un trazo aplastado a nada).
+
 ### Rendimiento en iPad: sin probar
 
 En escritorio (build de producción), la escena de ejemplo (2 369 formas, 798

@@ -2,6 +2,9 @@
 
 export type Point = { x: number; y: number; pressure?: number };
 
+// Text local frame → world around the anchor, canvas order (a, b, c, d). Read via utils/textTransform.ts.
+export type TextMatrix = readonly [number, number, number, number];
+
 export interface Shape {
   id: string;
   type?: 'stroke' | 'text';
@@ -15,7 +18,8 @@ export interface Shape {
   font?: 'noir' | 'mansion' | 'pharma' | 'comic' | 'dungeons';
   align?: 'left' | 'center' | 'right';
   fontSize?: number;
-  rotation?: number;
+  rotation?: number; // with textMatrix: only a hint for older app versions, never read
+  textMatrix?: TextMatrix; // stretched/mirrored text (v3.17.56); absent = rotation only
   originalPoints?: Point[]; // Store spine for re-generation
   brushThickness?: number; // Store thickness value
   brushMode?: BrushMode; // Store brush mode (tapered or uniform)

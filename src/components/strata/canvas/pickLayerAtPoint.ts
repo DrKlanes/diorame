@@ -1,5 +1,6 @@
 import type { Shape } from '../../../types/strataTypes';
 import { measureTextBlock } from '../../../utils/textMetrics';
+import { textMatrix } from '../../../utils/textTransform';
 
 /**
  * Which layer holds content under a screen point, and where in the world that is.
@@ -73,15 +74,15 @@ const isPointInTextBox = (px: number, py: number, shape: Shape): boolean => {
 	if (!anchor || !shape.text) return false;
 	const { ink } = measureTextBlock(shape);
 
-	// Rotated text is tested against its UN-rotated box: rotating the query point back
-	// around the anchor is cheap and keeps the box honest for tilted text.
-	let dx = px - anchor.x, dy = py - anchor.y;
-	const rot = shape.rotation || 0;
-	if (rot !== 0) {
-		const c = Math.cos(-rot), s = Math.sin(-rot);
-		[dx, dy] = [dx * c - dy * s, dx * s + dy * c];
-	}
-	return dx >= ink.x0 && dx <= ink.x1 && dy >= ink.y0 && dy <= ink.y1;
+	// The query point is taken back into the text's own frame (inverse of its matrix:
+	// rotation, stretch, mirror) and tested against the un-transformed box. A text squashed
+	// to nothing has no area to point at, and no inverse.
+	const [a, b, c, d] = textMatrix(shape);
+	const det = a * d - b * c;
+	if (!(Math.abs(det) > 1e-12)) return false;
+	const dx = px - anchor.x, dy = py - anchor.y;
+	const lx = (d * dx - c * dy) / det, ly = (a * dy - b * dx) / det;
+	return lx >= ink.x0 && lx <= ink.x1 && ly >= ink.y0 && ly <= ink.y1;
 };
 
 /** True when this shape puts visible content under the point. */
