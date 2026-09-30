@@ -77,27 +77,19 @@ es esto. Ver `docs/analytics.md`.
 
 ---
 
-## El punto de encuadre (POI) no sobrevive a recargar
+## El punto de encuadre (POI) no sobrevivía a recargar — resuelto en v3.17.26
 
-**Estado:** documentado, sin arreglar. Consecuencia aceptada, no bug.
-
-`state.pointOfInterest` no aparece ni en `useSaveLoad.ts` ni en
-`useAutoSave.ts`. Es coherente con que sea estado de vista puro —tampoco entra
-en `HistorySnapshot`, así que Undo/Redo lo dejan intacto por el mismo motivo—
-pero tiene un coste real: un encuadre bien elegido a base de tocar exactamente
-la figura correcta se pierde al recargar la página o al reabrir el `.dior`.
-
-**Pendiente:** si se decide que merece persistir, entra en el mismo lugar que
-`hiddenLayers`/`locked3DLayers` en el payload de guardado — no en
-`HistorySnapshot`. Es una decisión de producto (¿quiere Moisés que un
-encuadre guardado sobreviva al archivo, o es intencionadamente efímero como
-una posición de scroll?), no una omisión técnica.
+**Estado:** resuelto (esta entrada seguía diciendo «sin arreglar»; corregido en el barrido
+documental de v3.17.61). Desde v3.17.26 (`a9a839a`) `pointOfInterest` se guarda en el `.dior`
+(`useSaveLoad.ts`) y en el autosave (`useAutoSave.ts`), junto a `hiddenLayers`/`locked3DLayers`,
+y NO entra en `HistorySnapshot`: deshacer no lo toca. `LOAD_PROJECT` lo valida y los `.dior`
+anteriores, que no lo traen, abren sin punto de encuadre.
 
 ---
 
-## STORYTELLING ignora el POI sin decirlo
+## STORYTELLING ignora el POI sin decirlo — resuelto en v3.17.28
 
-**Estado:** documentado, sin arreglar. Confirmado en código
+**Estado:** resuelto en v3.17.28 (`c550fe1`, opción (a) de abajo): en STORYTELLING el POIPill se deshabilita con explicación — «Storytelling sigue su propio recorrido». Esta entrada seguía marcada como abierta; corregido en el barrido documental de v3.17.61. Lo que sigue es el diagnóstico original.
 (`cinematicCamera.ts`).
 
 Con cualquier otro preset, doblemente tocar el lienzo en CINEMA mueve la
@@ -121,9 +113,9 @@ no un fix mecánico.
 
 ---
 
-## POIPill dice "focus", y es encuadre
+## POIPill decía "focus", y es encuadre — resuelto en v3.17.27
 
-**Estado:** anotado, sin tocar. Copy pendiente de Moisés.
+**Estado:** resuelto en v3.17.27 (`0b1f67b`): el pill dice «Double tap to frame» / «Doble toque para encuadrar». Esta entrada seguía marcada como abierta; corregido en el barrido documental de v3.17.61. El componente no se renombró. Lo que sigue es el diagnóstico original.
 
 El pill de ayuda en CINEMA usa el texto "Double tap to focus" / su
 equivalente en español, y el propio nombre del componente (`POIPill.tsx`) usa
@@ -288,7 +280,9 @@ número de caracteres. Solo se verá bien donde esa fuente esté instalada. Hoy 
 aquí, de las fuentes de la app, `ª` y `º` en Inknut Antiqua: fontkit no compone esos
 glifos como el navegador (la forma difiere, no solo la posición) y no se ha
 encontrado la causa. Si una goma alcanza una de esas palabras, esa palabra lleva
-máscara: es el único `<mask>` que puede quedar en el SVG.
+máscara. Las otras máscaras posibles son las de reserva de las booleanas: una operación que
+falla, o una resta de goma que paper.js devuelve vacía dejando tinta (v3.17.59); ambas se
+cuentan y avisan en un toast.
 
 ### Las formas que se cruzan consigo mismas salen con nodos rectos
 
