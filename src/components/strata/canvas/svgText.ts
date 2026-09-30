@@ -8,6 +8,7 @@
 import type { FontkitFont, FontkitGlyph, FontkitPath } from 'fontkit';
 import type { Shape } from '../../../types/strataTypes';
 import { layoutText, TEXT_FONTS, type TextFontKey } from '../../../utils/textLayout';
+import { measureTextBlock, rotatedCorners } from '../../../utils/textMetrics';
 import interUrl from '@fontsource/inter/files/inter-latin-700-normal.woff2?url';
 import courierUrl from '@fontsource/courier-prime/files/courier-prime-latin-700-normal.woff2?url';
 import cinzelUrl from '@fontsource/cinzel/files/cinzel-latin-700-normal.woff2?url';
@@ -232,29 +233,19 @@ export const textAsRuns = (shape: Shape, ox: number, oy: number): TextOutline =>
 
 /**
  * The four corners (world units) of a text block's box, rotated like the text: what the SVG
- * canvas must contain. Measured with Canvas when the engine is up; estimated otherwise. Slack on
- * every side covers ascenders, descenders and slanted overhangs (Bangers).
+ * canvas must contain. The block is measured by utils/textMetrics.ts (advance width × total
+ * height, the layout Canvas paints with). Slack on every side covers ascenders, descenders and
+ * slanted overhangs (Bangers).
  */
-export const textCorners = (engine: TextEngine | null, shape: Shape): { x: number; y: number }[] => {
+export const textCorners = (shape: Shape): { x: number; y: number }[] => {
 	const fontSize = shape.fontSize || 40;
-	const layout = layoutText(shape, fontSize);
-	let width: number;
-	if (engine) {
-		engine.ctx.font = layout.font;
-		// @ts-ignore - letterSpacing is standard in modern browsers but TS might not know
-		engine.ctx.letterSpacing = layout.letterSpacing;
-		width = Math.max(...layout.lines.map(l => engine.ctx.measureText(l.text).width));
-	} else {
-		width = Math.max(...layout.lines.map(l => [...l.text].length)) * fontSize * 0.6;
-	}
+	const { block } = measureTextBlock(shape, fontSize);
 	const slack = fontSize * 0.3;
-	const x0 = (layout.align === 'center' ? -width / 2 : layout.align === 'right' ? -width : 0) - slack;
-	const x1 = x0 + width + 2 * slack;
-	const y0 = -layout.totalHeight / 2 - slack, y1 = layout.totalHeight / 2 + slack;
-	const rot = shape.rotation || 0;
-	const cos = Math.cos(rot), sin = Math.sin(rot);
-	const a = shape.points[0];
-	return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([lx, ly]) => ({ x: a.x + lx * cos - ly * sin, y: a.y + lx * sin + ly * cos }));
+	return rotatedCorners(
+		{ x0: block.x0 - slack, y0: block.y0 - slack, x1: block.x1 + slack, y1: block.y1 + slack },
+		shape.points[0],
+		shape.rotation || 0,
+	);
 };
 
 /** Box (SVG units) a live-text run can cover: ≤ 1 em per character wide, ascender to descender

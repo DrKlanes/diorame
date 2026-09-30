@@ -318,12 +318,13 @@ por glifo y cada glifo se aplana (tolerancia 0,1), porque muchas fuentes dibujan
 letras como B o D con contornos solapados que paper.js no resuelve bien en curva. El
 texto que no toca nada conserva sus curvas.
 
-### La caja del gizmo de Mover mide el texto con otra copia del layout
+### El texto se medía con copias divergentes del layout (gizmo, CINEMA, export)
 
-**Estado:** el gizmo se arregló en v3.17.53 y el picking de CINEMA en v3.17.54
+**Estado:** resuelto. El gizmo se arregló en v3.17.53, el picking de CINEMA en v3.17.54
 (`pickLayerAtPoint` usaba una estimación de 0,55 em por carácter: se quedaba hasta 117 px
-corto en Inknut y se pasaba hasta 89 px en Bangers). `svgText.textCorners` sigue con su
-copia hasta v3.17.55.
+corto en Inknut y se pasaba hasta 89 px en Bangers) y `svgText.textCorners` en v3.17.55
+(dimensionado del lienzo SVG; salida idéntica al decimal). Todo lo que mide texto pasa
+ya por `utils/textMetrics.ts`, salvo `runBounds`, que es una cota generosa a propósito.
 
 `transformUtils.ts` (`getLayerBoundingBox`) tenía su propia versión del layout de texto.
 El diagnóstico inicial fue «solo conoce tres fuentes y no aplica letterSpacing ni

@@ -18,7 +18,7 @@ type TFunction = (key: string, params?: TranslationParams) => string;
  * (before v3.17.52 a title at the edge of the scene was cut off by the SVG's own frame).
  * Exported for tools/svg-diff, which must frame the SVG exactly like this.
  */
-export const svgBounds = (shapes: Shape[], text: TextEngine | null) => {
+export const svgBounds = (shapes: Shape[]) => {
 	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 	const add = (p: { x: number; y: number }) => {
 		minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
@@ -27,7 +27,7 @@ export const svgBounds = (shapes: Shape[], text: TextEngine | null) => {
 	shapes.forEach(shape => {
 		shape.points.forEach(add);
 		if (shape.isEraser && shape.eraserPolygon) shape.eraserPolygon.forEach(add);
-		if (shape.type === 'text' && shape.text && shape.points.length > 0) textCorners(text, shape).forEach(add);
+		if (shape.type === 'text' && shape.text && shape.points.length > 0) textCorners(shape).forEach(add);
 	});
 	return { minX, minY, maxX, maxY };
 };
@@ -74,7 +74,7 @@ export const exportAsSVG = async (
 			console.warn('[svg] text engine unavailable, text stays live', e);
 		}
 
-		const { minX, minY, maxX, maxY } = svgBounds(visibleShapes, textEngine);
+		const { minX, minY, maxX, maxY } = svgBounds(visibleShapes);
 
 		const padding = 50;
 		const width = Math.ceil(maxX - minX + padding * 2);

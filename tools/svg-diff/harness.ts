@@ -145,7 +145,7 @@ export const captureSVG = async (shapes: Shape[]): Promise<string> => {
 
 // The exporter's own bounds (svgBounds, text blocks included): world + offset = SVG coordinate.
 export const svgOffset = async (shapes: Shape[]): Promise<{ ox: number; oy: number }> => {
-	const { minX, minY } = svgBounds(shapes, await prepareText(shapes));
+	const { minX, minY } = svgBounds(shapes);
 	return { ox: -minX + 50, oy: -minY + 50 };
 };
 
