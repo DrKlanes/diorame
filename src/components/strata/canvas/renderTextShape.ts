@@ -104,7 +104,10 @@ export const renderTextShape = (
 		else if (shape.font === 'dungeons') fontName = '"Inknut Antiqua", serif';
 
 		// Font size is in World Units (which setTransform maps to Screen Pixels)
-		layerCtx.font = `bold ${effectiveFontSize}px ${fontName}`;
+		// Bangers ships a single weight: 'bold' made each browser synthesize its own fake bold
+		// (Chrome ≠ Safari), so the same drawing looked different per device. Real 400 instead.
+		const weight = shape.font === 'comic' ? 'normal' : 'bold';
+		layerCtx.font = `${weight} ${effectiveFontSize}px ${fontName}`;
 
 		// Apply letter spacing
 		if (shape.font === 'dungeons') {

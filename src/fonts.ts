@@ -10,8 +10,9 @@
 //
 // Weights mirror exactly what was loaded before (no visual change):
 //   UI (tokens.ts):        Manrope 400/500/600/700 · Sora 400/600
-//   Canvas text fonts:     each used in bold via ctx.font in renderTextShape.ts —
-//                          400 + 700 self-hosted (Bangers is single-weight 400).
+//   Canvas text fonts:     used in bold via ctx.font in renderTextShape.ts —
+//                          400 + 700 self-hosted. Bangers is single-weight 400 and is
+//                          drawn at 400 (no synthetic bold, v3.17.49).
 
 // --- UI (design-system/tokens.ts) ---
 import '@fontsource/manrope/latin-400.css';
