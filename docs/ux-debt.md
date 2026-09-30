@@ -130,34 +130,38 @@ voz de Moisés, no una decisión técnica.
 
 ---
 
-## El pinch simétrico no dispara el zoom
+## El pinch simétrico no dispara el zoom — y si es rápido, DESHACE
 
-**Estado:** preexistente, sin arreglar. Medido en v3.17.38.
+**Estado:** preexistente, sin arreglar. Medido en v3.17.38; re-medido en v3.17.61 con un
+hallazgo peor (abajo). Arreglo propuesto, pendiente de validación en iPad.
 
-`handleTouchMove` decide que un gesto de dos dedos es un pinch mirando cuánto
-se ha desplazado el **centro** de los dos toques respecto a `startCenter`
-(`StrataCanvas.tsx`, rama de `e.touches.length === 2`: si la distancia del
-centro no supera 10px, `tapMoved` nunca se pone a `true` y `isPinching` nunca
-se enciende). La separación entre los dedos —que es lo que define un pinch—
-solo se consulta *después*, para decidir el factor de escala.
+`handleTouchMove` (`StrataCanvas.tsx`, rama `e.touches.length === 2`, ~l. 660-671) decide que
+un gesto de dos dedos se ha movido —y enciende `isPinching`— SOLO si el **centro** de los dos
+toques se desplaza más de 10 px desde `startCenter`. La separación entre los dedos, que es lo
+que define un pinch, solo se usa después para el factor de escala.
 
-Consecuencia: separar los dos dedos **a la vez y de forma simétrica**, que es
-el gesto de libro, deja el centro quieto y **no hace zoom**. Medido: dos
-toques a 100px separándose hasta 540px sin mover el centro →
-`isPinching: false`, `drawingZoom` sin cambiar. El mismo gesto hecho de forma
-asimétrica (que es como sale de la mano la mayoría de las veces) sí funciona:
-`isPinching: true`, zoom 1 → 3.
+Medido con toques sintéticos (v3.17.61):
 
-Esto no lo reportó nadie: apareció midiendo la no-regresión del pinch al
-cerrar la Fase 3 del arreglo del Move. Pero es un gesto que alguien puede
-estar intentando hoy y viendo que no responde, y el fallo es intermitente por
-naturaleza —depende de lo simétrica que salga la mano—, que es la peor forma
-de romperse.
+| Gesto | Resultado |
+|---|---|
+| Pinch simétrico lento (100 → 540 px en 700 ms, centro quieto) | nada: ni zoom ni undo |
+| **Pinch simétrico rápido (el mismo en 200 ms)** | **sin zoom y ejecuta UNDO** |
+| Pinch asimétrico (centro +30 px) | zoom 1 → 3 |
+| Toque de dos dedos (control) | UNDO, correcto |
 
-**Pendiente:** el umbral debería mirar el **cambio de distancia entre los
-dedos**, no (solo) el desplazamiento del centro. Ojo al hacerlo: ese mismo
-`tapMoved` es lo que distingue un tap de dos dedos (undo) de un arrastre, así
-que tocarlo afecta al gesto de undo. No es un cambio de una línea.
+Lo del UNDO: como `tapMoved` nunca se pone a `true`, `handleTouchEnd` (~l. 760-768) trata el
+pinch como un **toque de dos dedos** y, si ha durado menos de 300 ms, despacha `UNDO`. Un pinch
+rápido y simétrico borra la última acción del usuario sin que haya pedido deshacer nada, y es
+intermitente por naturaleza (depende de lo simétrica que salga la mano).
+
+**Arreglo propuesto (no implementado: es el gesto más usado en iPad):** en esa misma rama, que
+el gesto cuente como movido —y encienda `isPinching` si `startDist >= 5`— cuando el centro se
+mueva más de 10 px **o** la distancia entre los dedos cambie más de 10 px
+(`|dist − startDist| > 10`). Arregla ambos síntomas a la vez, porque es el mismo `tapMoved`. Lo
+que hay que validar en hardware: que un toque de dos dedos real (undo) no cambie la separación
+más de 10 px al apoyar y levantar —si lo hiciera, el undo por toque se perdería— y que el zoom
+no pegue un salto al engancharse (el factor ya incluye esos 10 px, igual que hoy en el camino
+asimétrico).
 
 ---
 
@@ -182,24 +186,39 @@ Move (v3.17.36-39) para no mezclar calibración con lo estructural.
 
 ---
 
-## `activePointerIdRef` se borra con el pointerup de cualquier dedo
+## `activePointerIdRef` se borra con el pointerup de cualquier dedo — y ese pointerup cierra el gesto ajeno
 
-**Estado:** documentado, sin arreglar. Ventana estrecha.
+**Estado:** documentado, sin arreglar. Re-medido en v3.17.61: el problema es más ancho que la
+captura huérfana. Arreglo propuesto, pendiente de validación con Apple Pencil.
 
-`handlePointerUp` pone `activePointerIdRef.current = null` como segunda
-instrucción, antes de cualquier guarda — también cuando el `pointerup` es de un
-puntero que `handlePointerDown` ignoró (un segundo dedo, que sale por el
-`!e.isPrimary`). Si el primer dedo tiene una captura viva y se levanta el
-segundo, se pierde el rastro de esa captura.
+`handlePointerUp` (`StrataCanvas.tsx`, ~l. 1350) no mira de qué puntero es el evento: libera su
+captura, pone `activePointerIdRef.current = null` y sigue — confirma el trazo, el transform del
+Move o el `MOVE_LAYER` del gesto en curso aunque ese `pointerup` sea de otro puntero. Y el canvas
+también lo usa como `onPointerLeave`.
 
-Consecuencia: si la app se va a segundo plano justo ahí, `resetGestureState` ya
-no puede liberar la captura huérfana, porque el `pid` que guardaba es `null`.
-El resto del reset (flags de gesto, transform, stroke) sí corre, así que el
-daño se limita a una captura de puntero colgada.
+Medido con eventos de puntero sintéticos (v3.17.61):
 
-**Pendiente:** o llevar la cuenta de los punteros vivos en vez de guardar solo
-el último, o no borrar el rastro cuando el `pointerup` es de un puntero que
-nunca se capturó. Lo segundo es más barato y cubre el caso real.
+- **S1** — un puntero primario dibuja; un segundo, no primario, baja y sube a mitad de trazo:
+  el ref queda en `null`, la captura del primero sigue viva (huérfana: `resetGestureState` ya no
+  puede soltarla) **y el trazo del primero se confirma a medias** (9 puntos; el resto del
+  movimiento se pierde).
+- **S2** — un Apple Pencil dibuja; un toque de palma (primer toque, así que `isPrimary: true`)
+  baja y sube: `handlePointerDown` lo acepta —la guarda del lápiz existe en `handleTouchStart`
+  (~l. 562) pero no en `pointerdown`—, sobrescribe `activePointerIdRef` con el id de la palma y
+  **el trazo del lápiz se pierde entero** (0 shapes al levantar el lápiz).
+
+Salvedad: eventos sintéticos. iPadOS puede suprimir la palma por su cuenta cuando se usa el
+Pencil; hay que confirmarlo en hardware antes de dimensionar S2.
+
+**Arreglo propuesto (no implementado: toca handlers de puntero y gesto):**
+1. `handlePointerUp`: si hay un puntero activo y `e.pointerId` no es él, soltar solo la captura
+   de ESE puntero (si la tuviera) y salir, sin tocar el ref ni el gesto. Cubre S1 y la captura
+   huérfana; `onPointerLeave` hereda la guarda.
+2. `handlePointerDown`: con un trazo de lápiz en curso (`isDrawingRef` y
+   `drawingPointerTypeRef === 'pen'`), ignorar los punteros `touch`, igual que ya hace
+   `handleTouchStart`. Cubre S2.
+Ambos cambian la decisión de un handler de puntero; la regla de CLAUDE.md pide decidirlo aparte y
+validarlo con Pencil y palma reales.
 
 ---
 
