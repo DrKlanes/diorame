@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Text check</title>
+	<style>
+		body { font: 14px/1.4 system-ui, sans-serif; margin: 16px; background: #fff; color: #111; }
+		h2 { font-size: 15px; margin: 20px 0 6px; }
+		table { border-collapse: collapse; margin: 6px 0 12px; }
+		th, td { border: 1px solid #ccc; padding: 3px 8px; text-align: left; }
+		tr.bad td { background: #ffe3e3; }
+		tr.ok td { background: #e8f7e8; }
+	</style>
+</head>
+<body>
+	<h1>Texto: caja del gizmo, picking y deformación contra el render real</h1>
+	<p>La verdad es siempre lo que pintan <code>renderTextShape</code> / <code>renderFrame</code>, nunca la matemática que se mide.
+		Cada sección lleva una AUTOCOMPROBACIÓN que debe fallar a propósito. Ver <code>README.md</code>.</p>
+	<p><button id="fix">Fijar referencia de huellas (sección 5)</button> <span id="status"></span></p>
+	<div id="out"></div>
+	<script type="module" src="./main.ts"></script>
+</body>
+</html>

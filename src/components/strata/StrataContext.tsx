@@ -332,7 +332,8 @@ function patchCurrentSnapshot(
 
 // --- Reducer ---
 
-function appReducer(state: AppState, action: Action): AppState {
+// Exported for tools/text-check (runs the real TRANSFORM_LAYER / FLIP_LAYER / LOAD_PROJECT outside React).
+export function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'TOGGLE_WELCOME_MODAL':
       return { ...state, isWelcomeModalOpen: !state.isWelcomeModalOpen };

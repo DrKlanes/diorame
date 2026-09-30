@@ -21,7 +21,12 @@ export const blackInk = (shapes: Shape[]): Shape[] => shapes.map(s => ({ ...s, c
 // Renders the shapes of layer z through the real pipeline: DRAW mode, light theme, no FX.
 // renderScale > 1 supersamples (same pipeline as the HQ PNG): size stays the physical raster,
 // the view covers size/renderScale world units. Needed to see 1-unit dots at all.
-export const renderReference = (shapes: Shape[], z: number, size: number, renderScale = 1): HTMLCanvasElement => {
+// `extra` (tools/text-check): state fields to override (render modes, gradient params, tool) and
+// an active Move transform, to render the live preview through the same pipeline.
+export const renderReference = (
+	shapes: Shape[], z: number, size: number, renderScale = 1,
+	extra: { state?: Partial<RenderContext['state']>; transformState?: RenderContext['transformState'] } = {},
+): HTMLCanvasElement => {
 	const own = shapes.filter(s => s.zIndex === z);
 	const canvas = document.createElement('canvas');
 	const ctx = canvas.getContext('2d', { alpha: false })!;
@@ -36,13 +41,14 @@ export const renderReference = (shapes: Shape[], z: number, size: number, render
 			isAnimationMode: false,
 			hiddenLayers: [],
 			currentLayerIndex: Math.round(Math.abs(z / BASE_DEPTH_STEP)),
+			...extra.state,
 		},
 		isDrawing: false,
 		currentPoints: [],
 		shapesByZ: new Map([[z, own]]),
 		waypoints: [],
 		sortedZs: [z],
-		transformState: {
+		transformState: extra.transformState ?? {
 			isActive: false,
 			mode: 'none',
 			startP: { x: 0, y: 0 },
