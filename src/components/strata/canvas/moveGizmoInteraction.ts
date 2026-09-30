@@ -34,6 +34,12 @@ const HIT_RADIUS = 40;
  * Hit-tests the pointer against the gizmo handles and returns the interaction
  * mode. Defaults to 'move' (drag the whole layer) when no handle is hit or no
  * handles are present.
+ *
+ * The NEAREST handle within the radius wins (v3.17.60). It used to be the first in
+ * check order, corners before sides: in a box under ~80 px tall (one line of text)
+ * the side handle sat within the radius of two corners and could never be grabbed.
+ * Handles never overlap in a normal-sized box, so nothing changes there; on an exact
+ * tie the old order still decides (rotate, corners, sides).
  */
 export const hitTestGizmo = (
 	pointerX: number,
@@ -42,18 +48,18 @@ export const hitTestGizmo = (
 ): TransformMode => {
 	let mode: TransformMode = 'move';
 	if (handles) {
-		const dist = (p: { x: number; y: number }) => Math.hypot(p.x - pointerX, p.y - pointerY);
-		if (dist(handles.rotate) < HIT_RADIUS) mode = 'rotate';
-		else if (dist(handles.tl) < HIT_RADIUS) mode = 'scale_tl';
-		else if (dist(handles.tr) < HIT_RADIUS) mode = 'scale_tr';
-		else if (dist(handles.br) < HIT_RADIUS) mode = 'scale_br';
-		else if (dist(handles.bl) < HIT_RADIUS) mode = 'scale_bl';
-		// Mid-side handles (squash & stretch). Checked AFTER corners so corners win on
-		// overlap in small boxes. Optional in the type, but drawGizmo always sets them.
-		else if (handles.mt && dist(handles.mt) < HIT_RADIUS) mode = 'scale_t';
-		else if (handles.mb && dist(handles.mb) < HIT_RADIUS) mode = 'scale_b';
-		else if (handles.ml && dist(handles.ml) < HIT_RADIUS) mode = 'scale_l';
-		else if (handles.mr && dist(handles.mr) < HIT_RADIUS) mode = 'scale_r';
+		const candidates: [TransformMode, { x: number; y: number } | undefined][] = [
+			['rotate', handles.rotate],
+			['scale_tl', handles.tl], ['scale_tr', handles.tr], ['scale_br', handles.br], ['scale_bl', handles.bl],
+			// Mid-side handles (squash & stretch). Optional in the type, but drawGizmo always sets them.
+			['scale_t', handles.mt], ['scale_b', handles.mb], ['scale_l', handles.ml], ['scale_r', handles.mr],
+		];
+		let best = HIT_RADIUS;
+		for (const [m, p] of candidates) {
+			if (!p) continue;
+			const d = Math.hypot(p.x - pointerX, p.y - pointerY);
+			if (d < best) { best = d; mode = m; }
+		}
 	}
 	return mode;
 };
