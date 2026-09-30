@@ -460,8 +460,9 @@ decisions that the code cannot express on its own.
 ### Dev Tools (`tools/`)
 
 Dev-only pages served by `npm run dev`, never bundled: `vite build` only takes `index.html`
-as input. Still typechecked by `npm run typecheck`, so they break loudly if the APIs they
-import change.
+as input. Typechecked by `npm run typecheck` (`tsconfig.json` includes `tools` since v3.17.51 —
+before that it only included `src`, and this claim was false), so they break loudly if the
+APIs they import change.
 
 | File | Lines | Purpose |
 |---|---|---|

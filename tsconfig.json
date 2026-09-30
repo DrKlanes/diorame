@@ -84,5 +84,5 @@
       "figma:asset/logo-symbol.png": ["./src/assets/logo-symbol.png"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "tools"]
 }
