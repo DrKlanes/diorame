@@ -12,6 +12,7 @@ import { drawGizmo } from './drawGizmo';
 import { drawPoiMarker } from './drawPoiMarker';
 import { createTransformPoint } from './transformPoint';
 import { drawSymmetryAxis } from './drawSymmetryAxis';
+import { drawCompositionGuide } from './drawCompositionGuide';
 import { quantizePixelArtCamera } from './quantizePixelArtCamera';
 import {
 	applyRisoV2,
@@ -183,7 +184,7 @@ export type RenderContext = {
 	renderZsOverride?: number[];
 	// If true, skip the live-stroke phase inside renderLayer.
 	skipLiveStroke?: boolean;
-	// If true, skip Fase 4 (drawGizmo + drawSymmetryAxis).
+	// If true, skip Fase 4 (drawGizmo + drawSymmetryAxis + drawCompositionGuide).
 	skipCinematicOverlays?: boolean;
 	// Render scale multiplier (HQ export). Default 1 = live behavior. When >1,
 	// the raster (canvas + every offscreen buffer + FX) is dimensioned to S·w × S·h
@@ -275,7 +276,7 @@ const ensureCanvas = (
  *   - Viewport: viewZoom, viewPan, camRot, POI, arc/orbit, distortion
  *   - Fase 2: renderZs.forEach → renderLayer per layer
  *   - Fase 3: post-processing (Riso, CA, Vignette, Grain, Grunge)
- *   - Fase 4: overlays (Gizmo + Symmetry Axis) — SKIPPED when rc.skipCinematicOverlays
+ *   - Fase 4: overlays (Gizmo + POI marker + Symmetry Axis + Composition Guide) — SKIPPED when rc.skipCinematicOverlays
  *   - Fase 5: cinematic tick + write-back to refs
  *
  * SIDE EFFECTS:
@@ -637,6 +638,15 @@ export function renderFrame(
 		// --- Symmetry Axis Guide ---
 		if (currentState.mode === 'drawing' && currentState.isSymmetryEnabled) {
 			drawSymmetryAxis(ctx, w, h, currentState.drawingPan?.x || 0);
+		}
+
+		// --- Composition Guide (DRAW only) ---
+		// LAST, so it blends over the gizmo like the DOM overlay it replaced. Hidden while
+		// an export is running (isExporting spans REQUEST_EXPORT → FINISH_EXPORT, and the
+		// MP4 recorder captures THIS live canvas). HQ PNG / GIF / PNG-sequence never get
+		// here: they set skipCinematicOverlays.
+		if (currentState.mode === 'drawing' && currentState.gridEnabled && !currentState.isUIHidden && !currentState.isExporting) {
+			drawCompositionGuide(ctx, w, h, currentState.drawingZoom || 1, currentState.drawingPan?.x || 0, currentState.drawingPan?.y || 0);
 		}
 	}
 

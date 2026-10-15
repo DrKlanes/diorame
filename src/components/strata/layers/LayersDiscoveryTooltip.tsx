@@ -40,8 +40,8 @@ export function LayersDiscoveryTooltip({ anchorRef, open, dark, onDismiss }: Pro
 			// de trazo cerraba el tooltip antes de que se pudiera leer — el mismo
 			// síntoma que el auto-cierre por trazo que ya se quitó, solo que por
 			// esta vía en vez de aquella. `data-drawing-canvas` marca el <canvas>
-			// real de StrataCanvas.tsx; el canvas de CompositionGuideOverlay que
-			// se pinta encima es pointer-events:none y nunca es target.
+			// real de StrataCanvas.tsx (la guía de composición se pinta dentro de él,
+			// desde v3.17.62, y ya no hay un segundo canvas encima).
 			const onDrawingCanvas = target instanceof Element && target.closest('[data-drawing-canvas]');
 			if (!inside && !onAnchor && !onDrawingCanvas) onDismiss('click_outside');
 		};

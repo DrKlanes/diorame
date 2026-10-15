@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { get, del } from 'idb-keyval';
 import { StrataProvider, useStrata } from './components/strata/StrataContext';
 import { StrataCanvas } from './components/strata/StrataCanvas';
-import { CompositionGuideOverlay } from './components/strata/viewport/CompositionGuideOverlay';
 import { ControlsV2 } from './components/strata/ControlsV2';
 import { useIsMobile } from './hooks/useIsMobile';
 import { useLoadExampleScene } from './hooks/useLoadExampleScene';
@@ -95,7 +94,6 @@ function AppContent() {
       `}} />
 
       <StrataCanvas />
-      <CompositionGuideOverlay />
       <ControlsV2 />
       <WelcomeModalV2
         open={state.isWelcomeModalOpen}
