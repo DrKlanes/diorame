@@ -396,6 +396,27 @@ paper.js, que cuenta doble los contornos solapados de un glifo (E de Cinzel: 2 0
 Sin cubrir: la misma clase de fallo en la `intersect` de drawInside (una forma interior que
 desapareciera). No se ha medido.
 
+### El MP4 de animación en DRAW graba el canvas vivo: ayudas de edición que entran en el vídeo
+
+`exportAsMP4` graba `canvas.captureStream()` del canvas VIVO (GIF, PNG-secuencia y PNG HQ
+re-renderizan con `skipCinematicOverlays` y no tienen el problema). Todo lo que el RAF pinta
+en ese canvas durante la grabación entra en el vídeo.
+
+**Resuelto:** gizmo del Move y eje de simetría (v3.17.63) y guía de composición (v3.17.62) se
+omiten con `!isExporting` (`REQUEST_EXPORT` → `FINISH_EXPORT`, que se despacha en
+`recorder.onstop`). Medido con el MediaRecorder real: antes, 1 001 trazos de gizmo y 91 del eje
+dentro de la grabación y el gizmo visible en 3 de 6 frames decodificados; después, 0 y 0.
+
+**Sin resolver, leído en código y SIN medir en vídeo:**
+- **Onion skin.** Se pinta en la composición de capas (`renderPipeline.ts`, bloque «Onion
+  skin», `!isCinematic && isAnimationMode && isOnionSkinEnabled`, «incluido durante la
+  reproducción») sin mirar `isExporting`. `animationExportRender.ts` lo apaga a propósito en
+  los exports por re-render («no ghost frames in export»), así que el MP4 grabado en vivo es el
+  único que lo conserva. Está en la composición de capas, zona protegida: decidir aparte.
+- **Marcador del POI** (CINEMA). `drawPoiMarker` pinta en el canvas vivo mientras dura su
+  desvanecido (~3 s tras fijar el punto); el MP4 estático y el PNG "device" de CINEMA salen del
+  canvas vivo. Solo afecta si se exporta dentro de esos ~3 s.
+
 ### Rendimiento en iPad: sin probar
 
 En escritorio (build de producción), la escena de ejemplo (2 369 formas, 798

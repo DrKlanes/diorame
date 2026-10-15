@@ -599,6 +599,10 @@ export function renderFrame(
 	// --- 4. Overlays (skipped during animation playback) ---
 	if (!rc.skipCinematicOverlays) {
 		// --- Gizmo Drawing ---
+		// While an export runs (isExporting: REQUEST_EXPORT → FINISH_EXPORT) the MP4 recorder
+		// captures THIS live canvas, so the gizmo must not be painted into it. Passing
+		// isLayerSelected=false is drawGizmo's own "compute, don't draw" path: the handles are
+		// still returned (hit-testing stays coherent) and the flip buttons are hidden.
 		rc.transformHandlesRef.current = drawGizmo(
 			ctx, w, h,
 			currentState.mode,
@@ -610,7 +614,7 @@ export function renderFrame(
 			currentCamera.z,
 			rc.flipButtonsEl,
 			BASE_DEPTH_STEP,
-			currentState.isLayerSelected,
+			currentState.isLayerSelected && !currentState.isExporting,
 		);
 
 		// --- POI framing marker (CINEMA) ---
@@ -636,7 +640,8 @@ export function renderFrame(
 		}
 
 		// --- Symmetry Axis Guide ---
-		if (currentState.mode === 'drawing' && currentState.isSymmetryEnabled) {
+		// Off while exporting, same reason as the gizmo above.
+		if (currentState.mode === 'drawing' && currentState.isSymmetryEnabled && !currentState.isExporting) {
 			drawSymmetryAxis(ctx, w, h, currentState.drawingPan?.x || 0);
 		}
 
