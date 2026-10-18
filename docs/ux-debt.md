@@ -396,7 +396,7 @@ paper.js, que cuenta doble los contornos solapados de un glifo (E de Cinzel: 2 0
 Sin cubrir: la misma clase de fallo en la `intersect` de drawInside (una forma interior que
 desapareciera). No se ha medido.
 
-### El MP4 de animación en DRAW graba el canvas vivo: ayudas de edición que entran en el vídeo
+### El MP4 de animación en DRAW graba el canvas vivo — resuelto salvo el marcador del POI
 
 `exportAsMP4` graba `canvas.captureStream()` del canvas VIVO (GIF, PNG-secuencia y PNG HQ
 re-renderizan con `skipCinematicOverlays` y no tienen el problema). Todo lo que el RAF pinta
@@ -412,10 +412,52 @@ despacha en `recorder.onstop`). Medido con el MediaRecorder real y frames decodi
   re-render (GIF, PNG-secuencia, HQ) salen bit a bit idénticos y el onion skin vuelve en
   pantalla tras `FINISH_EXPORT`.
 
-**Sin resolver:**
-- **Marcador del POI** (CINEMA). `drawPoiMarker` pinta en el canvas vivo mientras dura su
-  desvanecido (~3 s tras fijar el punto); el MP4 estático y el PNG "device" de CINEMA salen del
-  canvas vivo. Solo afecta si se exporta dentro de esos ~3 s.
+**Alcance del PNG:** en DRAW la UI no ofrece PNG. `ExportPill.tsx` solo llama a
+`handleCapture` (el único que despacha `REQUEST_EXPORT 'png'` y llama a `setNextPNGQuality`)
+dentro del bloque `{isCinematic && (`; el bloque `{!isCinematic && (` ofrece SVG/SVGZ y, con
+animación, vídeo, GIF y PNG-secuencia, y `useExportFlow` (atajos incluidos) solo despacha
+`svg`/`svgz`. El reducer no mira el modo: en DRAW solo se llega a `exportAsPNG` despachando
+`REQUEST_EXPORT 'png'` por script. Por eso la guía de composición (solo DRAW) no puede salir en
+un PNG «device» desde la UI, aunque por script sí (se midió así, con la puerta de v3.17.62 ya
+puesta: la puerta no protege ese camino por la razón de abajo).
+
+### El marcador del POI entra en el PNG «device» y en el MP4 estático de CINEMA
+
+**Estado:** documentado y medido, sin arreglar. Decisión de no hacerlo aún: el arreglo completo
+toca el efecto de exportación de `StrataCanvas.tsx`.
+
+`drawPoiMarker` (anillo morado `#9a0ff9` con halo blanco) se pinta en el canvas vivo cuando
+`isCinematic && poi && poiMarkerSetAtRef > 0`, 1,8 s a opacidad plena y 1,2 s de desvanecido tras
+fijar el punto. El PNG «device» y el MP4 estático de CINEMA salen de ese canvas.
+
+Medido en exportaciones reales (v3.17.63, escena vacía para que lo único morado sea el
+marcador; píxeles con azul − verde > 60):
+- **PNG «device» a los 300 ms de fijar el POI: 168 px morados.** Control a +4 s: 0.
+- **MP4 estático de 6 s, frames decodificados:** 169, 172, 173, 168 px morados en t = 0,05 /
+  0,4 / 0,9 / 1,4 s; 123 en 1,9 s (desvaneciendo); 0 desde 2,4 s. Durante la grabación se
+  dibujaron 162 trazos del marcador, todos con `isExporting = true`.
+
+**Por qué la puerta `!isExporting` sola no basta.** `isExporting` ya es `true` mientras se
+pinta (los 162 trazos), pero el PNG «device» captura de forma SÍNCRONA el bitmap ya pintado, en
+el mismo efecto que recibe `REQUEST_EXPORT` (`src = canvas` → `toBlob`), antes de que se pinte
+un solo frame con `isExporting = true`. El MP4 estático arranca `recorder.start()` en ese mismo
+efecto, sin pausa (el de animación sí espera 80 ms), así que su primer frame también puede ser
+el anterior. Es el mismo mecanismo con el que la guía salió en un PNG «device» pese a la puerta
+de v3.17.62.
+
+**Arreglo general identificado (no hecho):**
+1. Puerta `!isExporting` en `drawPoiMarker` (`renderPipeline.ts`, el `if (isCinematic && poi &&
+   …)`), una línea.
+2. Esperar ~2 frames con `isExporting = true` antes de capturar, en `exportAsPNG` «device» y en
+   `exportAsMP4` estático, para que lo capturado sea un frame ya pintado con la puerta puesta.
+   Va en el efecto de exportación de `StrataCanvas.tsx` (~10 líneas): no es el RAF ni
+   `buildRenderContext`, pero cambia el momento en que empieza una exportación.
+La alternativa, que el PNG «device» re-renderice como el HQ, cambia un comportamiento legado a
+propósito: decisión de producto.
+
+**Por qué no es urgente:** la ventana es de ≤ 3 s tras fijar el punto, y llegar a exportar desde
+ahí exige varios toques. El mismo arreglo cubriría la guía en el PNG «device» por script, que
+la UI no permite en DRAW.
 
 ### Rendimiento en iPad: sin probar
 
