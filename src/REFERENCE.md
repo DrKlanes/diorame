@@ -778,6 +778,7 @@ Enabled by `isOnionSkinEnabled`. Implemented in `renderPipeline.ts` as an additi
   - Current layer is EMPTY → last frame below the index (prev), first frame above (next). Key use case: drawing a new blank frame while seeing adjacent frames as reference.
 - Opacities: `ONION_ALPHA_PREV = 0.40`, `ONION_ALPHA_NEXT = 0.22` (set via `offCtx.globalAlpha`; reset to 1.0 after each ghost). Real color, no tint.
 - Does NOT auto-disable during playback (auto-hiding while the toggle reads "on" would appear broken).
+- **Never in an exported video (v3.17.65):** the pre-pass is gated on `!isExporting` (`REQUEST_EXPORT` → `FINISH_EXPORT`), because `exportAsMP4` records `canvas.captureStream()` of the LIVE canvas. The re-render exports (GIF, PNG-sequence, HQ PNG) already force `isOnionSkinEnabled: false` in `animationExportRender.ts`. On screen the ghosts disappear while recording and come back on the next frame after `FINISH_EXPORT`.
 - `renderLayerBody.ts` and `composeLayer.ts`: unmodified.
 
 ### Animation Player UI

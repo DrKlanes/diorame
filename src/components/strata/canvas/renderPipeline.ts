@@ -536,8 +536,11 @@ export function renderFrame(
 	// Active in DRAW + animation mode + onion enabled (including during playback).
 	// In DRAW mode fxEnabled=false, so composeLayer reduces to a plain drawImage
 	// that respects the offCtx.globalAlpha we set here — no side effects.
+	// Off while exporting (isExporting: REQUEST_EXPORT → FINISH_EXPORT): the MP4 recorder
+	// captures THIS live canvas, and the re-render exports (GIF / PNG-sequence / HQ) already
+	// force isOnionSkinEnabled=false. Ghosts are an editing aid; no exported video carries them.
 	if (!isCinematic && currentState.isAnimationMode
-			&& currentState.isOnionSkinEnabled) {
+			&& currentState.isOnionSkinEnabled && !currentState.isExporting) {
 		const ghosts = getOnionGhostZs(currentState);
 		if (ghosts.prev !== null) {
 			offCtx.globalAlpha = ONION_ALPHA_PREV;
