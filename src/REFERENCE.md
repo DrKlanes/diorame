@@ -617,10 +617,18 @@ clase en el codebase.
 typecheck` es la única comprobación de tipos que existe en este proyecto.
 
 **A partir de v3.16.10, `.github/workflows/deploy.yml` corre `npm run typecheck`
-entre `npm install` y `npm run build`, sin `continue-on-error`.** Si `tsc` falla,
+entre `npm ci` y `npm run build`, sin `continue-on-error`.** Si `tsc` falla,
 el job entero falla — ni `Build` ni `Deploy` se ejecutan, y no se sube nada a
 GitHub Pages. Es fallo duro a propósito: la única red automática antes de que un
 cambio llegue a producción.
+
+**Entorno del workflow (v3.17.64):** `runs-on: ubuntu-24.04` fijado (no `ubuntu-latest`,
+que migra a 26.04 desde el 19-oct-2026: el deploy de producción no cambia de sistema
+sin decisión), Node 24 (el mismo que el desarrollo local; Node 20 está en fin de vida),
+`npm ci` (determinista con `package-lock.json`; falla si el lock no cuadra con
+`package.json`), acciones en majors que declaran Node 24 (`actions/checkout@v7`,
+`actions/setup-node@v7`, `peaceiris/actions-gh-pages@v4`) y `workflow_dispatch` para
+relanzarlo a mano. Pages sigue en modo «rama gh-pages»: el `CNAME` viaja en el build.
 
 **Para diagnosticar un fallo de CI**: correr `npm run typecheck` en local
 reproduce EXACTAMENTE lo que hace CI — mismo comando, mismo `tsconfig.json`,
