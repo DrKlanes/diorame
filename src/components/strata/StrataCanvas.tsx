@@ -487,7 +487,7 @@ export const StrataCanvas = () => {
           exportAsPNG(canvas, pngOptions, state.projectName, onFinish, t);
       }
       if (state.exportRequest === 'svg' || state.exportRequest === 'svgz') {
-          exportAsSVG(state.exportRequest, state.shapes, state.projectName, onFinish, t);
+          exportAsSVG(state.exportRequest, state.shapes, state.projectName, onFinish, t, state.mode);
       }
       if (state.exportRequest === 'mp4') {
           // In animation mode, record the live flipbook for the chosen loops.
@@ -502,7 +502,7 @@ export const StrataCanvas = () => {
                   loops: state.animationExportLoops,
               }
               : undefined;
-          exportAsMP4(canvas, state.projectName, recordedChunksRef, onFinish, t, animationOptions);
+          exportAsMP4(canvas, state.projectName, recordedChunksRef, onFinish, t, state.mode, animationOptions);
       }
       if (state.exportRequest === 'png-sequence') {
           // Snapshot all inputs so the frame-by-frame renderer is decoupled from the RAF.
@@ -522,7 +522,7 @@ export const StrataCanvas = () => {
               getActiveZ,
           };
           renderAnimationFrames(exportOptions).then(frames =>
-              exportAsPNGSequence(frames, state.projectName, onFinish, t)
+              exportAsPNGSequence(frames, state.projectName, onFinish, t, state.mode)
           );
       }
       if (state.exportRequest === 'gif') {
@@ -548,6 +548,7 @@ export const StrataCanvas = () => {
                   scale: state.gifExportScale,
                   projectName: state.projectName,
                   playbackMode: state.animationPlaybackMode,
+                  mode: state.mode,
               }, onFinish, t)
           );
       }

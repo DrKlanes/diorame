@@ -5,6 +5,7 @@ import { downloadBlob } from '../../../utils/downloadBlob';
 import { analytics } from '../../../analytics/analytics';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
+import type { AppMode } from '../../../types/strataTypes';
 
 type TFunction = (key: string, params?: TranslationParams) => string;
 
@@ -13,6 +14,7 @@ export type GIFExportOptions = {
 	scale: number;       // 1 | 0.5 | 0.25 — output resolution multiplier
 	projectName: string;
 	playbackMode?: 'loop' | 'pingpong';
+	mode: AppMode;       // analytics only: the mode the app was in when exporting
 };
 
 /**
@@ -125,7 +127,7 @@ export async function exportAsGIF(
 			duration: 2000,
 		});
 		playSound('success');
-		analytics.exported('gif');
+		analytics.exported('gif', options.mode);
 	} catch (e) {
 		console.error('Export GIF failed', e);
 		toast.error(t('toast.export.gif.errorTitle'), {

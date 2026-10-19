@@ -7,6 +7,7 @@ import type { TranslationParams } from '../../../i18n';
 import { renderFrame, type RenderContext } from './renderPipeline';
 import type { AnimationExportRenderOptions } from './animationExportRender';
 import type { GizmoHandles } from './drawGizmo';
+import type { AppMode, ExportBackground } from '../../../types/strataTypes';
 
 // Max physical dimension for any exported PNG (prevents monster canvases).
 const MAX_DIMENSION = 8192;
@@ -17,6 +18,14 @@ let _nextPNGQuality: 'device' | 'hq' = 'device';
 
 export function setNextPNGQuality(quality: 'device' | 'hq'): void {
 	_nextPNGQuality = quality;
+}
+
+// DRAW only (CINEMA ignores it). Set from the UI before REQUEST_EXPORT, like the quality;
+// reset to 'paper' after each export.
+let _nextPNGBackground: ExportBackground = 'paper';
+
+export function setNextPNGBackground(background: ExportBackground): void {
+	_nextPNGBackground = background;
 }
 
 /**
@@ -39,10 +48,10 @@ type TFunction = (key: string, params?: TranslationParams) => string;
  * grain would sample the logical-size snapshot). renderScale=S makes the pipeline
  * dimension the raster to S·w × S·h while keeping the framing identical.
  */
-const renderSnapshotAtScale = (
+const renderSnapshot = (
 	options: AnimationExportRenderOptions,
 	scale: number,
-): HTMLCanvasElement => {
+): { canvas: HTMLCanvasElement; layers: HTMLCanvasElement } => {
 	const exportCanvas = document.createElement('canvas');
 	const exportCtx = exportCanvas.getContext('2d', { alpha: false })!;
 
@@ -116,14 +125,68 @@ const renderSnapshotAtScale = (
 	};
 
 	renderFrame(exportCtx, rc);
-	return exportCanvas;
+	// `offscreen` is where renderFrame composes the layers (transparent, no background) before
+	// transferring them onto the paper canvas; DRAW PNG backgrounds are built from it.
+	return { canvas: exportCanvas, layers: offscreen };
+};
+
+const renderSnapshotAtScale = (
+	options: AnimationExportRenderOptions,
+	scale: number,
+): HTMLCanvasElement => renderSnapshot(options, scale).canvas;
+
+// 2× clamped so the physical size never exceeds MAX_DIMENSION.
+const hqScale = (options: AnimationExportRenderOptions): number => {
+	const maxByDim = Math.min(
+		MAX_DIMENSION / Math.max(1, options.w),
+		MAX_DIMENSION / Math.max(1, options.h),
+	);
+	return Math.min(2, maxByDim);
+};
+
+/**
+ * DRAW PNG: the drawing exactly as the DRAW canvas shows it now (same zoom, pan, theme and
+ * hidden layers — they travel in options.state), re-rendered at `scale`× through the pipeline.
+ * Always a re-render, never the live bitmap: the live canvas carries the gizmo, the grid, the
+ * guides. Overlays are off (skipCinematicOverlays) and so is the onion skin, an editing aid.
+ *
+ * In DRAW nothing is painted under the layers except drawBackground (the FX that would —
+ * vignette, grain, riso, grunge — need CINEMA), and the layers are composed on a transparent
+ * buffer that renderFrame then transfers onto the background with 'multiply' (light) or
+ * 'source-over' (dark). So the three backgrounds come from that same buffer:
+ *   paper:       the pipeline's own canvas, as on screen.
+ *   solid:       pure white (light) / black (dark), layers transferred with the same op.
+ *   transparent: the buffer itself — real alpha, nothing under the ink.
+ */
+const renderDrawSnapshot = (
+	options: AnimationExportRenderOptions,
+	scale: number,
+	background: ExportBackground,
+): HTMLCanvasElement => {
+	const { canvas, layers } = renderSnapshot({ ...options, state: { ...options.state, isOnionSkinEnabled: false } }, scale);
+	if (background === 'paper') return canvas;
+	if (background === 'transparent') return layers;
+	const dark = options.state.isDarkMode;
+	const out = document.createElement('canvas');
+	out.width = layers.width;
+	out.height = layers.height;
+	const ctx = out.getContext('2d')!;
+	ctx.fillStyle = dark ? '#000000' : '#ffffff';
+	ctx.fillRect(0, 0, out.width, out.height);
+	// Same transfer renderFrame does onto its background (phase 3).
+	ctx.globalCompositeOperation = dark ? 'source-over' : 'multiply';
+	ctx.drawImage(layers, 0, 0);
+	return out;
 };
 
 /**
  * Exports the current canvas frame as a PNG file.
  *
+ * CINEMA —
  * device: upscales the live canvas to device pixels (legacy behavior, unchanged).
  * hq:     re-renders the whole scene at 2× through the pipeline (true detail).
+ * DRAW —  always a re-render (see renderDrawSnapshot): device = ×1, hq = ×2, same framing,
+ *         with the background chosen via setNextPNGBackground.
  */
 export const exportAsPNG = (
 	canvas: HTMLCanvasElement,
@@ -134,9 +197,14 @@ export const exportAsPNG = (
 ): void => {
 	const quality = _nextPNGQuality;
 	_nextPNGQuality = 'device';
+	const background = _nextPNGBackground;
+	_nextPNGBackground = 'paper';
+	const isDraw = options.state.mode === 'drawing';
 	try {
 		let src: HTMLCanvasElement;
-		if (quality === 'hq') {
+		if (isDraw) {
+			src = renderDrawSnapshot(options, quality === 'hq' ? hqScale(options) : 1, background);
+		} else if (quality === 'hq') {
 			// True 2× re-render. Clamp so the physical size never exceeds MAX_DIMENSION.
 			let scale = 2;
 			const maxByDim = Math.min(
@@ -182,7 +250,7 @@ export const exportAsPNG = (
 				duration: 2000,
 			});
 			playSound('success');
-			analytics.exported(quality === 'hq' ? 'png_hq' : 'png');
+			analytics.exported(quality === 'hq' ? 'png_hq' : 'png', options.state.mode, isDraw ? background : undefined);
 			onFinish();
 		}, 'image/png');
 	} catch (e) {
@@ -247,6 +315,7 @@ export const exportAsMP4 = (
 	recordedChunksRef: { current: Blob[] },
 	onFinish: () => void,
 	t: TFunction,
+	mode: AppMode,
 	animation?: AnimationRecordOptions,
 ): void => {
 	try {
@@ -280,7 +349,7 @@ export const exportAsMP4 = (
 				duration: 2000,
 			});
 			playSound('success');
-			analytics.exported(animation ? 'mp4_animation' : 'mp4');
+			analytics.exported(animation ? 'mp4_animation' : 'mp4', mode);
 			onFinish();
 		};
 

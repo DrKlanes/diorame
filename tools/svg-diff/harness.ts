@@ -140,7 +140,7 @@ export const captureSVG = async (shapes: Shape[]): Promise<string> => {
 	URL.createObjectURL = (b: Blob | MediaSource) => { blob = b as Blob; return 'blob:svg-diff'; };
 	HTMLAnchorElement.prototype.click = function () {};
 	try {
-		await exportAsSVG('svg', shapes, 'svg-diff', () => {}, key => key);
+		await exportAsSVG('svg', shapes, 'svg-diff', () => {}, key => key, 'drawing');
 	} finally {
 		URL.createObjectURL = origCreate;
 		HTMLAnchorElement.prototype.click = origClick;

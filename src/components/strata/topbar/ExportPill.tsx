@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { DiPill, DiActionButton } from '../../../design-system';
+import { DiPill, DiActionButton, DiSegmentControl } from '../../../design-system';
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { useExportFlow } from '../../../hooks/useExportFlow';
 import { DiSelectorPopover, DiSelectorOption } from '../popovers';
 import { ComplexSceneModalV2 } from '../modals/ComplexSceneModalV2';
-import { setNextPNGQuality } from '../canvas/exportHandlers';
+import { setNextPNGQuality, setNextPNGBackground } from '../canvas/exportHandlers';
+import type { ExportBackground } from '../../../types/strataTypes';
 import { useTranslation } from '../../../i18n';
 
 // ── Group header — non-interactive section label inside the popover ────────────
@@ -99,6 +100,18 @@ function ExportSeparator({ dark }: { dark: boolean }) {
 	);
 }
 
+// ── DRAW PNG background: remembered between exports (per-user convenience) ─────
+
+const PNG_BG_KEY = 'diorame-png-background';
+
+const readPngBackground = (): ExportBackground => {
+	try {
+		const v = window.localStorage.getItem(PNG_BG_KEY);
+		if (v === 'paper' || v === 'solid' || v === 'transparent') return v;
+	} catch (_) { /* private mode / storage blocked: just the default */ }
+	return 'paper';
+};
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface ExportPillProps { dark: boolean; }
@@ -118,6 +131,7 @@ export function ExportPill({ dark }: ExportPillProps) {
 	const [open, setOpen] = useState(false);
 	const [sub, setSub] = useState<'capture' | 'video' | 'gif' | null>(null);
 	const exportBtnRef = useRef<HTMLDivElement>(null);
+	const [pngBackground, setPngBackground] = useState<ExportBackground>(readPngBackground);
 
 	const isCinematic = state.mode === 'cinematic';
 	const isAnim = state.isAnimationMode;
@@ -126,9 +140,15 @@ export function ExportPill({ dark }: ExportPillProps) {
 	const toggleSub = (key: 'capture' | 'video' | 'gif') =>
 		setSub(s => s === key ? null : key);
 
-	// Snapshot (CINEMA): dispatch quality then REQUEST_EXPORT png
+	const handleBackground = (bg: ExportBackground) => {
+		setPngBackground(bg);
+		try { window.localStorage.setItem(PNG_BG_KEY, bg); } catch (_) { /* not remembered this time */ }
+	};
+
+	// Snapshot: dispatch quality (+ DRAW background) then REQUEST_EXPORT png
 	const handleCapture = (quality: 'device' | 'hq') => {
 		setNextPNGQuality(quality);
+		if (!isCinematic) setNextPNGBackground(pngBackground);
 		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
 		close();
 	};
@@ -205,6 +225,36 @@ export function ExportPill({ dark }: ExportPillProps) {
 							title={t('topbar.file.svgCompressed')}
 							onSelect={() => handleSvg('svgz')}
 						/>
+
+						<ExportSeparator dark={dark} />
+						<ExportGroupHeader label={t('topbar.export.group.image')} dark={dark} />
+
+						<ExportGroupRow
+							title={t('topbar.export.capture')}
+							dark={dark}
+							expanded={sub === 'capture'}
+							onToggle={() => toggleSub('capture')}
+						/>
+						{sub === 'capture' && (
+							<>
+								<ExportGroupHeader label={t('topbar.snapshot.background')} dark={dark} />
+								<div style={{ padding: '2px 10px 6px' }}>
+									<DiSegmentControl<ExportBackground>
+										options={[
+											{ value: 'paper', label: t('topbar.snapshot.bg.paper') },
+											{ value: 'solid', label: t('topbar.snapshot.bg.solid') },
+											{ value: 'transparent', label: t('topbar.snapshot.bg.transparent') },
+										]}
+										value={pngBackground}
+										onChange={handleBackground}
+										dark={dark}
+										small
+									/>
+								</div>
+								<DiSelectorOption title={t('topbar.snapshot.deviceSize')} onSelect={() => handleCapture('device')} />
+								<DiSelectorOption title={t('topbar.snapshot.highQuality')} onSelect={() => handleCapture('hq')} />
+							</>
+						)}
 
 						{isAnim && (
 							<>

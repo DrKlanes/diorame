@@ -5,6 +5,7 @@ import { downloadBlob } from '../../../utils/downloadBlob';
 import { analytics } from '../../../analytics/analytics';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
+import type { AppMode } from '../../../types/strataTypes';
 
 type TFunction = (key: string, params?: TranslationParams) => string;
 
@@ -49,6 +50,7 @@ export async function exportAsPNGSequence(
 	projectName: string,
 	onFinish: () => void,
 	t: TFunction,
+	mode: AppMode,
 ): Promise<void> {
 	try {
 		if (frames.length === 0) {
@@ -86,7 +88,7 @@ export async function exportAsPNGSequence(
 			duration: 2000,
 		});
 		playSound('success');
-		analytics.exported('png_sequence');
+		analytics.exported('png_sequence', mode);
 	} catch (e) {
 		console.error('Export PNG sequence failed', e);
 		toast.error(t('toast.export.pngSequence.errorTitle'), {

@@ -48,8 +48,8 @@ si alguien llega al export de animación.
 
 | `format` | Qué es | Punto |
 |---|---|---|
-| `png` | Captura a tamaño de pantalla (upscale a píxeles de dispositivo) | `canvas/exportHandlers.ts:181` |
-| `png_hq` | **Súper resolución ×2**: re-render real de la escena por el pipeline | `canvas/exportHandlers.ts:181` |
+| `png` | Captura a tamaño de pantalla (CINEMA: upscale a píxeles de dispositivo; DRAW desde v3.17.66: re-render del encuadre visible). Distinguir por `mode` | `canvas/exportHandlers.ts:181` |
+| `png_hq` | **Súper resolución ×2**: re-render real de la escena por el pipeline (CINEMA y, desde v3.17.66, DRAW; ver `mode`) | `canvas/exportHandlers.ts:181` |
 | `svg` | Vector sin comprimir | `canvas/exportHandlers.ts:476` |
 | `svgz` | Vector comprimido | `canvas/exportHandlers.ts:476` |
 | `mp4` | Vídeo grabado desde modo CINEMA | `canvas/exportHandlers.ts:572` |
@@ -69,6 +69,20 @@ retroactivamente.** Por eso la granularidad se decide antes de desplegar.
 `onFinish()` se llama también cuando la exportación falla (`toBlob` devuelve
 `null`, `catch`, escena vacía). Engancharlo ahí contaría todos los fallos como
 exportaciones.
+
+### Los parámetros `mode` y `background` (v3.17.66)
+
+Desde que DRAW también exporta PNG, `png` y `png_hq` salen de los dos modos y por
+sí solos no dicen de cuál. `artwork_exported` lleva por tanto:
+
+- `mode`: `'drawing'` | `'cinematic'`. Lo llevan **todos** los formatos (los cinco
+  handlers lo reciben como parámetro; no se deduce de dónde se llame).
+- `background`: `'paper'` | `'solid'` | `'transparent'`. **Solo** el PNG de DRAW; en
+  el resto de exports el parámetro no viaja.
+
+Los eventos anteriores a v3.17.66 no tienen `mode`, pero se deduce del formato:
+hasta entonces `svg`/`svgz` solo salían de DRAW y `png`, `png_hq`, `mp4`,
+`mp4_animation`, `gif` y `png_sequence` solo de CINEMA.
 
 ### El parámetro `layers`
 

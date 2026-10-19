@@ -27,6 +27,8 @@ export interface Shape {
 }
 
 export type AppMode = 'drawing' | 'cinematic';
+// Background of a DRAW PNG export: the paper as seen on screen, a plain white/black, or none (alpha).
+export type ExportBackground = 'paper' | 'solid' | 'transparent';
 export type ToolType = 'blob' | 'eraser' | 'text' | 'move' | 'brush';
 export type CinematicType = 'forward' | 'spiral' | 'yoyo' | 'pulse' | 'twist' | 'arc' | 'crane' | 'truck' | 'orbit' | 'zoom' | 'storytelling';
 

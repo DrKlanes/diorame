@@ -66,8 +66,19 @@ export type DioramEventMap = {
 
   filter_applied: { filter: string };
 
-  /** Se llevó algo a casa. EVENTO CLAVE: mide valor entregado. */
-  artwork_exported: { format: string; strokes: number; layers: number };
+  /**
+   * Se llevó algo a casa. EVENTO CLAVE: mide valor entregado.
+   * `mode`: el modo en que estaba la app al exportar. Sin él, un PNG de DRAW y uno de
+   * CINEMA (ambos `png` / `png_hq`) son indistinguibles en GA4.
+   * `background`: solo en el PNG de DRAW; el resto de exports no lo llevan.
+   */
+  artwork_exported: {
+    format: string;
+    strokes: number;
+    layers: number;
+    mode: 'drawing' | 'cinematic';
+    background?: 'paper' | 'solid' | 'transparent';
+  };
 
   /** Guardado de proyecto .dior completado CON ÉXITO. */
   project_saved: Record<string, never>;
@@ -350,12 +361,18 @@ export const analytics = {
   },
 
   /** Llamar cuando la exportación termina CON ÉXITO, no al pulsar el botón. */
-  exported(format: string): void {
+  exported(
+    format: string,
+    mode: DioramEventMap['artwork_exported']['mode'],
+    background?: DioramEventMap['artwork_exported']['background'],
+  ): void {
     state.exported = true;
     track('artwork_exported', {
       format,
       strokes: state.strokes,
       layers: state.layers,
+      mode,
+      background,
     });
   },
 

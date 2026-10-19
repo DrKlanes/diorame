@@ -2,7 +2,7 @@ import { toast } from 'sonner@2.0.3';
 import { playSound } from '../../../utils/soundManager';
 import { downloadBlob } from '../../../utils/downloadBlob';
 import { analytics } from '../../../analytics/analytics';
-import { Shape } from '../../../types/strataTypes';
+import { Shape, type AppMode } from '../../../types/strataTypes';
 import { BASE_DEPTH_STEP } from '../StrataContext';
 import { loadPaper, buildLayerGeometry } from './svgGeometry';
 import { prepareText, textCorners, type TextEngine, type TextRun } from './svgText';
@@ -57,6 +57,7 @@ export const exportAsSVG = async (
 	projectName: string,
 	onFinish: () => void,
 	t: TFunction,
+	mode: AppMode,
 ): Promise<void> => {
 	try {
 		// All shapes including erasers (subtracted as geometry in svgGeometry.ts)
@@ -196,7 +197,7 @@ export const exportAsSVG = async (
 			});
 		}
 		playSound('success');
-		analytics.exported(exportRequest);
+		analytics.exported(exportRequest, mode);
 	} catch (e) {
 		console.error("Export SVG failed", e);
 		toast.error(t('toast.export.vector.errorTitle'), {
