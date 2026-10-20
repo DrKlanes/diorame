@@ -466,3 +466,48 @@ drawInside) exporta en ~1,5 s aislada y ~5 s dentro de la app con el lienzo
 pintando; una escena con texto exporta en ~0,1 s (fontkit + fuentes en frío). En
 iPad no se ha medido; será más lento. El export cede el hilo cada ~30 ms, así que
 no debería congelar la UI, pero puede tardar.
+
+---
+
+## Super Riso (v3.18.0): deuda abierta
+
+**Estado:** documentado, sin programar. Todo verificado en el código o medido; nada supuesto
+salvo lo marcado [POR CONFIRMAR]. Diseño y cifras: `docs/super-riso.md`.
+
+### El grano usa `Math.random` por frame: las exportaciones con grano no salen idénticas
+
+`applyGrain` (previo a Super Riso) regenera el ruido con `Math.random` en cada frame y al
+redimensionar. Super Riso en sí es determinista (semilla = tick de reimpresión o índice de
+frame de la exportación; dos GIF con el grano apagado salen idénticos al byte), pero con el
+grano encendido dos exportaciones del mismo proyecto difieren y la identidad byte a byte no es
+comprobable. Para probar determinismo: apagar el grano. Arreglarlo exigiría sembrar el grano
+desde `exportFrame` (toca el timing del render: GO).
+
+### Grupos plegables en el FXPanel
+
+El plan (§6.1) proponía cabeceras de grupo plegables en TODO el FXPanel (Textura, Lente,
+Atmósfera y Super Riso), con el estado en `localStorage`. No se hizo: solo se pliega el panel
+entero a píldora, y la subsección «Ajustes de impresión» de Super Riso. Con los 12 FX activos el
+panel ya hacía scroll a 1920×1080; con el cuarto grupo desplegado hace más. Pendiente.
+
+### `applySuperRiso.ts` está a 398 de 400 líneas
+
+Cualquier adición exige partirlo antes (regla dorada 2). El corte natural: el camino síncrono y
+el de retención/refinado a módulos propios; las rutas de depuración (`srpipe`, `srhold`,
+`srbitmap`, `sroff`) son las candidatas a salir primero si algún día se retiran.
+
+### El refinado en reposo puede mantener un frame viejo
+
+En el nivel *preview*, con la imagen quieta ≥ 300 ms se refina un frame a calidad completa y se
+retiene hasta que algo se mueva. «Algo se mueve» se decide con el movimiento de cámara y con la
+identidad de las formas / el estado: si la imagen cambia SIN cambiar el estado ni la cámara,
+el frame retenido no se invalida y se sigue viendo el viejo. No se ha visto en uso; no se ha
+forzado el caso. [POR CONFIRMAR en iPad.]
+
+### El aviso de vista previa y «Calidad completa siempre» no se han validado en iPad real
+
+La lógica (nivel medido, `isSuperRisoPreviewDevice`, aviso, chip) se verificó en escritorio
+forzando el nivel con `?srdebug=1&srlevel=preview`. En un iPad real no se ha visto: ni que el
+nivel se detecte como *preview* en el umbral esperado (12 ms), ni cómo se ve el aviso a 196 px
+de ancho, ni cómo se siente `fullQuality` (calidad completa a 12 fps). Solo se puede probar
+tras el push.

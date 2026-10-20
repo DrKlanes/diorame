@@ -367,7 +367,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `renderLayerBody.ts` | ~435 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)`. Live Move preview mirrors `TRANSFORM_LAYER`: points get the per-axis bake, text shapes get `bakeTextTransform` (text included in squash & stretch since v3.17.56) |
 | `renderLiveStroke.ts` | ~150 | In-progress live stroke rendering |
 | `renderParticles.ts` | ~100 | Floating cinematic particles rendering |
-| `renderPipeline.ts` | ~730 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12) |
+| `renderPipeline.ts` | ~730 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12). Super Riso touches it in two places only: the lazy `getSuperRiso()` + `beginSuperRisoFrame()` call BEFORE phase 1, and `applySuperRiso()` in the phase-3 `applyRisoV2` slot (see §14) |
 | `renderRegularFillShape.ts` | ~95 | Regular fill shapes (blob / tapered brush) |
 | `renderTextShape.ts` | ~155 | Text shape rendering: affine projection of the text block, optional gradient, `fillText` per line. Font/weight/spacing/line positions come from `utils/textLayout.ts` (shared with the SVG export). The text's axes come from `textMatrix(shape)` (`utils/textTransform.ts`: rotation, stretch, mirror); a live Move preview arrives already baked into the shape by `renderLayerBody` (same bake as the reducer, so preview = result) |
 | `renderUniformLineShape.ts` | ~160 | Uniform-mode brush stroke rendering |
@@ -381,7 +381,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `pngSequenceHandler.ts` | ~100 | `exportAsPNGSequence`: `ImageData[]` → PNG bytes → ZIP via `fflate`; files `{project}_frame_01.png`, ZIP `{project}_frames.zip`. Takes the app `mode` only to tag the analytics event (v3.17.66; same for `gifHandler`, `svgExport`, `exportAsMP4`) |
 | `gifHandler.ts` | ~140 | `exportAsGIF`: `ImageData[]` → animated GIF via `gifenc`; per-frame palette quantization, scale presets 1/0.5/0.25, infinite native loop |
 | `superRiso/flag.ts` | ~40 | Lazy loader (v3.18.0). Only Super Riso file `renderPipeline` imports statically (plus the type-only `SuperRisoInput`). `getSuperRiso()` starts the dynamic import (chunk + textures + WebGL context) the FIRST time the pipeline asks, and the pipeline only asks when `postProcessingEnabled.superRiso` is true in any mode: after the user switches it on, or after a `.dior` / autosave that has it on loads. Until the chunk arrives it returns null and frames go out unchanged. `isWebGL2Available()`: throwaway probe, run only when the user tries to switch it on |
-| `superRiso/applySuperRiso.ts` | ~400 | Live integration (v3.17.74). Phase 3 (`applySuperRiso(offCtx, w, h, input)`, `applyRisoV2` slot), only when `postProcessingEnabled.superRiso`: flatten → upload → engine → opaque result into offCtx; the transfer then uses `source-over`. Each live frame runs in a `Mode` (`frame.ts`) from the automatic level (`quality.ts`): **detect** (first frames at a size: full level, measured), **full** (desktop), **preview** (res .75 + preview shaders, pipelined: `beginSuperRisoFrame`, called BEFORE phase 1, uploads the previous frame's flatten and runs the engine; shown one frame late) with **refine** (image still ≥300 ms: one frame at full level and res 1, held until something moves) and **fullQuality** (full level held between reprint ticks, 12 fps without reprint). Seed = reprint tick (`frame.seedTickFor`). Exports delegate to `exportEngine.ts`. Under `srdebug` with manual knobs, the C1–C2a paths (`srpipe=1\|2`, `srhold`, bitmap/offscreen bridges). Overlay, "Medir", per-frame stats and `window.__superRiso` only with `?srdebug=1`. Everything in try/catch; context loss/restore handled inside |
+| `superRiso/applySuperRiso.ts` | ~398 (limit 400: any addition must split it first) | Live integration (v3.17.74). Phase 3 (`applySuperRiso(offCtx, w, h, input)`, `applyRisoV2` slot), only when `postProcessingEnabled.superRiso`: flatten → upload → engine → opaque result into offCtx; the transfer then uses `source-over`. Each live frame runs in a `Mode` (`frame.ts`) from the automatic level (`quality.ts`): **detect** (first frames at a size: full level, measured), **full** (desktop), **preview** (res .75 + preview shaders, pipelined: `beginSuperRisoFrame`, called BEFORE phase 1, uploads the previous frame's flatten and runs the engine; shown one frame late) with **refine** (image still ≥300 ms: one frame at full level and res 1, held until something moves) and **fullQuality** (full level held between reprint ticks, 12 fps without reprint). Seed = reprint tick (`frame.seedTickFor`). Exports delegate to `exportEngine.ts`. Under `srdebug` with manual knobs, the C1–C2a paths (`srpipe=1\|2`, `srhold`, bitmap/offscreen bridges). Overlay, "Medir", per-frame stats and `window.__superRiso` only with `?srdebug=1`. Everything in try/catch; context loss/restore handled inside |
 | `superRiso/engine.ts` | ~285 | WebGL2 engine ported from the lab (`createEngine`, DOM canvas or `OffscreenCanvas`): 13 passes + LUT 33³ only when inks/paper change. `render(params, { lossless, preview, toTexture })` picks lab or `shadersFast.ts` variants per pass and reports them in `lastVariants`; `toTexture` + `present()` serve `srpipe=2`. `finish()` (1×1 readback: quality detection without GPU timer), `destroy()` (export instances). Fiber / inclusion canvases generated once per session and shared by every instance. Every pass is named for the per-pass profiler; `setSource` times `texImage2D` and `generateMipmap` apart; GPU timer query when available |
 | `superRiso/shadersCommon.ts` · `shadersSeparation.ts` · `shadersPrint.ts` | ~55 · ~110 · ~115 | GLSL copied byte for byte from the lab (generated, verified identical) |
 | `superRiso/inks.ts` | ~100 | Ink lists (riso-colors, MIT; `DIORAME_RISO`, `CMYK_RISO`), colour maths (`oklab`, `dP`, `nearestFrom`) and the lab's `pickInks` (CPU k-means over a frame — no longer used live: the inks come from `sceneInks.ts`) |
@@ -443,6 +443,15 @@ Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"
 | `downloadBlob.ts` | ~25 | `downloadBlob(blob, filename)` — Blob download via hidden appended anchor + deferred cleanup/revoke (iPadOS WebKit drops detached-anchor clicks and sync-revoked URLs); shared by PNG/SVG/MP4/GIF/ZIP export sinks |
 | `soundManager.ts` | ~140 | UI sound playback manager: click, success, brush stroke (pool of 6), mode switch via HTMLAudioElement |
 | `brushThicknessCurve.ts` | ~30 | `sliderPositionToThickness`/`thicknessToSliderPosition` (v3.17.41) — exponent-1.5 curve converting the thickness slider's 0-100 physical position to/from real world-px thickness, and back. Confined to `ToolOptionsPanel.tsx`: only the slider's `value`/dispatch cross this boundary, nothing downstream (reducer, shapes, .dior) ever sees a position |
+
+### Design system (`src/design-system/`)
+
+Primitives are documented in CLAUDE.md («Design System»); only the ones with non-obvious contracts are listed here.
+
+| File | Lines | Purpose |
+|---|---|---|
+| `DiChip.tsx` | ~76 | Selectable chip (v3.18.0): optional label, optional colour `swatch` dot (label-less swatch chips = Super Riso paper picker), optional `tooltip` (`EnhancedTooltip`, suppressed on touch), `aria-pressed`. `onMouseDown` `preventDefault` like `DiActionButton` (no focus retention). Used by `fx/SuperRisoBlock.tsx` (styles, papers, `fullQuality`) |
+| `DiSegmentControl.tsx` | ~115 | Segmented control. Options are `T` or `{ value, label, tooltip? }` — `tooltip` (v3.18.0) wraps that segment in `EnhancedTooltip` (Super Riso inks: short label, full name on hover) |
 
 ### Constants (`src/constants/`)
 
@@ -538,7 +547,7 @@ APIs they import change.
 `accumulatedTimeRef`, `accumulatedHandheldTimeRef`, `lastTimeRef`, `wiggleFrameRef`, `shapePatternRef` — migrated from `let` in useEffect closure to component-level `useRef` in v3.0.0.
 
 **`renderFrame` phase sequence:**
-throttle → quantize cam → FL/focus → buffers → background → viewport → layer loop → post-processing → overlays → cinematic tick
+throttle → quantize cam → FL/focus → buffers → [Super Riso `beginSuperRisoFrame`, only when on] → background → viewport → layer loop → post-processing (Super Riso in the `applyRisoV2` slot) → overlays → cinematic tick
 
 ### CINEMA Framing (POI) — Invariants
 
@@ -871,6 +880,36 @@ All animation exports share `renderAnimationFrames`. Export `useEffect` branches
 
 ---
 
+## 14. Super Riso
+
+Final state as of v3.18.0 (public). Design rationale and the measured numbers live in `docs/super-riso.md`; known debt in `docs/ux-debt.md`.
+
+**What it is.** A CINEMA FX that turns every composed frame into a scanned-riso print in real time: ink separation, per-ink halftone (grain or dots), registration drift, ink film, paper fibres and inclusions, optional animated reprint. A WebGL2 post-process, the ONE authorised exception to «Canvas 2D only» (CLAUDE.md, FX filter 5). Coexists with the old Riso FX but is **mutually exclusive** with it (`TOGGLE_FX` switches the other off).
+
+**State and actions** (`StrataContext`, `types/strataTypes.ts`, `constants/superRiso.ts`):
+- `postProcessingEnabled.superRiso` (boolean, off by default — the master snapshot uses `Object.keys`, so only booleans fit there) and `postProcessing.superRiso: SuperRisoSettings` = `{ style, inkSet 'own'|'cmyk'|'dpal', maxInks 1–8, paper 'white'|'natural'|'recycled'|'cream', screen 'grain'|'dots', screenSize, imperfection, resolution (0–1), reprintFps 0|4|6|8|12, fullQuality }`.
+- `SET_SUPER_RISO` (partial patch, re-sanitised), `APPLY_SUPER_RISO_STYLE` (`'clean'|'zine'|'lofi'|'cmyk'`: fixes the print controls, keeps `reprintFps` and `fullQuality`), `TOGGLE_FX 'superRiso'`.
+- Saved in `.dior` and autosave. `.dior` has no allow-list for `postProcessing`, so `LOAD_PROJECT` merges over the defaults and `sanitizeSuperRiso` clamps every field and checks every enum: an old, partial or hand-edited file cannot put the engine in an impossible state.
+
+**Lazy loading.** `superRiso/flag.ts` is the only static import from the pipeline. The engine (dynamic-import chunk), its 4 textures (`/textures/superRiso/*.png`, runtime `CacheFirst`, excluded from the precache) and the WebGL context are loaded the FIRST time `postProcessingEnabled.superRiso` is true in any mode — switching it on, or loading a `.dior` / autosave that has it on. Never before: a session that never uses it makes zero requests and creates no GL context. Until the chunk arrives `getSuperRiso()` returns null and frames go out unchanged. No WebGL2: `FXPanel.toggleFx` probes `isWebGL2Available()` when the user switches it on and shows a toast instead. Any failure at runtime (textures, exception, context loss) disables or skips Super Riso WITHOUT leaving `offCtx` half-written.
+
+**Where it sits in the frame.** (1) `beginSuperRisoFrame()` is called by `renderFrame` BEFORE phase 1 (see below). (2) `applySuperRiso(offCtx, w, h, input)` runs in phase 3, in the `applyRisoV2` slot, before chromatic aberration, vignette, grain and grunge. It «prints what you see»: it flattens the canvas BASE colour (`drawBackground.backgroundBaseColor`, no paper texture — Super Riso brings its own) with `offCtx` on top, using the same operator as the transfer (multiply in light, source-over in dark); `srcPaper` is the background colour in light mode and **white in dark mode** (the dark background must be ink, not paper). The opaque result replaces `offCtx` and the transfer to `ctx` uses `source-over` while Super Riso is on. Inks come from the shapes' fill colours (`sceneInks.ts`, cached per scene) — never a per-frame k-means, which would make inks flicker with the camera. Physical scale is in mm of a virtual 240 mm sheet, so an HQ ×2 export is the same print at more resolution.
+
+**Quality levels** (`quality.ts`, `frame.ts`; measured, never guessed from device type):
+- **detect** — the first frames at a canvas size run at full level: 5 warm-up + 30 measured. Cost = engine GPU timer where it exists (desktop), else the wait from upload to a 1×1 readback (Safari/iPad). Median > 12 ms → *preview*, else *full*. Re-measured only when the size changes.
+- **full** — the lab's engine + lossless variants (`FS_BLUR1`, `FS_SPREAD_LL`, `FS_SEP0_LL`, verified 0 px against the lab on a frozen frame). Desktop in motion, and EVERY export, always.
+- **preview** — live only, on devices measured slow: res .75 + lossy preview shaders (SEP0 3 iterations, SPREAD/SCAN 3×3, SCREEN 2×2), **pipelined (pipe 1)**. With the image still ≥ 300 ms (`STILL_MS`), one frame is **refined** at full level and res 1 and held until something moves.
+- **`fullQuality`** — on a preview device forces the full level held between reprint ticks (12 fps without reprint): full quality, image advancing in steps.
+- `superRiso/deviceLevel.ts` exports `isSuperRisoPreviewDevice()` / `subscribeSuperRisoPreviewDevice()` (static-importable, no WebGL): `SuperRisoBlock` reads it with `useSyncExternalStore` to show the notice and the `fullQuality` chip only on preview devices.
+
+**`beginSuperRisoFrame` and pipe 1 (the hook).** WebKit makes a canvas→WebGL upload wait until the 2D work pending in the same frame has finished (19–24 ms, almost fixed, measured on iPad). `renderFrame` therefore calls `beginSuperRisoFrame(w, h, input)` BEFORE phase 1 — when no 2D of the frame is pending: it uploads the flatten left by phase 3 of the PREVIOUS frame and runs the engine; phase 3 then flattens the current `offCtx` for the next frame and shows the result, one frame late. With no valid pending result (first frame, size, theme or parameter change) that frame goes the synchronous way, so no frame is ever drawn at a stale size. **Protected:** the position of this call and its one-frame contract are part of the render-pipeline core (CLAUDE.md). Pipe 2 (two frames late) exists under `srdebug` only.
+
+**`RenderContext.exportFrame`** — `{ index, count, fps }`, set by the GIF / PNG-sequence renderers (`animationExportRender.ts`). Super Riso derives the reprint seed from it (`floor(index · reprintFps / fps)`) and the export engine's lifetime: created at frame 0 of an export, destroyed after the last. Live reprint seed = pure tick of `reprintFps` (0 = fixed). The same field fixed the frozen wiggle in exports (`wiggleFrame = floor(i · 4 / fps)`). **Protected** like the other `RenderContext` overrides.
+
+**Exports** (PNG HQ, GIF, PNG-sequence): their own engine instance (`exportEngine.ts`), always synchronous, always full level, res 1, on a separate flatten canvas, detected by `skipCinematicOverlays`. The live view keeps its own level and recovers on its own. MP4 records the live canvas, so it carries the live level and is not deterministic.
+
+**Debugging — only with `?srdebug=1`.** Without it every URL knob is ignored and `cfg` is `DEFAULT_CFG`. With it: the overlay (fps, ms p50/p95, per-stage CPU, level · mode · path), the **Medir** button (automatic measurement sequence A–G + per-pass profile P, plain-text report), `window.__superRiso`, and the `runtimeConfig.ts` knobs: `srpdb`, `srres`, `srmip`, `srbypass`, `srdarkpaper`, `srsim`, `sroff`, `srbitmap`, `srpipe=1|2`, `srhold`, `srlossless=0`, `srpreview` / `srprevmask`, `srlevel=preview|full`. Any of `srres` / `srpipe` / `srhold` / `srpreview` / `srprevmask` switches the automatic levels off. `?superriso=1` no longer exists. Measurement pitfalls: CLAUDE.md, «Lecciones de medición».
+
 ## Appendix A: Technical Constants
 
 ### Key Configuration Values
@@ -898,7 +937,7 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - **Pixel Art**: Pixelation effect (size 2-12, depth 2-16 colors, dither 0-1)
 - **Grunge**: Overlay texture (subtle, medium, intense)
 - **Wiggle**: Hand-drawn line wobble (light, medium, heavy)
-- **Super Riso** (v3.18.0, public; panel in FXPanel, group «Super Riso»): WebGL2 scanned-riso post-process, **loaded on demand the first time `postProcessingEnabled.superRiso` is true** (switched on, or a `.dior` / autosave that has it on). Off by default. State `postProcessingEnabled.superRiso` + `postProcessing.superRiso` (`style`, `inkSet` own/cmyk/dpal, `maxInks`, `paper`, `screen`, `screenSize`, `imperfection`, `resolution`, `reprintFps` 0/4/6/8/12, `fullQuality`), saved in `.dior` and autosave, sanitised on load; exclusive with Riso. Inks from the shapes' fill colours (cached per scene). Quality: full level (lab + lossless) on desktop and in EVERY export; devices measured as slow preview in motion (res .75 + preview shaders) and refine to full when still; `fullQuality` forces the full level held at the reprint rate. Exports on their own engine instance, deterministic (GIF / PNG-sequence seed from the frame index). Until it is switched on the chunk, the textures (`/textures/superRiso/`, runtime `CacheFirst`, not precached) and the WebGL context are never loaded. No WebGL2: switching it on shows a toast and does nothing. Debug only with `?srdebug=1`: overlay + **Medir**, `window.__superRiso`, and the knobs of `runtimeConfig.ts` (§10). Exceptional WebGL exception: CLAUDE.md, FX filter 5.
+- **Super Riso** (v3.18.0, public; group «Super Riso» in the FX panel): WebGL2 scanned-riso post-process, loaded on demand the first time it is on, exclusive with Riso. Full description: §14.
 
 ---
 
@@ -924,7 +963,9 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.14.1)
+## Appendix C: Changelog Highlights (1.7.3 → 3.18.0)
+
+> Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
 
 ### 3.18.0 — Super Riso L2: panel en FXPanel, i18n y lanzamiento
 
@@ -937,9 +978,9 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - **Verificado en escritorio:** cada control mueve la imagen por encima del ruido de fondo (distancia media de color a 16×12 ≥ 1,08 frente a 0,48 de ruido); los 4 estilos; exclusión con Riso en ambos sentidos; guardar y cargar `.dior` (la carga trae el chunk y las 4 texturas, antes 0); claro y oscuro; aviso y chip de calidad completa con `?srdebug=1&srlevel=preview`; `tsc` y build limpios.
 - **Files**: `src/components/strata/fx/SuperRisoBlock.tsx` (nuevo), `fx/FXPanel.tsx`, `src/design-system/DiChip.tsx` (nuevo), `DiSegmentControl.tsx`, `index.ts`, `icons.ts`, `canvas/superRiso/flag.ts`, `canvas/renderPipeline.ts`, `src/constants/superRiso.ts`, `StrataContext.tsx`, `src/i18n/dictionaries/{en,es}.ts`, `src/constants/version.ts`, `package.json`.
 
-### 3.17.74 — Super Riso L1: motor real, estado, niveles de calidad, reimpresión y exportaciones (solo con el flag)
+### 3.17.74 — Super Riso L1: motor real, estado, niveles de calidad, reimpresión y exportaciones (entonces tras el flag)
 
-**feat(fx, experimental)** — Super Riso pasa de spike a motor de producción, todavía oculto tras `?superriso=1` (L2: panel, i18n y lanzamiento).
+**feat(fx)** — Super Riso pasa del prototipo (C1) a motor de producción, todavía oculto tras el flag de URL (retirado en 3.18.0: panel, i18n y lanzamiento).
 - **Estado y persistencia:** `postProcessingEnabled.superRiso` + objeto `postProcessing.superRiso` (fuente única de defaults, estilos y saneado en `constants/superRiso.ts`), `SET_SUPER_RISO` / `APPLY_SUPER_RISO_STYLE`, exclusión con Riso, merge saneado en `LOAD_PROJECT` (los `.dior` antiguos abren con los defaults) y los cambios de FX marcan `isDirty` (se autoguardan).
 - **Motor:** parámetros desde el estado (`fromPanel`); tintas desde los colores de relleno de las formas (`sceneInks.ts`), cacheadas por escena; srcPaper desde `drawBackground.backgroundBaseColor` (blanco en oscuro). **SEP0 sin pérdida** (`FS_SEP0_LL`): 0 px frente al lab en frame congelado, −7,5 % de GPU en SEP0 en escritorio.
 - **Niveles:** medidos al activar, por tamaño de lienzo (`quality.ts`). Escritorio 1080p: 3,1 ms → completo. Descartado el readback como métrica en Chrome: medía 11 ms en 1080p para 2,9 ms de motor, porque espera también el 2D del frame, que el vivo nunca espera. Vista previa en movimiento, refinado en reposo (300 ms) y `fullQuality`. `deviceLevel.ts` publica el booleano para el aviso de L2.
@@ -950,9 +991,9 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - Workbox: caché en tiempo de ejecución `CacheFirst` para `/textures/superRiso/`, fuera del precache.
 - Depuración (overlay, Medir, `window.__superRiso`, knobs `sr*`) solo con `?srdebug=1`.
 
-### 3.17.73 — Super Riso C2a: perfilado por pasada, nivel sin pérdida, vista previa y canalización de 2 frames (solo con el flag)
+### 3.17.73 — Super Riso C2a: perfilado por pasada, nivel sin pérdida, vista previa y canalización de 2 frames (entonces tras el flag)
 
-**perf(fx, experimental)** — iPad (3.17.72): la canalización quitó la espera de la subida; ahora la vuelta espera al motor (22/28/38 ms a .5/.75/1). El objetivo es res .75 a ≤33 ms de frame, lo que exige bajar la GPU del motor de ~28 a ~15 ms. Regla de Moisés (decisión 5): el nivel completo solo admite optimizaciones SIN PÉRDIDA y se usa en escritorio y en todas las exportaciones; la vista previa con pérdida es solo para el vivo en GPUs lentas.
+**perf(fx)** — iPad (3.17.72): la canalización quitó la espera de la subida; ahora la vuelta espera al motor (22/28/38 ms a .5/.75/1). El objetivo es res .75 a ≤33 ms de frame, lo que exige bajar la GPU del motor de ~28 a ~15 ms. Regla de Moisés (decisión 5): el nivel completo solo admite optimizaciones SIN PÉRDIDA y se usa en escritorio y en todas las exportaciones; la vista previa con pérdida es solo para el vivo en GPUs lentas.
 - **Perfilado por pasada** (`passProfiler.ts`, fila P de "Medir"): sincronización forzada tras cada pasada, que sirve para ordenarlas pero infla el total, y temporizador de GPU por pasada en escritorio.
   - Escritorio a .75 (RTX 5070 Ti, temporizador): SEP0 ~0,9 ms, SPREAD ~0,5, SCAN ~0,4 (aunque fluctúa entre ejecuciones en ANGLE), SCREEN ~0,13; el resto, <0,03.
 - **`srlossless=1`:** BLUR de PREP con un canal y salida temprana en SPREAD para tintas vacías. Idéntico al laboratorio (0 px sobre frame congelado a .75 y 1, dos cámaras y oscuro; control = 0 px). En escritorio, SPREAD −59 % y GPU del render −11 % a −34 % según la ejecución.
@@ -964,9 +1005,9 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
   - **Corregido:** heredaban `srres`/`srsim` del vivo. Ahora usan res 1, subida completa y mipmap, como el laboratorio.
 - **Hallazgo, no arreglado:** el primer frame tras un cambio de tintas (cambio de tema) puede diferir ligeramente del siguiente (media ~1 nivel, máx. 30–40, cantidad variable entre ejecuciones), también en síncrono y con los shaders del laboratorio. La entrada del motor es idéntica y forzar el recálculo del LUT con las mismas tintas da 0 px. Hipótesis: SEP0 lee parte del LUT anterior en el frame en que este cambia. Ticket para C2b.
 
-### 3.17.72 — Super Riso C1c: subida canalizada y retención a 12 fps (solo con el flag)
+### 3.17.72 — Super Riso C1c: subida canalizada y retención a 12 fps (entonces tras el flag)
 
-**perf(fx, experimental)** — Medido en iPad (3.17.71): todo el coste de Super Riso está en `texImage2D`, 19–24 ms casi fijos incluso subiendo 622×427. Es una sincronización: WebKit espera a que termine el dibujo 2D pendiente del frame antes de entregar el canvas a WebGL. Esta versión prueba a esquivarla, todo tras `?superriso=1`; sin flag no cambia nada.
+**perf(fx)** — Medido en iPad (3.17.71): todo el coste de Super Riso está en `texImage2D`, 19–24 ms casi fijos incluso subiendo 622×427. Es una sincronización: WebKit espera a que termine el dibujo 2D pendiente del frame antes de entregar el canvas a WebGL. Esta versión prueba a esquivarla, todo tras el flag de URL de entonces (retirado en 3.18.0); sin flag no cambia nada.
 - **`srpipe=1`, subida canalizada.** `renderPipeline` llama a `beginSuperRisoFrame()` antes de la fase 1; es el único cambio en el pipeline y solo ocurre con el flag. Ahí se sube el aplanado del frame anterior y corre el motor, cuando aún no hay 2D de este frame pendiente. La fase 3 aplana el frame actual para el siguiente y muestra el resultado con 1 frame de retraso.
   - Primer frame, cambio de tamaño, de tema o de parámetros: ese frame va por síncrono, nunca con un resultado viejo. Lo elegí así para no tener frames sin efecto al activar.
   - Las exportaciones van siempre por síncrono, sobre su propio canvas de aplanado. Se detectan por `skipCinematicOverlays`, sin tocar `RenderContext`.
@@ -978,9 +1019,9 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
   - Al cambiar de tamaño: el frame del cambio va síncrono y el siguiente es idéntico al síncrono. La única diferencia es el grano, que se regenera con `Math.random` al redimensionar; pasa igual sin pipe y sin Super Riso, así que es previo.
   - PNG HQ y GIF con pipe activo pasan por la ruta síncrona y el vivo sigue en pipe. Las exportaciones no son deterministas entre sí ni sin pipe ni sin Super Riso (comportamiento previo), así que la identidad byte a byte no es comprobable.
 
-### 3.17.71 — Super Riso C1b: desglose del puente 2D↔WebGL y caminos alternativos (solo con el flag)
+### 3.17.71 — Super Riso C1b: desglose del puente 2D↔WebGL y caminos alternativos (entonces tras el flag)
 
-**perf(fx, experimental)** — Medido en iPad (3.17.69): la CPU de Super Riso es de ~25 ms fijos, independientes de la resolución de simulación, y en Chrome de escritorio es de 0,1 ms. El cuello de botella es el puente 2D↔WebGL, no el motor. Esta versión mide cada etapa por separado y prueba caminos alternativos, todo tras `?superriso=1`; sin el flag no cambia nada.
+**perf(fx)** — Medido en iPad (3.17.69): la CPU de Super Riso es de ~25 ms fijos, independientes de la resolución de simulación, y en Chrome de escritorio es de 0,1 ms. El cuello de botella es el puente 2D↔WebGL, no el motor. Esta versión mide cada etapa por separado y prueba caminos alternativos, todo tras el flag de URL de entonces (retirado en 3.18.0); sin el flag no cambia nada.
 - **Desglose por etapa** (CPU p50 por fila del informe de "Medir"): aplanado, subida (`texImage2D`), `generateMipmap`, render del motor y vuelta (`drawImage` a offCtx), más la espera de `createImageBitmap` aparte. En WebKit las esperas síncronas caen en la etapa que las provoca.
 - **Caminos nuevos** (`bridge.ts`, knobs en la URL):
   - `srsim=1`: aplanado y subida al tamaño de la simulación.
@@ -1002,13 +1043,13 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - `FXPanel` y `LayersPanel`: sus `maxHeight: calc(100vh - …)` pasan a `calc(var(--app-h, 100vh) - …)`, para no excederse de la altura visible.
 - Verificado en Chrome (build de producción) a 1366×1024, 1024×1366, 1180×820 y 820×1180, en DRAW y CINEMA, con standalone emulado y sin él: el root mide `innerHeight`, sin scroll, paleta y barra inferior a 12 px del borde y paneles dentro del viewport. **No verificable sin iPad real:** la diferencia `100vh`/`100dvh` con barras de Safari, el comportamiento de `dvh` al mostrar u ocultar las barras, y que la PWA standalone siga igual.
 
-### 3.17.69 — Super Riso: modo de medición automático (solo con el flag)
+### 3.17.69 — Super Riso: modo de medición automático (entonces tras el flag)
 
-**feat(fx, experimental)** — El overlay de `?superriso=1` gana un botón **Medir** (táctil, ≥44 px) que ejecuta sin recargar 5 configuraciones (bypass · defecto · `preserveDrawingBuffer:false` · +res 0.75 · +res 0.5; 2 s de calentamiento descartados + 8 s medidos cada una), restaura la configuración previa y entrega un texto plano con datos del dispositivo (UA, DPR, tamaño del canvas y de simulación, GPU, `MAX_TEXTURE_SIZE`, versión, tema, preset) y una tabla (fps, ms de frame p50/p95, CPU de Super Riso, GPU si hay temporizador). Botón **Copiar** con *fallback* a texto seleccionable. Cambiar `preserveDrawingBuffer` recrea el contexto WebGL sobre un canvas nuevo. Único cambio fuera de `canvas/superRiso/`: `renderPipeline` pasa el preset y la velocidad de cámara a la llamada (para avisar si no se está en CINEMA o la cámara no se mueve). Sin flag, nada cambia.
+**feat(fx)** — El overlay del flag de URL (hoy `?srdebug=1`) gana un botón **Medir** (táctil, ≥44 px) que ejecuta sin recargar 5 configuraciones (bypass · defecto · `preserveDrawingBuffer:false` · +res 0.75 · +res 0.5; 2 s de calentamiento descartados + 8 s medidos cada una), restaura la configuración previa y entrega un texto plano con datos del dispositivo (UA, DPR, tamaño del canvas y de simulación, GPU, `MAX_TEXTURE_SIZE`, versión, tema, preset) y una tabla (fps, ms de frame p50/p95, CPU de Super Riso, GPU si hay temporizador). Botón **Copiar** con *fallback* a texto seleccionable. Cambiar `preserveDrawingBuffer` recrea el contexto WebGL sobre un canvas nuevo. Único cambio fuera de `canvas/superRiso/`: `renderPipeline` pasa el preset y la velocidad de cámara a la llamada (para avisar si no se está en CINEMA o la cámara no se mueve). Sin flag, nada cambia.
 
-### 3.17.68 — Super Riso, experimental tras `?superriso=1`
+### 3.17.68 — Super Riso, oculto tras el flag de URL (histórico)
 
-**feat(fx, experimental)** — El spike C1 de Super Riso entra en main **oculto**: sin `?superriso=1` el comportamiento es el de 3.17.67 (verificado: no se importa el chunk, no se piden texturas, no hay contexto WebGL, ni overlay ni `window.__superRiso`). Con el flag: motor WebGL2 portado del laboratorio (shaders idénticos al byte), estilo fijo "Taller limpio", tintas `dpal` calculadas una vez por tema, reimpresión a 12 fps, salida opaca con transferencia `source-over`, `try/catch` total y manejo de pérdida/restauración de contexto. Medido en escritorio (RTX 5070 Ti): +~0,4 ms de frame, ~4–5 ms de GPU. **Pendiente: medirlo en iPad en producción.** Sin estado, panel, persistencia ni i18n (C2–C4). CLAUDE.md, filtro de FX nº 5: enmendado con la excepción única de Super Riso. Crédito de riso-colors (MIT) en `Attributions.md`.
+**feat(fx)** — El prototipo C1 de Super Riso entra en main **oculto**: sin el flag `?superriso=1` (retirado en 3.18.0) el comportamiento es el de 3.17.67 (verificado: no se importa el chunk, no se piden texturas, no hay contexto WebGL, ni overlay ni `window.__superRiso`). Con el flag: motor WebGL2 portado del laboratorio (shaders idénticos al byte), estilo fijo "Taller limpio", tintas `dpal` calculadas una vez por tema, reimpresión a 12 fps, salida opaca con transferencia `source-over`, `try/catch` total y manejo de pérdida/restauración de contexto. Medido en escritorio (RTX 5070 Ti): +~0,4 ms de frame, ~4–5 ms de GPU. **Pendiente: medirlo en iPad en producción.** Sin estado, panel, persistencia ni i18n (C2–C4). CLAUDE.md, filtro de FX nº 5: enmendado con la excepción única de Super Riso. Crédito de riso-colors (MIT) en `Attributions.md`.
 
 ### 3.17.67 — La analítica solo sale desde producción
 

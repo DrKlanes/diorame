@@ -1,5 +1,5 @@
-// Super Riso — "this device previews in motion" (L1, for the L2 panel notice). Tiny and free of
-// WebGL, so the UI can import it statically: it stays false until the engine (behind the flag)
+// Super Riso — "this device previews in motion" (for the panel notice). Tiny and free of
+// WebGL, so the UI can import it statically: it stays false until the engine (lazy chunk)
 // has measured the device. React: useSyncExternalStore(subscribeSuperRisoPreviewDevice,
 // isSuperRisoPreviewDevice).
 

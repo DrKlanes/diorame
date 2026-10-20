@@ -1,12 +1,12 @@
 // Super Riso — runtime knobs and live facts shared by applySuperRiso, the overlay and the
 // automatic measurement (measure.ts). Only ever imported from the Super Riso chunk.
 //
-// L1: without ?srdebug=1 every knob below is ignored and cfg is DEFAULT_CFG (auto quality levels,
+// Without ?srdebug=1 every knob below is ignored and cfg is DEFAULT_CFG (auto quality levels,
 // lossless full level). With srdebug=1: the overlay, "Medir", window.__superRiso and the knobs.
 // Any of srres / srpipe / srhold / srpreview / srprevmask switches the automatic levels off (the
 // knobs drive the live frame as in C1–C2a). srlevel=preview|full forces the automatic level.
 //
-// URL knobs (read once, here, only because this module is behind the flag):
+// URL knobs (read once, here, only because this module lives in the lazy chunk):
 //   srpdb=0 · srres=0.75|0.5 · srmip=0 · srbypass=1 · srdarkpaper=bg
 //   C1b bridge paths: srsim=1 (flatten + upload at simulation size) · sroff=1 (engine on an
 //   OffscreenCanvas, back via transferToImageBitmap) · srbitmap=1 (upload via createImageBitmap,

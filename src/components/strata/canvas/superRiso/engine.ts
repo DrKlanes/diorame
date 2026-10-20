@@ -5,7 +5,7 @@
 //   eng.render(params)                           // params: see DEFAULTS; seed changes the print run
 // The result stays in `canvas` (WebGL2); Diorame draws it back onto offCtx.
 //
-// Spike additions over the lab (C1), all off by default so the engine behaves as in the lab:
+// Additions over the lab (C1), all off by default so the engine behaves as in the lab:
 //   - opts.preserveDrawingBuffer (lab: true)
 //   - setSource(src, mip): mip=false skips the per-frame generateMipmap of the source
 //   - GPU timer query (EXT_disjoint_timer_query_webgl2) when available: eng.gpuMs, async
@@ -174,7 +174,7 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 		canvas.width = w; canvas.height = h;
 	}
 
-	// GPU timer (spike instrumentation): one query in flight, result read on a later frame.
+	// GPU timer (quality detection and profiling): one query in flight, result read on a later frame.
 	const timerExt = gl.getExtension('EXT_disjoint_timer_query_webgl2') as { TIME_ELAPSED_EXT: number; GPU_DISJOINT_EXT: number } | null;
 	let pendingQuery: WebGLQuery | null = null;
 	function pollTimer() {
