@@ -385,7 +385,9 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `superRiso/shadersCommon.ts` · `shadersSeparation.ts` · `shadersPrint.ts` | ~55 · ~110 · ~115 | GLSL copied byte for byte from the lab (generated, verified identical) |
 | `superRiso/inks.ts` | ~100 | Ink lists (riso-colors, MIT) and `pickInks` (CPU k-means — never per frame) |
 | `superRiso/panel.ts` | ~70 | Engine defaults, `PAPERS`, `STYLES`, `fromPanel` (8 panel controls → engine parameters) |
-| `superRiso/perfOverlay.ts` | ~65 | Spike instrumentation: rolling timings + DOM text overlay (fps, ms p50/p95), never inside the canvas |
+| `superRiso/perfOverlay.ts` | ~105 | Instrumentation behind the flag: rolling timings (2400 samples) + DOM overlay (fps, ms p50/p95, Super Riso breakdown) with the "Medir" button (≥44 px, touch), the "Midiendo X (n/5)…" status and the result block (selectable textarea + "Copiar"). DOM, never inside the canvas |
+| `superRiso/runtimeConfig.ts` | ~50 | Runtime knobs (`cfg`, read from the URL only here), `DEFAULT_CFG`, facts about the last live frame and hooks to the engine. Changing `preserveDrawingBuffer` recreates the engine on a new canvas (it is a context attribute) |
+| `superRiso/measure.ts` | ~95 | Automatic measurement (v3.17.69): 5 configurations in sequence (A bypass · B default · C pdb:false · D C+res 0.75 · E C+res 0.5), 2 s warm-up discarded + 8 s measured each, restores the previous configuration, builds a plain-text report (device, GPU, canvas/sim size, mode, preset, table). Warns (confirm) if not in CINEMA or the camera is still, but measures anyway |
 
 #### `svgGeometry.ts` / `svgText.ts` — invariantes (no simplificar)
 
@@ -885,7 +887,7 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - **Pixel Art**: Pixelation effect (size 2-12, depth 2-16 colors, dither 0-1)
 - **Grunge**: Overlay texture (subtle, medium, intense)
 - **Wiggle**: Hand-drawn line wobble (light, medium, heavy)
-- **Super Riso** (EXPERIMENTAL, v3.17.68; not in the FX panel): WebGL2 scanned-riso post-process, **only active with `?superriso=1` in the URL**. Fixed style "Taller limpio", no state, panel, persistence or i18n. Without the flag the chunk, the textures (`/textures/superRiso/`) and the WebGL context are never loaded. Lives in `canvas/superRiso/` (see §10), runs in phase 3 in the `applyRisoV2` slot (Riso keeps working as before) and, when it ran, the transfer to `ctx` uses `source-over` because offCtx is opaque. Debug knobs, read only with the flag: `srbypass=1` (loaded but not applied: baseline), `srpdb=0` (`preserveDrawingBuffer` off), `srres=0.75|0.5` (internal resolution), `srmip=0` (no per-frame mipmap), `srdarkpaper=bg` (dark mode: dark base as source paper — comes out all paper, for comparison). With the flag a DOM text overlay (bottom left: fps, frame ms p50/p95, Super Riso ms and breakdown) and `window.__superRiso` (read-only measurement handle) exist; neither exists without it. Exceptional WebGL exception: CLAUDE.md, FX filter 5.
+- **Super Riso** (EXPERIMENTAL, v3.17.68; not in the FX panel): WebGL2 scanned-riso post-process, **only active with `?superriso=1` in the URL**. Fixed style "Taller limpio", no state, panel, persistence or i18n. Without the flag the chunk, the textures (`/textures/superRiso/`) and the WebGL context are never loaded. Lives in `canvas/superRiso/` (see §10), runs in phase 3 in the `applyRisoV2` slot (Riso keeps working as before) and, when it ran, the transfer to `ctx` uses `source-over` because offCtx is opaque. Debug knobs, read only with the flag: `srbypass=1` (loaded but not applied: baseline), `srpdb=0` (`preserveDrawingBuffer` off), `srres=0.75|0.5` (internal resolution), `srmip=0` (no per-frame mipmap), `srdarkpaper=bg` (dark mode: dark base as source paper — comes out all paper, for comparison). With the flag a DOM text overlay (bottom left: fps, frame ms p50/p95, Super Riso ms and breakdown, plus the **Medir** button for the automatic 5-configuration measurement, v3.17.69) and `window.__superRiso` (read-only measurement handle) exist; neither exists without it. Exceptional WebGL exception: CLAUDE.md, FX filter 5.
 
 ---
 
@@ -912,6 +914,10 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 ---
 
 ## Appendix C: Changelog Highlights (1.7.3 → 3.14.1)
+
+### 3.17.69 — Super Riso: modo de medición automático (solo con el flag)
+
+**feat(fx, experimental)** — El overlay de `?superriso=1` gana un botón **Medir** (táctil, ≥44 px) que ejecuta sin recargar 5 configuraciones (bypass · defecto · `preserveDrawingBuffer:false` · +res 0.75 · +res 0.5; 2 s de calentamiento descartados + 8 s medidos cada una), restaura la configuración previa y entrega un texto plano con datos del dispositivo (UA, DPR, tamaño del canvas y de simulación, GPU, `MAX_TEXTURE_SIZE`, versión, tema, preset) y una tabla (fps, ms de frame p50/p95, CPU de Super Riso, GPU si hay temporizador). Botón **Copiar** con *fallback* a texto seleccionable. Cambiar `preserveDrawingBuffer` recrea el contexto WebGL sobre un canvas nuevo. Único cambio fuera de `canvas/superRiso/`: `renderPipeline` pasa el preset y la velocidad de cámara a la llamada (para avisar si no se está en CINEMA o la cámara no se mueve). Sin flag, nada cambia.
 
 ### 3.17.68 — Super Riso, experimental tras `?superriso=1`
 

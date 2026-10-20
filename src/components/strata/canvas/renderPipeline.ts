@@ -574,6 +574,7 @@ export function renderFrame(
 		offCtx, w, h, currentState.isDarkMode, isPixelArt,
 		Math.floor(performance.now() / (1000 / 12)),
 		!rc.skipCinematicOverlays,
+		{ preset: currentState.cinematicType, speed: currentState.cinematicSpeed ?? 1 },
 	);
 
 	// Chromatic Aberration & Transfer to Main

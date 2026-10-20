@@ -8,7 +8,7 @@
 //   3. Output: ONLY if everything went well, the opaque result replaces offCtx in one 'copy'
 //      drawImage. Any failure leaves offCtx untouched and the frame takes the normal route.
 //
-// Spike knobs (URL): srpdb=0 (preserveDrawingBuffer off) · srres=0.75|0.5 (internal resolution)
+// Knobs (URL, read in runtimeConfig.ts): srpdb=0 (preserveDrawingBuffer off) · srres=0.75|0.5 (internal resolution)
 // · srmip=0 (2D reduction to the simulation size instead of per-frame generateMipmap)
 // · srbypass=1 (module + overlay loaded, effect not applied: baseline fps)
 // · srdarkpaper=bg (dark mode: dark base as srcPaper, the literal brief — for comparison).
@@ -17,15 +17,8 @@ import { createEngine, type Engine, type EngineAssets } from './engine';
 import { pickInks, hex2rgb, type PickedInks, type RGB } from './inks';
 import { STYLES, fromPanel } from './panel';
 import { record, mountOverlay, setHeader, snapshot, reset } from './perfOverlay';
-
-const params = new URLSearchParams(window.location.search);
-const KNOBS = {
-	preserveDrawingBuffer: params.get('srpdb') !== '0',
-	resScale: Math.min(1, Math.max(.25, Number(params.get('srres')) || 1)),
-	mip: params.get('srmip') !== '0',
-	bypass: params.get('srbypass') === '1',
-	darkPaperFromBase: params.get('srdarkpaper') === 'bg',
-};
+import { cfg as KNOBS, live, hooks } from './runtimeConfig';
+import { runMeasurement } from './measure';
 
 // Same base colours as drawBackground.ts (fillStyle before the paper texture). Duplicated on
 // purpose for the spike: drawBackground is outside the GO. Keep in sync.
@@ -38,7 +31,10 @@ let assets: EngineAssets | null = null;
 let disabled = false;
 let contextLost = false;
 let engine: Engine | null = null;
-const glCanvas = document.createElement('canvas');
+// The engine's GL canvas can be replaced (preserveDrawingBuffer is a context attribute, so the
+// automatic measurement needs a NEW context to change it). Listeners ignore stale canvases.
+let glCanvas = document.createElement('canvas');
+let engineIsPdb = KNOBS.preserveDrawingBuffer;
 const flatCanvas = document.createElement('canvas');
 const flatCtx = flatCanvas.getContext('2d')!;
 const inksByTheme = new Map<boolean, PickedInks>();
@@ -61,21 +57,37 @@ Promise.all(TEXTURES.map(loadImage))
 	.then(([green, exBlack, exRed, exLut]) => { assets = { green, exBlack, exRed, exLut }; })
 	.catch(e => disable('textures', e));
 
-glCanvas.addEventListener('webglcontextlost', (e) => {
-	e.preventDefault();
-	contextLost = true;
-	engine = null;
-	console.warn('[SuperRiso] WebGL context lost — frames go out without Super Riso');
-});
-glCanvas.addEventListener('webglcontextrestored', () => {
-	contextLost = false;
-	console.warn('[SuperRiso] WebGL context restored — engine will be recreated');
-});
+const watchContext = (c: HTMLCanvasElement) => {
+	c.addEventListener('webglcontextlost', (e) => {
+		e.preventDefault();
+		if (c !== glCanvas) return;
+		contextLost = true;
+		engine = null;
+		console.warn('[SuperRiso] WebGL context lost — frames go out without Super Riso');
+	});
+	c.addEventListener('webglcontextrestored', () => {
+		if (c !== glCanvas) return;
+		contextLost = false;
+		console.warn('[SuperRiso] WebGL context restored — engine will be recreated');
+	});
+};
+watchContext(glCanvas);
 
-mountOverlay();
+/** Drops the engine and its context; the next frame creates a fresh one on a new canvas. */
+const recreateEngine = () => {
+	const old = glCanvas;
+	engine = null;
+	glCanvas = document.createElement('canvas');
+	watchContext(glCanvas);
+	old.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+};
+hooks.recreateEngine = recreateEngine;
+hooks.engineInfo = () => engine ? { gl: engine.gl, width: engine.width, height: engine.height } : null;
+
+mountOverlay(() => { void runMeasurement(); });
 setHeader(`SUPER RISO spike · pdb ${KNOBS.preserveDrawingBuffer ? 'on' : 'off'} · res ${KNOBS.resScale} · mip ${KNOBS.mip ? 'on' : 'off'}${KNOBS.bypass ? ' · BYPASS' : ''}`);
 
-// Read-only handle for the measurement harness (spike only).
+// Read-only handle for the measurement harness.
 (window as unknown as { __superRiso: unknown }).__superRiso = { KNOBS, snapshot, reset, inksByTheme, get engine() { return engine; }, get disabled() { return disabled; } };
 
 /**
@@ -90,16 +102,23 @@ export function applySuperRiso(
 	isDarkMode: boolean,
 	isPixelArt: boolean,
 	tick: number,
-	live: boolean,
+	isLive: boolean,
+	info: { preset: string; speed: number },
 ): boolean {
 	const t0 = performance.now();
-	if (live) {
+	if (isLive) {
 		if (lastLiveCall > 0) record('interval', t0 - lastLiveCall);
 		lastLiveCall = t0;
+		live.lastCallAt = t0; live.isDark = isDarkMode; live.canvasW = w; live.canvasH = h;
+		live.preset = info.preset; live.speed = info.speed;
 	}
 	if (disabled || contextLost || !assets || KNOBS.bypass) return false;
 	try {
-		if (!engine) engine = createEngine(glCanvas, assets, { preserveDrawingBuffer: KNOBS.preserveDrawingBuffer });
+		if (engine && engineIsPdb !== KNOBS.preserveDrawingBuffer) recreateEngine();
+		if (!engine) {
+			engine = createEngine(glCanvas, assets, { preserveDrawingBuffer: KNOBS.preserveDrawingBuffer });
+			engineIsPdb = KNOBS.preserveDrawingBuffer;
+		}
 
 		const style = fromPanel(STYLES.clean.panel, w * KNOBS.resScale);
 		const simW = Math.round(240 * style.pxmm!);
@@ -152,7 +171,7 @@ export function applySuperRiso(
 		offCtx.restore();
 		const t3 = performance.now();
 
-		if (live) {
+		if (isLive) {
 			record('flat', t1 - t0);
 			record('render', t2 - t1);
 			record('back', t3 - t2);
