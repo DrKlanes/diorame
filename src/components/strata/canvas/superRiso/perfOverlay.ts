@@ -5,9 +5,9 @@
 const SIZE = 2400;       // enough for 8 s at 300 fps
 const LIVE_WINDOW = 240; // what the live overlay shows
 
-export type Series = 'interval' | 'total' | 'flat' | 'render' | 'back' | 'gpu';
+export type Series = 'interval' | 'total' | 'flat' | 'upload' | 'mip' | 'render' | 'back' | 'gpu' | 'bitmapWait';
 
-const ring: Record<Series, number[]> = { interval: [], total: [], flat: [], render: [], back: [], gpu: [] };
+const ring: Record<Series, number[]> = { interval: [], total: [], flat: [], upload: [], mip: [], render: [], back: [], gpu: [], bitmapWait: [] };
 
 export function record(series: Series, v: number): void {
 	const r = ring[series];
@@ -31,7 +31,8 @@ export function snapshot(n: number = LIVE_WINDOW) {
 		fps: mean ? 1000 / mean : null,
 		frameP50: pct('interval', .5, n), frameP95: pct('interval', .95, n),
 		totalP50: pct('total', .5, n), totalP95: pct('total', .95, n),
-		flatP50: pct('flat', .5, n), renderP50: pct('render', .5, n), backP50: pct('back', .5, n),
+		flatP50: pct('flat', .5, n), uploadP50: pct('upload', .5, n), mipP50: pct('mip', .5, n),
+		renderP50: pct('render', .5, n), backP50: pct('back', .5, n), bitmapWaitP50: pct('bitmapWait', .5, n),
 		gpuP50: pct('gpu', .5, n), gpuP95: pct('gpu', .95, n),
 	};
 }
@@ -104,7 +105,7 @@ export function mountOverlay(onMeasure: () => void): void {
 		const s = snapshot();
 		statsEl.textContent = `${header}\n`
 			+ `fps ${f(s.fps)} · frame p50 ${f(s.frameP50)} p95 ${f(s.frameP95)} ms\n`
-			+ `SR p50 ${f(s.totalP50)} p95 ${f(s.totalP95)} ms (aplanado+subida ${f(s.flatP50)} · motor ${f(s.renderP50)} · vuelta ${f(s.backP50)})\n`
+			+ `SR p50 ${f(s.totalP50)} p95 ${f(s.totalP95)} ms (aplanado ${f(s.flatP50)} · subida ${f(s.uploadP50)} · mip ${f(s.mipP50)} · motor ${f(s.renderP50)} · vuelta ${f(s.backP50)})\n`
 			+ `GPU motor p50 ${f(s.gpuP50)} p95 ${f(s.gpuP95)} ms`;
 		if (status && statusEl) statusEl.textContent = status;
 	}, 500);

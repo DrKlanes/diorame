@@ -1,4 +1,4 @@
-// Super Riso — spike C1 integration (loaded only behind ?superriso=1, see flag.ts).
+// Super Riso — experimental integration (loaded only behind ?superriso=1, see flag.ts).
 //
 // Called from renderPipeline phase 3, in the applyRisoV2 slot. "Prints what you see":
 //   1. Flatten: the canvas BASE colour (no paper texture — Super Riso brings its own paper) with
@@ -8,17 +8,17 @@
 //   3. Output: ONLY if everything went well, the opaque result replaces offCtx in one 'copy'
 //      drawImage. Any failure leaves offCtx untouched and the frame takes the normal route.
 //
-// Knobs (URL, read in runtimeConfig.ts): srpdb=0 (preserveDrawingBuffer off) · srres=0.75|0.5 (internal resolution)
-// · srmip=0 (2D reduction to the simulation size instead of per-frame generateMipmap)
-// · srbypass=1 (module + overlay loaded, effect not applied: baseline fps)
-// · srdarkpaper=bg (dark mode: dark base as srcPaper, the literal brief — for comparison).
+// The 2D ↔ WebGL hand-off and its alternative paths live in bridge.ts; the knobs in
+// runtimeConfig.ts. Every live frame records the CPU of each stage separately (flat, upload, mip,
+// render, back): in WebKit the synchronous waits land in the stage that triggers them.
 
-import { createEngine, type Engine, type EngineAssets } from './engine';
+import { createEngine, type Engine, type EngineAssets, type GLCanvas } from './engine';
 import { pickInks, hex2rgb, type PickedInks, type RGB } from './inks';
 import { STYLES, fromPanel } from './panel';
 import { record, mountOverlay, setHeader, snapshot, reset } from './perfOverlay';
 import { cfg as KNOBS, live, hooks } from './runtimeConfig';
 import { runMeasurement } from './measure';
+import { flatten, takeBitmap, resetBitmaps, drawBack, makeGLCanvas, isOffscreen, offscreenWebGL2Available } from './bridge';
 
 // Same base colours as drawBackground.ts (fillStyle before the paper texture). Duplicated on
 // purpose for the spike: drawBackground is outside the GO. Keep in sync.
@@ -31,12 +31,10 @@ let assets: EngineAssets | null = null;
 let disabled = false;
 let contextLost = false;
 let engine: Engine | null = null;
-// The engine's GL canvas can be replaced (preserveDrawingBuffer is a context attribute, so the
-// automatic measurement needs a NEW context to change it). Listeners ignore stale canvases.
-let glCanvas = document.createElement('canvas');
+// The engine's GL canvas can be replaced: preserveDrawingBuffer is a context attribute and the
+// canvas type (DOM vs Offscreen) is fixed per context. Listeners ignore stale canvases.
+let glCanvas: GLCanvas = makeGLCanvas(KNOBS.offscreenBack);
 let engineIsPdb = KNOBS.preserveDrawingBuffer;
-const flatCanvas = document.createElement('canvas');
-const flatCtx = flatCanvas.getContext('2d')!;
 const inksByTheme = new Map<boolean, PickedInks>();
 let lastLiveCall = 0;
 
@@ -57,7 +55,7 @@ Promise.all(TEXTURES.map(loadImage))
 	.then(([green, exBlack, exRed, exLut]) => { assets = { green, exBlack, exRed, exLut }; })
 	.catch(e => disable('textures', e));
 
-const watchContext = (c: HTMLCanvasElement) => {
+const watchContext = (c: GLCanvas) => {
 	c.addEventListener('webglcontextlost', (e) => {
 		e.preventDefault();
 		if (c !== glCanvas) return;
@@ -77,22 +75,31 @@ watchContext(glCanvas);
 const recreateEngine = () => {
 	const old = glCanvas;
 	engine = null;
-	glCanvas = document.createElement('canvas');
+	resetBitmaps();
+	glCanvas = makeGLCanvas(KNOBS.offscreenBack);
 	watchContext(glCanvas);
-	old.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+	(old.getContext('webgl2') as WebGL2RenderingContext | null)?.getExtension('WEBGL_lose_context')?.loseContext();
 };
 hooks.recreateEngine = recreateEngine;
 hooks.engineInfo = () => engine ? { gl: engine.gl, width: engine.width, height: engine.height } : null;
 
+const pathLabel = () => [
+	`pdb ${KNOBS.preserveDrawingBuffer ? 'on' : 'off'}`, `res ${KNOBS.resScale}`, `mip ${KNOBS.mip ? 'on' : 'off'}`,
+	KNOBS.simUpload ? 'sim-upload' : '', KNOBS.bitmapUpload ? 'bitmap' : '',
+	KNOBS.offscreenBack ? (offscreenWebGL2Available ? 'offscreen' : 'offscreen→DOM') : '',
+	KNOBS.bypass ? 'BYPASS' : '',
+].filter(Boolean).join(' · ');
+
 mountOverlay(() => { void runMeasurement(); });
-setHeader(`SUPER RISO spike · pdb ${KNOBS.preserveDrawingBuffer ? 'on' : 'off'} · res ${KNOBS.resScale} · mip ${KNOBS.mip ? 'on' : 'off'}${KNOBS.bypass ? ' · BYPASS' : ''}`);
+setHeader(`SUPER RISO · ${pathLabel()}`);
 
 // Read-only handle for the measurement harness.
-(window as unknown as { __superRiso: unknown }).__superRiso = { KNOBS, snapshot, reset, inksByTheme, get engine() { return engine; }, get disabled() { return disabled; } };
+(window as unknown as { __superRiso: unknown }).__superRiso = { KNOBS, snapshot, reset, inksByTheme, live, get engine() { return engine; }, get disabled() { return disabled; }, get glCanvas() { return glCanvas; } };
 
 /**
  * @param tick  floor(performance.now() / (1000 / 12)), computed by the caller in phase 3
- * @param live  false for export renders (skipCinematicOverlays): kept out of the live stats
+ * @param isLive false for export renders (skipCinematicOverlays): kept out of the live stats and
+ *               never on the one-frame-late bitmap path (an export frame must be its own frame)
  * @returns true when offCtx now holds the opaque Super Riso frame
  */
 export function applySuperRiso(
@@ -111,10 +118,11 @@ export function applySuperRiso(
 		lastLiveCall = t0;
 		live.lastCallAt = t0; live.isDark = isDarkMode; live.canvasW = w; live.canvasH = h;
 		live.preset = info.preset; live.speed = info.speed;
+		live.offscreenFallback = KNOBS.offscreenBack && !offscreenWebGL2Available;
 	}
 	if (disabled || contextLost || !assets || KNOBS.bypass) return false;
 	try {
-		if (engine && engineIsPdb !== KNOBS.preserveDrawingBuffer) recreateEngine();
+		if (engine && (engineIsPdb !== KNOBS.preserveDrawingBuffer || isOffscreen(glCanvas) !== (KNOBS.offscreenBack && offscreenWebGL2Available))) recreateEngine();
 		if (!engine) {
 			engine = createEngine(glCanvas, assets, { preserveDrawingBuffer: KNOBS.preserveDrawingBuffer });
 			engineIsPdb = KNOBS.preserveDrawingBuffer;
@@ -124,28 +132,19 @@ export function applySuperRiso(
 		const simW = Math.round(240 * style.pxmm!);
 		const simH = Math.round(simW * h / w);
 
-		// 1. Flatten (what the user sees, minus the paper texture). srmip=0: straight at the
-		// simulation size, so the 2D draw IS the reduction pass and no mipmap is needed.
-		const fw = KNOBS.mip ? w : Math.min(w, simW);
-		const fh = KNOBS.mip ? h : Math.min(h, simH);
-		if (flatCanvas.width !== fw || flatCanvas.height !== fh) { flatCanvas.width = fw; flatCanvas.height = fh; }
+		// 1. Flatten (what the user sees, minus the paper texture). srsim=1: straight at the
+		// simulation size, so this 2D draw IS the reduction pass and the upload shrinks with srres.
+		const fw = KNOBS.simUpload ? Math.min(w, simW) : w;
+		const fh = KNOBS.simUpload ? Math.min(h, simH) : h;
 		const base = baseColor(isDarkMode, isPixelArt);
-		flatCtx.setTransform(1, 0, 0, 1, 0, 0);
-		flatCtx.globalAlpha = 1;
-		flatCtx.globalCompositeOperation = 'source-over';
-		flatCtx.fillStyle = base;
-		flatCtx.fillRect(0, 0, fw, fh);
-		flatCtx.globalCompositeOperation = isDarkMode ? 'source-over' : 'multiply';
-		flatCtx.imageSmoothingEnabled = true;
-		flatCtx.imageSmoothingQuality = 'medium';
-		flatCtx.drawImage(offCtx.canvas, 0, 0, fw, fh);
-		flatCtx.globalCompositeOperation = 'source-over';
+		const flat = flatten(offCtx.canvas, fw, fh, base, isDarkMode);
+		const tFlat = performance.now();
 
 		// Inks: once per theme, never per frame.
 		let inks = inksByTheme.get(isDarkMode);
 		if (!inks) {
 			const ti = performance.now();
-			inks = pickInks(flatCanvas, 'dpal', STYLES.clean.panel.maxInks ?? 6, 1);
+			inks = pickInks(flat, 'dpal', STYLES.clean.panel.maxInks ?? 6, 1);
 			inksByTheme.set(isDarkMode, inks);
 			console.info(`[SuperRiso] inks (${isDarkMode ? 'dark' : 'light'}) picked in ${(performance.now() - ti).toFixed(1)} ms:`, inks.names.join(', '));
 		}
@@ -154,32 +153,37 @@ export function applySuperRiso(
 		// srdarkpaper=bg restores the literal brief (dark base as srcPaper) to compare.
 		const srcPaper: RGB = (isDarkMode && !KNOBS.darkPaperFromBase) ? [1, 1, 1] : hex2rgb(base);
 
-		engine.setSource(flatCanvas, KNOBS.mip);
+		// 2. Upload: the canvas, or (live only) the newest resolved bitmap of an earlier frame.
 		const t1 = performance.now();
-		engine.render({ ...style, inks: inks.inks, names: inks.names, opac: inks.opac, srcPaper, seed: (tick % 9999) + 1 });
+		const late = (KNOBS.bitmapUpload && isLive) ? takeBitmap(flat, fw, fh) : null;
+		const tTake = performance.now();
+		if (late) {
+			engine.setSource(late.bmp, KNOBS.mip);
+			late.bmp.close();
+			live.bitmapLagFrames = late.lag;
+		} else {
+			engine.setSource(flat, KNOBS.mip);
+		}
 		const t2 = performance.now();
+		engine.render({ ...style, inks: inks.inks, names: inks.names, opac: inks.opac, srcPaper, seed: (tick % 9999) + 1 });
+		const t3 = performance.now();
 		if (engine.gl.isContextLost()) return false;
 
-		// 3. Output: one 'copy' draw replaces offCtx entirely (opaque, full frame) or throws and
-		// leaves it untouched — never half-written.
-		offCtx.save();
-		offCtx.setTransform(1, 0, 0, 1, 0, 0);
-		offCtx.globalAlpha = 1;
-		offCtx.globalCompositeOperation = 'copy';
-		offCtx.imageSmoothingEnabled = !style.crisp;
-		offCtx.drawImage(glCanvas, 0, 0, engine.width, engine.height, 0, 0, w, h);
-		offCtx.restore();
-		const t3 = performance.now();
+		// 3. Output.
+		drawBack(offCtx, glCanvas, engine.width, engine.height, w, h, !!style.crisp);
+		const t4 = performance.now();
 
 		if (isLive) {
-			record('flat', t1 - t0);
-			record('render', t2 - t1);
-			record('back', t3 - t2);
-			record('total', t3 - t0);
+			record('flat', tFlat - t0);
+			record('upload', engine.lastUploadMs + (tTake - t1));
+			record('mip', engine.lastMipMs);
+			record('render', t3 - t2);
+			record('back', t4 - t3);
+			record('total', t4 - t0);
 			if (engine.gpuMs !== null) record('gpu', engine.gpuMs);
-			setHeader(`SUPER RISO spike · ${w}×${h} → sim ${engine.width}×${engine.height} · pdb ${KNOBS.preserveDrawingBuffer ? 'on' : 'off'} · res ${KNOBS.resScale} · mip ${KNOBS.mip ? 'on' : 'off'}`);
+			setHeader(`SUPER RISO · ${w}×${h} → sim ${engine.width}×${engine.height} · src ${fw}×${fh} · ${pathLabel()}`);
 		} else {
-			console.info(`[SuperRiso] export frame ${w}×${h} → sim ${engine.width}×${engine.height}: ${(t3 - t0).toFixed(1)} ms`);
+			console.info(`[SuperRiso] export frame ${w}×${h} → sim ${engine.width}×${engine.height}: ${(t4 - t0).toFixed(1)} ms`);
 		}
 		return true;
 	} catch (e) {

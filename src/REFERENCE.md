@@ -380,14 +380,15 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `pngSequenceHandler.ts` | ~100 | `exportAsPNGSequence`: `ImageData[]` → PNG bytes → ZIP via `fflate`; files `{project}_frame_01.png`, ZIP `{project}_frames.zip`. Takes the app `mode` only to tag the analytics event (v3.17.66; same for `gifHandler`, `svgExport`, `exportAsMP4`) |
 | `gifHandler.ts` | ~140 | `exportAsGIF`: `ImageData[]` → animated GIF via `gifenc`; per-frame palette quantization, scale presets 1/0.5/0.25, infinite native loop |
 | `superRiso/flag.ts` | ~20 | **EXPERIMENTAL, hidden behind `?superriso=1` (v3.17.68).** Only Super Riso file `renderPipeline` imports statically. Without `?superriso=1` nothing else loads (dynamic-import chunk) and no WebGL context exists: `getSuperRiso()` stays null and the pipeline is unchanged |
-| `superRiso/applySuperRiso.ts` | ~170 | Experimental integration in the `applyRisoV2` slot of phase 3: flatten (base colour + offCtx with the transfer operator) → engine ("Taller limpio", `dpal` inks once per theme, seed from a 12 fps tick) → opaque result into offCtx with one `copy` draw; the transfer then uses `source-over`. Everything in try/catch (failure = disabled for the session, offCtx untouched); WebGL context loss/restore handled inside. URL knobs `srpdb`, `srres`, `srmip`, `srbypass`, `srdarkpaper` |
-| `superRiso/engine.ts` | ~215 | WebGL2 engine ported from the lab (`createEngine`): 13 passes per frame + LUT 33³ only when inks/paper change; GPU timer query when available |
+| `superRiso/applySuperRiso.ts` | ~195 | Experimental integration in the `applyRisoV2` slot of phase 3: flatten → inks (`dpal`, once per theme) → upload → engine ("Taller limpio", seed from a 12 fps tick) → opaque result into offCtx; the transfer then uses `source-over`. Records the CPU of every stage per live frame (flat, upload, mip, render, back — v3.17.71). Everything in try/catch (failure = disabled for the session, offCtx untouched); WebGL context loss/restore handled inside; the GL canvas is recreated when `preserveDrawingBuffer` or the canvas type changes |
+| `superRiso/engine.ts` | ~225 | WebGL2 engine ported from the lab (`createEngine`, on a DOM canvas or an `OffscreenCanvas`): 13 passes per frame + LUT 33³ only when inks/paper change; GPU timer query when available; `setSource` times `texImage2D` and `generateMipmap` apart (`lastUploadMs`, `lastMipMs`) |
 | `superRiso/shadersCommon.ts` · `shadersSeparation.ts` · `shadersPrint.ts` | ~55 · ~110 · ~115 | GLSL copied byte for byte from the lab (generated, verified identical) |
 | `superRiso/inks.ts` | ~100 | Ink lists (riso-colors, MIT) and `pickInks` (CPU k-means — never per frame) |
 | `superRiso/panel.ts` | ~70 | Engine defaults, `PAPERS`, `STYLES`, `fromPanel` (8 panel controls → engine parameters) |
 | `superRiso/perfOverlay.ts` | ~105 | Instrumentation behind the flag: rolling timings (2400 samples) + DOM overlay (fps, ms p50/p95, Super Riso breakdown) with the "Medir" button (≥44 px, touch), the "Midiendo X (n/5)…" status and the result block (selectable textarea + "Copiar"). DOM, never inside the canvas |
-| `superRiso/runtimeConfig.ts` | ~50 | Runtime knobs (`cfg`, read from the URL only here), `DEFAULT_CFG`, facts about the last live frame and hooks to the engine. Changing `preserveDrawingBuffer` recreates the engine on a new canvas (it is a context attribute) |
-| `superRiso/measure.ts` | ~95 | Automatic measurement (v3.17.69): 5 configurations in sequence (A bypass · B default · C pdb:false · D C+res 0.75 · E C+res 0.5), 2 s warm-up discarded + 8 s measured each, restores the previous configuration, builds a plain-text report (device, GPU, canvas/sim size, mode, preset, table). Warns (confirm) if not in CINEMA or the camera is still, but measures anyway |
+| `superRiso/runtimeConfig.ts` | ~70 | Runtime knobs (`cfg`, read from the URL only here), `DEFAULT_CFG`, facts about the last live frame and hooks to the engine. v3.17.71 bridge knobs: `srsim=1` (flatten + upload at simulation size), `sroff=1` (OffscreenCanvas + `transferToImageBitmap`), `srbitmap=1` (`createImageBitmap` upload, one frame late); `srmip=0` now ONLY drops the mipmap. Changing `preserveDrawingBuffer` or `sroff` recreates the engine on a new canvas |
+| `superRiso/measure.ts` | ~125 | Automatic measurement. v3.17.71 sequence: A bypass · B res .5 current path · C +sim-upload · D +no mip · E +offscreen back · F +bitmap upload · G/H the best of C–F (lowest frame p50, chosen at run time) at res 1 and .75; 2 s warm-up + 8 s each; restores the previous configuration; plain-text report with device facts and, per row, CPU p50 of each stage (flatten, upload, mip, engine, back, bitmap await) |
+| `superRiso/bridge.ts` | ~115 | The 2D ↔ WebGL bridge (v3.17.71): `flatten` (full size or simulation size), `takeBitmap` (createImageBitmap with one frame of latency, await measured apart; never on export frames), `drawBack` (one `copy` draw; via `transferToImageBitmap` when the engine lives on an `OffscreenCanvas`), and the OffscreenCanvas+WebGL2 probe with fallback to the DOM canvas |
 
 #### `svgGeometry.ts` / `svgText.ts` — invariantes (no simplificar)
 
@@ -887,7 +888,7 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - **Pixel Art**: Pixelation effect (size 2-12, depth 2-16 colors, dither 0-1)
 - **Grunge**: Overlay texture (subtle, medium, intense)
 - **Wiggle**: Hand-drawn line wobble (light, medium, heavy)
-- **Super Riso** (EXPERIMENTAL, v3.17.68; not in the FX panel): WebGL2 scanned-riso post-process, **only active with `?superriso=1` in the URL**. Fixed style "Taller limpio", no state, panel, persistence or i18n. Without the flag the chunk, the textures (`/textures/superRiso/`) and the WebGL context are never loaded. Lives in `canvas/superRiso/` (see §10), runs in phase 3 in the `applyRisoV2` slot (Riso keeps working as before) and, when it ran, the transfer to `ctx` uses `source-over` because offCtx is opaque. Debug knobs, read only with the flag: `srbypass=1` (loaded but not applied: baseline), `srpdb=0` (`preserveDrawingBuffer` off), `srres=0.75|0.5` (internal resolution), `srmip=0` (no per-frame mipmap), `srdarkpaper=bg` (dark mode: dark base as source paper — comes out all paper, for comparison). With the flag a DOM text overlay (bottom left: fps, frame ms p50/p95, Super Riso ms and breakdown, plus the **Medir** button for the automatic 5-configuration measurement, v3.17.69) and `window.__superRiso` (read-only measurement handle) exist; neither exists without it. Exceptional WebGL exception: CLAUDE.md, FX filter 5.
+- **Super Riso** (EXPERIMENTAL, v3.17.68; not in the FX panel): WebGL2 scanned-riso post-process, **only active with `?superriso=1` in the URL**. Fixed style "Taller limpio", no state, panel, persistence or i18n. Without the flag the chunk, the textures (`/textures/superRiso/`) and the WebGL context are never loaded. Lives in `canvas/superRiso/` (see §10), runs in phase 3 in the `applyRisoV2` slot (Riso keeps working as before) and, when it ran, the transfer to `ctx` uses `source-over` because offCtx is opaque. Debug knobs, read only with the flag: `srbypass=1` (loaded but not applied: baseline), `srpdb=0` (`preserveDrawingBuffer` off), `srres=0.75|0.5` (internal resolution), `srmip=0` (no per-frame mipmap), `srsim=1` (flatten + upload at simulation size), `sroff=1` (OffscreenCanvas + transferToImageBitmap back), `srbitmap=1` (createImageBitmap upload, one frame late), `srdarkpaper=bg` (dark mode: dark base as source paper — comes out all paper, for comparison). With the flag a DOM text overlay (bottom left: fps, frame ms p50/p95, Super Riso ms and breakdown, plus the **Medir** button for the automatic 5-configuration measurement, v3.17.69) and `window.__superRiso` (read-only measurement handle) exist; neither exists without it. Exceptional WebGL exception: CLAUDE.md, FX filter 5.
 
 ---
 
@@ -914,6 +915,22 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 ---
 
 ## Appendix C: Changelog Highlights (1.7.3 → 3.14.1)
+
+### 3.17.71 — Super Riso C1b: desglose del puente 2D↔WebGL y caminos alternativos (solo con el flag)
+
+**perf(fx, experimental)** — Medido en iPad (3.17.69): la CPU de Super Riso es de ~25 ms fijos, independientes de la resolución de simulación, y en Chrome de escritorio es de 0,1 ms. El cuello de botella es el puente 2D↔WebGL, no el motor. Esta versión mide cada etapa por separado y prueba caminos alternativos, todo tras `?superriso=1`; sin el flag no cambia nada.
+- **Desglose por etapa** (CPU p50 por fila del informe de "Medir"): aplanado, subida (`texImage2D`), `generateMipmap`, render del motor y vuelta (`drawImage` a offCtx), más la espera de `createImageBitmap` aparte. En WebKit las esperas síncronas caen en la etapa que las provoca.
+- **Caminos nuevos** (`bridge.ts`, knobs en la URL):
+  - `srsim=1`: aplanado y subida al tamaño de la simulación.
+  - `sroff=1`: motor en `OffscreenCanvas` y vuelta por `transferToImageBitmap`; sin OffscreenCanvas+WebGL2 cae al canvas DOM y el informe lo dice.
+  - `srbitmap=1`: subida por `createImageBitmap`, con un frame de latencia y solo en vivo; las exportaciones siguen síncronas.
+  - `srmip=0` pasa a quitar SOLO el mipmap, porque con `srsim` la propia reducción 2D cumple esa función.
+- **Secuencia de "Medir":** A bypass · B res .5 actual · C +sim-upload · D +sin mip · E +offscreen · F +bitmap · G y H con la mejor de C–F (menor frame p50, elegida en ejecución) a res 1 y .75.
+- **Verificado en escritorio sobre un frame congelado** (cámara, semilla, `performance.now` y `Date.now` fijados; control del mismo camino dos veces = 0 píxeles):
+  - C frente a D: idénticos.
+  - D frente a E: 0,06 % de píxeles, ≤2 niveles.
+  - E frente a F: idénticos, ya asentado.
+  - B frente a C: puntos de trama sueltos que cruzan el umbral (media 1,6 niveles); a ojo, indistinguibles.
 
 ### 3.17.70 — Safari en pestaña: la interfaz ya no se corta por abajo
 

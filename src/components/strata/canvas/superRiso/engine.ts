@@ -18,10 +18,14 @@ import { DEFAULTS, type EngineParams } from './panel';
 
 export type EngineAssets = { green: TexImageSource; exBlack: TexImageSource & { width: number; height: number }; exRed: TexImageSource & { width: number; height: number }; exLut: TexImageSource };
 export type EngineOptions = { preserveDrawingBuffer?: boolean };
+/** The engine renders into a DOM canvas or an OffscreenCanvas (C1b: transferToImageBitmap path). */
+export type GLCanvas = HTMLCanvasElement | OffscreenCanvas;
 export type Engine = {
-	canvas: HTMLCanvasElement;
+	canvas: GLCanvas;
 	gl: WebGL2RenderingContext;
 	lastMs: number; width: number; height: number;
+	/** CPU ms of the last setSource, split: texImage2D and generateMipmap (C1b instrumentation). */
+	lastUploadMs: number; lastMipMs: number;
 	gpuMs: number | null;
 	setSource(src: TexImageSource & { width: number; height: number }, mip?: boolean): void;
 	render(params: Partial<EngineParams>): Engine;
@@ -67,8 +71,8 @@ function inclCanvas(seed: number): HTMLCanvasElement {
 	return c;
 }
 
-export function createEngine(canvas: HTMLCanvasElement, assets: EngineAssets, opts: EngineOptions = {}): Engine {
-	const gl = canvas.getContext('webgl2', { preserveDrawingBuffer: opts.preserveDrawingBuffer ?? true, antialias: false, premultipliedAlpha: false });
+export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: EngineOptions = {}): Engine {
+	const gl = canvas.getContext('webgl2', { preserveDrawingBuffer: opts.preserveDrawingBuffer ?? true, antialias: false, premultipliedAlpha: false }) as WebGL2RenderingContext | null;
 	if (!gl) throw new Error('WebGL2 no disponible');
 	const MAXTEX: number = gl.getParameter(gl.MAX_TEXTURE_SIZE);
 	function compile(fs: string): Program {
@@ -154,9 +158,22 @@ export function createEngine(canvas: HTMLCanvasElement, assets: EngineAssets, op
 	}
 
 	const eng: Engine = {
-		canvas, gl, lastMs: 0, width: 0, height: 0, gpuMs: null,
+		canvas, gl, lastMs: 0, width: 0, height: 0, gpuMs: null, lastUploadMs: 0, lastMipMs: 0,
 		// fotograma de entrada; en Diorame: el frame aplanado de cada render
-		setSource(src, mip = true) { srcW = src.width; srcH = src.height; texFrom(src, { mip }, srcTex); },
+		// Same GL state as the lab's texFrom(src, { mip }), split in two so each stage can be timed:
+		// in WebKit the synchronous readbacks land in the stage that triggers them.
+		setSource(src, mip = true) {
+			srcW = src.width; srcH = src.height;
+			const t0 = performance.now();
+			texFrom(src, {}, srcTex);
+			const t1 = performance.now();
+			if (mip) {
+				gl!.bindTexture(gl!.TEXTURE_2D, srcTex);
+				gl!.generateMipmap(gl!.TEXTURE_2D);
+				gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MIN_FILTER, gl!.LINEAR_MIPMAP_LINEAR);
+			}
+			eng.lastUploadMs = t1 - t0; eng.lastMipMs = performance.now() - t1;
+		},
 		render(params) {
 			const P: EngineParams = Object.assign({}, DEFAULTS, params);
 			const t0 = performance.now();
