@@ -36,7 +36,7 @@ import { detectSample, stillFor, qualityReport, STILL_MS } from './quality';
 import { fullMode, liveMode, modeLabel, prepare, engineParams, seedOf, seedTickFor, tickAt, opts, lastFrame, type Mode, type Frame, type SuperRisoInput } from './frame';
 import { renderExportFrame } from './exportEngine';
 import { record, mountOverlay, setHeader, snapshot, reset } from './perfOverlay';
-import { cfg as KNOBS, live, hooks } from './runtimeConfig';
+import { cfg as KNOBS, live, hooks, DEBUG } from './runtimeConfig';
 import { runMeasurement } from './measure';
 import { flatten, liveFlat, takeBitmap, resetBitmaps, drawBack, drawFrom, holdResult, heldResult, dropHeld, makeGLCanvas, isOffscreen, offscreenWebGL2Available } from './bridge';
 
@@ -105,11 +105,12 @@ const pathLabel = () => [
 	KNOBS.offscreenBack ? (offscreenWebGL2Available ? 'offscreen' : 'offscreen→DOM') : '', KNOBS.bypass ? 'BYPASS' : '',
 ].filter(Boolean).join(' · ');
 
-mountOverlay(() => { void runMeasurement(); });
-setHeader(`SUPER RISO · ${pathLabel()}`);
-
-// Read-only handle for the measurement harness.
-(window as unknown as { __superRiso: unknown }).__superRiso = { KNOBS, snapshot, reset, live, qualityReport, isSuperRisoPreviewDevice, get lastChange() { return quality.lastChange; }, get inks() { return lastFrame.inks; }, get params() { return lastFrame.params; }, get engine() { return engine; }, get disabled() { return disabled; }, get glCanvas() { return glCanvas; }, get flat() { return liveFlat.canvas; } };
+// ?srdebug=1 only: the overlay, "Medir" and a read-only handle for the measurement harness.
+if (DEBUG) {
+	mountOverlay(() => { void runMeasurement(); });
+	setHeader(`SUPER RISO · ${pathLabel()}`);
+	(window as unknown as { __superRiso: unknown }).__superRiso = { KNOBS, snapshot, reset, live, qualityReport, isSuperRisoPreviewDevice, get lastChange() { return quality.lastChange; }, get inks() { return lastFrame.inks; }, get params() { return lastFrame.params; }, get engine() { return engine; }, get disabled() { return disabled; }, get glCanvas() { return glCanvas; }, get flat() { return liveFlat.canvas; } };
+}
 
 function ensureEngine(): Engine {
 	if (engine && (engineIsPdb !== KNOBS.preserveDrawingBuffer || isOffscreen(glCanvas) !== (KNOBS.offscreenBack && offscreenWebGL2Available))) recreateEngine();
@@ -257,7 +258,7 @@ export function applySuperRiso(
 	const t0 = performance.now();
 	const { isDarkMode, isLive, info } = inp;
 	if (isLive) {
-		if (lastLiveCall > 0) record('interval', t0 - lastLiveCall);
+		if (DEBUG && lastLiveCall > 0) record('interval', t0 - lastLiveCall);
 		lastLiveCall = t0;
 		live.lastCallAt = t0; live.isDark = isDarkMode; live.canvasW = w; live.canvasH = h;
 		live.preset = info.preset; live.speed = info.speed;
@@ -276,11 +277,12 @@ export function applySuperRiso(
 
 		let tFlat = t0, tBack0 = t0;
 		const done = (path: string, mm: Mode = m) => {
+			live.lastPath = path;
+			if (!DEBUG) return true;
 			const t4 = performance.now();
 			record('flat', tFlat - t0); record('upload', st.upload); record('mip', st.mip); record('render', st.render);
 			record('back', st.backBegin + (t4 - tBack0)); record('total', st.begin + (t4 - t0));
 			if (engine && engine.gpuMs !== null) record('gpu', engine.gpuMs);
-			live.lastPath = path;
 			setHeader(`SUPER RISO · ${level} · ${w}×${h} → sim ${engine ? `${engine.width}×${engine.height}` : '–'} · src ${fr.fw}×${fr.fh} · ${modeLabel(mm)} · ${pathLabel()} · ${path}`);
 			return true;
 		};

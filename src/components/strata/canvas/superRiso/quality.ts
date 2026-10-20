@@ -9,7 +9,7 @@
 // the wait from upload to a 1×1 readback: see applySuperRiso.runSync). Re-measured only when the
 // canvas size changes.
 
-import { cfg } from './runtimeConfig';
+import { cfg, DEBUG } from './runtimeConfig';
 import { setSuperRisoPreviewDevice } from './deviceLevel';
 
 export type Level = 'detect' | 'full' | 'preview';
@@ -52,7 +52,7 @@ export function detectSample(w: number, h: number, ms: number | null, how: strin
 	detecting = null;
 	lastReport = `${size}: coste p50 ${median.toFixed(1)} ms (${how}) → ${lv}`;
 	setSuperRisoPreviewDevice(lv === 'preview');
-	console.info(`[SuperRiso] quality level ${lastReport}`);
+	if (DEBUG) console.info(`[SuperRiso] quality level ${lastReport}`);
 }
 
 export const qualityReport = (): string => lastReport;
