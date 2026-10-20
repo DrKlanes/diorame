@@ -24,6 +24,7 @@ import {
 import { renderLayer } from './renderLayerBody';
 import { getOnionGhostZs } from '../../../utils/animationFrames';
 import { getSuperRiso } from './superRiso/flag';
+import type { SuperRisoInput } from './superRiso/applySuperRiso';
 
 // Onion skin composite opacities. Prev (where you came from) is more visible.
 // These constants are intentionally named for easy visual tuning.
@@ -429,7 +430,7 @@ export function renderFrame(
 	// pending (what WebKit waits for). Otherwise superRiso is null and nothing happens here or in
 	// phase 3.
 	const superRiso = (fxEnabled && currentState.postProcessingEnabled.superRiso) ? getSuperRiso() : null;
-	const superRisoInput = superRiso && {
+	const superRisoInput: SuperRisoInput | null = superRiso && {
 		settings: currentState.postProcessing.superRiso,
 		isDarkMode: currentState.isDarkMode,
 		isPixelArt,
@@ -583,7 +584,17 @@ export function renderFrame(
 	}
 
 	// Super Riso — see the start of the frame. When it returns true offCtx is opaque (paper
-	// included), so the transfer must not multiply it with the background.
+	// included), so the transfer must not multiply it with the background. motion + scene: what
+	// moves the image; while none of it changes, preview devices refine to full quality.
+	if (superRisoInput) {
+		superRisoInput.scene = currentState;
+		superRisoInput.motion = [
+			currentCamera.x, currentCamera.y, currentCamera.z, currentCamera.rotation, FL, effectiveCameraZ, fxFocusDist,
+			currentState.postProcessingEnabled.wiggle ? pfc.wiggleFrame : 0,
+			currentState.postProcessingEnabled.particles ? renderTime : 0,
+			rc.transformState.isActive ? renderTime : 0,
+		];
+	}
 	const superRisoApplied = superRiso !== null && superRisoInput !== null && superRiso.applySuperRiso(
 		offCtx, w, h, superRisoInput,
 		Math.floor(performance.now() / (1000 / 12)),
