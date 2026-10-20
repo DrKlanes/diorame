@@ -178,7 +178,7 @@ export function LayersPanel() {
 	return (
 		<>
 		<div ref={anchorRef} style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', zIndex: 50, display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', opacity: isPlaybackLocked ? 0.3 : undefined, pointerEvents: isPlaybackLocked ? 'none' : undefined }}>
-			<DiPanel dark={dark} width={220} radius={20} padding="10px" style={{ maxHeight: 'calc(100vh - 420px)', overflow: 'hidden' }}>
+			<DiPanel dark={dark} width={220} radius={20} padding="10px" style={{ maxHeight: 'calc(var(--app-h, 100vh) - 420px)', overflow: 'hidden' }}>
 				{/* Header — chevron-right always top right */}
 				<div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
 					<span style={{
@@ -248,7 +248,7 @@ export function LayersPanel() {
 							gap: 1,
 							borderLeft: `1px solid ${borderColor}`,
 							paddingLeft: 6,
-							maxHeight: 'calc(100vh - 540px)',
+							maxHeight: 'calc(var(--app-h, 100vh) - 540px)',
 							overflowY: 'auto',
 						}}>
 						<DndContext

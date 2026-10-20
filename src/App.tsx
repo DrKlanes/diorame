@@ -12,10 +12,12 @@ import { PreviewPage } from './preview/PreviewPage';
 import { useAutoSave, AUTOSAVE_KEY } from './hooks/useAutoSave';
 import { initSoundsFromStorage } from './utils/soundManager';
 import { analytics } from './analytics/analytics';
+import { useIsStandalone } from './hooks/useIsStandalone';
 
 function AppContent() {
   const { state, dispatch } = useStrata();
   const loadExampleScene = useLoadExampleScene();
+  const isStandalone = useIsStandalone();
   const [autosaveData, setAutosaveData] = useState<any>(null);
 
   // Leer autosave al montar (si existe)
@@ -33,7 +35,7 @@ function AppContent() {
 
   // Fondo de html/body sincronizado con el tema (claro #f8fafc / oscuro #050505 = canvas).
   // Defensa belt-and-suspenders contra overscroll/rubber-band iOS y pre-pintado del body:
-  // el root es h-[100vh] estático y no debería asomar body en uso normal, pero en gestos de
+  // el root es 100vh estático en standalone (100dvh en navegador, ver .app-root) y no debería asomar body en uso normal, pero en gestos de
   // overscroll o antes del primer paint puede asomar brevemente. Tema = estado JS
   // (no hay clase .dark en el DOM), por eso se cablea aquí.
   useEffect(() => {
@@ -87,7 +89,7 @@ function AppContent() {
   };
 
   return (
-    <div className="relative w-full h-[100vh] overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]">
+    <div className={`app-root ${isStandalone ? 'app-root--standalone' : 'app-root--browser'} relative w-full overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]`}>
       {/* Global interaction lock */}
       <style dangerouslySetInnerHTML={{__html: `
           * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

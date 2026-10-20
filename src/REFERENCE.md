@@ -915,6 +915,14 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ## Appendix C: Changelog Highlights (1.7.3 → 3.14.1)
 
+### 3.17.70 — Safari en pestaña: la interfaz ya no se corta por abajo
+
+**fix(layout)** — En iPad, en Safari con barras visibles (no en la PWA instalada), el borde inferior del panel de paleta, de la barra inferior y del overlay quedaba cortado ~100 px. Causa: el root era `h-[100vh]` (v3.10.9) y en Safari `100vh` es la altura **sin** barras, así que el root excedía el área visible y todo lo anclado con `position:absolute; bottom` dentro de él caía fuera (los `position:fixed` ya iban bien, por eso solo fallaban unos). Hipótesis confirmada en el código —única fuente de la altura del root, `useIsStandalone` solo se usaba en `TopBar`—; el comportamiento de iOS no es reproducible en Chrome (ver verificación).
+- `App.tsx`: el root usa la clase `app-root` más `app-root--standalone` o `app-root--browser` según `useIsStandalone()`.
+- `globals.css`: **standalone = `100vh` estático, exactamente como v3.10.9** (esquiva el Bug A de `dvh` y el Bug B de `position:fixed`; el `env(safe-area-inset-top)` de `TopBar` no se toca). **Navegador = `100dvh`** dentro de `@supports (height: 100dvh)`, con `100vh` de *fallback*. La variable `--app-h` expone la misma altura.
+- `FXPanel` y `LayersPanel`: sus `maxHeight: calc(100vh - …)` pasan a `calc(var(--app-h, 100vh) - …)`, para no excederse de la altura visible.
+- Verificado en Chrome (build de producción) a 1366×1024, 1024×1366, 1180×820 y 820×1180, en DRAW y CINEMA, con standalone emulado y sin él: el root mide `innerHeight`, sin scroll, paleta y barra inferior a 12 px del borde y paneles dentro del viewport. **No verificable sin iPad real:** la diferencia `100vh`/`100dvh` con barras de Safari, el comportamiento de `dvh` al mostrar u ocultar las barras, y que la PWA standalone siga igual.
+
 ### 3.17.69 — Super Riso: modo de medición automático (solo con el flag)
 
 **feat(fx, experimental)** — El overlay de `?superriso=1` gana un botón **Medir** (táctil, ≥44 px) que ejecuta sin recargar 5 configuraciones (bypass · defecto · `preserveDrawingBuffer:false` · +res 0.75 · +res 0.5; 2 s de calentamiento descartados + 8 s medidos cada una), restaura la configuración previa y entrega un texto plano con datos del dispositivo (UA, DPR, tamaño del canvas y de simulación, GPU, `MAX_TEXTURE_SIZE`, versión, tema, preset) y una tabla (fps, ms de frame p50/p95, CPU de Super Riso, GPU si hay temporizador). Botón **Copiar** con *fallback* a texto seleccionable. Cambiar `preserveDrawingBuffer` recrea el contexto WebGL sobre un canvas nuevo. Único cambio fuera de `canvas/superRiso/`: `renderPipeline` pasa el preset y la velocidad de cámara a la llamada (para avisar si no se está en CINEMA o la cámara no se mueve). Sin flag, nada cambia.

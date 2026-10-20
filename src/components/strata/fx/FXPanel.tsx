@@ -173,7 +173,7 @@ export function FXPanel() {
 	if (isExpanded) {
 		return (
 			<div style={{ position: 'absolute', top: '50%', right: SPACE.edge, transform: 'translateY(-50%)', zIndex: 50 }}>
-				<DiPanel dark={dark} width={248} radius={RADIUS.panel} padding="10px" style={{ gap: 0, maxHeight: 'calc(100vh - 80px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+				<DiPanel dark={dark} width={248} radius={RADIUS.panel} padding="10px" style={{ gap: 0, maxHeight: 'calc(var(--app-h, 100vh) - 80px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 					{/* Header */}
 					<div style={{ display: 'flex', alignItems: 'center', marginBottom: 4, flexShrink: 0 }}>
 						<span style={{
@@ -203,7 +203,7 @@ export function FXPanel() {
 						</div>
 					</div>
 					<PanelHSep />
-					<div className="di-panel-scroll" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 141px)' }}>
+					<div className="di-panel-scroll" style={{ overflowY: 'auto', maxHeight: 'calc(var(--app-h, 100vh) - 141px)' }}>
 					{/* Texture */}
 					<GroupLabel label={t('fx.group.texture')} />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

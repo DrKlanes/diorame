@@ -305,3 +305,14 @@ html {
   outline: 2px solid rgb(154, 15, 249);
   outline-offset: -2px;
 }
+
+/* App root height (v3.17.70).
+   Standalone PWA: static 100vh — dvh fluctuates there (v3.10.9: Bug A) and position:fixed breaks
+   after backgrounding (Bug B), so this stays exactly as in v3.10.9.
+   Browser tab (Safari with bars): 100vh is the height WITHOUT the bars, so a 100vh root overflows
+   by the bar height and cuts everything anchored to the bottom. 100dvh is the visible height.
+   --app-h exposes the same value to panels that size themselves from the viewport. */
+.app-root { --app-h: 100vh; height: 100vh; }
+@supports (height: 100dvh) {
+  .app-root--browser { --app-h: 100dvh; height: 100dvh; }
+}
