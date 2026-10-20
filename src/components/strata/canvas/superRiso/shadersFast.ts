@@ -2,8 +2,8 @@
 // must match exactly once, or the module throws and Super Riso disables itself for the session).
 // The lab shaders in shadersCommon/Separation/Print stay byte-identical and are the reference.
 //
-// LOSSLESS (srlossless=1, allowed at full level and in exports; verified identical on a frozen
-// frame against the lab shaders):
+// LOSSLESS (the full level since L1, exports included; srlossless=0 under srdebug compares against
+// the lab shaders; verified identical on a frozen frame):
 //   BLUR1      the PREP blur samples one texture and writes one output (the lab blurred PREP into
 //              both MRT outputs and read the same texture twice; only output A is ever used).
 //   SPREAD_LL  an ink with no density, no blurred coverage and no local density is skipped: the lab
@@ -30,7 +30,15 @@ export const FS_BLUR1 = patch(patch(FS_BLUR,
 	'oA=a/w; oB=b/w;', 'oA=a/w; oB=vec4(0);');
 
 // (A SEP0 variant that solved each LUT set once was identical but measured no faster on desktop —
-// register pressure of the seen-set arrays — so it was dropped. SEP0 runs the lab shader.)
+// register pressure of the seen-set arrays — so it was dropped.)
+// SEP0_LL (L1): the two final solves repeat solves already done. solve(bS,t,tL) for bS = Sa is the
+// pass-0 solve that elected Sa (same set, same target), and solve(Ss,t,tL) for Ss = Sa is that same
+// solve too, so both reuse it. In flat areas (one set per pass, Ss = Sa) that is 2 solves of 4.
+export const FS_SEP0_LL = patch(patch(patch(FS_SEP0,
+	'float ba=eP, bs=length(oklabL(uPaper)-tSL);', 'float ba=eP, bs=length(oklabL(uPaper)-tSL); vec3 Da=vec3(0);'),
+	'if(pass==0){ if(e<ba){ ba=e; Sa=S; } }', 'if(pass==0){ if(e<ba){ ba=e; Sa=S; Da=D; } }'),
+	'  ivec3 bS=Sa; vec3 bD=vec3(0);\n  if(Ss.x>=0){ vec3 Ds; float es=solve(Ss,t,tL,Ds); if(es<=ba+.025){ bS=Ss; } }\n  else if(ba>eP-.025) bS=ivec3(-1);\n  if(bS.x>=0){ float e=solve(bS,t,tL,bD); }\n',
+	'  ivec3 bS=Sa; vec3 bD=Da;\n  if(Ss.x>=0){ vec3 Ds=Da; float es=ba; if(Ss!=Sa) es=solve(Ss,t,tL,Ds); if(es<=ba+.025){ bS=Ss; bD=Ds; } }\n  else if(ba>eP-.025) bS=ivec3(-1);\n');
 
 const SPREAD_INK = '    float v=pick(a,b,i); float d=pick(sA,sB,i);\n';
 export const FS_SPREAD_LL = patch(FS_SPREAD, SPREAD_INK,
@@ -39,7 +47,7 @@ export const FS_SPREAD_LL = patch(FS_SPREAD, SPREAD_INK,
 // ── Preview ────────────────────────────────────────────────────────────────────────────────────
 export const PV_SEP0 = 1, PV_SPREAD = 2, PV_SCAN = 4, PV_SCREEN = 8, PV_ALL = 15;
 
-export const FS_SEP0_PV = patch(FS_SEP0,
+export const FS_SEP0_PV = patch(FS_SEP0_LL,
 	'for(int it=0;it<5;it++) for(int k=0;k<3;k++){ if(S[k]<0) continue;',
 	'for(int it=0;it<3;it++) for(int k=0;k<3;k++){ if(S[k]<0) continue;');
 

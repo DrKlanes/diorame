@@ -1,10 +1,11 @@
 // Super Riso — experimental integration (loaded only behind ?superriso=1, see flag.ts).
 //
 // Called from renderPipeline phase 3, in the applyRisoV2 slot. "Prints what you see":
-//   1. Flatten: the canvas BASE colour (no paper texture — Super Riso brings its own paper) with
-//      offCtx on top, using the same operator as the transfer (multiply light, source-over dark).
-//   2. Engine: fixed "Taller limpio" style, inks in 'dpal' mode picked ONCE per theme, seed from
-//      the caller's 12 fps tick.
+//   1. Flatten: the canvas BASE colour (drawBackground.backgroundBaseColor, no paper texture —
+//      Super Riso brings its own paper) with offCtx on top, using the same operator as the
+//      transfer (multiply light, source-over dark).
+//   2. Engine: parameters from the state (postProcessing.superRiso → panel.fromPanel), inks from
+//      the scene's shape colours (sceneInks.ts, cached per scene), seed from the caller's tick.
 //   3. Output: ONLY if everything went well, the opaque result replaces offCtx in one 'copy'
 //      drawImage. Any failure leaves offCtx untouched and the frame takes the normal route.
 //
@@ -27,18 +28,15 @@
 
 import { createEngine, type Engine, type EngineAssets, type GLCanvas, type RenderOpts } from './engine';
 import type { EngineParams } from './panel';
-import { pickInks, hex2rgb, type PickedInks, type RGB } from './inks';
-import { STYLES, fromPanel } from './panel';
+import type { Shape, SuperRisoSettings } from '../../../../types/strataTypes';
+import { backgroundBaseColor } from '../drawBackground';
+import { hex2rgb, type PickedInks, type RGB } from './inks';
+import { fromPanel } from './panel';
+import { sceneInks } from './sceneInks';
 import { record, mountOverlay, setHeader, snapshot, reset } from './perfOverlay';
 import { cfg as KNOBS, live, hooks } from './runtimeConfig';
 import { runMeasurement } from './measure';
 import { flatten, liveFlat, exportFlat, takeBitmap, resetBitmaps, drawBack, drawFrom, holdResult, heldResult, dropHeld, makeGLCanvas, isOffscreen, offscreenWebGL2Available } from './bridge';
-
-// Same base colours as drawBackground.ts (fillStyle before the paper texture). Duplicated on
-// purpose for the spike: drawBackground is outside the GO. Keep in sync.
-const baseColor = (isDarkMode: boolean, isPixelArt: boolean): string => isDarkMode
-	? (isPixelArt ? '#000000' : '#050505')
-	: (isPixelArt ? '#ffffff' : '#f8f9fa');
 
 const TEXTURES = ['greennoise1024', 'ink_black', 'ink_red', 'ink_lut'] as const;
 let assets: EngineAssets | null = null;
@@ -49,7 +47,6 @@ let engine: Engine | null = null;
 // canvas type (DOM vs Offscreen) is fixed per context. Listeners ignore stale canvases.
 let glCanvas: GLCanvas = makeGLCanvas(KNOBS.offscreenBack);
 let engineIsPdb = KNOBS.preserveDrawingBuffer;
-const inksByTheme = new Map<boolean, PickedInks>();
 let lastLiveCall = 0;
 
 const disable = (why: string, e?: unknown) => {
@@ -111,28 +108,47 @@ mountOverlay(() => { void runMeasurement(); });
 setHeader(`SUPER RISO · ${pathLabel()}`);
 
 // Read-only handle for the measurement harness.
-(window as unknown as { __superRiso: unknown }).__superRiso = { KNOBS, snapshot, reset, inksByTheme, live, get engine() { return engine; }, get disabled() { return disabled; }, get glCanvas() { return glCanvas; }, get flat() { return liveFlat.canvas; } };
+(window as unknown as { __superRiso: unknown }).__superRiso = { KNOBS, snapshot, reset, live, get inks() { return lastInks; }, get params() { return lastParams; }, get engine() { return engine; }, get disabled() { return disabled; }, get glCanvas() { return glCanvas; }, get flat() { return liveFlat.canvas; } };
 
 // ── Per-frame preparation ──────────────────────────────────────────────────────────────────────
-type Frame = { style: Partial<EngineParams>; fw: number; fh: number; base: string; srcPaper: RGB; key: string };
+/** What renderFrame hands over each frame (built once, before phase 1). */
+export type SuperRisoInput = {
+	settings: SuperRisoSettings;
+	isDarkMode: boolean;
+	isPixelArt: boolean;
+	/** The project's shapes and hidden layers: the source of the inks (cached by identity). */
+	shapes: readonly Shape[];
+	hiddenLayers: readonly number[];
+	/** false for export renders (skipCinematicOverlays). */
+	isLive: boolean;
+	info: { preset: string; speed: number };
+};
+type Frame = { style: Partial<EngineParams>; fw: number; fh: number; base: string; srcPaper: RGB; inks: PickedInks; key: string };
+let lastInks: PickedInks | null = null;
+let lastParams: Partial<EngineParams> | null = null;
 
 /** isExport: the lab's full level, whatever the live knobs say — resolution 1, full-size upload. */
-function prepare(w: number, h: number, isDarkMode: boolean, isPixelArt: boolean, isExport = false): Frame {
+function prepare(w: number, h: number, inp: SuperRisoInput, isExport = false): Frame {
+	const { settings: s, isDarkMode, isPixelArt } = inp;
 	const res = isExport ? 1 : KNOBS.resScale, sim = isExport ? false : KNOBS.simUpload;
-	const style = fromPanel(STYLES.clean.panel, w * res);
+	const style = fromPanel(s, w * res);
 	const simW = Math.round(240 * style.pxmm!);
 	const simH = Math.round(simW * h / w);
 	// srsim=1: flatten straight at the simulation size (the 2D draw IS the reduction pass).
 	const fw = sim ? Math.min(w, simW) : w;
 	const fh = sim ? Math.min(h, simH) : h;
-	const base = baseColor(isDarkMode, isPixelArt);
+	const base = backgroundBaseColor(isDarkMode, isPixelArt);
 	// srcPaper: the base colour in light mode. In dark mode the dark base must NOT be the paper
 	// (prep divides by srcPaper: everything would turn into paper); white makes it ink.
 	// srdarkpaper=bg restores the literal brief (dark base as srcPaper) to compare.
-	const srcPaper: RGB = (isDarkMode && !KNOBS.darkPaperFromBase) ? [1, 1, 1] : hex2rgb(base);
-	// Anything that changes what a pending/held result means: size, theme, parameters, context.
-	const key = [w, h, +isDarkMode, +isPixelArt, KNOBS.resScale, +KNOBS.simUpload, +KNOBS.mip, +KNOBS.offscreenBack, +KNOBS.preserveDrawingBuffer, +KNOBS.darkPaperFromBase, +KNOBS.lossless, KNOBS.preview, KNOBS.pipe].join('|');
-	return { style, fw, fh, base, srcPaper, key };
+	const darkInk = isDarkMode && !KNOBS.darkPaperFromBase;
+	const srcPaper: RGB = darkInk ? [1, 1, 1] : hex2rgb(base);
+	const inks = sceneInks(inp.shapes, inp.hiddenLayers, s, srcPaper, darkInk ? base : null);
+	if (inp.isLive) lastInks = inks;
+	// Anything that changes what a pending/held result means: size, theme, parameters, inks, context.
+	const key = [w, h, +isDarkMode, +isPixelArt, KNOBS.resScale, +KNOBS.simUpload, +KNOBS.mip, +KNOBS.offscreenBack, +KNOBS.preserveDrawingBuffer, +KNOBS.darkPaperFromBase, +KNOBS.lossless, KNOBS.preview, KNOBS.pipe,
+		s.paper, s.screen, s.screenSize, s.imperfection, s.resolution, inks.inks.join(',')].join('|');
+	return { style, fw, fh, base, srcPaper, inks, key };
 }
 
 function ensureEngine(): Engine {
@@ -144,20 +160,8 @@ function ensureEngine(): Engine {
 	return engine;
 }
 
-/** Once per theme, never per frame. */
-function inksFor(isDarkMode: boolean, flat: HTMLCanvasElement): PickedInks {
-	let inks = inksByTheme.get(isDarkMode);
-	if (!inks) {
-		const ti = performance.now();
-		inks = pickInks(flat, 'dpal', STYLES.clean.panel.maxInks ?? 6, 1);
-		inksByTheme.set(isDarkMode, inks);
-		console.info(`[SuperRiso] inks (${isDarkMode ? 'dark' : 'light'}) picked in ${(performance.now() - ti).toFixed(1)} ms:`, inks.names.join(', '));
-	}
-	return inks;
-}
-
-const engineParams = (fr: Frame, inks: PickedInks): Partial<EngineParams> =>
-	({ ...fr.style, inks: inks.inks, names: inks.names, opac: inks.opac, srcPaper: fr.srcPaper });
+const engineParams = (fr: Frame): Partial<EngineParams> =>
+	(lastParams = { ...fr.style, inks: fr.inks.inks, names: fr.inks.names, opac: fr.inks.opac, srcPaper: fr.srcPaper });
 const seedOf = (tick: number) => (tick % 9999) + 1;
 const tickNow = () => Math.floor(performance.now() / (1000 / 12));
 
@@ -184,15 +188,15 @@ const blocked = () => disabled || contextLost || !assets || KNOBS.bypass;
  * Called by renderFrame BEFORE phase 1 (no 2D of this frame emitted yet). srpipe only: uploads
  * the canvas flattened in the previous frame and runs the engine. Never on export frames.
  */
-export function beginSuperRisoFrame(w: number, h: number, isDarkMode: boolean, isPixelArt: boolean, isLive: boolean): void {
-	if (!isLive) return;
+export function beginSuperRisoFrame(w: number, h: number, inp: SuperRisoInput): void {
+	if (!inp.isLive) return;
 	frameNo++;
 	ready = null;
 	st.begin = 0; st.upload = 0; st.mip = 0; st.render = 0; st.backBegin = 0;
 	if (!KNOBS.pipe || blocked()) return;
 	const t0 = performance.now();
 	try {
-		const fr = prepare(w, h, isDarkMode, isPixelArt);
+		const fr = prepare(w, h, inp);
 		if (KNOBS.pipe === 2) { beginPipe2(fr, t0); return; }
 		// Pending only counts if it was flattened in the immediately previous live frame with the
 		// same key: otherwise (first frame, resize, theme, params) phase 3 goes synchronous.
@@ -274,22 +278,20 @@ function runSync(fr: Frame, flat: HTMLCanvasElement, params: Partial<EngineParam
 
 /**
  * Phase 3, in the applyRisoV2 slot.
+ * @param inp   inp.isLive false for export renders (skipCinematicOverlays): kept out of the live
+ *              stats and always synchronous (an export frame must be its own frame)
  * @param tick  floor(performance.now() / (1000 / 12)), computed by the caller in phase 3
- * @param isLive false for export renders (skipCinematicOverlays): kept out of the live stats and
- *               always synchronous (an export frame must be its own frame)
  * @returns true when offCtx now holds the opaque Super Riso frame
  */
 export function applySuperRiso(
 	offCtx: CanvasRenderingContext2D,
 	w: number,
 	h: number,
-	isDarkMode: boolean,
-	isPixelArt: boolean,
+	inp: SuperRisoInput,
 	tick: number,
-	isLive: boolean,
-	info: { preset: string; speed: number },
 ): boolean {
 	const t0 = performance.now();
+	const { isDarkMode, isLive, info } = inp;
 	if (isLive) {
 		if (lastLiveCall > 0) record('interval', t0 - lastLiveCall);
 		lastLiveCall = t0;
@@ -299,13 +301,13 @@ export function applySuperRiso(
 	}
 	if (blocked()) return false;
 	try {
-		const fr = prepare(w, h, isDarkMode, isPixelArt, !isLive);
+		const fr = prepare(w, h, inp, !isLive);
 		if (held && held.key !== fr.key) { held = null; dropHeld(); }
 
 		// Exports: always synchronous, on their own canvas.
 		if (!isLive) {
 			const flat = flatten(exportFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
-			const eng = runSync(fr, flat, engineParams(fr, inksFor(isDarkMode, flat)), tick, false, exportOpts());
+			const eng = runSync(fr, flat, engineParams(fr), tick, false, exportOpts());
 			if (eng.gl.isContextLost()) return false;
 			drawBack(offCtx, glCanvas, eng.width, eng.height, w, h, !!fr.style.crisp);
 			console.info(`[SuperRiso] export frame ${w}×${h} → sim ${eng.width}×${eng.height}: ${(performance.now() - t0).toFixed(1)} ms · ${eng.lastVariants}`);
@@ -328,7 +330,7 @@ export function applySuperRiso(
 			// Flatten THIS frame for the next launch, then show what the start of this frame consumed.
 			const flat = flatten(liveFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
 			tFlat = performance.now();
-			const params = engineParams(fr, inksFor(isDarkMode, flat));
+			const params = engineParams(fr);
 			pending = { key: fr.key, frame: frameNo, params };
 			tBack0 = performance.now();
 			const hr = heldResult();
@@ -351,7 +353,7 @@ export function applySuperRiso(
 			// (2) flatten THIS frame for the next one — before offCtx is overwritten.
 			const flat = flatten(liveFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
 			tFlat = performance.now();
-			const params = engineParams(fr, inksFor(isDarkMode, flat));
+			const params = engineParams(fr);
 			pending = { key: fr.key, frame: frameNo, params };
 			tBack0 = performance.now();
 			// (1) show the result the engine produced at the start of this frame.
@@ -383,7 +385,7 @@ export function applySuperRiso(
 		}
 		const flat = flatten(liveFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
 		tFlat = performance.now();
-		const eng = runSync(fr, flat, engineParams(fr, inksFor(isDarkMode, flat)), tick, true, liveOpts());
+		const eng = runSync(fr, flat, engineParams(fr), tick, true, liveOpts());
 		if (eng.gl.isContextLost()) return false;
 		tBack0 = performance.now();
 		show(offCtx, w, h, fr.key, eng.width, eng.height, !!fr.style.crisp, tick);

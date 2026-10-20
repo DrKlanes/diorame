@@ -20,7 +20,8 @@ const PROFILE_FRAMES = 60;
 const TOTAL = 8;
 
 type Step = { id: string; label: string; patch: Partial<RuntimeCfg> };
-const sim = { ...DEFAULT_CFG, simUpload: true };
+// The measured rows drive the knobs by hand: automatic levels off.
+const sim = { ...DEFAULT_CFG, simUpload: true, auto: false, lossless: false };
 type Counts = { pipe: number; sync: number; held: number };
 type Row = { id: string; label: string; res: string; s: ReturnType<typeof snapshot>; patch: Partial<RuntimeCfg>; n: Counts };
 type ProfileTable = { mode: ProfileMode; lines: string[] } | null;
@@ -152,7 +153,7 @@ export async function runMeasurement(): Promise<void> {
 		return row;
 	};
 	try {
-		await run({ id: 'A', label: 'bypass', patch: { ...DEFAULT_CFG, bypass: true } });
+		await run({ id: 'A', label: 'bypass', patch: { ...DEFAULT_CFG, bypass: true, auto: false } });
 		const B = await run({ id: 'B', label: '.75 pipe1', patch: { ...sim, resScale: .75, pipe: 1 } });
 		const C = await run({ id: 'C', label: '.75 pipe2', patch: { ...sim, resScale: .75, pipe: 2 } });
 		const p: 1 | 2 = (C.s.frameP50 ?? 1e9) < (B.s.frameP50 ?? 1e9) ? 2 : 1;

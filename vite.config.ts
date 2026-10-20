@@ -55,6 +55,19 @@
                 },
               },
             },
+            {
+              // Texturas de Super Riso (public/textures/superRiso/*.png, ~1,4 MB): fuera del
+              // precache (globIgnores) para no cargarlas a quien no usa el FX; solo las pide el
+              // chunk del motor. CacheFirst: tras la 1ª carga, offline. Sin hash en el nombre:
+              // si cambian, renombrarlas (o subir el cacheName) para que no se sirvan viejas.
+              urlPattern: /\/textures\/superRiso\/[\w-]+\.png$/,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'diorame-superriso-textures',
+                expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 60 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
           ],
         },
       }),

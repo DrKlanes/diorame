@@ -16,7 +16,7 @@ import { FS_SCREEN, FS_SPREAD, FS_COMPOSE, FS_SCAN } from './shadersPrint';
 import { MAXI, hex2rgb, lin, oklab, dist, printedHex, rng } from './inks';
 import { DEFAULTS, type EngineParams } from './panel';
 import { createPassProfiler, type PassProfiler } from './passProfiler';
-import { FS_BLUR1, FS_SPREAD_LL, FS_SEP0_PV, FS_SPREAD_PV, FS_SCAN_PV, FS_SCREEN_PV, FS_COPY, PV_SEP0, PV_SPREAD, PV_SCAN, PV_SCREEN } from './shadersFast';
+import { FS_BLUR1, FS_SPREAD_LL, FS_SEP0_LL, FS_SEP0_PV, FS_SPREAD_PV, FS_SCAN_PV, FS_SCREEN_PV, FS_COPY, PV_SEP0, PV_SPREAD, PV_SCAN, PV_SCREEN } from './shadersFast';
 
 export type EngineAssets = { green: TexImageSource; exBlack: TexImageSource & { width: number; height: number }; exRed: TexImageSource & { width: number; height: number }; exLut: TexImageSource };
 export type EngineOptions = { preserveDrawingBuffer?: boolean };
@@ -40,6 +40,10 @@ export type Engine = {
 	render(params: Partial<EngineParams>, opts?: RenderOpts): Engine;
 	/** Exact copy of the last toTexture result to the canvas (srpipe=2). */
 	present(): void;
+	/** 1×1 readPixels of the canvas: returns once the GPU has finished the last render. */
+	finish(): void;
+	/** Releases the context (export instances: one per export). */
+	destroy(): void;
 	/** Forces the separation LUT to be rebuilt on the next render (diagnostics). */
 	invalidateLut(): void;
 };
@@ -54,6 +58,10 @@ type RunApi = {
 	fv(name: string, arr: number[], n: number): void;
 	m2(name: string, arr: number[]): void;
 };
+
+// Generated once per session and shared by every engine instance (the export instance included).
+const generated = new Map<string, HTMLCanvasElement>();
+const once = (key: string, make: () => HTMLCanvasElement) => { let c = generated.get(key); if (!c) { c = make(); generated.set(key, c); } return c; };
 
 function fiberCanvas(seed: number): HTMLCanvasElement {
 	const N = 1024, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d')!;
@@ -152,7 +160,7 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 		r: texFrom(assets.exRed, { wrap: gl.REPEAT, mip: true }), rs: [assets.exRed.width, assets.exRed.height],
 		lut: texFrom(assets.exLut),
 	};
-	const fibTex = texFrom(fiberCanvas(11), { wrap: gl.REPEAT, mip: true }), incTex = texFrom(inclCanvas(23), { wrap: gl.REPEAT, mip: true });
+	const fibTex = texFrom(once('fib11', () => fiberCanvas(11)), { wrap: gl.REPEAT, mip: true }), incTex = texFrom(once('inc23', () => inclCanvas(23)), { wrap: gl.REPEAT, mip: true });
 	const exU = (a: RunApi) => { a.t('uExB', EX.b); a.t('uExR', EX.r); a.t('uExLut', EX.lut); a.f('uExBSize', EX.bs[0], EX.bs[1]); a.f('uExRSize', EX.rs[0], EX.rs[1]); a.f('uExPxMm', EX_PXMM); };
 
 	const LUT = target(33 * 33, 33, 2); let lutKey = '';
@@ -200,11 +208,18 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 			const T = TG;
 			run('PRESENT', variant(FS_COPY), null, a => { a.t('uT', T.out.t[0]); });
 		},
+		finish() {
+			gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
+			gl!.readPixels(0, 0, 1, 1, gl!.RGBA, gl!.UNSIGNED_BYTE, new Uint8Array(4));
+		},
+		destroy() {
+			gl!.getExtension('WEBGL_lose_context')?.loseContext();
+		},
 		render(params, opts = {}) {
 			const P: EngineParams = Object.assign({}, DEFAULTS, params);
 			const pv = opts.preview ?? 0, ll = !!opts.lossless || pv !== 0;
 			const lvl = (bit: number, hasLL: boolean) => (pv & bit) ? 'preview' : (ll && hasLL) ? 'lossless' : 'lab';
-			eng.lastVariants = `blurPrep:${ll ? 'lossless' : 'lab'} sep0:${lvl(PV_SEP0, false)} screen:${lvl(PV_SCREEN, false)} spread:${lvl(PV_SPREAD, true)} scan:${lvl(PV_SCAN, false)}`;
+			eng.lastVariants = `blurPrep:${ll ? 'lossless' : 'lab'} sep0:${lvl(PV_SEP0, true)} screen:${lvl(PV_SCREEN, false)} spread:${lvl(PV_SPREAD, true)} scan:${lvl(PV_SCAN, false)}`;
 			const t0 = performance.now();
 			pollTimer();
 			if (profiler.mode !== 'off') profiler.frameStart();
@@ -240,7 +255,7 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 				run('BLUR prep V', PR.blur, T.scr, a => { a.t('uTexA', T.loc.t[0]); a.t('uTexB', T.loc.t[0]); a.f('uDir', 0, 1); a.f('uSig', .3 * pxmm); });
 				prepS = T.scr.t[0];
 			}
-			run('SEP0', (pv & PV_SEP0) ? variant(FS_SEP0_PV) : PR.sep0, T.tmp, a => { a.t('uPrepS', prepS); a.t('uPrep', T.prep.t[0]); a.t('uSet', LUT.t[0]); a.fv('uCon', con, 1); a.fv('uInk', inkLin, 3); a.fv('uOp', opac, 1); a.i('uN', N); a.f('uPaper', ...paperLin); a.f('uCost', P.inkCost); a.f('uPair', P.pair); a.f('uMinDot', P.minDot); });
+			run('SEP0', (pv & PV_SEP0) ? variant(FS_SEP0_PV) : ll ? variant(FS_SEP0_LL) : PR.sep0, T.tmp, a => { a.t('uPrepS', prepS); a.t('uPrep', T.prep.t[0]); a.t('uSet', LUT.t[0]); a.fv('uCon', con, 1); a.fv('uInk', inkLin, 3); a.fv('uOp', opac, 1); a.i('uN', N); a.f('uPaper', ...paperLin); a.f('uCost', P.inkCost); a.f('uPair', P.pair); a.f('uMinDot', P.minDot); });
 			// uM is a mat2[8]: the lab's m2() sends all 8 matrices in one uniformMatrix2fv call.
 			run('WARP', PR.sep, T.sep, a => { a.f('uPxMm', pxmm); a.t('uSA', T.tmp.t[0]); a.t('uSB', T.tmp.t[1]); a.i('uN', N); a.f('uCtr', P.printW / 2, h / pxmm / 2); a.m2('uM', M); a.fv('uT', Tt, 2); });
 			const blur2 = (label: string, src: Target, tmp: Target, dst: Target, sigPx: number) => {

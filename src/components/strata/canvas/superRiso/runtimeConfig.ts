@@ -1,6 +1,11 @@
 // Super Riso — runtime knobs and live facts shared by applySuperRiso, the overlay and the
 // automatic measurement (measure.ts). Only ever imported from the ?superriso=1 chunk.
 //
+// L1: without ?srdebug=1 every knob below is ignored and cfg is DEFAULT_CFG (auto quality levels,
+// lossless full level). With srdebug=1: the overlay, "Medir", window.__superRiso and the knobs.
+// Any of srres / srpipe / srhold / srpreview / srprevmask switches the automatic levels off (the
+// knobs drive the live frame as in C1–C2a). srlevel=preview|full forces the automatic level.
+//
 // URL knobs (read once, here, only because this module is behind the flag):
 //   srpdb=0 · srres=0.75|0.5 · srmip=0 · srbypass=1 · srdarkpaper=bg
 //   C1b bridge paths: srsim=1 (flatten + upload at simulation size) · sroff=1 (engine on an
@@ -36,9 +41,16 @@ export type RuntimeCfg = {
 	lossless: boolean;
 	/** Bitmask of lossy preview variants, live only (0 = full level). Implies lossless. */
 	preview: number;
+	/** Automatic quality levels (quality.ts) drive res / preview / pipe / hold of the live frame. */
+	auto: boolean;
+	/** srlevel: forces the automatic level instead of measuring it. */
+	forceLevel: 'preview' | 'full' | null;
 };
 
-const params = new URLSearchParams(window.location.search);
+const urlParams = new URLSearchParams(window.location.search);
+export const DEBUG = urlParams.get('srdebug') === '1';
+const params = DEBUG ? urlParams : new URLSearchParams();
+const MANUAL_KNOBS = ['srres', 'srpipe', 'srhold', 'srpreview', 'srprevmask'];
 
 export const cfg: RuntimeCfg = {
 	preserveDrawingBuffer: params.get('srpdb') !== '0',
@@ -51,14 +63,17 @@ export const cfg: RuntimeCfg = {
 	bitmapUpload: params.get('srbitmap') === '1',
 	pipe: params.get('srpipe') === '2' ? 2 : params.get('srpipe') === '1' ? 1 : 0,
 	hold: params.get('srhold') === '1',
-	lossless: params.get('srlossless') === '1',
+	lossless: params.get('srlossless') !== '0',
 	preview: params.get('srpreview') === '1' ? 15 : Math.max(0, Math.min(15, Number(params.get('srprevmask')) || 0)),
+	auto: !MANUAL_KNOBS.some(k => params.has(k)),
+	forceLevel: params.get('srlevel') === 'preview' ? 'preview' : params.get('srlevel') === 'full' ? 'full' : null,
 };
 
 /** What a plain `?superriso=1` does, ignoring the other URL knobs. */
 export const DEFAULT_CFG: Readonly<RuntimeCfg> = {
 	preserveDrawingBuffer: true, resScale: 1, mip: true, bypass: false, darkPaperFromBase: false,
-	simUpload: false, offscreenBack: false, bitmapUpload: false, pipe: 0, hold: false, lossless: false, preview: 0,
+	simUpload: false, offscreenBack: false, bitmapUpload: false, pipe: 0, hold: false, lossless: true, preview: 0,
+	auto: true, forceLevel: null,
 };
 
 /** Facts about the last LIVE frame Super Riso was called for (filled by applySuperRiso). */
@@ -79,8 +94,10 @@ export const live = {
 	pipeFrames: 0,
 	/** srhold: live frames that only redrew the held result. */
 	heldFrames: 0,
-	/** Path the last live frame took: sync · pipe · held. */
+	/** Path the last live frame took: sync · pipe · held · refine · detect. */
 	lastPath: '',
+	/** Automatic level of the current canvas size: detect · full · preview. */
+	level: '',
 };
 
 /** Set by applySuperRiso so the measurement can read the engine without importing it. */

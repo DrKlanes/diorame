@@ -19,7 +19,7 @@ export const DIORAME_RISO: readonly InkEntry[] = [
 	["Burgundy","#914e72"],["Violet","#9d7ad2"],["Brick","#a75154"],["Bright Red","#f15060"],["Fluorescent Pink","#ff48b0"],["Light Mauve","#e6b5c9"],
 	["Flat Gold","#bb8b41"],["Orange","#ff6c2f"],["Yellow","#ffe800"],["Sunflower","#ffb511"]
 ];
-const CMYK_RISO: readonly InkEntry[] = [["Fluorescent Pink","#ff48b0"],["Yellow","#ffe800"],["Medium Blue","#3255a4"],["Black","#000000"]];
+export const CMYK_RISO: readonly InkEntry[] = [["Fluorescent Pink","#ff48b0"],["Yellow","#ffe800"],["Medium Blue","#3255a4"],["Black","#000000"]];
 
 // ── color
 export const hex2rgb = (h: string): RGB => { h = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255) as RGB; };
@@ -33,7 +33,7 @@ export function oklab(c: RGB): RGB {
 	return [.2104542553 * l + .7936177850 * m - .0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + .4505937099 * s, .0259040371 * l + .7827717662 * m - .8086757660 * s];
 }
 export const dist = (a: RGB, b: RGB) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-const dP = (x: RGB, y: RGB) => Math.hypot(x[0] - y[0], 2 * (x[1] - y[1]), 2 * (x[2] - y[2]));
+export const dP = (x: RGB, y: RGB) => Math.hypot(x[0] - y[0], 2 * (x[1] - y[1]), 2 * (x[2] - y[2]));
 export const printedHex = (h: string) => PRINTED[h.toLowerCase()] || h;
 export const opacityFor = (name: string, hex: string) => OPAQUE[name] ?? (oklab(hex2rgb(hex))[0] < .3 ? .3 : .15);
 
@@ -81,7 +81,7 @@ function analyze(src: CanvasImageSource & { width: number; height: number }, max
 	}
 	return { chosen, srcPaper };
 }
-function nearestFrom(list: readonly InkEntry[], c: RGB, used: Set<string>): InkEntry | null {
+export function nearestFrom(list: readonly InkEntry[], c: RGB, used: Set<string>): InkEntry | null {
 	let best: InkEntry | null = null, bd = 1e9; const L = oklab(c);
 	for (const [name, hex] of list) { if (used.has(name)) continue; const d = dP(oklab(hex2rgb(hex)), L); if (d < bd) { bd = d; best = [name, hex]; } }
 	return best;

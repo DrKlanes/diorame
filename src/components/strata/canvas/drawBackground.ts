@@ -1,3 +1,8 @@
+/** The solid colour under the paper texture (Super Riso prints over it: superRiso/applySuperRiso.ts). */
+export const backgroundBaseColor = (isDarkMode: boolean, isPixelArt: boolean): string => isDarkMode
+	? (isPixelArt ? '#000000' : '#050505')
+	: (isPixelArt ? '#ffffff' : '#f8f9fa');
+
 /**
  * Paints the canvas background: solid color fill + optional paper texture.
  * Resets ctx transform, filter, alpha and composite op before painting so the
@@ -25,9 +30,7 @@ export const drawBackground = (
 	ctx.setTransform(1, 0, 0, 1, 0, 0);
 	ctx.filter = 'none';
 	ctx.globalCompositeOperation = 'source-over';
-	ctx.fillStyle = isDarkMode
-		? (isPixelArt ? '#000000' : '#050505')
-		: (isPixelArt ? '#ffffff' : '#f8f9fa');
+	ctx.fillStyle = backgroundBaseColor(isDarkMode, isPixelArt);
 	ctx.fillRect(0, 0, w, h);
 
 	// Paper Texture

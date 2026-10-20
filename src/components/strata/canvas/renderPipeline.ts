@@ -424,11 +424,21 @@ export function renderFrame(
 
 	const offCtx = rc.offscreenCanvasRef.current!.getContext('2d')!;
 
-	// Super Riso — experimental, only behind ?superriso=1 (superRiso/flag.ts). BEFORE any 2D of
-	// this frame: with srpipe it uploads the previous frame's flatten while nothing 2D is pending
-	// (what WebKit waits for). Without the flag getSuperRiso() is null and nothing happens here.
-	const superRisoBegin = fxEnabled ? getSuperRiso() : null;
-	if (superRisoBegin) superRisoBegin.beginSuperRisoFrame(w, h, currentState.isDarkMode, isPixelArt, !rc.skipCinematicOverlays);
+	// Super Riso — only behind ?superriso=1 (superRiso/flag.ts) and with the FX on. BEFORE any 2D of
+	// this frame: with a pipelined level it uploads the previous frame's flatten while nothing 2D is
+	// pending (what WebKit waits for). Otherwise superRiso is null and nothing happens here or in
+	// phase 3.
+	const superRiso = (fxEnabled && currentState.postProcessingEnabled.superRiso) ? getSuperRiso() : null;
+	const superRisoInput = superRiso && {
+		settings: currentState.postProcessing.superRiso,
+		isDarkMode: currentState.isDarkMode,
+		isPixelArt,
+		shapes: currentState.shapes,
+		hiddenLayers: currentState.hiddenLayers,
+		isLive: !rc.skipCinematicOverlays,
+		info: { preset: currentState.cinematicType, speed: currentState.cinematicSpeed ?? 1 },
+	};
+	if (superRiso && superRisoInput) superRiso.beginSuperRisoFrame(w, h, superRisoInput);
 
 	// --- 1. Background ---
 	drawBackground(ctx, w, h, currentState.isDarkMode, isPixelArt, rc.paperImg);
@@ -572,15 +582,11 @@ export function renderFrame(
 		applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, rc.risoGrain, rc.helperCanvasRef.current!.getContext('2d')!);
 	}
 
-	// Super Riso — spike C1, only behind ?superriso=1 (superRiso/flag.ts). Without the flag
-	// getSuperRiso() is null and nothing below changes. When it returns true offCtx is opaque
-	// (paper included), so the transfer must not multiply it with the background.
-	const superRiso = fxEnabled ? getSuperRiso() : null;
-	const superRisoApplied = superRiso !== null && superRiso.applySuperRiso(
-		offCtx, w, h, currentState.isDarkMode, isPixelArt,
+	// Super Riso — see the start of the frame. When it returns true offCtx is opaque (paper
+	// included), so the transfer must not multiply it with the background.
+	const superRisoApplied = superRiso !== null && superRisoInput !== null && superRiso.applySuperRiso(
+		offCtx, w, h, superRisoInput,
 		Math.floor(performance.now() / (1000 / 12)),
-		!rc.skipCinematicOverlays,
-		{ preset: currentState.cinematicType, speed: currentState.cinematicSpeed ?? 1 },
 	);
 
 	// Chromatic Aberration & Transfer to Main
