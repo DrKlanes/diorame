@@ -45,6 +45,23 @@ export type LayerGradParams = {
     gradType: 'solid' | 'fade';
 };
 
+export type SuperRisoStyle = 'clean' | 'zine' | 'lofi' | 'cmyk';
+export type SuperRisoPaper = 'white' | 'natural' | 'recycled' | 'cream';
+// Super Riso (v3.17.74): the 8 panel controls + the style they started from + "full quality always".
+// Defaults, styles and sanitising in constants/superRiso.ts.
+export type SuperRisoSettings = {
+    style: SuperRisoStyle;
+    inkSet: 'own' | 'cmyk' | 'dpal';
+    maxInks: number;            // 1–8
+    paper: SuperRisoPaper;
+    screen: 'grain' | 'dots';
+    screenSize: number;         // 0–1
+    imperfection: number;       // 0–1
+    resolution: number;         // 0–1 (lo-fi … fine)
+    reprintFps: 0 | 4 | 6 | 8 | 12;
+    fullQuality: boolean;       // force the full level live (held at the reprint rate)
+};
+
 export type PostProcessingSettings = {
     grain: number;      // 0 to 1
     vignette: number;   // 0 to 1
@@ -63,6 +80,7 @@ export type PostProcessingSettings = {
     pixelArtDepth: number; // 2 to 32 (Color levels per channel)
     pixelArtDither: number; // 0 to 1 (Dither intensity, 0 = Off)
     grungeIntensity: number; // 0 (Subtle), 0.5 (Medium), 1 (Intense)
+    superRiso: SuperRisoSettings;
 };
 
 export type PostProcessingEnabled = {
@@ -78,6 +96,7 @@ export type PostProcessingEnabled = {
     riso: boolean;
     pixelArt: boolean;
     grunge: boolean;
+    superRiso: boolean;
 };
 
 export type HandheldIntensity = 'low' | 'medium' | 'high';

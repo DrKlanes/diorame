@@ -20,6 +20,8 @@ export { APP_VERSION } from '../../constants/version'; // Moved to constants/ver
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS } from '../../constants/palette';
+import { SUPER_RISO_DEFAULTS, SUPER_RISO_URL_FLAG, sanitizeSuperRiso, applySuperRisoStyle } from '../../constants/superRiso';
+import type { SuperRisoSettings, SuperRisoStyle } from '../../types/strataTypes';
 export type { PaletteColor } from '../../constants/palette';
 export { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS };
 
@@ -91,6 +93,8 @@ type Action =
   | { type: 'SET_PARTICLE_TYPE'; payload: 'circle' | 'square' | 'stroke' }
   | { type: 'TOGGLE_FX'; payload: keyof PostProcessingEnabled }
   | { type: 'TOGGLE_FX_MASTER' }
+  | { type: 'SET_SUPER_RISO'; payload: Partial<SuperRisoSettings> }
+  | { type: 'APPLY_SUPER_RISO_STYLE'; payload: SuperRisoStyle }
   | { type: 'REQUEST_EXPORT'; payload: ExportType }
   | { type: 'FINISH_EXPORT' }
   | { type: 'CLEAR_CANVAS' }
@@ -196,7 +200,8 @@ export const initialState: AppState = {
       pixelArtSize: 4, // Default pixel size
       pixelArtDepth: 4, // Default color depth (4 levels = 64 colors)
       pixelArtDither: 0, // Default dither (0 = Clean/None)
-      grungeIntensity: 0.5 // Default Medium
+      grungeIntensity: 0.5, // Default Medium
+      superRiso: SUPER_RISO_DEFAULTS,
   },
   postProcessingEnabled: {
       grain: false,
@@ -210,7 +215,9 @@ export const initialState: AppState = {
       glow: false,
       riso: false,
       pixelArt: false,
-      grunge: false
+      grunge: false,
+      // Until L2 (panel), only ?superriso=1 switches it on.
+      superRiso: SUPER_RISO_URL_FLAG,
   },
   fxMasterEnabled: true, // Master toggle for all FX (defaults ON)
   postProcessingSnapshot: null,
@@ -832,6 +839,7 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'SET_FX_INTENSITY':
       return {
           ...state,
+          isDirty: true,
           postProcessing: {
               ...state.postProcessing,
               [action.payload.fx]: action.payload.value
@@ -840,21 +848,40 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'SET_PARTICLE_TYPE':
       return {
           ...state,
+          isDirty: true,
           postProcessing: {
               ...state.postProcessing,
               particleType: action.payload
           }
       };
-    case 'TOGGLE_FX':
+    case 'TOGGLE_FX': {
       playSound('click');
+      const turningOn = !state.postProcessingEnabled[action.payload];
       return {
           ...state,
+          isDirty: true,
           postProcessingEnabled: {
               ...state.postProcessingEnabled,
-              [action.payload]: !state.postProcessingEnabled[action.payload]
+              [action.payload]: turningOn,
+              // Super Riso and Riso exclude each other: switching one on switches the other off.
+              ...(turningOn && action.payload === 'superRiso' ? { riso: false } : {}),
+              ...(turningOn && action.payload === 'riso' ? { superRiso: false } : {}),
           },
           postProcessingSnapshot: null,
           fxMasterEnabled: true,
+      };
+    }
+    case 'SET_SUPER_RISO':
+      return {
+          ...state,
+          isDirty: true,
+          postProcessing: { ...state.postProcessing, superRiso: sanitizeSuperRiso({ ...state.postProcessing.superRiso, ...action.payload }) },
+      };
+    case 'APPLY_SUPER_RISO_STYLE':
+      return {
+          ...state,
+          isDirty: true,
+          postProcessing: { ...state.postProcessing, superRiso: applySuperRisoStyle(state.postProcessing.superRiso, action.payload) },
       };
     case 'TOGGLE_FX_MASTER': {
       playSound('click');
@@ -866,6 +893,7 @@ export function appReducer(state: AppState, action: Action): AppState {
           ) as PostProcessingEnabled;
           return {
               ...state,
+              isDirty: true,
               postProcessingSnapshot: { ...px } as PostProcessingEnabled,
               postProcessingEnabled: allOff,
               fxMasterEnabled: false,
@@ -873,6 +901,7 @@ export function appReducer(state: AppState, action: Action): AppState {
       } else if (state.postProcessingSnapshot !== null) {
           return {
               ...state,
+              isDirty: true,
               postProcessingEnabled: state.postProcessingSnapshot,
               postProcessingSnapshot: null,
               fxMasterEnabled: Object.values(state.postProcessingSnapshot).some(v => v),
@@ -977,6 +1006,9 @@ export function appReducer(state: AppState, action: Action): AppState {
           ...incomingPostProcessing
       };
       delete (mergedPostProcessing as any).risoInkBlend;
+      // Super Riso (v3.17.74): nested object, merged and sanitised field by field (no allow-list
+      // here). Files from before it open with the defaults.
+      mergedPostProcessing.superRiso = sanitizeSuperRiso(incomingPostProcessing.superRiso);
       // Legacy migration: grungeOverlay -> grunge
       const incomingPostProcessingEnabled: any = action.payload.postProcessingEnabled || {};
       const mergedPostProcessingEnabled = {
@@ -985,6 +1017,9 @@ export function appReducer(state: AppState, action: Action): AppState {
           grunge: incomingPostProcessingEnabled.grunge ?? incomingPostProcessingEnabled.grungeOverlay ?? false
       };
       delete (mergedPostProcessingEnabled as any).grungeOverlay;
+      if (typeof mergedPostProcessingEnabled.superRiso !== 'boolean') mergedPostProcessingEnabled.superRiso = initialState.postProcessingEnabled.superRiso;
+      // The two risos exclude each other; a file with both on keeps Super Riso.
+      if (mergedPostProcessingEnabled.superRiso && mergedPostProcessingEnabled.riso) mergedPostProcessingEnabled.riso = false;
       
       const loadedLayerRenderModes = action.payload.layerRenderModes || {};
       const rawGradParams = action.payload.layerGradParams || {};

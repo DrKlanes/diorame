@@ -1,3 +1,4 @@
+import { SUPER_RISO_DEFAULTS } from '../constants/superRiso';
 import React, { useState, useEffect, useRef } from 'react';
 import { Ico, DiPill, DiVSep, DiMiniSlider, DiSegmentControl, DiPanel, ICONS, ICON_SECTIONS } from '../design-system';
 import { T, TYPE, dk } from '../design-system/tokens';
@@ -653,6 +654,7 @@ const FX_SEED_STATE: Partial<AppState> = {
 		riso: false,
 		pixelArt: true,
 		grunge: true,
+		superRiso: false,
 	},
 	postProcessing: {
 		grain: 0.75,
@@ -672,6 +674,7 @@ const FX_SEED_STATE: Partial<AppState> = {
 		pixelArtDepth: 8,
 		pixelArtDither: 0.3,
 		grungeIntensity: 1,
+		superRiso: SUPER_RISO_DEFAULTS,
 	},
 };
 
