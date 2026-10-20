@@ -366,7 +366,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `renderLayerBody.ts` | ~435 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)`. Live Move preview mirrors `TRANSFORM_LAYER`: points get the per-axis bake, text shapes get `bakeTextTransform` (text included in squash & stretch since v3.17.56) |
 | `renderLiveStroke.ts` | ~150 | In-progress live stroke rendering |
 | `renderParticles.ts` | ~100 | Floating cinematic particles rendering |
-| `renderPipeline.ts` | ~670 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12) |
+| `renderPipeline.ts` | ~700 | Frame orchestrator: `renderFrame(ctx, rc: RenderContext)` — accepted oversize (see §12) |
 | `renderRegularFillShape.ts` | ~95 | Regular fill shapes (blob / tapered brush) |
 | `renderTextShape.ts` | ~155 | Text shape rendering: affine projection of the text block, optional gradient, `fillText` per line. Font/weight/spacing/line positions come from `utils/textLayout.ts` (shared with the SVG export). The text's axes come from `textMatrix(shape)` (`utils/textTransform.ts`: rotation, stretch, mirror); a live Move preview arrives already baked into the shape by `renderLayerBody` (same bake as the reducer, so preview = result) |
 | `renderUniformLineShape.ts` | ~160 | Uniform-mode brush stroke rendering |
@@ -379,6 +379,13 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `animationExportRender.ts` | ~195 | `renderAnimationFrames`: shared frame-by-frame render infrastructure; builds fake `RenderContext` with dedicated canvases per frame, async yield between frames |
 | `pngSequenceHandler.ts` | ~100 | `exportAsPNGSequence`: `ImageData[]` → PNG bytes → ZIP via `fflate`; files `{project}_frame_01.png`, ZIP `{project}_frames.zip`. Takes the app `mode` only to tag the analytics event (v3.17.66; same for `gifHandler`, `svgExport`, `exportAsMP4`) |
 | `gifHandler.ts` | ~140 | `exportAsGIF`: `ImageData[]` → animated GIF via `gifenc`; per-frame palette quantization, scale presets 1/0.5/0.25, infinite native loop |
+| `superRiso/flag.ts` | ~20 | **Spike C1 (branch `spike/super-riso`, not in main).** Only Super Riso file `renderPipeline` imports statically. Without `?superriso=1` nothing else loads (dynamic-import chunk) and no WebGL context exists: `getSuperRiso()` stays null and the pipeline is unchanged |
+| `superRiso/applySuperRiso.ts` | ~170 | Spike C1 integration in the `applyRisoV2` slot of phase 3: flatten (base colour + offCtx with the transfer operator) → engine ("Taller limpio", `dpal` inks once per theme, seed from a 12 fps tick) → opaque result into offCtx with one `copy` draw; the transfer then uses `source-over`. Everything in try/catch (failure = disabled for the session, offCtx untouched); WebGL context loss/restore handled inside. URL knobs `srpdb`, `srres`, `srmip`, `srbypass`, `srdarkpaper` |
+| `superRiso/engine.ts` | ~215 | WebGL2 engine ported from the lab (`createEngine`): 13 passes per frame + LUT 33³ only when inks/paper change; GPU timer query when available |
+| `superRiso/shadersCommon.ts` · `shadersSeparation.ts` · `shadersPrint.ts` | ~55 · ~110 · ~115 | GLSL copied byte for byte from the lab (generated, verified identical) |
+| `superRiso/inks.ts` | ~100 | Ink lists (riso-colors, MIT) and `pickInks` (CPU k-means — never per frame) |
+| `superRiso/panel.ts` | ~70 | Engine defaults, `PAPERS`, `STYLES`, `fromPanel` (8 panel controls → engine parameters) |
+| `superRiso/perfOverlay.ts` | ~65 | Spike instrumentation: rolling timings + DOM text overlay (fps, ms p50/p95), never inside the canvas |
 
 #### `svgGeometry.ts` / `svgText.ts` — invariantes (no simplificar)
 

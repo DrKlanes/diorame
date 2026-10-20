@@ -20,7 +20,7 @@
           // texturas grandes (>2 MiB) las excluye el cap default, y además globIgnores
           // explícito. woff2: fuentes self-hosted (@fontsource) → precache para offline.
           globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
-          globIgnores: ['**/welcome-videos/**', '**/texture-*.png'],
+          globIgnores: ['**/welcome-videos/**', '**/texture-*.png', '**/textures/superRiso/**'],
           navigateFallback: '/index.html',   // SPA offline
           navigateFallbackDenylist: [/\/welcome-videos\//],  // los .mp4 NUNCA caen al fallback HTML
           cleanupOutdatedCaches: true,       // purga precaches viejos al activar
