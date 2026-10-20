@@ -235,9 +235,11 @@ nada: en GA4 se segmenta por comparación cuando haga falta.
   Cuando no hay conexión, los eventos no salen y no hay forma barata de
   arreglarlo. Es una consecuencia conocida de la arquitectura, **no un fallo de
   instrumentación**: no interpretar una caída de números como un bug.
-- **En desarrollo no se envía nada.** El módulo loguea en consola con el prefijo
-  `[analytics]` pero `canSend()` devuelve `false` mientras `import.meta.env.DEV`
-  sea true. Para enviar de verdad desde local haría falta `VITE_GA_DEBUG=1`.
+- **Fuera de producción no se envía nada.** El módulo loguea en consola con el prefijo
+  `[analytics]` pero `canSend()` devuelve `false` mientras `import.meta.env.DEV` sea true
+  **o el host no sea `diorame.dumaker.com`** (v3.17.67: antes un `vite preview` en
+  localhost sí enviaba). Además `index.html` ni siquiera carga `gtag.js` fuera de ese
+  host. Para enviar de verdad desde local haría falta `VITE_GA_DEBUG=1`.
 - **Bloqueadores de anuncios.** Si `window.gtag` no existe, el módulo no envía y
   no lanza. Esas sesiones son invisibles.
 - **Nada personal.** Ni texto del usuario, ni nombres de archivo, ni contenido

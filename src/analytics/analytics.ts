@@ -126,7 +126,11 @@ export type DioramEventName = keyof DioramEventMap;
  * 2 · CONFIGURACIÓN
  * ======================================================================== */
 
-const IS_DEV = import.meta.env.DEV;
+/** Host de producción (public/CNAME). En cualquier otro host (localhost, vite preview, previews
+ *  de deploy) la analítica se comporta como en dev: log a consola, nada sale a la red. */
+const PRODUCTION_HOST = 'diorame.dumaker.com';
+const IS_DEV = import.meta.env.DEV
+  || (typeof window !== 'undefined' && window.location.hostname !== PRODUCTION_HOST);
 /** Pon VITE_GA_DEBUG=1 en .env.local si quieres enviar de verdad desde dev. */
 const FORCE_SEND = import.meta.env.VITE_GA_DEBUG === '1';
 

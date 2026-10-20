@@ -457,7 +457,7 @@ Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"
 
 | File | Lines | Purpose |
 |---|---|---|
-| `analytics.ts` | ~440 | Sole contact point with GA4. Typed `DioramEventMap` contract + `analytics.*` API + module-level session counters (never React state, to avoid a re-render per stroke). Consumes the existing `window.gtag` from `index.html`; never calls `gtag('config')` nor injects the tag. Silent no-op when `window.gtag` is absent (ad blockers, offline) and in dev unless `VITE_GA_DEBUG=1`. `installAnalytics()` is called once from `main.tsx`. `artwork_exported` carries `mode` (`'drawing' | 'cinematic'`) since v3.17.66 — a DRAW PNG and a CINEMA PNG share `format` — and `background` only for the DRAW PNG. Also owns the internal-traffic flag (`diorame_internal` in localStorage, armed via `?internal=1`), which tags every event with `traffic_type: 'internal'`. `layers_tooltip_shown`/`layers_tooltip_dismissed` (v3.17.31) instrument the layers-discovery tooltip introduced in v3.17.32 — cross with `layer_added` in the same session to measure conversion. `layers_tooltip_dismissed.method` is `'close_button' \| 'click_outside' \| 'timeout' \| 'layer_added'` (v3.17.33 — replaced `'started_drawing'`, dropped when drawing stopped auto-closing the tooltip): `layer_added` is conversion, `timeout` is indifference, `close_button` is active rejection. |
+| `analytics.ts` | ~440 | Sole contact point with GA4. Typed `DioramEventMap` contract + `analytics.*` API + module-level session counters (never React state, to avoid a re-render per stroke). Consumes the existing `window.gtag` from `index.html`; never calls `gtag('config')` nor injects the tag. Silent no-op when `window.gtag` is absent (ad blockers, offline) and in dev or on any host other than `diorame.dumaker.com` (v3.17.67: `index.html` only injects `gtag.js` there) unless `VITE_GA_DEBUG=1`. `installAnalytics()` is called once from `main.tsx`. `artwork_exported` carries `mode` (`'drawing' | 'cinematic'`) since v3.17.66 — a DRAW PNG and a CINEMA PNG share `format` — and `background` only for the DRAW PNG. Also owns the internal-traffic flag (`diorame_internal` in localStorage, armed via `?internal=1`), which tags every event with `traffic_type: 'internal'`. `layers_tooltip_shown`/`layers_tooltip_dismissed` (v3.17.31) instrument the layers-discovery tooltip introduced in v3.17.32 — cross with `layer_added` in the same session to measure conversion. `layers_tooltip_dismissed.method` is `'close_button' \| 'click_outside' \| 'timeout' \| 'layer_added'` (v3.17.33 — replaced `'started_drawing'`, dropped when drawing stopped auto-closing the tooltip): `layer_added` is conversion, `timeout` is indifference, `close_button` is active rejection. |
 
 ### Project Docs (`docs/`)
 
@@ -904,6 +904,12 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 ---
 
 ## Appendix C: Changelog Highlights (1.7.3 → 3.14.1)
+
+### 3.17.67 — La analítica solo sale desde producción
+
+**fix(analytics)** — GA4 se enviaba también desde builds de producción servidos en `localhost` (`vite preview`), ensuciando los datos con pruebas locales (detectado en el spike de Super Riso: unas 25 cargas de medición llegaron a la propiedad con `dl=localhost`). Causa: la puerta era `import.meta.env.DEV`, que es `false` en cualquier build de producción, y el snippet de `index.html` cargaba `gtag.js` y disparaba `page_view` en incondicional.
+- `index.html`: `gtag.js` solo se inyecta si `location.hostname === 'diorame.dumaker.com'` (el dominio de `public/CNAME`) o `VITE_GA_DEBUG=1`. En cualquier otro host no hay petición a googletagmanager.
+- `analytics.ts`: `IS_DEV` pasa a ser `DEV || hostname !== 'diorame.dumaker.com'`, así que en otros hosts se loguea en consola como en dev.
 
 ### 3.14.1 — Revertido el riso de 3.14.0
 

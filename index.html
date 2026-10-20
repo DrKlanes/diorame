@@ -16,12 +16,20 @@
       <meta property="og:description" content="Draw in 2D. Experience in 3D. Diorame is a web-based Risograph-inspired art tool that transforms layered illustrations into immersive parallax scenes." />
       <meta property="og:image" content="https://diorame.dumaker.com/diorame_banner.jpg" />
       <meta property="og:url" content="https://diorame.dumaker.com/" />
-      <script async src="https://www.googletagmanager.com/gtag/js?id=G-8812T7T7G9"></script>
       <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-8812T7T7G9');
+        // GA4 only on the production host (public/CNAME). Any other host (localhost, vite preview,
+        // a deploy preview) never loads gtag.js, so local tests do not pollute the data.
+        // VITE_GA_DEBUG=1 (.env.local) forces it on for debugging; analytics.ts mirrors this gate.
+        if (location.hostname === 'diorame.dumaker.com' || '%VITE_GA_DEBUG%' === '1') {
+          var ga = document.createElement('script');
+          ga.async = true;
+          ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-8812T7T7G9';
+          document.head.appendChild(ga);
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = function () { window.dataLayer.push(arguments); };
+          window.gtag('js', new Date());
+          window.gtag('config', 'G-8812T7T7G9');
+        }
       </script>
     </head>
 
