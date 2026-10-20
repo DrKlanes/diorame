@@ -193,7 +193,13 @@ export type RenderContext = {
 	// and the projection is scaled by S so the framing is identical at S× resolution.
 	// S=1 collapses every derived formula to today's values (byte-identical).
 	renderScale?: number;
+	// GIF / PNG-sequence: which frame of the export this render is. Super Riso derives its reprint
+	// seed from it (deterministic exports). Absent = live, or a single-frame export.
+	exportFrame?: ExportFrame;
 };
+
+/** Frame `index` of `count` in an export played at `fps`. */
+export type ExportFrame = { index: number; count: number; fps: number };
 
 /**
  * Per-frame computed values: derived once per renderFrame call and passed
@@ -437,6 +443,7 @@ export function renderFrame(
 		shapes: currentState.shapes,
 		hiddenLayers: currentState.hiddenLayers,
 		isLive: !rc.skipCinematicOverlays,
+		exportFrame: rc.exportFrame,
 		info: { preset: currentState.cinematicType, speed: currentState.cinematicSpeed ?? 1 },
 	};
 	if (superRiso && superRisoInput) superRiso.beginSuperRisoFrame(w, h, superRisoInput);
@@ -595,10 +602,7 @@ export function renderFrame(
 			rc.transformState.isActive ? renderTime : 0,
 		];
 	}
-	const superRisoApplied = superRiso !== null && superRisoInput !== null && superRiso.applySuperRiso(
-		offCtx, w, h, superRisoInput,
-		Math.floor(performance.now() / (1000 / 12)),
-	);
+	const superRisoApplied = superRiso !== null && superRisoInput !== null && superRiso.applySuperRiso(offCtx, w, h, superRisoInput);
 
 	// Chromatic Aberration & Transfer to Main
 	const caInt = currentState.postProcessing.chromaticAberration;

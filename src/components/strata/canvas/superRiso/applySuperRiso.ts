@@ -33,11 +33,12 @@ import type { EngineParams } from './panel';
 import * as quality from './quality';
 import { isSuperRisoPreviewDevice } from './deviceLevel';
 import { detectSample, stillFor, qualityReport, STILL_MS } from './quality';
-import { fullMode, liveMode, modeLabel, prepare, engineParams, seedOf, tickAt, opts, lastFrame, type Mode, type Frame, type SuperRisoInput } from './frame';
+import { fullMode, liveMode, modeLabel, prepare, engineParams, seedOf, seedTickFor, tickAt, opts, lastFrame, type Mode, type Frame, type SuperRisoInput } from './frame';
+import { renderExportFrame } from './exportEngine';
 import { record, mountOverlay, setHeader, snapshot, reset } from './perfOverlay';
 import { cfg as KNOBS, live, hooks } from './runtimeConfig';
 import { runMeasurement } from './measure';
-import { flatten, liveFlat, exportFlat, takeBitmap, resetBitmaps, drawBack, drawFrom, holdResult, heldResult, dropHeld, makeGLCanvas, isOffscreen, offscreenWebGL2Available } from './bridge';
+import { flatten, liveFlat, takeBitmap, resetBitmaps, drawBack, drawFrom, holdResult, heldResult, dropHeld, makeGLCanvas, isOffscreen, offscreenWebGL2Available } from './bridge';
 
 export type { SuperRisoInput } from './frame';
 
@@ -153,16 +154,16 @@ export function beginSuperRisoFrame(w: number, h: number, inp: SuperRisoInput): 
 	const t0 = performance.now();
 	try {
 		const fr = prepare(w, h, inp, m);
-		if (m.pipe === 2) { beginPipe2(fr, m, t0); return; }
+		if (m.pipe === 2) { beginPipe2(fr, m, seedTickFor(inp), t0); return; }
 		// Pending only counts if it was flattened in the immediately previous live frame with the
 		// same key: otherwise (first frame, resize, theme, params) phase 3 goes synchronous.
 		if (!pending || pending.key !== fr.key || pending.frame !== frameNo - 1) { pending = null; return; }
-		const tick = tickAt(12);
+		const tick = tickAt(m.holdFps);
 		if (m.hold && held && held.key === fr.key && held.tick === tick && heldResult()) return;
 		const eng = ensureEngine();
 		eng.setSource(liveFlat.canvas, KNOBS.mip);
 		const t1 = performance.now();
-		eng.render({ ...pending.params, seed: seedOf(tick) }, opts(m));
+		eng.render({ ...pending.params, seed: seedOf(seedTickFor(inp)) }, opts(m));
 		const t2 = performance.now();
 		pending = null;
 		if (eng.gl.isContextLost()) return;
@@ -176,8 +177,8 @@ export function beginSuperRisoFrame(w: number, h: number, inp: SuperRisoInput): 
 }
 
 /** pipe 2 part of beginSuperRisoFrame: consume the previous frame's launch, launch this one. */
-function beginPipe2(fr: Frame, m: Mode, t0: number): void {
-	const tick = tickAt(12);
+function beginPipe2(fr: Frame, m: Mode, seedTick: number, t0: number): void {
+	const tick = tickAt(m.holdFps);
 	if (launch2 && launch2.frame === frameNo - 1 && launch2.key === fr.key && engine) {
 		const tb = performance.now();
 		engine.present();
@@ -192,7 +193,7 @@ function beginPipe2(fr: Frame, m: Mode, t0: number): void {
 	const eng = ensureEngine();
 	eng.setSource(liveFlat.canvas, KNOBS.mip);
 	const t1 = performance.now();
-	eng.render({ ...pending.params, seed: seedOf(tick) }, opts(m, true));
+	eng.render({ ...pending.params, seed: seedOf(seedTick) }, opts(m, true));
 	const t2 = performance.now();
 	pending = null;
 	if (eng.gl.isContextLost()) return;
@@ -202,10 +203,10 @@ function beginPipe2(fr: Frame, m: Mode, t0: number): void {
 }
 
 /** Shows the engine result now in glCanvas (holding a copy in hold modes). */
-function show(offCtx: CanvasRenderingContext2D, w: number, h: number, m: Mode, key: string, ew: number, eh: number, crisp: boolean, tick: number): void {
+function show(offCtx: CanvasRenderingContext2D, w: number, h: number, m: Mode, key: string, ew: number, eh: number, crisp: boolean, holdTick: number): void {
 	if (m.hold) {
 		const src = holdResult(glCanvas, ew, eh);
-		held = { key, tick, ew, eh, crisp };
+		held = { key, tick: holdTick, ew, eh, crisp };
 		drawFrom(offCtx, src, ew, eh, w, h, crisp);
 	} else {
 		drawBack(offCtx, glCanvas, ew, eh, w, h, crisp);
@@ -214,27 +215,27 @@ function show(offCtx: CanvasRenderingContext2D, w: number, h: number, m: Mode, k
 
 /**
  * Synchronous path: upload `flat` (or the newest bitmap, live srbitmap) and run the engine now.
+ * seedTick: the reprint tick (frame.seedTickFor).
  * detect: one sample for quality.ts. With a GPU timer (desktop): the engine's GPU ms + the CPU of
  * upload and submit — a readback there would also wait for the frame's own 2D work, which Chrome
  * never makes the live frame wait for (11 ms measured at 1080p for 2.9 ms of engine). Without one
  * (Safari, the iPad): a 1×1 readback, and the ms from upload to readback, where WebKit's real
  * wait for the pending 2D lands.
  */
-function runSync(fr: Frame, flat: HTMLCanvasElement, params: Partial<EngineParams>, tick: number, isLive: boolean, o: RenderOpts, detect = false): Engine {
+function runSync(fr: Frame, flat: HTMLCanvasElement, params: Partial<EngineParams>, seedTick: number, o: RenderOpts, detect = false): Engine {
 	const eng = ensureEngine();
-	const mip = isLive ? KNOBS.mip : true;
 	const t1 = performance.now();
-	const late = (KNOBS.bitmapUpload && isLive) ? takeBitmap(flat, fr.fw, fr.fh) : null;
+	const late = KNOBS.bitmapUpload ? takeBitmap(flat, fr.fw, fr.fh) : null;
 	const tTake = performance.now() - t1;
 	if (late) {
-		eng.setSource(late.bmp, mip);
+		eng.setSource(late.bmp, KNOBS.mip);
 		late.bmp.close();
 		live.bitmapLagFrames = late.lag;
 	} else {
-		eng.setSource(flat, mip);
+		eng.setSource(flat, KNOBS.mip);
 	}
 	const t2 = performance.now();
-	eng.render({ ...params, seed: seedOf(tick) }, o);
+	eng.render({ ...params, seed: seedOf(seedTick) }, o);
 	if (detect && eng.profiler.timerAvailable) detectSample(live.canvasW, live.canvasH, eng.gpuMs === null ? null : eng.gpuMs + performance.now() - t1, 'GPU');
 	else if (detect) { eng.finish(); detectSample(live.canvasW, live.canvasH, performance.now() - t1, 'readback'); }
 	st.upload += eng.lastUploadMs + tTake; st.mip += eng.lastMipMs; st.render += performance.now() - t2;
@@ -244,8 +245,7 @@ function runSync(fr: Frame, flat: HTMLCanvasElement, params: Partial<EngineParam
 /**
  * Phase 3, in the applyRisoV2 slot.
  * @param inp   inp.isLive false for export renders (skipCinematicOverlays): kept out of the live
- *              stats and always synchronous (an export frame must be its own frame)
- * @param tick  floor(performance.now() / (1000 / 12)), computed by the caller in phase 3
+ *              stats, always synchronous and at full level, on their own engine (exportEngine.ts)
  * @returns true when offCtx now holds the opaque Super Riso frame
  */
 export function applySuperRiso(
@@ -253,7 +253,6 @@ export function applySuperRiso(
 	w: number,
 	h: number,
 	inp: SuperRisoInput,
-	tick: number,
 ): boolean {
 	const t0 = performance.now();
 	const { isDarkMode, isLive, info } = inp;
@@ -266,18 +265,10 @@ export function applySuperRiso(
 	}
 	if (blocked()) return false;
 	try {
-		// Exports: always synchronous, at full level, on their own canvas.
-		if (!isLive) {
-			const fr = prepare(w, h, inp, fullMode());
-			const flat = flatten(exportFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
-			const eng = runSync(fr, flat, engineParams(fr), tick, false, opts({ ...fullMode(), lossless: KNOBS.lossless }));
-			if (eng.gl.isContextLost()) return false;
-			drawBack(offCtx, glCanvas, eng.width, eng.height, w, h, !!fr.style.crisp);
-			console.info(`[SuperRiso] export frame ${w}×${h} → sim ${eng.width}×${eng.height}: ${(performance.now() - t0).toFixed(1)} ms · ${eng.lastVariants}`);
-			return true;
-		}
+		if (!isLive) return renderExportFrame(offCtx, w, h, inp, assets!);
 
 		const { m, level } = liveMode(w, h, inp.settings);
+		const tick = seedTickFor(inp);
 		const fr = prepare(w, h, inp, m);
 		live.level = level;
 		if (held && (held.key !== fr.key || !m.hold)) { held = null; if (!refined) dropHeld(); }
@@ -298,7 +289,7 @@ export function applySuperRiso(
 		if (level === 'detect') {
 			const flat = flatten(liveFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
 			tFlat = performance.now();
-			const eng = runSync(fr, flat, engineParams(fr), tick, true, opts(m), true);
+			const eng = runSync(fr, flat, engineParams(fr), tick, opts(m), true);
 			if (eng.gl.isContextLost()) return false;
 			tBack0 = performance.now();
 			drawBack(offCtx, glCanvas, eng.width, eng.height, w, h, !!fr.style.crisp);
@@ -320,7 +311,7 @@ export function applySuperRiso(
 			}
 			const flat = flatten(liveFlat, offCtx.canvas, ff.fw, ff.fh, ff.base, isDarkMode);
 			tFlat = performance.now();
-			const eng = runSync(ff, flat, engineParams(ff), tick, true, opts(fm));
+			const eng = runSync(ff, flat, engineParams(ff), tick, opts(fm));
 			if (eng.gl.isContextLost()) return false;
 			tBack0 = performance.now();
 			const src = holdResult(glCanvas, eng.width, eng.height);
@@ -347,7 +338,7 @@ export function applySuperRiso(
 			}
 			// Nothing consumable yet (first two frames, size, theme, params): synchronous.
 			res2 = null;
-			const eng = runSync(fr, flat, params, tick, true, opts(m));
+			const eng = runSync(fr, flat, params, tick, opts(m));
 			if (eng.gl.isContextLost()) return false;
 			tBack0 = performance.now();
 			drawBack(offCtx, glCanvas, eng.width, eng.height, w, h, !!fr.style.crisp);
@@ -375,10 +366,10 @@ export function applySuperRiso(
 				return done('held');
 			}
 			// No valid result (first frame, resize, theme, params): this frame goes synchronous.
-			const eng = runSync(fr, flat, params, tick, true, opts(m));
+			const eng = runSync(fr, flat, params, tick, opts(m));
 			if (eng.gl.isContextLost()) return false;
 			tBack0 = performance.now();
-			show(offCtx, w, h, m, fr.key, eng.width, eng.height, !!fr.style.crisp, tick);
+			show(offCtx, w, h, m, fr.key, eng.width, eng.height, !!fr.style.crisp, tickAt(m.holdFps));
 			live.pipeSyncFrames++;
 			return done('sync');
 		}
@@ -392,7 +383,7 @@ export function applySuperRiso(
 		}
 		const flat = flatten(liveFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
 		tFlat = performance.now();
-		const eng = runSync(fr, flat, engineParams(fr), tick, true, opts(m));
+		const eng = runSync(fr, flat, engineParams(fr), tick, opts(m));
 		if (eng.gl.isContextLost()) return false;
 		tBack0 = performance.now();
 		show(offCtx, w, h, m, fr.key, eng.width, eng.height, !!fr.style.crisp, holdTick);

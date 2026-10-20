@@ -132,7 +132,10 @@ export async function renderAnimationFrames(
 		const accumulatedTimeRef = { current: 0 };
 		const accumulatedHandheldTimeRef = { current: 0 };
 		const lastTimeRef = { current: Date.now() };
-		const wiggleFrameRef = { current: 0 };
+		// The wiggle ticks at 4 Hz in the live view (cinematicCamera: now / 250): frame i of an
+		// export played at animationFramerate falls on tick floor(i · 4 / fps). It was frozen at 0.
+		const fps = options.state.animationFramerate;
+		const wiggleFrameRef = { current: Math.floor(i * 4 / fps) };
 
 		const rc: RenderContext = {
 			state: frameState,
@@ -184,6 +187,7 @@ export async function renderAnimationFrames(
 			// Skip non-content overlays (gizmo, symmetry)
 			skipLiveStroke: true,
 			skipCinematicOverlays: true,
+			exportFrame: { index: i, count: total, fps },
 		};
 
 		renderFrame(exportCtx, rc);

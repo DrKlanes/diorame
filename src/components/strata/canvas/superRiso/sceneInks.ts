@@ -13,6 +13,8 @@ import { DIORAME_RISO, CMYK_RISO, MAXI, hex2rgb, oklab, dP, printedHex, opacityF
 
 type Group = { hex: string; L: RGB; w: number };
 
+/** Mirror of StrataContext.BASE_DEPTH_STEP: a shape's zIndex is its layer index · −150. */
+const BASE_DEPTH_STEP = 150;
 /** Below this OKLab distance to srcPaper a colour prints as paper, not as an ink. */
 const PAPER_DIST = .06;
 
@@ -26,8 +28,9 @@ const weightOf = (s: Shape): number => {
 /** Shape colours by usage, merged closest-pair first (the heavier colour survives) down to maxN. */
 function groups(shapes: readonly Shape[], hidden: readonly number[], srcPaper: RGB, darkBase: string | null, maxN: number): Group[] {
 	const byHex = new Map<string, number>();
+	const hiddenZ = new Set(hidden.map(i => i * -BASE_DEPTH_STEP));
 	for (const s of shapes) {
-		if (s.isEraser || !s.color || s.points.length === 0 || hidden.includes(s.zIndex)) continue;
+		if (s.isEraser || !s.color || s.points.length === 0 || hiddenZ.has(s.zIndex)) continue;
 		const hex = s.color.toLowerCase();
 		byHex.set(hex, (byHex.get(hex) ?? 0) + weightOf(s));
 	}

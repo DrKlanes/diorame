@@ -4,6 +4,7 @@
 import type { EngineParams } from './panel';
 import type { RenderOpts } from './engine';
 import type { Shape, SuperRisoSettings } from '../../../../types/strataTypes';
+import type { ExportFrame } from '../renderPipeline';
 import { backgroundBaseColor } from '../drawBackground';
 import { hex2rgb, type PickedInks, type RGB } from './inks';
 import { fromPanel } from './panel';
@@ -42,6 +43,8 @@ export type SuperRisoInput = {
 	hiddenLayers: readonly number[];
 	/** false for export renders (skipCinematicOverlays). */
 	isLive: boolean;
+	/** GIF / PNG-sequence: frame index, frame count and fps of the export (RenderContext.exportFrame). */
+	exportFrame?: ExportFrame;
 	/** Live, filled in phase 3: what moves the image (camera, optics, wiggle…) and the state object.
 	 *  While neither changes the image is still (refinement on preview devices). */
 	motion?: readonly number[];
@@ -78,4 +81,15 @@ export const engineParams = (fr: Frame): Partial<EngineParams> =>
 	(lastFrame.params = { ...fr.style, inks: fr.inks.inks, names: fr.inks.names, opac: fr.inks.opac, srcPaper: fr.srcPaper });
 export const seedOf = (tick: number) => (tick % 9999) + 1;
 export const tickAt = (fps: number) => Math.floor(performance.now() * fps / 1000);
+/**
+ * The reprint tick (the seed). reprintFps 0: a fixed seed. Live: the pure tick of reprintFps.
+ * GIF / PNG-sequence: floor(i · reprintFps / fpsExport), so two exports are identical. A single
+ * frame export (PNG HQ) prints the live tick: what you see.
+ */
+export function seedTickFor(inp: SuperRisoInput): number {
+	const fps = inp.settings.reprintFps;
+	if (!fps) return 0;
+	const ef = inp.exportFrame;
+	return ef ? Math.floor(ef.index * fps / ef.fps) : tickAt(fps);
+}
 export const opts = (m: Mode, toTexture = false): RenderOpts => ({ lossless: m.lossless, preview: m.preview, toTexture });
