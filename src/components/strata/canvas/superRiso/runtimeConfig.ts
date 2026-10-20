@@ -6,6 +6,9 @@
 //   C1b bridge paths: srsim=1 (flatten + upload at simulation size) · sroff=1 (engine on an
 //   OffscreenCanvas, back via transferToImageBitmap) · srbitmap=1 (upload via createImageBitmap,
 //   one frame late). Since v3.17.71 srmip=0 ONLY drops the mipmap (srsim does the reduction).
+//   C1c: srpipe=1 (pipelined upload: frame N is uploaded at the start of N+1, before any 2D of
+//   N+1, and shown one frame late) · srhold=1 (the engine only runs on the 12 fps reprint ticks;
+//   in between the last result is redrawn).
 
 export type RuntimeCfg = {
 	preserveDrawingBuffer: boolean;
@@ -19,6 +22,10 @@ export type RuntimeCfg = {
 	offscreenBack: boolean;
 	/** Upload createImageBitmap(flattened) instead of the canvas, using the previous frame's bitmap. */
 	bitmapUpload: boolean;
+	/** Pipelined upload (live only): one frame of latency, no 2D work pending at upload time. */
+	pipe: boolean;
+	/** Engine only on the 12 fps reprint ticks; the last result is redrawn in between. */
+	hold: boolean;
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -32,12 +39,14 @@ export const cfg: RuntimeCfg = {
 	simUpload: params.get('srsim') === '1',
 	offscreenBack: params.get('sroff') === '1',
 	bitmapUpload: params.get('srbitmap') === '1',
+	pipe: params.get('srpipe') === '1',
+	hold: params.get('srhold') === '1',
 };
 
 /** What a plain `?superriso=1` does, ignoring the other URL knobs. */
 export const DEFAULT_CFG: Readonly<RuntimeCfg> = {
 	preserveDrawingBuffer: true, resScale: 1, mip: true, bypass: false, darkPaperFromBase: false,
-	simUpload: false, offscreenBack: false, bitmapUpload: false,
+	simUpload: false, offscreenBack: false, bitmapUpload: false, pipe: false, hold: false,
 };
 
 /** Facts about the last LIVE frame Super Riso was called for (filled by applySuperRiso). */
@@ -52,6 +61,14 @@ export const live = {
 	offscreenFallback: false,
 	/** Bitmap path: frames between capture and use of the last uploaded bitmap. */
 	bitmapLagFrames: 0,
+	/** srpipe: live frames that had no valid pending result and went the synchronous way. */
+	pipeSyncFrames: 0,
+	/** srpipe: live frames shown from the pipelined result. */
+	pipeFrames: 0,
+	/** srhold: live frames that only redrew the held result. */
+	heldFrames: 0,
+	/** Path the last live frame took: sync · pipe · held. */
+	lastPath: '',
 };
 
 /** Set by applySuperRiso so the measurement can read the engine without importing it. */

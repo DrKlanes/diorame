@@ -31,7 +31,7 @@ export function snapshot(n: number = LIVE_WINDOW) {
 		fps: mean ? 1000 / mean : null,
 		frameP50: pct('interval', .5, n), frameP95: pct('interval', .95, n),
 		totalP50: pct('total', .5, n), totalP95: pct('total', .95, n),
-		flatP50: pct('flat', .5, n), uploadP50: pct('upload', .5, n), mipP50: pct('mip', .5, n),
+		flatP50: pct('flat', .5, n), uploadP50: pct('upload', .5, n), uploadP95: pct('upload', .95, n), mipP50: pct('mip', .5, n),
 		renderP50: pct('render', .5, n), backP50: pct('back', .5, n), bitmapWaitP50: pct('bitmapWait', .5, n),
 		gpuP50: pct('gpu', .5, n), gpuP95: pct('gpu', .95, n),
 	};

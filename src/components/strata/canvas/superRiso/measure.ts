@@ -1,10 +1,10 @@
-// Super Riso — automatic measurement ("Medir" button). Runs the C1b sequence without reloading
+// Super Riso — automatic measurement ("Medir" button). Runs the C1c sequence without reloading
 // (2 s warm-up discarded + 8 s measured each), then builds a compact plain-text report with the
-// device facts and, per row, the CPU p50 of every bridge stage. Only loaded behind ?superriso=1.
+// device facts and, per row, the CPU p50 of every stage plus where the wait lands. Only loaded
+// behind ?superriso=1.
 //
-//   A bypass · B res .5, current path (reference) · C B + upload at simulation size · D C + no
-//   mipmap · E D + back via transferToImageBitmap · F E + upload via createImageBitmap (1 frame
-//   late) · G the best of C–F (lowest frame p50) at res 1 · H the same at res .75
+//   A bypass · B res .5 synchronous (reference = C of C1b) · C res .5 + srpipe · D res .75 +
+//   srpipe · E res 1 + srpipe · F res 1 + srpipe + srhold. Upload at simulation size in all but A.
 
 import { APP_VERSION } from '../../../../constants/version';
 import { cfg, DEFAULT_CFG, live, hooks, setCfg, type RuntimeCfg } from './runtimeConfig';
@@ -15,22 +15,18 @@ const WARMUP_MS = 2000;
 const MEASURE_MS = 8000;
 
 type Step = { id: string; label: string; patch: Partial<RuntimeCfg> };
-const half = { ...DEFAULT_CFG, resScale: .5 };
-const C_PATCH = { ...half, simUpload: true };
-const D_PATCH = { ...C_PATCH, mip: false };
-const E_PATCH = { ...D_PATCH, offscreenBack: true };
-const F_PATCH = { ...E_PATCH, bitmapUpload: true };
-const FIXED_STEPS: readonly Step[] = [
+const sim = { ...DEFAULT_CFG, simUpload: true };
+const STEPS: readonly Step[] = [
 	{ id: 'A', label: 'bypass', patch: { ...DEFAULT_CFG, bypass: true } },
-	{ id: 'B', label: 'res .5 actual', patch: half },
-	{ id: 'C', label: 'B+sim-upload', patch: C_PATCH },
-	{ id: 'D', label: 'C+sin mip', patch: D_PATCH },
-	{ id: 'E', label: 'D+offscreen', patch: E_PATCH },
-	{ id: 'F', label: 'E+bitmap', patch: F_PATCH },
+	{ id: 'B', label: 'res .5 sync', patch: { ...sim, resScale: .5 } },
+	{ id: 'C', label: 'res .5 pipe', patch: { ...sim, resScale: .5, pipe: true } },
+	{ id: 'D', label: 'res .75 pipe', patch: { ...sim, resScale: .75, pipe: true } },
+	{ id: 'E', label: 'res 1 pipe', patch: { ...sim, resScale: 1, pipe: true } },
+	{ id: 'F', label: 'res 1 pipe+hold', patch: { ...sim, resScale: 1, pipe: true, hold: true } },
 ];
-const TOTAL_STEPS = FIXED_STEPS.length + 2;
 
-type Row = { id: string; label: string; res: string; s: ReturnType<typeof snapshot>; patch: Partial<RuntimeCfg> };
+type Counts = { pipe: number; sync: number; held: number };
+type Row = { id: string; label: string; res: string; s: ReturnType<typeof snapshot>; patch: Partial<RuntimeCfg>; n: Counts };
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 const f = (v: number | null, d = 1) => v === null ? '–' : v.toFixed(d);
@@ -49,30 +45,49 @@ function gpuInfo(): { renderer: string; maxTex: string } {
 	return { renderer, maxTex };
 }
 
-function buildReport(rows: Row[], timer: boolean, notes: string[], chosen: string, lag: number): string {
+/** Where the wait lands: the stage that holds it, or outside our stages (frame above baseline). */
+function waitVerdict(r: Row, base: number | null): string {
+	if (r.patch.bypass) return '–';
+	const s = r.s;
+	const unexplained = (s.frameP50 !== null && base !== null && s.totalP50 !== null) ? s.frameP50 - base - s.totalP50 : null;
+	const stages: [string, number | null][] = [
+		[r.patch.pipe ? 'subida al inicio' : 'subida', s.uploadP50], ['aplanado', s.flatP50], ['mip', s.mipP50],
+		['motor (CPU)', s.renderP50], ['vuelta', s.backP50],
+	];
+	const top = stages.filter(([, v]) => v !== null).sort((a, b) => b[1]! - a[1]!)[0];
+	const parts: string[] = [];
+	if (top && top[1]! >= 3) parts.push(`${top[0]} ${f(top[1])} ms`);
+	if (unexplained !== null && unexplained >= 3) parts.push(`fuera de nuestras etapas ${f(unexplained)} ms`);
+	return parts.length ? parts.join(' + ') : 'sin espera apreciable';
+}
+
+function buildReport(rows: Row[], timer: boolean, notes: string[]): string {
 	const g = gpuInfo();
+	const base = rows.find(r => r.id === 'A')?.s.frameP50 ?? null;
 	const L: string[] = [];
-	L.push(`SUPER RISO · medición automática C1b · Diorame ${APP_VERSION} · ${new Date().toISOString()}`);
+	L.push(`SUPER RISO · medición automática C1c · Diorame ${APP_VERSION} · ${new Date().toISOString()}`);
 	L.push(`UA: ${navigator.userAgent}`);
 	L.push(`DPR ${window.devicePixelRatio} · canvas vivo ${live.canvasW}×${live.canvasH}`);
-	L.push(`GPU: ${g.renderer} · MAX_TEXTURE_SIZE ${g.maxTex} · temporizador GPU: ${timer ? 'sí' : 'no'}`);
+	L.push(`GPU: ${g.renderer} · MAX_TEXTURE_SIZE ${g.maxTex} · temporizador GPU: ${timer ? 'sí' : 'no'} · OffscreenCanvas+WebGL2: ${offscreenWebGL2Available ? 'sí' : 'no'}`);
 	L.push(`Modo ${live.isDark ? 'oscuro' : 'claro'} · preset de cámara: ${live.preset || '–'} (velocidad ${live.speed || '–'})`);
-	L.push(`OffscreenCanvas+WebGL2: ${offscreenWebGL2Available ? 'sí' : 'NO — E, F (y G/H si las eligen) usan el canvas DOM'}`);
-	L.push(`Bitmap (F): última latencia ${lag} frame(s) entre aplanado y subida`);
-	L.push(`G y H usan la mejor de C–F por frame p50: ${chosen}`);
 	for (const n of notes) L.push(`AVISO: ${n}`);
-	L.push(`Cada fila: ${WARMUP_MS / 1000} s de calentamiento descartados + ${MEASURE_MS / 1000} s medidos. Etapas = CPU p50 en ms.`);
+	L.push(`Cada fila: ${WARMUP_MS / 1000} s de calentamiento descartados + ${MEASURE_MS / 1000} s medidos. Etapas = CPU p50 en ms por frame.`);
+	L.push('pipe: la subida y el motor corren al INICIO del frame siguiente (resultado con 1 frame de retraso).');
+	L.push('hold: el motor solo corre en los ticks de 12 fps; entre ticks se redibuja el último resultado (mira subida p95).');
+	L.push('"sin expl." = frame p50 − frame p50 de A − SR p50: espera que cae fuera de nuestras etapas.');
 	L.push('');
-	L.push('cfg              fps   frame p50/p95 | SR    aplan  subida mip    motor  vuelta bmpWait | GPU   sim');
+	L.push('cfg                fps   frame p50/p95 | SR    aplan  subida sub95  mip   motor  vuelta | sin expl. | GPU   sim         frames pipe/sync/held');
 	for (const r of rows) {
 		const s = r.s;
 		const c = (v: number | null) => f(v, 2).padStart(6);
-		L.push(`${(r.id + ' ' + r.label).padEnd(15)} ${f(s.fps).padStart(5)}  ${(f(s.frameP50) + '/' + f(s.frameP95)).padEnd(11)} |${c(s.totalP50)}${c(s.flatP50)} ${c(s.uploadP50)}${c(s.mipP50)} ${c(s.renderP50)}${c(s.backP50)}  ${c(s.bitmapWaitP50)} |${c(s.gpuP50)}  ${r.res}  (n=${s.samples})`);
+		const unexplained = (!r.patch.bypass && s.frameP50 !== null && base !== null && s.totalP50 !== null) ? s.frameP50 - base - s.totalP50 : null;
+		L.push(`${(r.id + ' ' + r.label).padEnd(18)}${f(s.fps).padStart(5)}  ${(f(s.frameP50) + '/' + f(s.frameP95)).padEnd(11)} |${c(s.totalP50)}${c(s.flatP50)} ${c(s.uploadP50)}${c(s.uploadP95)}${c(s.mipP50)}${c(s.renderP50)}${c(s.backP50)} |${c(unexplained)}    |${c(s.gpuP50)}  ${r.res.padEnd(10)}  ${r.n.pipe}/${r.n.sync}/${r.n.held}  (n=${s.samples})`);
 	}
+	L.push('');
+	L.push('Dónde cae la espera:');
+	for (const r of rows) if (!r.patch.bypass) L.push(`  ${r.id} ${r.label}: ${waitVerdict(r, base)}`);
 	return L.join('\n');
 }
-
-const describe = (p: Partial<RuntimeCfg>) => [p.simUpload ? 'sim-upload' : '', p.mip === false ? 'sin mip' : '', p.offscreenBack ? 'offscreen' : '', p.bitmapUpload ? 'bitmap' : ''].filter(Boolean).join(' + ') || 'camino actual';
 
 export async function runMeasurement(): Promise<void> {
 	if (running) return;
@@ -90,34 +105,26 @@ export async function runMeasurement(): Promise<void> {
 	const previous: RuntimeCfg = { ...cfg };
 	const rows: Row[] = [];
 	let timer = false;
-	let chosen = '–';
-	let lag = 0;
-	const run = async (st: Step, i: number) => {
-		setStatus(`Midiendo ${st.id} (${i + 1}/${TOTAL_STEPS})…`);
-		setCfg(st.patch);
-		await sleep(WARMUP_MS);
-		reset();
-		await sleep(MEASURE_MS);
-		const s = snapshot(Infinity);
-		if (s.gpuP50 !== null) timer = true;
-		if (st.patch.bitmapUpload) lag = live.bitmapLagFrames;
-		const sim = hooks.engineInfo();
-		rows.push({ id: st.id, label: st.label, res: st.patch.bypass || !sim ? '–' : `${sim.width}×${sim.height}`, s, patch: st.patch });
-	};
 	try {
-		for (let i = 0; i < FIXED_STEPS.length; i++) await run(FIXED_STEPS[i], i);
-		// G/H: the C–F row with the lowest frame p50 (ties: lowest Super Riso CPU).
-		const cands = rows.filter(r => ['C', 'D', 'E', 'F'].includes(r.id) && r.s.frameP50 !== null);
-		cands.sort((a, b) => (a.s.frameP50! - b.s.frameP50!) || ((a.s.totalP50 ?? 1e9) - (b.s.totalP50 ?? 1e9)));
-		const best = cands[0] ?? rows.find(r => r.id === 'C')!;
-		chosen = `${best.id} (${describe(best.patch)})`;
-		await run({ id: 'G', label: `${best.id} a res 1`, patch: { ...best.patch, resScale: 1 } }, FIXED_STEPS.length);
-		await run({ id: 'H', label: `${best.id} a res .75`, patch: { ...best.patch, resScale: .75 } }, FIXED_STEPS.length + 1);
+		for (let i = 0; i < STEPS.length; i++) {
+			const st = STEPS[i];
+			setStatus(`Midiendo ${st.id} (${i + 1}/${STEPS.length})…`);
+			setCfg(st.patch);
+			await sleep(WARMUP_MS);
+			reset();
+			const c0: Counts = { pipe: live.pipeFrames, sync: live.pipeSyncFrames, held: live.heldFrames };
+			await sleep(MEASURE_MS);
+			const s = snapshot(Infinity);
+			if (s.gpuP50 !== null) timer = true;
+			const n: Counts = { pipe: live.pipeFrames - c0.pipe, sync: live.pipeSyncFrames - c0.sync, held: live.heldFrames - c0.held };
+			const info = hooks.engineInfo();
+			rows.push({ id: st.id, label: st.label, res: st.patch.bypass || !info ? '–' : `${info.width}×${info.height}`, s, patch: st.patch, n });
+		}
 	} finally {
 		setCfg(previous);
 		setStatus('');
 		setMeasuring(false);
 		running = false;
 	}
-	showResult(buildReport(rows, timer, notes, chosen, lag));
+	showResult(buildReport(rows, timer, notes));
 }

@@ -424,6 +424,12 @@ export function renderFrame(
 
 	const offCtx = rc.offscreenCanvasRef.current!.getContext('2d')!;
 
+	// Super Riso — experimental, only behind ?superriso=1 (superRiso/flag.ts). BEFORE any 2D of
+	// this frame: with srpipe it uploads the previous frame's flatten while nothing 2D is pending
+	// (what WebKit waits for). Without the flag getSuperRiso() is null and nothing happens here.
+	const superRisoBegin = fxEnabled ? getSuperRiso() : null;
+	if (superRisoBegin) superRisoBegin.beginSuperRisoFrame(w, h, currentState.isDarkMode, isPixelArt, !rc.skipCinematicOverlays);
+
 	// --- 1. Background ---
 	drawBackground(ctx, w, h, currentState.isDarkMode, isPixelArt, rc.paperImg);
 

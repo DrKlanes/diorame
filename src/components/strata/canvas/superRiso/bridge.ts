@@ -37,11 +37,18 @@ export const isOffscreen = (c: GLCanvas): c is OffscreenCanvas =>
 	typeof OffscreenCanvas !== 'undefined' && c instanceof OffscreenCanvas;
 
 // ── Flatten ────────────────────────────────────────────────────────────────────────────────────
-export const flatCanvas = document.createElement('canvas');
-const flatCtx = flatCanvas.getContext('2d')!;
+export type FlatTarget = { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D };
+const makeFlatTarget = (): FlatTarget => { const canvas = document.createElement('canvas'); return { canvas, ctx: canvas.getContext('2d')! }; };
+/** Live frames. With srpipe it doubles as the hand-off: flattened in phase 3 of frame N, uploaded
+ *  at the start of frame N+1. */
+export const liveFlat = makeFlatTarget();
+/** Export frames (PNG HQ, GIF, PNG-sequence): their own canvas, so an export never overwrites the
+ *  live hand-off with a frame of another size or content. */
+export const exportFlat = makeFlatTarget();
 
-/** What the user sees, minus the paper texture, into flatCanvas at fw×fh. */
-export function flatten(src: HTMLCanvasElement, fw: number, fh: number, base: string, isDarkMode: boolean): HTMLCanvasElement {
+/** What the user sees, minus the paper texture, into the target at fw×fh. */
+export function flatten(target: FlatTarget, src: HTMLCanvasElement, fw: number, fh: number, base: string, isDarkMode: boolean): HTMLCanvasElement {
+	const { canvas: flatCanvas, ctx: flatCtx } = target;
 	if (flatCanvas.width !== fw || flatCanvas.height !== fh) { flatCanvas.width = fw; flatCanvas.height = fh; }
 	flatCtx.setTransform(1, 0, 0, 1, 0, 0);
 	flatCtx.globalAlpha = 1;
@@ -98,17 +105,46 @@ export function resetBitmaps(): void {
 
 // ── Back to offCtx ────────────────────────────────────────────────────────────────────────────
 /** One 'copy' draw replaces offCtx entirely (opaque, full frame) or throws and leaves it untouched. */
-export function drawBack(offCtx: CanvasRenderingContext2D, glCanvas: GLCanvas, ew: number, eh: number, w: number, h: number, crisp: boolean): void {
-	const bmp = isOffscreen(glCanvas) ? glCanvas.transferToImageBitmap() : null;
+export function drawFrom(offCtx: CanvasRenderingContext2D, src: CanvasImageSource, ew: number, eh: number, w: number, h: number, crisp: boolean): void {
+	offCtx.save();
 	try {
-		offCtx.save();
 		offCtx.setTransform(1, 0, 0, 1, 0, 0);
 		offCtx.globalAlpha = 1;
 		offCtx.globalCompositeOperation = 'copy';
 		offCtx.imageSmoothingEnabled = !crisp;
-		offCtx.drawImage(bmp ?? (glCanvas as HTMLCanvasElement), 0, 0, ew, eh, 0, 0, w, h);
+		offCtx.drawImage(src, 0, 0, ew, eh, 0, 0, w, h);
 	} finally {
 		offCtx.restore();
+	}
+}
+
+export function drawBack(offCtx: CanvasRenderingContext2D, glCanvas: GLCanvas, ew: number, eh: number, w: number, h: number, crisp: boolean): void {
+	const bmp = isOffscreen(glCanvas) ? glCanvas.transferToImageBitmap() : null;
+	try {
+		drawFrom(offCtx, bmp ?? (glCanvas as HTMLCanvasElement), ew, eh, w, h, crisp);
+	} finally {
 		bmp?.close();
 	}
 }
+
+// ── Held result (srhold) ──────────────────────────────────────────────────────────────────────
+// The GL drawing buffer does not survive the frame (preserveDrawingBuffer off, or an
+// OffscreenCanvas after transferToImageBitmap), so the last result is kept in a 2D canvas.
+const held = makeFlatTarget();
+let heldValid = false;
+
+/** Copies the engine result into the held canvas and returns it (draw it back from there). */
+export function holdResult(glCanvas: GLCanvas, ew: number, eh: number): HTMLCanvasElement {
+	const bmp = isOffscreen(glCanvas) ? glCanvas.transferToImageBitmap() : null;
+	try {
+		if (held.canvas.width !== ew || held.canvas.height !== eh) { held.canvas.width = ew; held.canvas.height = eh; }
+		held.ctx.globalCompositeOperation = 'copy';
+		held.ctx.drawImage(bmp ?? (glCanvas as HTMLCanvasElement), 0, 0);
+		heldValid = true;
+		return held.canvas;
+	} finally {
+		bmp?.close();
+	}
+}
+export const heldResult = (): HTMLCanvasElement | null => heldValid ? held.canvas : null;
+export const dropHeld = (): void => { heldValid = false; };
