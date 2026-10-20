@@ -20,8 +20,12 @@
 // — that frame takes the synchronous path, so no frame is ever drawn with a stale size or theme.
 // srhold=1 — the engine only runs on the 12 fps reprint ticks; in between, the held result.
 // Exports (skipCinematicOverlays) always take the synchronous path, on their own flatten canvas.
+// srpipe=2 (C2a) — beginSuperRisoFrame() of frame N+1 first consumes the engine launched at the
+// start of N (present → copy into the held 2D canvas: the GPU had a whole frame), then launches
+// N+1 from N's flatten. Shown two frames late. srlossless / srpreview select shader variants
+// (shadersFast.ts); preview is live only — exports always render at full level.
 
-import { createEngine, type Engine, type EngineAssets, type GLCanvas } from './engine';
+import { createEngine, type Engine, type EngineAssets, type GLCanvas, type RenderOpts } from './engine';
 import type { EngineParams } from './panel';
 import { pickInks, hex2rgb, type PickedInks, type RGB } from './inks';
 import { STYLES, fromPanel } from './panel';
@@ -86,19 +90,20 @@ const recreateEngine = () => {
 	const old = glCanvas;
 	engine = null;
 	resetBitmaps();
-	pending = null; ready = null; held = null; dropHeld();
+	pending = null; ready = null; held = null; launch2 = null; res2 = null; dropHeld();
 	glCanvas = makeGLCanvas(KNOBS.offscreenBack);
 	watchContext(glCanvas);
 	(old.getContext('webgl2') as WebGL2RenderingContext | null)?.getExtension('WEBGL_lose_context')?.loseContext();
 };
 hooks.recreateEngine = recreateEngine;
 hooks.engineInfo = () => engine ? { gl: engine.gl, width: engine.width, height: engine.height } : null;
+hooks.profiler = () => engine ? engine.profiler : null;
 
 const pathLabel = () => [
 	`pdb ${KNOBS.preserveDrawingBuffer ? 'on' : 'off'}`, `res ${KNOBS.resScale}`, `mip ${KNOBS.mip ? 'on' : 'off'}`,
 	KNOBS.simUpload ? 'sim-upload' : '', KNOBS.bitmapUpload ? 'bitmap' : '',
 	KNOBS.offscreenBack ? (offscreenWebGL2Available ? 'offscreen' : 'offscreen→DOM') : '',
-	KNOBS.pipe ? 'PIPE' : '', KNOBS.hold ? 'HOLD' : '',
+	KNOBS.pipe ? `PIPE${KNOBS.pipe}` : '', KNOBS.hold ? 'HOLD' : '', KNOBS.lossless ? 'LOSSLESS' : '', KNOBS.preview ? `PREVIEW ${KNOBS.preview}` : '',
 	KNOBS.bypass ? 'BYPASS' : '',
 ].filter(Boolean).join(' · ');
 
@@ -106,25 +111,27 @@ mountOverlay(() => { void runMeasurement(); });
 setHeader(`SUPER RISO · ${pathLabel()}`);
 
 // Read-only handle for the measurement harness.
-(window as unknown as { __superRiso: unknown }).__superRiso = { KNOBS, snapshot, reset, inksByTheme, live, get engine() { return engine; }, get disabled() { return disabled; }, get glCanvas() { return glCanvas; } };
+(window as unknown as { __superRiso: unknown }).__superRiso = { KNOBS, snapshot, reset, inksByTheme, live, get engine() { return engine; }, get disabled() { return disabled; }, get glCanvas() { return glCanvas; }, get flat() { return liveFlat.canvas; } };
 
 // ── Per-frame preparation ──────────────────────────────────────────────────────────────────────
 type Frame = { style: Partial<EngineParams>; fw: number; fh: number; base: string; srcPaper: RGB; key: string };
 
-function prepare(w: number, h: number, isDarkMode: boolean, isPixelArt: boolean): Frame {
-	const style = fromPanel(STYLES.clean.panel, w * KNOBS.resScale);
+/** isExport: the lab's full level, whatever the live knobs say — resolution 1, full-size upload. */
+function prepare(w: number, h: number, isDarkMode: boolean, isPixelArt: boolean, isExport = false): Frame {
+	const res = isExport ? 1 : KNOBS.resScale, sim = isExport ? false : KNOBS.simUpload;
+	const style = fromPanel(STYLES.clean.panel, w * res);
 	const simW = Math.round(240 * style.pxmm!);
 	const simH = Math.round(simW * h / w);
 	// srsim=1: flatten straight at the simulation size (the 2D draw IS the reduction pass).
-	const fw = KNOBS.simUpload ? Math.min(w, simW) : w;
-	const fh = KNOBS.simUpload ? Math.min(h, simH) : h;
+	const fw = sim ? Math.min(w, simW) : w;
+	const fh = sim ? Math.min(h, simH) : h;
 	const base = baseColor(isDarkMode, isPixelArt);
 	// srcPaper: the base colour in light mode. In dark mode the dark base must NOT be the paper
 	// (prep divides by srcPaper: everything would turn into paper); white makes it ink.
 	// srdarkpaper=bg restores the literal brief (dark base as srcPaper) to compare.
 	const srcPaper: RGB = (isDarkMode && !KNOBS.darkPaperFromBase) ? [1, 1, 1] : hex2rgb(base);
 	// Anything that changes what a pending/held result means: size, theme, parameters, context.
-	const key = [w, h, +isDarkMode, +isPixelArt, KNOBS.resScale, +KNOBS.simUpload, +KNOBS.mip, +KNOBS.offscreenBack, +KNOBS.preserveDrawingBuffer, +KNOBS.darkPaperFromBase].join('|');
+	const key = [w, h, +isDarkMode, +isPixelArt, KNOBS.resScale, +KNOBS.simUpload, +KNOBS.mip, +KNOBS.offscreenBack, +KNOBS.preserveDrawingBuffer, +KNOBS.darkPaperFromBase, +KNOBS.lossless, KNOBS.preview, KNOBS.pipe].join('|');
 	return { style, fw, fh, base, srcPaper, key };
 }
 
@@ -162,7 +169,14 @@ let pending: { key: string; frame: number; params: Partial<EngineParams> } | nul
 let ready: { key: string; frame: number; ew: number; eh: number; crisp: boolean; tick: number } | null = null;
 let held: { key: string; tick: number; ew: number; eh: number; crisp: boolean } | null = null;
 // Stage CPU of the current live frame (the begin part is added to the phase-3 part).
-const st = { begin: 0, upload: 0, mip: 0, render: 0 };
+const st = { begin: 0, upload: 0, mip: 0, render: 0, backBegin: 0 };
+/** srpipe=2: the engine launched at the start of a frame (into its texture), and the consumed one
+ *  (copied into the held 2D canvas at the start of the next frame). */
+let launch2: { key: string; frame: number; tick: number; ew: number; eh: number; crisp: boolean } | null = null;
+let res2: { key: string; frame: number; tick: number; ew: number; eh: number; crisp: boolean } | null = null;
+/** Live renders: lossless and preview as configured. Exports: lossless at most, never preview. */
+const liveOpts = (): RenderOpts => ({ lossless: KNOBS.lossless, preview: KNOBS.preview });
+const exportOpts = (): RenderOpts => ({ lossless: KNOBS.lossless, preview: 0 });
 
 const blocked = () => disabled || contextLost || !assets || KNOBS.bypass;
 
@@ -174,11 +188,12 @@ export function beginSuperRisoFrame(w: number, h: number, isDarkMode: boolean, i
 	if (!isLive) return;
 	frameNo++;
 	ready = null;
-	st.begin = 0; st.upload = 0; st.mip = 0; st.render = 0;
+	st.begin = 0; st.upload = 0; st.mip = 0; st.render = 0; st.backBegin = 0;
 	if (!KNOBS.pipe || blocked()) return;
 	const t0 = performance.now();
 	try {
 		const fr = prepare(w, h, isDarkMode, isPixelArt);
+		if (KNOBS.pipe === 2) { beginPipe2(fr, t0); return; }
 		// Pending only counts if it was flattened in the immediately previous live frame with the
 		// same key: otherwise (first frame, resize, theme, params) phase 3 goes synchronous.
 		if (!pending || pending.key !== fr.key || pending.frame !== frameNo - 1) { pending = null; return; }
@@ -187,7 +202,7 @@ export function beginSuperRisoFrame(w: number, h: number, isDarkMode: boolean, i
 		const eng = ensureEngine();
 		eng.setSource(liveFlat.canvas, KNOBS.mip);
 		const t1 = performance.now();
-		eng.render({ ...pending.params, seed: seedOf(tick) });
+		eng.render({ ...pending.params, seed: seedOf(tick) }, liveOpts());
 		const t2 = performance.now();
 		pending = null;
 		if (eng.gl.isContextLost()) return;
@@ -198,6 +213,32 @@ export function beginSuperRisoFrame(w: number, h: number, isDarkMode: boolean, i
 		engine = null;
 		disable('exception in beginSuperRisoFrame', e);
 	}
+}
+
+/** srpipe=2 part of beginSuperRisoFrame: consume the previous frame's launch, launch this one. */
+function beginPipe2(fr: Frame, t0: number): void {
+	const tick = tickNow();
+	if (launch2 && launch2.frame === frameNo - 1 && launch2.key === fr.key && engine) {
+		const tb = performance.now();
+		engine.present();
+		holdResult(glCanvas, launch2.ew, launch2.eh);
+		st.backBegin = performance.now() - tb;
+		res2 = { ...launch2, frame: frameNo };
+	}
+	launch2 = null;
+	if (!pending || pending.key !== fr.key || pending.frame !== frameNo - 1) { pending = null; st.begin = performance.now() - t0; return; }
+	// srhold: nothing new to print until the next 12 fps tick.
+	if (KNOBS.hold && res2 && res2.key === fr.key && res2.tick === tick) { st.begin = performance.now() - t0; return; }
+	const eng = ensureEngine();
+	eng.setSource(liveFlat.canvas, KNOBS.mip);
+	const t1 = performance.now();
+	eng.render({ ...pending.params, seed: seedOf(tick) }, { ...liveOpts(), toTexture: true });
+	const t2 = performance.now();
+	pending = null;
+	if (eng.gl.isContextLost()) return;
+	launch2 = { key: fr.key, frame: frameNo, tick, ew: eng.width, eh: eng.height, crisp: !!fr.style.crisp };
+	st.upload = eng.lastUploadMs; st.mip = eng.lastMipMs; st.render = t2 - t1;
+	st.begin = t2 - t0;
 }
 
 /** Shows the engine result now in glCanvas (holding a copy with srhold). */
@@ -212,20 +253,21 @@ function show(offCtx: CanvasRenderingContext2D, w: number, h: number, key: strin
 }
 
 /** Synchronous path: upload `flat` (or the newest bitmap, live srbitmap) and run the engine now. */
-function runSync(fr: Frame, flat: HTMLCanvasElement, params: Partial<EngineParams>, tick: number, isLive: boolean): Engine {
+function runSync(fr: Frame, flat: HTMLCanvasElement, params: Partial<EngineParams>, tick: number, isLive: boolean, opts: RenderOpts): Engine {
 	const eng = ensureEngine();
+	const mip = isLive ? KNOBS.mip : true;
 	const t1 = performance.now();
 	const late = (KNOBS.bitmapUpload && isLive) ? takeBitmap(flat, fr.fw, fr.fh) : null;
 	const tTake = performance.now() - t1;
 	if (late) {
-		eng.setSource(late.bmp, KNOBS.mip);
+		eng.setSource(late.bmp, mip);
 		late.bmp.close();
 		live.bitmapLagFrames = late.lag;
 	} else {
-		eng.setSource(flat, KNOBS.mip);
+		eng.setSource(flat, mip);
 	}
 	const t2 = performance.now();
-	eng.render({ ...params, seed: seedOf(tick) });
+	eng.render({ ...params, seed: seedOf(tick) }, opts);
 	st.upload += eng.lastUploadMs + tTake; st.mip += eng.lastMipMs; st.render += performance.now() - t2;
 	return eng;
 }
@@ -257,16 +299,16 @@ export function applySuperRiso(
 	}
 	if (blocked()) return false;
 	try {
-		const fr = prepare(w, h, isDarkMode, isPixelArt);
+		const fr = prepare(w, h, isDarkMode, isPixelArt, !isLive);
 		if (held && held.key !== fr.key) { held = null; dropHeld(); }
 
 		// Exports: always synchronous, on their own canvas.
 		if (!isLive) {
 			const flat = flatten(exportFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
-			const eng = runSync(fr, flat, engineParams(fr, inksFor(isDarkMode, flat)), tick, false);
+			const eng = runSync(fr, flat, engineParams(fr, inksFor(isDarkMode, flat)), tick, false, exportOpts());
 			if (eng.gl.isContextLost()) return false;
 			drawBack(offCtx, glCanvas, eng.width, eng.height, w, h, !!fr.style.crisp);
-			console.info(`[SuperRiso] export frame ${w}×${h} → sim ${eng.width}×${eng.height}: ${(performance.now() - t0).toFixed(1)} ms`);
+			console.info(`[SuperRiso] export frame ${w}×${h} → sim ${eng.width}×${eng.height}: ${(performance.now() - t0).toFixed(1)} ms · ${eng.lastVariants}`);
 			return true;
 		}
 
@@ -274,13 +316,36 @@ export function applySuperRiso(
 		const done = (path: string) => {
 			const t4 = performance.now();
 			record('flat', tFlat - t0); record('upload', st.upload); record('mip', st.mip); record('render', st.render);
-			record('back', t4 - tBack0); record('total', st.begin + (t4 - t0));
+			record('back', st.backBegin + (t4 - tBack0)); record('total', st.begin + (t4 - t0));
 			if (engine && engine.gpuMs !== null) record('gpu', engine.gpuMs);
 			live.lastPath = path;
 			setHeader(`SUPER RISO · ${w}×${h} → sim ${engine ? `${engine.width}×${engine.height}` : '–'} · src ${fr.fw}×${fr.fh} · ${pathLabel()} · ${path}`);
 			return true;
 		};
 		const heldNow = () => KNOBS.hold && held && held.key === fr.key ? heldResult() : null;
+
+		if (KNOBS.pipe === 2) {
+			// Flatten THIS frame for the next launch, then show what the start of this frame consumed.
+			const flat = flatten(liveFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
+			tFlat = performance.now();
+			const params = engineParams(fr, inksFor(isDarkMode, flat));
+			pending = { key: fr.key, frame: frameNo, params };
+			tBack0 = performance.now();
+			const hr = heldResult();
+			if (res2 && res2.key === fr.key && hr && (res2.frame === frameNo || KNOBS.hold)) {
+				drawFrom(offCtx, hr, res2.ew, res2.eh, w, h, res2.crisp);
+				if (res2.frame === frameNo) live.pipeFrames++; else live.heldFrames++;
+				return done(res2.frame === frameNo ? 'pipe2' : 'held');
+			}
+			// Nothing consumable yet (first two frames, size, theme, params): synchronous.
+			res2 = null;
+			const eng = runSync(fr, flat, params, tick, true, liveOpts());
+			if (eng.gl.isContextLost()) return false;
+			tBack0 = performance.now();
+			drawBack(offCtx, glCanvas, eng.width, eng.height, w, h, !!fr.style.crisp);
+			live.pipeSyncFrames++;
+			return done('sync');
+		}
 
 		if (KNOBS.pipe) {
 			// (2) flatten THIS frame for the next one — before offCtx is overwritten.
@@ -302,7 +367,7 @@ export function applySuperRiso(
 				return done('held');
 			}
 			// No valid result (first frame, resize, theme, params): this frame goes synchronous.
-			const eng = runSync(fr, flat, params, tick, true);
+			const eng = runSync(fr, flat, params, tick, true, liveOpts());
 			if (eng.gl.isContextLost()) return false;
 			tBack0 = performance.now();
 			show(offCtx, w, h, fr.key, eng.width, eng.height, !!fr.style.crisp, tick);
@@ -318,7 +383,7 @@ export function applySuperRiso(
 		}
 		const flat = flatten(liveFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
 		tFlat = performance.now();
-		const eng = runSync(fr, flat, engineParams(fr, inksFor(isDarkMode, flat)), tick, true);
+		const eng = runSync(fr, flat, engineParams(fr, inksFor(isDarkMode, flat)), tick, true, liveOpts());
 		if (eng.gl.isContextLost()) return false;
 		tBack0 = performance.now();
 		show(offCtx, w, h, fr.key, eng.width, eng.height, !!fr.style.crisp, tick);

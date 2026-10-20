@@ -15,11 +15,16 @@ import { FS_LUT, FS_PREP, FS_SEP0, FS_SEP, FS_BLUR } from './shadersSeparation';
 import { FS_SCREEN, FS_SPREAD, FS_COMPOSE, FS_SCAN } from './shadersPrint';
 import { MAXI, hex2rgb, lin, oklab, dist, printedHex, rng } from './inks';
 import { DEFAULTS, type EngineParams } from './panel';
+import { createPassProfiler, type PassProfiler } from './passProfiler';
+import { FS_BLUR1, FS_SPREAD_LL, FS_SEP0_PV, FS_SPREAD_PV, FS_SCAN_PV, FS_SCREEN_PV, FS_COPY, PV_SEP0, PV_SPREAD, PV_SCAN, PV_SCREEN } from './shadersFast';
 
 export type EngineAssets = { green: TexImageSource; exBlack: TexImageSource & { width: number; height: number }; exRed: TexImageSource & { width: number; height: number }; exLut: TexImageSource };
 export type EngineOptions = { preserveDrawingBuffer?: boolean };
 /** The engine renders into a DOM canvas or an OffscreenCanvas (C1b: transferToImageBitmap path). */
 export type GLCanvas = HTMLCanvasElement | OffscreenCanvas;
+/** C2a. lossless: shader variants verified identical to the lab. preview: bitmask of lossy
+ *  variants (live only). toTexture: SCAN into an internal texture; present() copies it to the canvas. */
+export type RenderOpts = { lossless?: boolean; preview?: number; toTexture?: boolean };
 export type Engine = {
 	canvas: GLCanvas;
 	gl: WebGL2RenderingContext;
@@ -27,8 +32,16 @@ export type Engine = {
 	/** CPU ms of the last setSource, split: texImage2D and generateMipmap (C1b instrumentation). */
 	lastUploadMs: number; lastMipMs: number;
 	gpuMs: number | null;
+	/** Per-pass profiling (C2a): eng.profiler.setMode('sync' | 'timer' | 'off'). */
+	profiler: PassProfiler;
+	/** Which variant each switchable pass used in the last render (verification of export = full). */
+	lastVariants: string;
 	setSource(src: TexImageSource & { width: number; height: number }, mip?: boolean): void;
-	render(params: Partial<EngineParams>): Engine;
+	render(params: Partial<EngineParams>, opts?: RenderOpts): Engine;
+	/** Exact copy of the last toTexture result to the canvas (srpipe=2). */
+	present(): void;
+	/** Forces the separation LUT to be rebuilt on the next render (diagnostics). */
+	invalidateLut(): void;
 };
 
 type TexOpts = { filter?: number; wrap?: number; mip?: boolean };
@@ -88,6 +101,9 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 		for (let i = 0; i < n; i++) { const info = gl!.getActiveUniform(p, i)!; u[info.name.replace(/\[0\]$/, '')] = gl!.getUniformLocation(p, info.name); }
 		return { p, u };
 	}
+	// C2a variants, compiled on first use.
+	const variants = new Map<string, Program>();
+	const variant = (src: string) => { let p = variants.get(src); if (!p) { p = compile(src); variants.set(src, p); } return p; };
 	const PR = { sep0: compile(FS_SEP0), lut: compile(FS_LUT), prep: compile(FS_PREP), sep: compile(FS_SEP), blur: compile(FS_BLUR), screen: compile(FS_SCREEN), spread: compile(FS_SPREAD), compose: compile(FS_COMPOSE), scan: compile(FS_SCAN) };
 	const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
 	gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -111,7 +127,8 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 		gl!.drawBuffers(ts.map((_, i) => gl!.COLOR_ATTACHMENT0 + i)); return { f, t: ts, w, h };
 	}
 	function freeTarget(T: Target) { T.t.forEach(t => gl!.deleteTexture(t)); gl!.deleteFramebuffer(T.f); }
-	function run(prog: Program, tg: Target | null, setup?: (a: RunApi) => void) {
+	const profiler = createPassProfiler(gl);
+	function run(name: string, prog: Program, tg: Target | null, setup?: (a: RunApi) => void) {
 		const w = tg ? tg.w : canvas.width, h = tg ? tg.h : canvas.height;
 		gl!.useProgram(prog.p); gl!.bindFramebuffer(gl!.FRAMEBUFFER, tg ? tg.f : null); gl!.viewport(0, 0, w, h);
 		let unit = 0; const U = prog.u;
@@ -122,7 +139,10 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 			fv(name, arr, n) { const l = U[name]; if (l == null) return; const a = new Float32Array(arr); if (n === 1) gl!.uniform1fv(l, a); else if (n === 2) gl!.uniform2fv(l, a); else gl!.uniform3fv(l, a); },
 			m2(name, arr) { if (U[name] != null) gl!.uniformMatrix2fv(U[name], false, new Float32Array(arr)); },
 		};
-		api.f('uRes', w, h); setup && setup(api); gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+		api.f('uRes', w, h); setup && setup(api);
+		const q = profiler.mode === 'off' ? null : profiler.before(name, { w, h, att: tg ? tg.t.length : 1 });
+		gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+		if (profiler.mode !== 'off') profiler.after(name, q);
 	}
 
 	// texturas fijas
@@ -137,12 +157,12 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 
 	const LUT = target(33 * 33, 33, 2); let lutKey = '';
 	const srcTex = gl.createTexture()!; let srcW = 0, srcH = 0;
-	let TG: Record<'prep' | 'sep' | 'tmp' | 'loc' | 'qtmp' | 'sol' | 'scr' | 'cov' | 'comp', Target> | null = null, simW = 0, simH = 0;
+	let TG: Record<'prep' | 'sep' | 'tmp' | 'loc' | 'qtmp' | 'sol' | 'scr' | 'cov' | 'comp' | 'prepH' | 'prepV' | 'out', Target> | null = null, simW = 0, simH = 0;
 	function ensureTargets(w: number, h: number) {
 		if (w === simW && h === simH) return; simW = w; simH = h;
 		if (TG) Object.values(TG).forEach(freeTarget);
 		const qw = Math.max(1, w >> 2), qh = Math.max(1, h >> 2);
-		TG = { prep: target(w, h), sep: target(w, h, 2), tmp: target(w, h, 2), loc: target(w, h, 2), qtmp: target(qw, qh, 2), sol: target(qw, qh, 2), scr: target(w, h, 2), cov: target(w, h, 2), comp: target(w, h) };
+		TG = { prep: target(w, h), sep: target(w, h, 2), tmp: target(w, h, 2), loc: target(w, h, 2), qtmp: target(qw, qh, 2), sol: target(qw, qh, 2), scr: target(w, h, 2), cov: target(w, h, 2), comp: target(w, h), prepH: target(w, h), prepV: target(w, h), out: target(w, h) };
 		canvas.width = w; canvas.height = h;
 	}
 
@@ -158,7 +178,7 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 	}
 
 	const eng: Engine = {
-		canvas, gl, lastMs: 0, width: 0, height: 0, gpuMs: null, lastUploadMs: 0, lastMipMs: 0,
+		canvas, gl, lastMs: 0, width: 0, height: 0, gpuMs: null, lastUploadMs: 0, lastMipMs: 0, profiler, lastVariants: '',
 		// fotograma de entrada; en Diorame: el frame aplanado de cada render
 		// Same GL state as the lab's texFrom(src, { mip }), split in two so each stage can be timed:
 		// in WebKit the synchronous readbacks land in the stage that triggers them.
@@ -174,11 +194,22 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 			}
 			eng.lastUploadMs = t1 - t0; eng.lastMipMs = performance.now() - t1;
 		},
-		render(params) {
+		invalidateLut() { lutKey = ''; },
+		present() {
+			if (!TG) return;
+			const T = TG;
+			run('PRESENT', variant(FS_COPY), null, a => { a.t('uT', T.out.t[0]); });
+		},
+		render(params, opts = {}) {
 			const P: EngineParams = Object.assign({}, DEFAULTS, params);
+			const pv = opts.preview ?? 0, ll = !!opts.lossless || pv !== 0;
+			const lvl = (bit: number, hasLL: boolean) => (pv & bit) ? 'preview' : (ll && hasLL) ? 'lossless' : 'lab';
+			eng.lastVariants = `blurPrep:${ll ? 'lossless' : 'lab'} sep0:${lvl(PV_SEP0, false)} screen:${lvl(PV_SCREEN, false)} spread:${lvl(PV_SPREAD, true)} scan:${lvl(PV_SCAN, false)}`;
 			const t0 = performance.now();
 			pollTimer();
-			const query = (timerExt && !pendingQuery) ? gl!.createQuery() : null;
+			if (profiler.mode !== 'off') profiler.frameStart();
+			// The whole-render query cannot be open while per-pass queries run.
+			const query = (timerExt && !pendingQuery && profiler.mode !== 'timer') ? gl!.createQuery() : null;
 			if (query) gl!.beginQuery(timerExt!.TIME_ELAPSED_EXT, query);
 			let w = Math.round(P.printW * P.pxmm), h = Math.round(w * srcH / srcW);
 			const lim = Math.min(MAXTEX, 6144); if (Math.max(w, h) > lim) { const s = lim / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
@@ -191,37 +222,46 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 			const P0 = oklab(hex2rgb(P.paper)); const con = inks.map(h => Math.min(1.5, dist(oklab(hex2rgb(printedHex(h))), P0) / .5));
 			// la tabla de separación solo se recalcula si cambian tintas, papel o costes
 			const key = JSON.stringify([inks, opac, N, P.paper, P.inkCost, P.pair]);
-			if (key !== lutKey) { run(PR.lut, LUT, a => { a.fv('uCon', con, 1); a.fv('uInk', inkLin, 3); a.fv('uOp', opac, 1); a.i('uN', N); a.f('uPaper', ...paperLin); a.f('uCost', P.inkCost); a.f('uPair', P.pair); }); lutKey = key; }
-			run(PR.prep, T.prep, a => { a.t('uSrc', srcTex); a.f('uSrcRes', srcW, srcH); a.f('uSmoothPx', P.smooth * srcW / P.printW); a.f('uSrcPaper', ...P.srcPaper); a.f('uPaper', ...paperLin); });
+			if (key !== lutKey) { run('LUT', PR.lut, LUT, a => { a.fv('uCon', con, 1); a.fv('uInk', inkLin, 3); a.fv('uOp', opac, 1); a.i('uN', N); a.f('uPaper', ...paperLin); a.f('uCost', P.inkCost); a.f('uPair', P.pair); }); lutKey = key; }
+			run('PREP', PR.prep, T.prep, a => { a.t('uSrc', srcTex); a.f('uSrcRes', srcW, srcH); a.f('uSmoothPx', P.smooth * srcW / P.printW); a.f('uSrcPaper', ...P.srcPaper); a.f('uPaper', ...paperLin); });
 			const R = rng(P.seed * 7919 + 13); const M: number[] = [], Tt: number[] = [];
 			for (let i = 0; i < MAXI; i++) {
 				const ang = (R() * 2 - 1) * P.rot * Math.PI / 180, sc = 1 + (R() * 2 - 1) * P.scl / 1000, ca = Math.cos(ang) * sc, sa = Math.sin(ang) * sc;
 				M.push(ca, sa, -sa, ca); const a = R() * Math.PI * 2, m = P.misreg * Math.sqrt(R()); Tt.push(Math.cos(a) * m, Math.sin(a) * m);
 			}
-			run(PR.blur, T.loc, a => { a.t('uTexA', T.prep.t[0]); a.t('uTexB', T.prep.t[0]); a.f('uDir', 1, 0); a.f('uSig', .3 * pxmm); });
-			run(PR.blur, T.scr, a => { a.t('uTexA', T.loc.t[0]); a.t('uTexB', T.loc.t[0]); a.f('uDir', 0, 1); a.f('uSig', .3 * pxmm); });
-			run(PR.sep0, T.tmp, a => { a.t('uPrepS', T.scr.t[0]); a.t('uPrep', T.prep.t[0]); a.t('uSet', LUT.t[0]); a.fv('uCon', con, 1); a.fv('uInk', inkLin, 3); a.fv('uOp', opac, 1); a.i('uN', N); a.f('uPaper', ...paperLin); a.f('uCost', P.inkCost); a.f('uPair', P.pair); a.f('uMinDot', P.minDot); });
+			let prepS: WebGLTexture;
+			if (ll) {
+				const B1 = variant(FS_BLUR1);
+				run('BLUR prep H', B1, T.prepH, a => { a.t('uTexA', T.prep.t[0]); a.f('uDir', 1, 0); a.f('uSig', .3 * pxmm); });
+				run('BLUR prep V', B1, T.prepV, a => { a.t('uTexA', T.prepH.t[0]); a.f('uDir', 0, 1); a.f('uSig', .3 * pxmm); });
+				prepS = T.prepV.t[0];
+			} else {
+				run('BLUR prep H', PR.blur, T.loc, a => { a.t('uTexA', T.prep.t[0]); a.t('uTexB', T.prep.t[0]); a.f('uDir', 1, 0); a.f('uSig', .3 * pxmm); });
+				run('BLUR prep V', PR.blur, T.scr, a => { a.t('uTexA', T.loc.t[0]); a.t('uTexB', T.loc.t[0]); a.f('uDir', 0, 1); a.f('uSig', .3 * pxmm); });
+				prepS = T.scr.t[0];
+			}
+			run('SEP0', (pv & PV_SEP0) ? variant(FS_SEP0_PV) : PR.sep0, T.tmp, a => { a.t('uPrepS', prepS); a.t('uPrep', T.prep.t[0]); a.t('uSet', LUT.t[0]); a.fv('uCon', con, 1); a.fv('uInk', inkLin, 3); a.fv('uOp', opac, 1); a.i('uN', N); a.f('uPaper', ...paperLin); a.f('uCost', P.inkCost); a.f('uPair', P.pair); a.f('uMinDot', P.minDot); });
 			// uM is a mat2[8]: the lab's m2() sends all 8 matrices in one uniformMatrix2fv call.
-			run(PR.sep, T.sep, a => { a.f('uPxMm', pxmm); a.t('uSA', T.tmp.t[0]); a.t('uSB', T.tmp.t[1]); a.i('uN', N); a.f('uCtr', P.printW / 2, h / pxmm / 2); a.m2('uM', M); a.fv('uT', Tt, 2); });
-			const blur2 = (src: Target, tmp: Target, dst: Target, sigPx: number) => {
-				run(PR.blur, tmp, a => { a.t('uTexA', src.t[0]); a.t('uTexB', src.t[1]); a.f('uDir', 1, 0); a.f('uSig', sigPx); });
-				run(PR.blur, dst, a => { a.t('uTexA', tmp.t[0]); a.t('uTexB', tmp.t[1]); a.f('uDir', 0, 1); a.f('uSig', sigPx); });
+			run('WARP', PR.sep, T.sep, a => { a.f('uPxMm', pxmm); a.t('uSA', T.tmp.t[0]); a.t('uSB', T.tmp.t[1]); a.i('uN', N); a.f('uCtr', P.printW / 2, h / pxmm / 2); a.m2('uM', M); a.fv('uT', Tt, 2); });
+			const blur2 = (label: string, src: Target, tmp: Target, dst: Target, sigPx: number) => {
+				run(`BLUR ${label} H`, PR.blur, tmp, a => { a.t('uTexA', src.t[0]); a.t('uTexB', src.t[1]); a.f('uDir', 1, 0); a.f('uSig', sigPx); });
+				run(`BLUR ${label} V`, PR.blur, dst, a => { a.t('uTexA', tmp.t[0]); a.t('uTexB', tmp.t[1]); a.f('uDir', 0, 1); a.f('uSig', sigPx); });
 			};
-			blur2(T.sep, T.tmp, T.loc, .22 * pxmm);
-			blur2(T.sep, T.qtmp, T.sol, 1.5 * pxmm / 4);
-			run(PR.screen, T.scr, a => {
+			blur2('loc', T.sep, T.tmp, T.loc, .22 * pxmm);
+			blur2('sol ¼', T.sep, T.qtmp, T.sol, 1.5 * pxmm / 4);
+			run('SCREEN', (pv & PV_SCREEN) ? variant(FS_SCREEN_PV) : PR.screen, T.scr, a => {
 				exU(a); a.f('uPxMm', pxmm); a.f('uSeed', P.seed); a.t('uSepA', T.sep.t[0]); a.t('uSepB', T.sep.t[1]); a.t('uSolA', T.sol.t[0]); a.t('uSolB', T.sol.t[1]); a.t('uLocA', T.loc.t[0]); a.t('uLocB', T.loc.t[1]); a.t('uGreen', greenTex);
 				a.i('uN', N); a.i('uMode', +P.screen); a.f('uGrain', P.grain); a.f('uLoad', P.inkLoad); a.f('uLpi', P.lpi); a.f('uMottle', P.mottle); a.f('uStarve', P.starve); a.f('uTexAmp', P.texAmp); a.f('uStreak', P.streak); a.f('uSolidLv', P.solidLv); a.fv('uExSel', exSel, 1); a.f('uTrap', P.trap);
 			});
-			run(PR.spread, T.cov, a => {
+			run('SPREAD', (pv & PV_SPREAD) ? variant(FS_SPREAD_PV) : ll ? variant(FS_SPREAD_LL) : PR.spread, T.cov, a => {
 				exU(a); a.f('uPxMm', pxmm); a.f('uSeed', P.seed); a.t('uScrA', T.scr.t[0]); a.t('uScrB', T.scr.t[1]); a.t('uSepA', T.sep.t[0]); a.t('uSepB', T.sep.t[1]); a.t('uLocA', T.loc.t[0]); a.t('uLocB', T.loc.t[1]);
 				a.i('uN', N); a.f('uBleedPx', P.bleed * pxmm); a.f('uGain', P.gain); a.f('uEdge', P.edge); a.f('uSolidLv', P.solidLv); a.fv('uExSel', exSel, 1);
 			});
-			run(PR.compose, T.comp, a => {
+			run('COMPOSE', PR.compose, T.comp, a => {
 				exU(a); a.f('uPxMm', pxmm); a.f('uSeed', P.seed); a.t('uCovA', T.cov.t[0]); a.t('uCovB', T.cov.t[1]); a.t('uSolA', T.sol.t[0]); a.t('uSolB', T.sol.t[1]); a.f('uStarve', P.starve); a.t('uFib', fibTex); a.t('uInc', incTex); a.i('uN', N); a.fv('uInk', inkLin, 3); a.fv('uOp', opac, 1); a.f('uPaper', ...paperLin);
 				a.f('uPaperTex', P.paperTex); a.f('uFibers', P.fibers); a.f('uIncl', P.incl); a.f('uVoids', P.voids); a.f('uMottle', P.mottle); a.f('uTexAmp', P.texAmp); a.fv('uExSel', exSel, 1);
 			});
-			run(PR.scan, null, a => { a.f('uSeed', P.seed); a.t('uComp', T.comp.t[0]); a.f('uBlurPx', P.scanBlur); a.f('uNoise', P.scanNoise); a.i('uNorm', +P.normWhite); a.f('uPaper', ...paperLin); });
+			run('SCAN', (pv & PV_SCAN) ? variant(FS_SCAN_PV) : PR.scan, opts.toTexture ? T.out : null, a => { a.f('uSeed', P.seed); a.t('uComp', T.comp.t[0]); a.f('uBlurPx', P.scanBlur); a.f('uNoise', P.scanNoise); a.i('uNorm', +P.normWhite); a.f('uPaper', ...paperLin); });
 			if (query) { gl!.endQuery(timerExt!.TIME_ELAPSED_EXT); pendingQuery = query; }
 			gl!.flush();
 			eng.lastMs = performance.now() - t0; return eng;

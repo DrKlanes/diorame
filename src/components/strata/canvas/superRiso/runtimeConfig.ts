@@ -9,6 +9,12 @@
 //   C1c: srpipe=1 (pipelined upload: frame N is uploaded at the start of N+1, before any 2D of
 //   N+1, and shown one frame late) · srhold=1 (the engine only runs on the 12 fps reprint ticks;
 //   in between the last result is redrawn).
+//   C2a: srpipe=2 (engine launched at the start of frame N, consumed at the start of N+1: two
+//   frames late, a whole frame of GPU time) · srlossless=1 (shader variants verified identical to
+//   the lab; also in exports) · srpreview=1 (all lossy preview variants, live only; implies
+//   srlossless) · srprevmask=N (one preview variant at a time: 1 SEP0 · 2 SPREAD · 4 SCAN · 8 SCREEN).
+
+import type { PassProfiler } from './passProfiler';
 
 export type RuntimeCfg = {
 	preserveDrawingBuffer: boolean;
@@ -22,10 +28,14 @@ export type RuntimeCfg = {
 	offscreenBack: boolean;
 	/** Upload createImageBitmap(flattened) instead of the canvas, using the previous frame's bitmap. */
 	bitmapUpload: boolean;
-	/** Pipelined upload (live only): one frame of latency, no 2D work pending at upload time. */
-	pipe: boolean;
+	/** Pipelined upload (live only): 0 off · 1 one frame late (C1c) · 2 two frames late (C2a). */
+	pipe: 0 | 1 | 2;
 	/** Engine only on the 12 fps reprint ticks; the last result is redrawn in between. */
 	hold: boolean;
+	/** Lossless shader variants (identical result; full level, exports included). */
+	lossless: boolean;
+	/** Bitmask of lossy preview variants, live only (0 = full level). Implies lossless. */
+	preview: number;
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -39,14 +49,16 @@ export const cfg: RuntimeCfg = {
 	simUpload: params.get('srsim') === '1',
 	offscreenBack: params.get('sroff') === '1',
 	bitmapUpload: params.get('srbitmap') === '1',
-	pipe: params.get('srpipe') === '1',
+	pipe: params.get('srpipe') === '2' ? 2 : params.get('srpipe') === '1' ? 1 : 0,
 	hold: params.get('srhold') === '1',
+	lossless: params.get('srlossless') === '1',
+	preview: params.get('srpreview') === '1' ? 15 : Math.max(0, Math.min(15, Number(params.get('srprevmask')) || 0)),
 };
 
 /** What a plain `?superriso=1` does, ignoring the other URL knobs. */
 export const DEFAULT_CFG: Readonly<RuntimeCfg> = {
 	preserveDrawingBuffer: true, resScale: 1, mip: true, bypass: false, darkPaperFromBase: false,
-	simUpload: false, offscreenBack: false, bitmapUpload: false, pipe: false, hold: false,
+	simUpload: false, offscreenBack: false, bitmapUpload: false, pipe: 0, hold: false, lossless: false, preview: 0,
 };
 
 /** Facts about the last LIVE frame Super Riso was called for (filled by applySuperRiso). */
@@ -72,8 +84,9 @@ export const live = {
 };
 
 /** Set by applySuperRiso so the measurement can read the engine without importing it. */
-export const hooks: { engineInfo: () => { gl: WebGL2RenderingContext; width: number; height: number } | null; recreateEngine: () => void } = {
+export const hooks: { engineInfo: () => { gl: WebGL2RenderingContext; width: number; height: number } | null; recreateEngine: () => void; profiler: () => PassProfiler | null } = {
 	engineInfo: () => null,
+	profiler: () => null,
 	recreateEngine: () => {},
 };
 
