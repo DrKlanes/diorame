@@ -379,8 +379,8 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `animationExportRender.ts` | ~195 | `renderAnimationFrames`: shared frame-by-frame render infrastructure; builds fake `RenderContext` with dedicated canvases per frame, async yield between frames |
 | `pngSequenceHandler.ts` | ~100 | `exportAsPNGSequence`: `ImageData[]` → PNG bytes → ZIP via `fflate`; files `{project}_frame_01.png`, ZIP `{project}_frames.zip`. Takes the app `mode` only to tag the analytics event (v3.17.66; same for `gifHandler`, `svgExport`, `exportAsMP4`) |
 | `gifHandler.ts` | ~140 | `exportAsGIF`: `ImageData[]` → animated GIF via `gifenc`; per-frame palette quantization, scale presets 1/0.5/0.25, infinite native loop |
-| `superRiso/flag.ts` | ~20 | **Spike C1 (branch `spike/super-riso`, not in main).** Only Super Riso file `renderPipeline` imports statically. Without `?superriso=1` nothing else loads (dynamic-import chunk) and no WebGL context exists: `getSuperRiso()` stays null and the pipeline is unchanged |
-| `superRiso/applySuperRiso.ts` | ~170 | Spike C1 integration in the `applyRisoV2` slot of phase 3: flatten (base colour + offCtx with the transfer operator) → engine ("Taller limpio", `dpal` inks once per theme, seed from a 12 fps tick) → opaque result into offCtx with one `copy` draw; the transfer then uses `source-over`. Everything in try/catch (failure = disabled for the session, offCtx untouched); WebGL context loss/restore handled inside. URL knobs `srpdb`, `srres`, `srmip`, `srbypass`, `srdarkpaper` |
+| `superRiso/flag.ts` | ~20 | **EXPERIMENTAL, hidden behind `?superriso=1` (v3.17.68).** Only Super Riso file `renderPipeline` imports statically. Without `?superriso=1` nothing else loads (dynamic-import chunk) and no WebGL context exists: `getSuperRiso()` stays null and the pipeline is unchanged |
+| `superRiso/applySuperRiso.ts` | ~170 | Experimental integration in the `applyRisoV2` slot of phase 3: flatten (base colour + offCtx with the transfer operator) → engine ("Taller limpio", `dpal` inks once per theme, seed from a 12 fps tick) → opaque result into offCtx with one `copy` draw; the transfer then uses `source-over`. Everything in try/catch (failure = disabled for the session, offCtx untouched); WebGL context loss/restore handled inside. URL knobs `srpdb`, `srres`, `srmip`, `srbypass`, `srdarkpaper` |
 | `superRiso/engine.ts` | ~215 | WebGL2 engine ported from the lab (`createEngine`): 13 passes per frame + LUT 33³ only when inks/paper change; GPU timer query when available |
 | `superRiso/shadersCommon.ts` · `shadersSeparation.ts` · `shadersPrint.ts` | ~55 · ~110 · ~115 | GLSL copied byte for byte from the lab (generated, verified identical) |
 | `superRiso/inks.ts` | ~100 | Ink lists (riso-colors, MIT) and `pickInks` (CPU k-means — never per frame) |
@@ -885,6 +885,7 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - **Pixel Art**: Pixelation effect (size 2-12, depth 2-16 colors, dither 0-1)
 - **Grunge**: Overlay texture (subtle, medium, intense)
 - **Wiggle**: Hand-drawn line wobble (light, medium, heavy)
+- **Super Riso** (EXPERIMENTAL, v3.17.68; not in the FX panel): WebGL2 scanned-riso post-process, **only active with `?superriso=1` in the URL**. Fixed style "Taller limpio", no state, panel, persistence or i18n. Without the flag the chunk, the textures (`/textures/superRiso/`) and the WebGL context are never loaded. Lives in `canvas/superRiso/` (see §10), runs in phase 3 in the `applyRisoV2` slot (Riso keeps working as before) and, when it ran, the transfer to `ctx` uses `source-over` because offCtx is opaque. Debug knobs, read only with the flag: `srbypass=1` (loaded but not applied: baseline), `srpdb=0` (`preserveDrawingBuffer` off), `srres=0.75|0.5` (internal resolution), `srmip=0` (no per-frame mipmap), `srdarkpaper=bg` (dark mode: dark base as source paper — comes out all paper, for comparison). With the flag a DOM text overlay (bottom left: fps, frame ms p50/p95, Super Riso ms and breakdown) and `window.__superRiso` (read-only measurement handle) exist; neither exists without it. Exceptional WebGL exception: CLAUDE.md, FX filter 5.
 
 ---
 
@@ -911,6 +912,10 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 ---
 
 ## Appendix C: Changelog Highlights (1.7.3 → 3.14.1)
+
+### 3.17.68 — Super Riso, experimental tras `?superriso=1`
+
+**feat(fx, experimental)** — El spike C1 de Super Riso entra en main **oculto**: sin `?superriso=1` el comportamiento es el de 3.17.67 (verificado: no se importa el chunk, no se piden texturas, no hay contexto WebGL, ni overlay ni `window.__superRiso`). Con el flag: motor WebGL2 portado del laboratorio (shaders idénticos al byte), estilo fijo "Taller limpio", tintas `dpal` calculadas una vez por tema, reimpresión a 12 fps, salida opaca con transferencia `source-over`, `try/catch` total y manejo de pérdida/restauración de contexto. Medido en escritorio (RTX 5070 Ti): +~0,4 ms de frame, ~4–5 ms de GPU. **Pendiente: medirlo en iPad en producción.** Sin estado, panel, persistencia ni i18n (C2–C4). CLAUDE.md, filtro de FX nº 5: enmendado con la excepción única de Super Riso. Crédito de riso-colors (MIT) en `Attributions.md`.
 
 ### 3.17.67 — La analítica solo sale desde producción
 
