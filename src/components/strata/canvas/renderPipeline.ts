@@ -23,6 +23,7 @@ import {
 } from './postProcessing';
 import { renderLayer } from './renderLayerBody';
 import { getOnionGhostZs } from '../../../utils/animationFrames';
+import { getSuperRiso } from './superRiso/flag';
 
 // Onion skin composite opacities. Prev (where you came from) is more visible.
 // These constants are intentionally named for easy visual tuning.
@@ -565,11 +566,21 @@ export function renderFrame(
 		applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, rc.risoGrain, rc.helperCanvasRef.current!.getContext('2d')!);
 	}
 
+	// Super Riso — spike C1, only behind ?superriso=1 (superRiso/flag.ts). Without the flag
+	// getSuperRiso() is null and nothing below changes. When it returns true offCtx is opaque
+	// (paper included), so the transfer must not multiply it with the background.
+	const superRiso = fxEnabled ? getSuperRiso() : null;
+	const superRisoApplied = superRiso !== null && superRiso.applySuperRiso(
+		offCtx, w, h, currentState.isDarkMode, isPixelArt,
+		Math.floor(performance.now() / (1000 / 12)),
+		!rc.skipCinematicOverlays,
+	);
+
 	// Chromatic Aberration & Transfer to Main
 	const caInt = currentState.postProcessing.chromaticAberration;
 	const useCA = fxEnabled && currentState.postProcessingEnabled.chromaticAberration && caInt > 0.01;
 
-	ctx.globalCompositeOperation = currentState.isDarkMode ? 'source-over' : 'multiply';
+	ctx.globalCompositeOperation = (superRisoApplied || currentState.isDarkMode) ? 'source-over' : 'multiply';
 
 	if (useCA) {
 		applyChromaticAberration(
