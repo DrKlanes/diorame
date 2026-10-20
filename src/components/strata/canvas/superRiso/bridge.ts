@@ -10,7 +10,7 @@
 //   offscreen back engine on an OffscreenCanvas; result as transferToImageBitmap() → drawImage.
 //                  Falls back to the DOM canvas when OffscreenCanvas + WebGL2 does not exist.
 //
-// Only loaded behind ?superriso=1.
+// Only loaded with the Super Riso chunk (flag.ts).
 
 import type { GLCanvas } from './engine';
 import { record } from './perfOverlay';

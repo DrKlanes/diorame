@@ -431,11 +431,12 @@ export function renderFrame(
 
 	const offCtx = rc.offscreenCanvasRef.current!.getContext('2d')!;
 
-	// Super Riso — only behind ?superriso=1 (superRiso/flag.ts) and with the FX on. BEFORE any 2D of
+	// Super Riso — loaded on demand the first time the state has it on, in any mode (superRiso/flag.ts); applied only with the FX on. BEFORE any 2D of
 	// this frame: with a pipelined level it uploads the previous frame's flatten while nothing 2D is
 	// pending (what WebKit waits for). Otherwise superRiso is null and nothing happens here or in
 	// phase 3.
-	const superRiso = (fxEnabled && currentState.postProcessingEnabled.superRiso) ? getSuperRiso() : null;
+	const superRisoLoaded = currentState.postProcessingEnabled.superRiso ? getSuperRiso() : null;
+	const superRiso = fxEnabled ? superRisoLoaded : null;
 	const superRisoInput: SuperRisoInput | null = superRiso && {
 		settings: currentState.postProcessing.superRiso,
 		isDarkMode: currentState.isDarkMode,

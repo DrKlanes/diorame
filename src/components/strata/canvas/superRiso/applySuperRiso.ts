@@ -1,4 +1,4 @@
-// Super Riso — integration (loaded only behind ?superriso=1, see flag.ts).
+// Super Riso — integration (lazy chunk, see flag.ts).
 //
 // Called from renderPipeline phase 3, in the applyRisoV2 slot. "Prints what you see":
 //   1. Flatten: the canvas BASE colour (drawBackground.backgroundBaseColor, no paper texture —

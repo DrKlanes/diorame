@@ -1,6 +1,6 @@
 // Super Riso — instrumentation: rolling timings + a small DOM overlay to read the numbers on the
 // iPad, with the automatic "Medir" sequence controls. DOM, not canvas, so it never ends up in an
-// export or a recording. Only mounted behind ?superriso=1&srdebug=1.
+// export or a recording. Only mounted behind ?srdebug=1.
 
 const SIZE = 2400;       // enough for 8 s at 300 fps
 const LIVE_WINDOW = 240; // what the live overlay shows

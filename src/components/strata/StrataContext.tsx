@@ -20,7 +20,7 @@ export { APP_VERSION } from '../../constants/version'; // Moved to constants/ver
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS } from '../../constants/palette';
-import { SUPER_RISO_DEFAULTS, SUPER_RISO_URL_FLAG, sanitizeSuperRiso, applySuperRisoStyle } from '../../constants/superRiso';
+import { SUPER_RISO_DEFAULTS, sanitizeSuperRiso, applySuperRisoStyle } from '../../constants/superRiso';
 import type { SuperRisoSettings, SuperRisoStyle } from '../../types/strataTypes';
 export type { PaletteColor } from '../../constants/palette';
 export { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS };
@@ -216,8 +216,7 @@ export const initialState: AppState = {
       riso: false,
       pixelArt: false,
       grunge: false,
-      // Until L2 (panel), only ?superriso=1 switches it on.
-      superRiso: SUPER_RISO_URL_FLAG,
+      superRiso: false,
   },
   fxMasterEnabled: true, // Master toggle for all FX (defaults ON)
   postProcessingSnapshot: null,

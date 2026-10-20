@@ -1,6 +1,6 @@
 {
   "name": "Diorame",
-  "version": "3.17.74",
+  "version": "3.18.0",
   "private": true,
   "type": "module",
   "dependencies": {

@@ -1,5 +1,5 @@
 // Super Riso — runtime knobs and live facts shared by applySuperRiso, the overlay and the
-// automatic measurement (measure.ts). Only ever imported from the ?superriso=1 chunk.
+// automatic measurement (measure.ts). Only ever imported from the Super Riso chunk.
 //
 // L1: without ?srdebug=1 every knob below is ignored and cfg is DEFAULT_CFG (auto quality levels,
 // lossless full level). With srdebug=1: the overlay, "Medir", window.__superRiso and the knobs.
@@ -69,7 +69,7 @@ export const cfg: RuntimeCfg = {
 	forceLevel: params.get('srlevel') === 'preview' ? 'preview' : params.get('srlevel') === 'full' ? 'full' : null,
 };
 
-/** What a plain `?superriso=1` does, ignoring the other URL knobs. */
+/** What Super Riso does without ?srdebug=1, ignoring the URL knobs. */
 export const DEFAULT_CFG: Readonly<RuntimeCfg> = {
 	preserveDrawingBuffer: true, resScale: 1, mip: true, bypass: false, darkPaperFromBase: false,
 	simUpload: false, offscreenBack: false, bitmapUpload: false, pipe: 0, hold: false, lossless: true, preview: 0,

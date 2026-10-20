@@ -5,7 +5,10 @@ import { T, TYPE, RADIUS, dk, SPACE } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
 import { useTranslation } from '../../../i18n';
 import { analytics } from '../../../analytics/analytics';
+import { toast } from 'sonner@2.0.3';
 import { FXRow } from './FXRow';
+import { SuperRisoBlock } from './SuperRisoBlock';
+import { isWebGL2Available } from '../canvas/superRiso/flag';
 
 const STORAGE_KEY = 'diorame-fx-expanded';
 
@@ -120,6 +123,10 @@ export function FXPanel() {
 	// TOGGLE_FX_MASTER queda fuera a proposito: encender un bloque entero no es
 	// aplicar un FX concreto.
 	const toggleFx = (key: keyof typeof px) => {
+		if (key === 'superRiso' && !px.superRiso && !isWebGL2Available()) {
+			toast.warning(t('fx.superRiso.noWebgl2'));
+			return;
+		}
 		dispatch({ type: 'TOGGLE_FX', payload: key });
 		if (!px[key]) analytics.filterApplied(key);
 	};
@@ -239,6 +246,10 @@ export function FXPanel() {
 								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
 						))}
 					</div>
+					<PanelHSep />
+					{/* Super Riso */}
+					<GroupLabel label={t('fx.group.superRiso')} />
+					<SuperRisoBlock dark={dark} isActive={px.superRiso} onToggle={() => toggleFx('superRiso')} />
 					</div>
 				</DiPanel>
 			</div>
@@ -270,6 +281,8 @@ export function FXPanel() {
 				<DiActionButton name="fx-particles" onClick={fxClick('particles')} dark={dark} active={snap ? snap.particles : px.particles} tooltip={t('fx.atmosphere.particles.tooltip')} />
 				<DiActionButton name="fx-wiggle"    onClick={fxClick('wiggle')} dark={dark} active={snap ? snap.wiggle : px.wiggle}    tooltip={t('fx.atmosphere.wiggle.tooltip')} />
 				<DiActionButton name="fx-pixel"     onClick={fxClick('pixelArt')} dark={dark} active={snap ? snap.pixelArt : px.pixelArt}  tooltip={t('fx.atmosphere.pixelArt.tooltip')} />
+				<PillHSep />
+				<DiActionButton name="fx-super-riso" onClick={fxClick('superRiso')} dark={dark} active={snap ? snap.superRiso : px.superRiso} tooltip={t('fx.superRiso.tooltip')} />
 				</div>
 			</DiPill>
 		</div>

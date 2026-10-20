@@ -15,6 +15,7 @@ export { DiPill } from './DiPill';
 export { DiVSep } from './DiVSep';
 export { DiMiniSlider } from './DiMiniSlider';
 export { DiSegmentControl } from './DiSegmentControl';
+export { DiChip } from './DiChip';
 
 // v1 Primitives (still in use; migrated in later phases)
 export { DiButton } from './DiButton';

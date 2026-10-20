@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { T, TYPE, RADIUS, dk } from './tokens';
+import { EnhancedTooltip } from '../components/ui/enhanced-tooltip';
 
 /**
  * SegmentOption — admite dos formatos:
@@ -13,7 +14,7 @@ import { T, TYPE, RADIUS, dk } from './tokens';
  *
  * Soporta T number para casos donde el value semántico es numérico (e.g. discrete FX intensity).
  */
-export type SegmentOption<T extends string | number = string> = T | { value: T; label: string };
+export type SegmentOption<T extends string | number = string> = T | { value: T; label: string; tooltip?: string };
 
 interface DiSegmentControlProps<T extends string | number = string> {
 	options: SegmentOption<T>[];
@@ -34,7 +35,7 @@ export function DiSegmentControl<T extends string | number = string>({
 	// Primitives (string or number) become { value: opt, label: String(opt) }.
 	// Explicit return type: `typeof opt` can't narrow a generic T, so without
 	// this annotation TS infers a union that still includes the primitive arm.
-	const normalized = options.map((opt): { value: T; label: string } => {
+	const normalized = options.map((opt): { value: T; label: string; tooltip?: string } => {
 		if (typeof opt === 'string' || typeof opt === 'number') {
 			return { value: opt as T, label: String(opt) };
 		}
@@ -53,6 +54,7 @@ export function DiSegmentControl<T extends string | number = string>({
 				<SegmentItem
 					key={opt.value}
 					label={opt.label}
+					tooltip={opt.tooltip}
 					active={value === opt.value}
 					small={small}
 					dark={dark}
@@ -65,16 +67,17 @@ export function DiSegmentControl<T extends string | number = string>({
 
 interface SegmentItemProps {
 	label: string;
+	tooltip?: string;
 	active: boolean;
 	small: boolean;
 	dark: boolean;
 	onClick: () => void;
 }
 
-function SegmentItem({ label, active, small, dark, onClick }: SegmentItemProps) {
+function SegmentItem({ label, tooltip, active, small, dark, onClick }: SegmentItemProps) {
 	const [hov, setHov] = useState(false);
 
-	return (
+	const item = (
 		<div
 			onClick={onClick}
 			onMouseEnter={() => setHov(true)}
@@ -108,4 +111,5 @@ function SegmentItem({ label, active, small, dark, onClick }: SegmentItemProps) 
 			</span>
 		</div>
 	);
+	return tooltip ? <EnhancedTooltip content={tooltip} side="left">{item}</EnhancedTooltip> : item;
 }

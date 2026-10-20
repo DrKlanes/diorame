@@ -1,7 +1,7 @@
 // Super Riso — automatic measurement ("Medir" button). Runs the C2a sequence without reloading
 // (2 s warm-up discarded + 8 s measured each), then builds a compact plain-text report with the
 // device facts, per row the CPU p50 of every stage plus where the wait lands, and a per-pass GPU
-// profile. Only reachable behind ?superriso=1&srdebug=1 (the overlay button).
+// profile. Only reachable behind ?srdebug=1 (the overlay button).
 //
 //   A bypass · B .75 pipe=1 (reference = D of C1c) · C .75 pipe=2 · D .75 best pipe + lossless ·
 //   E .75 best pipe + preview · F 1.0 best pipe + preview · G .75 best pipe + hold 12 fps at full

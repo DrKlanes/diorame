@@ -56,7 +56,3 @@ export function sanitizeSuperRiso(incoming: unknown): SuperRisoSettings {
 export function applySuperRisoStyle(current: SuperRisoSettings, style: SuperRisoStyle): SuperRisoSettings {
 	return sanitizeSuperRiso({ ...current, ...SUPER_RISO_STYLES[style].panel, style });
 }
-
-/** Until L2 (panel + launch), Super Riso is only switched on by ?superriso=1. */
-export const SUPER_RISO_URL_FLAG = typeof window !== 'undefined'
-	&& new URLSearchParams(window.location.search).get('superriso') === '1';
