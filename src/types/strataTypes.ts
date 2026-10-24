@@ -60,6 +60,37 @@ export type SuperRisoSettings = {
     resolution: number;         // 0–1 (lo-fi … fine)
     reprintFps: 0 | 4 | 6 | 8 | 12;
     fullQuality: boolean;       // force the full level live (held at the reprint rate)
+    technique: 'riso' | 'xerox';  // v3.19.0: Riso or Fotocopia (copy art)
+    xerox: XeroxSettings;
+};
+
+// Super Riso · Fotocopia (v3.19.0): the lab's st.x. Data, styles and sanitising in constants/superRisoXerox.ts.
+export type XeroxStyle = 'flyer' | 'zine' | 'water' | 'fluor' | 'degen' | 'photo' | 'munari' | 'lid';
+export type XeroxPaper = 'copy' | 'recycled' | 'fpink' | 'fyellow' | 'fgreen' | 'forange' | 'blue' | 'custom';
+export type XeroxMarkerId = 'red' | 'pink' | 'magenta' | 'orange' | 'yellow' | 'lemon' | 'green' | 'lime'
+    | 'turquoise' | 'cyan' | 'blue' | 'violet' | 'brown' | 'skin' | 'warmGray' | 'coolGray';
+/** Fine-tuning keys of the lab (no sliders in Diorame: only style overrides land here). */
+export type XeroxFineKey = 'hollow' | 'thr' | 'grain' | 'genSpread' | 'dust' | 'hairs' | 'scratch' | 'prints' | 'smear' | 'fog' | 'streak' | 'band'
+    | 'lid' | 'motion' | 'lpi' | 'offset' | 'sloppy' | 'wobble' | 'cover' | 'slop' | 'dry' | 'fast' | 'stroke' | 'strokeAng' | 'overlap' | 'strength'
+    | 'wobMm' | 'bloom' | 'gran' | 'dryB' | 'scanNoise';
+export type XeroxSettings = {
+    style: XeroxStyle | '';
+    mode: 'line' | 'photo';
+    dark: number;               // 0–1
+    toner: number;              // 0–1 (worn grey … deep black)
+    gens: number;               // 1–6
+    dirt: number;               // 0–1
+    hand: 'none' | 'marker' | 'water';
+    what: 'auto' | 'color' | 'fill';
+    colors: 'own' | 'markers' | 'manual';
+    n: number;                  // 1–6
+    manual: string[];           // marker hexes (≤6)
+    sloppy: number;             // 0–1
+    paper: XeroxPaper;
+    paperHex: string;
+    fillCover: number;          // .2–1
+    fillSeed: number;
+    fine: Partial<Record<XeroxFineKey, number>>;
 };
 
 export type PostProcessingSettings = {

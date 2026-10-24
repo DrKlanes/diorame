@@ -20,8 +20,8 @@ export { APP_VERSION } from '../../constants/version'; // Moved to constants/ver
 export const MAX_HISTORY_STEPS = 50; // History limit
 
 import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS } from '../../constants/palette';
-import { SUPER_RISO_DEFAULTS, sanitizeSuperRiso, applySuperRisoStyle } from '../../constants/superRiso';
-import type { SuperRisoSettings, SuperRisoStyle } from '../../types/strataTypes';
+import { SUPER_RISO_DEFAULTS, sanitizeSuperRiso, applySuperRisoStyle, patchSuperRiso, type SuperRisoPatch } from '../../constants/superRiso';
+import type { SuperRisoStyle, XeroxStyle } from '../../types/strataTypes';
 export type { PaletteColor } from '../../constants/palette';
 export { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS };
 
@@ -93,8 +93,8 @@ type Action =
   | { type: 'SET_PARTICLE_TYPE'; payload: 'circle' | 'square' | 'stroke' }
   | { type: 'TOGGLE_FX'; payload: keyof PostProcessingEnabled }
   | { type: 'TOGGLE_FX_MASTER' }
-  | { type: 'SET_SUPER_RISO'; payload: Partial<SuperRisoSettings> }
-  | { type: 'APPLY_SUPER_RISO_STYLE'; payload: SuperRisoStyle }
+  | { type: 'SET_SUPER_RISO'; payload: SuperRisoPatch }
+  | { type: 'APPLY_SUPER_RISO_STYLE'; payload: SuperRisoStyle | XeroxStyle }
   | { type: 'REQUEST_EXPORT'; payload: ExportType }
   | { type: 'FINISH_EXPORT' }
   | { type: 'CLEAR_CANVAS' }
@@ -874,7 +874,7 @@ export function appReducer(state: AppState, action: Action): AppState {
       return {
           ...state,
           isDirty: true,
-          postProcessing: { ...state.postProcessing, superRiso: sanitizeSuperRiso({ ...state.postProcessing.superRiso, ...action.payload }) },
+          postProcessing: { ...state.postProcessing, superRiso: patchSuperRiso(state.postProcessing.superRiso, action.payload) },
       };
     case 'APPLY_SUPER_RISO_STYLE':
       return {

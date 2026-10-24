@@ -1,7 +1,7 @@
 # Super Riso — página de diseño
 
 Estado: público desde **v3.18.0** (L1 en v3.17.74, motor y niveles; L2 en v3.18.0, panel y
-lanzamiento). Descripción técnica exhaustiva: `src/REFERENCE.md` §14 y §10. Reglas de
+lanzamiento; técnica Fotocopia en v3.19.0). Descripción técnica exhaustiva: `src/REFERENCE.md` §14 y §10. Reglas de
 trabajo y lecciones de medición: `CLAUDE.md`. Deuda abierta: `docs/ux-debt.md`.
 
 ## Qué es
@@ -18,6 +18,18 @@ Panel de 8 controles (los ~35 parámetros del laboratorio, bajo curvas fijadas a
 Número de tintas · Papel · Trama · Tamaño de trama · Imperfección · Resolución · Reimpresión,
 más 4 estilos que fijan todo de una vez (Taller limpio · Fanzine · Lo-fi · Cuatricromía) y,
 solo en dispositivos lentos, «Calidad completa siempre».
+
+**Técnica Fotocopia (v3.19.0).** Un selector «Técnica: Riso / Fotocopia» cambia el motor por el
+de copy art del Lab (`diorame-riso-lab/tools/studio/`, validado por Moisés): la copiadora como
+umbral sucio (tóner, generaciones de copia, suciedad física, sólidos huecos) y el color puesto a
+mano después (rotulador o acuarela), que no casa con la línea. Port 1:1: shaders byte a byte,
+mismas pasadas y mismos targets a ¼. Panel reducido a los controles macro del Lab (Copiadora,
+Color a mano, Papel) y sus 8 estilos; el ajuste fino del Lab no tiene sliders: sale de `xBase()`
+más los overrides `fine` de cada estilo. Los mapas en CPU (orientación del trazo y huecos
+blancos) no se calculan por fotograma en vivo: al cambiar sus entradas, y si no, como mucho cada
+300 ms en un idle callback; en exportación, siempre. Diferencia consciente con el Lab: el papel
+de origen es el color base del lienzo («imprime lo que ves»), no el claro dominante del dibujo.
+Detalle: REFERENCE.md §14, «Technique Fotocopia».
 
 ## Arquitectura
 

@@ -60,8 +60,8 @@ export const FS_SCAN_PV = patch(FS_SCAN,
 	'for(int j=-1;j<=1;j++) for(int i=-1;i<=1;i++){ float k=exp(-float(i*i+j*j)/(2.*r*r)); a+=s2l');
 
 export const FS_SCREEN_PV = patch(patch(patch(FS_SCREEN,
-	'for(int j=0;j<3;j++) for(int i=0;i<3;i++){\n    vec2 p=mm/tx+vec2(s*131.,s*57.)+(vec2(i,j)-1.)/3.*px;',
-	'for(int j=0;j<2;j++) for(int i=0;i<2;i++){\n    vec2 p=mm/tx+vec2(s*131.,s*57.)+(vec2(i,j)-.5)/2.*px;'),
+	'for(int j=0;j<3;j++) for(int i=0;i<3;i++){\n    vec2 p=mm/tx+mod(vec2(s*131.,s*57.),1024.)+(vec2(i,j)-1.)/3.*px;',
+	'for(int j=0;j<2;j++) for(int i=0;i<2;i++){\n    vec2 p=mm/tx+mod(vec2(s*131.,s*57.),1024.)+(vec2(i,j)-.5)/2.*px;'),
 	'return cov/9.; }', 'return cov/4.; }'),
 	'// El campo está ecualizado: umbral x → cobertura x. Se integra con 9 submuestras por píxel, como el sensor del escáner.',
 	'// [preview C2a] 4 submuestras por píxel en lugar de 9.');

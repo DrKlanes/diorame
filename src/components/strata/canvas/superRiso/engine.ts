@@ -16,6 +16,8 @@ import { FS_SCREEN, FS_SPREAD, FS_COMPOSE, FS_SCAN } from './shadersPrint';
 import { MAXI, hex2rgb, lin, oklab, dist, printedHex, rng } from './inks';
 import { DEFAULTS, type EngineParams } from './panel';
 import { createPassProfiler, type PassProfiler } from './passProfiler';
+import { createXerox } from './xeroxEngine';
+import type { XeroxEngineParams } from './xeroxParams';
 import { FS_BLUR1, FS_SPREAD_LL, FS_SEP0_LL, FS_SEP0_PV, FS_SPREAD_PV, FS_SCAN_PV, FS_SCREEN_PV, FS_COPY, PV_SEP0, PV_SPREAD, PV_SCAN, PV_SCREEN } from './shadersFast';
 
 export type EngineAssets = { green: TexImageSource; exBlack: TexImageSource & { width: number; height: number }; exRed: TexImageSource & { width: number; height: number }; exLut: TexImageSource };
@@ -25,6 +27,8 @@ export type GLCanvas = HTMLCanvasElement | OffscreenCanvas;
 /** C2a. lossless: shader variants verified identical to the lab. preview: bitmask of lossy
  *  variants (live only). toTexture: SCAN into an internal texture; present() copies it to the canvas. */
 export type RenderOpts = { lossless?: boolean; preview?: number; toTexture?: boolean };
+/** Riso parameters, or Fotocopia ones (tech: 'xerox', xeroxParams.ts): render() dispatches on tech, like the lab's prepare(). */
+export type AnyParams = Partial<EngineParams> & Partial<XeroxEngineParams>;
 export type Engine = {
 	canvas: GLCanvas;
 	gl: WebGL2RenderingContext;
@@ -37,7 +41,7 @@ export type Engine = {
 	/** Which variant each switchable pass used in the last render (verification of export = full). */
 	lastVariants: string;
 	setSource(src: TexImageSource & { width: number; height: number }, mip?: boolean): void;
-	render(params: Partial<EngineParams>, opts?: RenderOpts): Engine;
+	render(params: AnyParams, opts?: RenderOpts): Engine;
 	/** Exact copy of the last toTexture result to the canvas (srpipe=2). */
 	present(): void;
 	/** 1×1 readPixels of the canvas: returns once the GPU has finished the last render. */
@@ -48,10 +52,10 @@ export type Engine = {
 	invalidateLut(): void;
 };
 
-type TexOpts = { filter?: number; wrap?: number; mip?: boolean };
-type Program = { p: WebGLProgram; u: Record<string, WebGLUniformLocation | null> };
-type Target = { f: WebGLFramebuffer; t: WebGLTexture[]; w: number; h: number };
-type RunApi = {
+export type TexOpts = { filter?: number; wrap?: number; mip?: boolean };
+export type Program = { p: WebGLProgram; u: Record<string, WebGLUniformLocation | null> };
+export type Target = { f: WebGLFramebuffer; t: WebGLTexture[]; w: number; h: number };
+export type RunApi = {
 	t(name: string, texture: WebGLTexture): void;
 	f(name: string, ...v: number[]): void;
 	i(name: string, v: number): void;
@@ -163,6 +167,7 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 	const fibTex = texFrom(once('fib11', () => fiberCanvas(11)), { wrap: gl.REPEAT, mip: true }), incTex = texFrom(once('inc23', () => inclCanvas(23)), { wrap: gl.REPEAT, mip: true });
 	const exU = (a: RunApi) => { a.t('uExB', EX.b); a.t('uExR', EX.r); a.t('uExLut', EX.lut); a.f('uExBSize', EX.bs[0], EX.bs[1]); a.f('uExRSize', EX.rs[0], EX.rs[1]); a.f('uExPxMm', EX_PXMM); };
 
+	let xerox: ReturnType<typeof createXerox> | null = null;
 	const LUT = target(33 * 33, 33, 2); let lutKey = '';
 	const srcTex = gl.createTexture()!; let srcW = 0, srcH = 0;
 	let TG: Record<'prep' | 'sep' | 'tmp' | 'loc' | 'qtmp' | 'sol' | 'scr' | 'cov' | 'comp' | 'prepH' | 'prepV' | 'out', Target> | null = null, simW = 0, simH = 0;
@@ -228,8 +233,19 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 			if (query) gl!.beginQuery(timerExt!.TIME_ELAPSED_EXT, query);
 			let w = Math.round(P.printW * P.pxmm), h = Math.round(w * srcH / srcW);
 			const lim = Math.min(MAXTEX, 6144); if (Math.max(w, h) > lim) { const s = lim / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+			const xr = params.tech === 'xerox';
+			// Fotocopia: multiples of 4, so the ¼ targets fall exactly on the full grid (the lab's tiles are aligned to 4 px).
+			if (xr) { w = Math.max(4, w & ~3); h = Math.max(4, h & ~3); }
 			ensureTargets(w, h); eng.width = w; eng.height = h;
 			const T = TG!;
+			if (xr) {
+				xerox ??= createXerox({ gl: gl!, compile, run, target, freeTarget, texFrom, greenTex, fibTex, PR: { prep: PR.prep, blur: PR.blur, scan: PR.scan } });
+				xerox.render(params, { prep: T.prep, qtmp: T.qtmp, comp: T.comp, out: T.out }, srcTex, srcW, srcH, w, h, !!opts.toTexture);
+				eng.lastVariants = 'xerox';
+				if (query) { gl!.endQuery(timerExt!.TIME_ELAPSED_EXT); pendingQuery = query; }
+				gl!.flush();
+				eng.lastMs = performance.now() - t0; return eng;
+			}
 			const pxmm = w / P.printW, paperLin = lin(hex2rgb(P.paper)), N = Math.min(MAXI, P.inks.length);
 			const inks = P.inks.concat(Array(MAXI).fill('#000000')).slice(0, MAXI), opac = P.opac.concat(Array(MAXI).fill(.15)).slice(0, MAXI);
 			const inkLin: number[] = []; for (let i = 0; i < MAXI; i++) inkLin.push(...lin(hex2rgb(printedHex(inks[i]))));

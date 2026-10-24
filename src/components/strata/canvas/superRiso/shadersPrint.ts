@@ -14,7 +14,7 @@ float fmDots(vec2 mm, float x, float s){
   // El campo está ecualizado: umbral x → cobertura x. Se integra con 9 submuestras por píxel, como el sensor del escáner.
   float cov=0.; float tx=uGrain/3.; float px=1./(uPxMm*tx);
   for(int j=0;j<3;j++) for(int i=0;i<3;i++){
-    vec2 p=mm/tx+vec2(s*131.,s*57.)+(vec2(i,j)-1.)/3.*px;
+    vec2 p=mm/tx+mod(vec2(s*131.,s*57.),1024.)+(vec2(i,j)-1.)/3.*px;   // desfase acotado: con semillas altas, float32 perdía las submuestras
     float f=texture(uGreen,p/1024.).r;
     float h=h12(floor(p/3.)+s*3.1);
     float on=step(f,x);

@@ -1,9 +1,12 @@
 // Super Riso — the 8 panel controls, their styles, defaults and sanitising. Pure data, shared by
 // the reducer (state, .dior) and the engine mapping (canvas/superRiso/panel.ts → fromPanel).
 
-import type { SuperRisoSettings, SuperRisoStyle, SuperRisoPaper } from '../types/strataTypes';
+import type { SuperRisoSettings, SuperRisoStyle, SuperRisoPaper, XeroxSettings, XeroxStyle } from '../types/strataTypes';
+import { XEROX_DEFAULTS, sanitizeXerox, applyXeroxStyle } from './superRisoXerox';
 
-export type SuperRisoPanel = Omit<SuperRisoSettings, 'style' | 'fullQuality'>;
+export type SuperRisoPanel = Omit<SuperRisoSettings, 'style' | 'fullQuality' | 'technique' | 'xerox'>;
+/** SET_SUPER_RISO payload: xerox is merged field by field over the current one. */
+export type SuperRisoPatch = Partial<Omit<SuperRisoSettings, 'xerox'>> & { xerox?: Partial<XeroxSettings> };
 
 export const SUPER_RISO_PAPERS: readonly SuperRisoPaper[] = ['white', 'natural', 'recycled', 'cream'];
 export const SUPER_RISO_REPRINT_FPS: readonly SuperRisoSettings['reprintFps'][] = [0, 4, 6, 8, 12];
@@ -23,7 +26,7 @@ export const SUPER_RISO_STYLES: Readonly<Record<SuperRisoStyle, { label: string;
 
 /** State default: the lab defaults + "Taller limpio". */
 export const SUPER_RISO_DEFAULTS: Readonly<SuperRisoSettings> = {
-	...SUPER_RISO_PANEL_DEFAULTS, ...SUPER_RISO_STYLES.clean.panel, style: 'clean', fullQuality: false,
+	...SUPER_RISO_PANEL_DEFAULTS, ...SUPER_RISO_STYLES.clean.panel, style: 'clean', fullQuality: false, technique: 'riso', xerox: XEROX_DEFAULTS,
 } as SuperRisoSettings;
 
 const clamp01 = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v)) ? Math.min(1, Math.max(0, v)) : d;
@@ -49,10 +52,19 @@ export function sanitizeSuperRiso(incoming: unknown): SuperRisoSettings {
 		resolution: clamp01(s.resolution, d.resolution),
 		reprintFps: oneOf(s.reprintFps, SUPER_RISO_REPRINT_FPS, d.reprintFps),
 		fullQuality: typeof s.fullQuality === 'boolean' ? s.fullQuality : d.fullQuality,
+		technique: oneOf(s.technique, ['riso', 'xerox'] as const, d.technique),
+		xerox: sanitizeXerox(s.xerox),
 	};
 }
 
-/** Applies a style: its print controls over the current settings (reprint and fullQuality kept). */
-export function applySuperRisoStyle(current: SuperRisoSettings, style: SuperRisoStyle): SuperRisoSettings {
-	return sanitizeSuperRiso({ ...current, ...SUPER_RISO_STYLES[style].panel, style });
+/** SET_SUPER_RISO: the patch over the current settings, xerox merged field by field (its fine overrides survive). */
+export function patchSuperRiso(current: SuperRisoSettings, patch: SuperRisoPatch): SuperRisoSettings {
+	return sanitizeSuperRiso({ ...current, ...patch, xerox: patch.xerox ? { ...current.xerox, ...patch.xerox } : current.xerox });
+}
+
+/** Applies a style of the current technique: its print controls over the current settings (reprint and fullQuality kept).
+ *  Fotocopia: the lab's XSTYLES (the ids overlap with Riso's, so the technique decides). */
+export function applySuperRisoStyle(current: SuperRisoSettings, style: SuperRisoStyle | XeroxStyle): SuperRisoSettings {
+	if (current.technique === 'xerox') return { ...current, xerox: applyXeroxStyle(current.xerox, style as XeroxStyle) };
+	return sanitizeSuperRiso({ ...current, ...SUPER_RISO_STYLES[style as SuperRisoStyle].panel, style });
 }
