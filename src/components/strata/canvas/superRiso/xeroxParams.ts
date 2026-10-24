@@ -6,6 +6,7 @@
 import type { XeroxSettings } from '../../../../types/strataTypes';
 import { XEROX_PAPERS } from '../../../../constants/superRisoXerox';
 import type { RGB } from './inks';
+import { resolutionParams } from './panel';
 
 export type XeroxEngineParams = {
 	tech: 'xerox'; printW: number; pxmm: number; seed: number; smooth: number;
@@ -38,22 +39,19 @@ function xBase(x: XeroxSettings) {
 	return {
 		dark: x.dark, tonerK: x.toner, soft: .05,
 		hairs: lerp(.1, 1, d), scratch: lerp(0, .7, d), prints: lerp(0, .45, d), smear: lerp(0, .5, d),
-		slop: sl, dry: .5, fast: .35, wobMm: lerp(.3, 1.2, sl), gran: .6, dryB: .3, bloom: .5, gens: x.gens, photo: x.mode === 'photo' ? 1 : 0, lpi: 40, motion: 0, lid: 0,
-		dust: lerp(.05, 1, d), fog: lerp(.05, 1, d), streak: lerp(0, .8, d), band: lerp(.1, .8, d), hollow: lerp(.2, .7, d), grain: .06, thr: .44, genSpread: .05,
+		slop: sl, dry: .5, fast: .35, wobMm: lerp(.3, 1.2, sl), gran: .6, dryB: .3, bloom: .5, gens: x.gens, photo: x.mode === 'photo' ? 1 : 0, lpi: Math.round(80 - 65 * Math.pow(x.screenSize, .7)), motion: 0, lid: 0,
+		dust: lerp(.05, 1, d), fog: lerp(.05, 1, d), streak: lerp(0, .8, d), band: lerp(.1, .8, d), hollow: lerp(.2, .7, d), grain: lerp(.035, .14, x.screenSize), thr: .44, genSpread: .05,
 		hand: x.hand === 'marker' ? 1 : x.hand === 'water' ? 2 : 0, offset: lerp(.1, 2.2, sl), sloppy: lerp(.25, 1.2, sl), wobble: lerp(.2, .9, sl), cover: lerp(1, .75, sl),
 		stroke: 5, strokeAng: 35, overlap: .28, strength: 1, colorSmooth: .25,
-		paper: pap.paper, fibers: pap.fibers, paperTex: pap.paperTex, smooth: .12, scanBlurMm: .06, scanNoise: .3,
+		paper: pap.paper, fibers: pap.fibers, paperTex: pap.paperTex, smooth: .12,
 	};
 }
 
 /**
  * Lab xparams() minus what comes from the frame (markers, maps, srcPaper, seed: frame.ts engineParams).
- * frameW: frame width in px of the simulation. The frame is a 240 mm sheet, as in Riso; no lo-fi resolution
- * control in Fotocopia: pxmm = frameW / 240.
+ * frameW: frame width in px; resolution: the shared control, translated exactly as Riso does (pxmm, crisp lo-fi,
+ * scanner softness and noise: panel.resolutionParams). Style `fine` overrides go on top, as in the lab.
  */
-export function xeroxParams(x: XeroxSettings, frameW: number): Partial<XeroxEngineParams> {
-	const printW = 240, pxmm = frameW / printW;
-	const b = Object.assign(xBase(x), x.fine);
-	const { scanBlurMm, ...rest } = b;
-	return { ...rest, tech: 'xerox', printW, pxmm, scanBlur: Math.max(.05, scanBlurMm * pxmm) };
+export function xeroxParams(x: XeroxSettings, frameW: number, resolution: number): Partial<XeroxEngineParams> {
+	return { ...resolutionParams(resolution, frameW), ...Object.assign(xBase(x), x.fine), tech: 'xerox' };
 }

@@ -33,7 +33,7 @@ export const XEROX_STYLES: Readonly<Record<XeroxStyle, StyleFields>> = {
 	water:  { mode: 'line', dark: .45, gens: 1, dirt: .3, hand: 'water', pal: 'own', n: 4, sloppy: .4, paper: 'copy' },
 	fluor:  { mode: 'line', dark: .55, gens: 2, dirt: .45, hand: 'none', paper: 'fpink' },
 	degen:  { mode: 'line', dark: .6, toner: .5, gens: 5, dirt: .85, hand: 'none', paper: 'recycled' },
-	photo:  { mode: 'photo', dark: .5, gens: 1, dirt: .35, hand: 'none', paper: 'copy' },
+	photo:  { mode: 'photo', screenSize: .6, dark: .5, gens: 1, dirt: .35, hand: 'none', paper: 'copy' },
 	munari: { mode: 'line', dark: .5, gens: 1, dirt: .3, hand: 'none', paper: 'copy', fine: { motion: 10 } },
 	lid:    { mode: 'line', dark: .55, gens: 2, dirt: .5, hand: 'marker', pal: 'kit', n: 2, sloppy: .6, paper: 'copy', fine: { lid: 1 } },
 };
@@ -52,7 +52,7 @@ export const XEROX_FINE_RANGES: Readonly<Record<XeroxFineKey, readonly [number, 
 
 /** The lab's st.x defaults ("Fanzine a rotulador"). */
 export const XEROX_DEFAULTS: Readonly<XeroxSettings> = {
-	style: 'zine', mode: 'line', dark: .5, toner: .75, gens: 2, dirt: .4, hand: 'marker', what: 'auto', pal: 'kit', n: 3, over: {}, box: [], sloppy: .55,
+	style: 'zine', mode: 'line', screenSize: .35, dark: .5, toner: .75, gens: 2, dirt: .4, hand: 'marker', what: 'auto', pal: 'kit', n: 3, over: {}, box: [], sloppy: .55,
 	paper: 'copy', paperHex: '#f6f6f2', fillCover: .85, fillSeed: 1, fine: {},
 };
 
@@ -83,6 +83,7 @@ export function sanitizeXerox(incoming: unknown): XeroxSettings {
 	return {
 		style: s.style === '' ? '' : oneOf(s.style, XEROX_STYLE_ORDER, d.style),
 		mode: oneOf(s.mode, ['line', 'photo'] as const, d.mode),
+		screenSize: num(s.screenSize, 0, 1, d.screenSize),
 		dark: num(s.dark, 0, 1, d.dark),
 		toner: num(s.toner, 0, 1, d.toner),
 		gens: int(s.gens, 1, 6, d.gens),

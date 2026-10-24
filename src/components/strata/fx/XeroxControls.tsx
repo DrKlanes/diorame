@@ -2,14 +2,14 @@ import React, { useState, useSyncExternalStore } from 'react';
 import { DiMiniSlider, DiSegmentControl, DiChip } from '../../../design-system';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { useTranslation } from '../../../i18n';
-import { XEROX_MARKERS, XEROX_PAPERS, XEROX_PAPER_ORDER } from '../../../constants/superRisoXerox';
+import { XEROX_MARKERS } from '../../../constants/superRisoXerox';
 import type { SuperRisoPatch } from '../../../constants/superRiso';
 import { getXeroxPalette, subscribeXeroxPalette, type XeroxRow } from '../canvas/superRiso/xeroxPalette';
 import { xOverFor } from '../canvas/superRiso/xeroxMarkers';
 import type { XeroxSettings } from '../../../types/strataTypes';
 import { Field, segmentWrap, pct, labelStyle, Divider } from './superRisoFields';
 
-// Super Riso · Fotocopia — the lab's macro controls (Copiadora / Color a mano / Papel). The lab's fine-tuning has no
+// Super Riso · Fotocopia — the lab's macro controls (Copiadora / Color a mano; Papel, Trama, Tamaño de trama, Suciedad and Resolución live in the shared «Ajustes de impresión» of SuperRisoBlock). The lab's fine-tuning has no
 // sliders here: its values derive from these controls (canvas/superRiso/xeroxParams.ts), plus a style's fine overrides.
 
 interface XeroxControlsProps {
@@ -45,13 +45,6 @@ export function XeroxControls({ dark, muted, x, set }: XeroxControlsProps) {
 	return (
 		<>
 			{sectionTitle('fx.superRiso.xerox.copier')}
-			<Field label={t('fx.superRiso.xerox.mode')} dark={dark} muted={muted}>
-				<div style={segmentWrap(dark)}>
-					<DiSegmentControl<XeroxSettings['mode']> dark={dark} small
-						options={[{ value: 'line', label: t('fx.superRiso.xerox.mode.line') }, { value: 'photo', label: t('fx.superRiso.xerox.mode.photo') }]}
-						value={x.mode} onChange={v => setX({ mode: v })} />
-				</div>
-			</Field>
 			<Field label={t('fx.superRiso.xerox.dark')} value={pct(x.dark)} dark={dark} muted={muted}>
 				<DiMiniSlider dark={dark} value={x.dark} min={0} max={1} step={0.01} onChange={v => setX({ dark: v })} />
 			</Field>
@@ -60,9 +53,6 @@ export function XeroxControls({ dark, muted, x, set }: XeroxControlsProps) {
 			</Field>
 			<Field label={t('fx.superRiso.xerox.gens')} value={String(x.gens)} dark={dark} muted={muted}>
 				<DiMiniSlider dark={dark} value={x.gens} min={1} max={6} step={1} onChange={v => setX({ gens: v })} />
-			</Field>
-			<Field label={t('fx.superRiso.xerox.dirt')} value={pct(x.dirt)} dark={dark} muted={muted}>
-				<DiMiniSlider dark={dark} value={x.dirt} min={0} max={1} step={0.01} onChange={v => setX({ dirt: v })} />
 			</Field>
 
 			<Divider dark={dark} />
@@ -161,16 +151,6 @@ export function XeroxControls({ dark, muted, x, set }: XeroxControlsProps) {
 				</>
 			)}
 
-			<Divider dark={dark} />
-			<Field label={t('fx.superRiso.paper')} value={x.paper === 'custom' ? undefined : t(`fx.superRiso.xerox.paper.${x.paper}`)} dark={dark} muted={muted}>
-				<div style={{ display: 'flex', gap: 3 }}>
-					{XEROX_PAPER_ORDER.map(p => (
-						<DiChip key={p} dark={dark} active={x.paper === p} swatch={XEROX_PAPERS[p].paper}
-							tooltip={t(`fx.superRiso.xerox.paper.${p}`)} ariaLabel={t(`fx.superRiso.xerox.paper.${p}`)}
-							onClick={() => setX({ paper: p, paperHex: XEROX_PAPERS[p].paper })} />
-					))}
-				</div>
-			</Field>
 		</>
 	);
 }

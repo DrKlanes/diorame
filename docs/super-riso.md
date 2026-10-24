@@ -24,7 +24,7 @@ de copy art del Lab (`diorame-riso-lab/tools/studio/`, validado por Moisés): la
 umbral sucio (tóner, generaciones de copia, suciedad física, sólidos huecos) y el color puesto a
 mano después (rotulador o acuarela), que no casa con la línea. Port 1:1: shaders byte a byte,
 mismas pasadas y mismos targets a ¼. Panel reducido a los controles macro del Lab (Copiadora,
-Color a mano, Papel) y sus 8 estilos; el ajuste fino del Lab no tiene sliders: sale de `xBase()`
+Color a mano) y sus 8 estilos, más el mismo «Ajustes de impresión» plegable de Riso (Papel, Trama Línea|Foto, Tamaño de trama, Suciedad, Resolución); el ajuste fino del Lab no tiene sliders: sale de `xBase()`
 más los overrides `fine` de cada estilo. Los mapas en CPU (orientación del trazo y huecos
 blancos) no se calculan por fotograma en vivo: al cambiar sus entradas, y si no, como mucho cada
 300 ms en un idle callback; en exportación, siempre. Diferencia consciente con el Lab: el papel

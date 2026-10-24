@@ -55,17 +55,20 @@ export const STYLES: Readonly<Record<'clean' | 'zine' | 'lofi' | 'cmyk', { label
 	cmyk:  { label: 'Cuatricromía',  panel: { inkSet: 'cmyk', maxInks: 4, paper: 'white',    screen: 'dots',  screenSize: .45, imperfection: .45, resolution: .7  } },
 };
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+/** Resolution control → internal scale, shared by Riso and Fotocopia: pxmm (lo-fi = 40 % of the canvas), `crisp` (enlarge
+ *  without smoothing below .5) and the scanner's softness and noise. */
+export function resolutionParams(r: number, frameW: number) {
+	const printW = 240;                                            // el fotograma es una hoja de 240 mm
+	return { printW, pxmm: frameW * lerp(.4, 1, r) / printW, crisp: r < .5, scanBlur: lerp(1.0, .65, r), scanNoise: lerp(.6, .35, r) };
+}
 // panel → parámetros internos. frameW = ancho del fotograma en px (lienzo CINEMA). Devuelve también la escala interna.
 export function fromPanel(panel: Partial<PanelSettings>, frameW: number): Partial<EngineParams> {
 	const p = Object.assign({}, PANEL_DEFAULTS, panel); const i = p.imperfection, r = p.resolution, z = p.screenSize;
-	const printW = 240;                                            // el fotograma es una hoja de 240 mm
-	const pxmm = frameW * lerp(.4, 1, r) / printW;                       // resolución interna: lo-fi = 40 % del lienzo (se amplía sin suavizar)
 	return Object.assign({
-		printW, pxmm, crisp: r < .5,          // crisp: ampliar sin suavizado (imageSmoothingEnabled=false) → lo-fi nítido, no borroso
+		...resolutionParams(r, frameW),       // pxmm, crisp (ampliar sin suavizado → lo-fi nítido, no borroso), scanBlur, scanNoise
 		screen: p.screen === 'dots' ? 1 : 0, grain: lerp(.09, .30, z), lpi: Math.round(lerp(120, 45, z)),
 		misreg: .04 + 1.1 * Math.pow(i, 1.6), rot: lerp(.01, .16, i), scl: lerp(.2, 1.6, i),
 		edge: lerp(.25, 1.05, i), voids: lerp(.05, .45, i), texAmp: lerp(.6, 1.45, i), starve: lerp(.05, .4, i), mottle: lerp(.3, 1.2, i),
 		bleed: lerp(.04, .07, i), inkLoad: lerp(.75, .5, i),
-		scanBlur: lerp(1.0, .65, r), scanNoise: lerp(.6, .35, r),
 	}, PAPERS[p.paper] || PAPERS.natural);
 }

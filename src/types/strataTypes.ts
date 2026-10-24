@@ -75,7 +75,8 @@ export type XeroxFineKey = 'hollow' | 'thr' | 'grain' | 'genSpread' | 'dust' | '
     | 'wobMm' | 'bloom' | 'gran' | 'dryB' | 'scanNoise';
 export type XeroxSettings = {
     style: XeroxStyle | '';
-    mode: 'line' | 'photo';
+    mode: 'line' | 'photo';     // «Trama» in the print settings: line = toner grain, photo = line screen
+    screenSize: number;         // 0–1: toner grain (line) or screen ruling (photo), coarser = higher
     dark: number;               // 0–1
     toner: number;              // 0–1 (worn grey … deep black)
     gens: number;               // 1–6

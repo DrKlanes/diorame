@@ -64,7 +64,7 @@ export const lastFrame: { inks: PickedInks | null; params: AnyParams | null } = 
 export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Frame {
 	const { settings: s, isDarkMode, isPixelArt } = inp;
 	const xr = s.technique === 'xerox';
-	const style = xr ? xeroxParams(s.xerox, w * m.res) : fromPanel(s, w * m.res);
+	const style = xr ? xeroxParams(s.xerox, w * m.res, s.resolution) : fromPanel(s, w * m.res);
 	const simW = Math.round(240 * style.pxmm!);
 	const simH = Math.round(simW * h / w);
 	// sim: flatten straight at the simulation size (the 2D draw IS the reduction pass).
@@ -82,7 +82,7 @@ export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Fra
 	if (inp.isLive) lastFrame.inks = inks;
 	// Anything that changes what a pending/held result means: size, theme, mode, parameters, inks, context.
 	const key = [w, h, +isDarkMode, +isPixelArt, m.res, +m.sim, m.preview, +m.lossless, m.pipe, +KNOBS.mip, +KNOBS.offscreenBack, +KNOBS.preserveDrawingBuffer, +KNOBS.darkPaperFromBase,
-		s.technique, ...(mk ? [JSON.stringify(s.xerox), (mk.keys ?? []).join(','), xeroxMapsVersion()] : [s.paper, s.screen, s.screenSize, s.imperfection, s.resolution]), inks.inks.join(',')].join('|');
+		s.technique, ...(mk ? [s.resolution, JSON.stringify(s.xerox), (mk.keys ?? []).join(','), xeroxMapsVersion()] : [s.paper, s.screen, s.screenSize, s.imperfection, s.resolution]), inks.inks.join(',')].join('|');
 	const xerox = mk ? { x: s.xerox, mk, isLive: inp.isLive, motion: inp.motion, scene: inp.scene } : undefined;
 	return { style, fw, fh, base, srcPaper, inks, key, xerox };
 }
