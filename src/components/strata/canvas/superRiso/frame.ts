@@ -77,8 +77,8 @@ export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Fra
 	const darkInk = isDarkMode && !KNOBS.darkPaperFromBase;
 	const srcPaper: RGB = darkInk ? [1, 1, 1] : hex2rgb(base);
 	const mk = xr ? xeroxMarkers(s, inp.shapes, inp.hiddenLayers, srcPaper, darkInk ? base : null) : null;
-	if (mk && inp.isLive) setXeroxPalette({ list: mk.list, what: mk.what, unused: mk.unused });
-	const inks = mk ? { inks: mk.paint, names: mk.list.map(e => e.id ?? ''), opac: [], srcPaper } : sceneInks(inp.shapes, inp.hiddenLayers, s, srcPaper, darkInk ? base : null);
+	if (mk && inp.isLive) setXeroxPalette({ rows: mk.rows, what: mk.what, zones: mk.zones });
+	const inks = mk ? { inks: mk.paint, names: mk.rows.map(e => e.id ?? ''), opac: [], srcPaper } : sceneInks(inp.shapes, inp.hiddenLayers, s, srcPaper, darkInk ? base : null);
 	if (inp.isLive) lastFrame.inks = inks;
 	// Anything that changes what a pending/held result means: size, theme, mode, parameters, inks, context.
 	const key = [w, h, +isDarkMode, +isPixelArt, m.res, +m.sim, m.preview, +m.lossless, m.pipe, +KNOBS.mip, +KNOBS.offscreenBack, +KNOBS.preserveDrawingBuffer, +KNOBS.darkPaperFromBase,

@@ -7,10 +7,11 @@ import type { Shape, SuperRisoSettings, XeroxSettings } from '../../../../types/
 import { XEROX_MARKERS, XEROX_FILL_DEFAULT, xeroxMarkerId } from '../../../../constants/superRisoXerox';
 import { sceneInks } from './sceneInks';
 import { hex2rgb, oklab, dP, type RGB } from './inks';
-import type { XeroxMarker } from './xeroxPalette';
+import type { XeroxMarker, XeroxRow } from './xeroxPalette';
 
-/** paint: the marker colours; keys: the colour of the ORIGINAL that marks each zone (null in "white gaps"). */
-export type XeroxMarkers = { list: XeroxMarker[]; paint: string[]; keys: string[] | null; what: 'color' | 'fill'; unused: number };
+/** rows: what the panel lists. paint: the colour of each row; keys: the colour of the ORIGINAL that marks each zone
+ *  (null in "white gaps"); zones: how many colour zones the drawing has. */
+export type XeroxMarkers = { rows: XeroxRow[]; paint: string[]; keys: string[] | null; what: 'color' | 'fill'; zones: number };
 
 const marker = (id: string): XeroxMarker => { const m = XEROX_MARKERS.find(e => e[0] === id)!; return { hex: m[1], id: m[0] }; };
 const okd = (a: RGB, b: RGB) => { const e0 = (a[0] - b[0]) * .6, e1 = a[1] - b[1], e2 = a[2] - b[2]; return e0 * e0 + e1 * e1 + e2 * e2; };
@@ -23,47 +24,46 @@ function xPool(s: SuperRisoSettings, shapes: readonly Shape[], hidden: readonly 
 		.sort((a, b) => { const A = oklab(hex2rgb(a)), B = oklab(hex2rgb(b)); return Math.hypot(B[1], B[2]) - Math.hypot(A[1], A[2]); }).slice(0, 6);
 }
 
-// Markers chosen by hand → colour zones of the drawing. Each marker takes the zone most like it (no repeats while
-// zones remain); leftover zones go to the nearest marker. Nobody is left unpainted for not "matching".
-function assignKeys(pool: string[], chosen: XeroxMarker[]) {
-	const K = pool.map(h => oklab(hex2rgb(h))), C = chosen.map(m => oklab(hex2rgb(m.hex)));
-	const pairs: [number, number, number][] = []; K.forEach((k, i) => C.forEach((c, j) => pairs.push([okd(k, c), i, j]))); pairs.sort((a, b) => a[0] - b[0]);
-	const kOf = K.map(() => -1), used = C.map(() => false);
-	for (const [, i, j] of pairs) { if (kOf[i] >= 0 || used[j]) continue; kOf[i] = j; used[j] = true; }
-	K.forEach((k, i) => { if (kOf[i] >= 0) return; let bj = 0, bd = 1e9; C.forEach((c, j) => { const d = okd(k, c); if (d < bd) { bd = d; bj = j; } }); kOf[i] = bj; });
-	return { keys: pool.slice(), paint: kOf.map(j => chosen[j].hex), unused: used.filter(u => !u).length };
+/** The pool colour an override is tied to: the nearest one within tolerance, not the exact hex (the drawing changes
+ *  while it is painted and its colours drift a little), as the lab's xOverFor. */
+export function xOverFor(over: Record<string, string>, zone: string): string | null {
+	const L = oklab(hex2rgb(zone)); let best: string | null = null, bd = .012;
+	for (const k of Object.keys(over)) { const d = okd(L, oklab(hex2rgb(k))); if (d < bd) { bd = d; best = k; } }
+	return best;
 }
 
 function build(s: SuperRisoSettings, shapes: readonly Shape[], hidden: readonly number[], srcPaper: RGB, darkBase: string | null): XeroxMarkers {
 	const x: XeroxSettings = s.xerox, pool = xPool(s, shapes, hidden, srcPaper, darkBase);
 	const what = x.what === 'auto' ? (pool.length ? 'color' : 'fill') : x.what;
-	let list: XeroxMarker[], src: string[] | null = null;
-	if (x.colors === 'manual') list = (x.manual.length ? x.manual : ['#e8202a']).slice(0, 6).map(h => ({ hex: h, id: xeroxMarkerId(h) }));
-	else if (!pool.length) list = XEROX_FILL_DEFAULT.slice(0, x.n).map(marker);
-	else if (x.colors === 'own') list = pool.slice(0, x.n).map(h => ({ hex: h }));
-	else {
-		const used = new Set<string>(); list = []; src = [];
-		for (const h of pool) {
-			if (list.length >= x.n) break;
-			const L = oklab(hex2rgb(h)); let best: (typeof XEROX_MARKERS)[number] | null = null, bd = 1e9;
-			for (const m of XEROX_MARKERS) { if (used.has(m[0])) continue; const d = dP(L, oklab(hex2rgb(m[1]))); if (d < bd) { bd = d; best = m; } }
-			if (best) { used.add(best[0]); list.push({ hex: best[1], id: best[0] }); src.push(h); }
-		}
+	let rows: XeroxRow[], keys: string[] | null = null;
+	if (what === 'fill') {
+		rows = (x.box.length ? x.box : XEROX_FILL_DEFAULT.slice(0, 3).map(id => marker(id).hex)).slice(0, 6).map((hex, i) => ({ hex, id: xeroxMarkerId(hex), box: i }));
+	} else {
+		// Each row is a ZONE of the drawing → the colour it is painted with. Editing a row only touches its own entry.
+		const zones = pool.slice(0, Math.max(1, Math.min(x.n, pool.length))), used = new Set<string>();
+		rows = zones.map(zone => {
+			const ok = xOverFor(x.over, zone); let hex = ok ? x.over[ok] : null;
+			if (!hex) {
+				if (x.pal === 'own') hex = zone;
+				else { // the nearest marker not yet used, zones by chroma (lab updateMarkers)
+					const L = oklab(hex2rgb(zone)); let bd = 1e9;
+					for (const m of XEROX_MARKERS) { if (used.has(m[1])) continue; const d = dP(L, oklab(hex2rgb(m[1]))); if (d < bd) { bd = d; hex = m[1]; } }
+				}
+			}
+			used.add(hex!);
+			return { hex: hex!, id: x.pal === 'own' && !ok ? undefined : xeroxMarkerId(hex!), zone, over: !!ok };
+		});
+		keys = zones.slice();
 	}
-	if (!list.length) list = [marker('red')];
-	let paint = list.map(m => m.hex), keys: string[] | null = null, unused = 0;
-	if (what !== 'fill') {
-		if (x.colors === 'manual') { const a = assignKeys(pool, list); keys = a.keys; paint = a.paint; unused = a.unused; }
-		else keys = src || paint.slice();                       // Rotuladores: the zone is marked by the original colour, not the marker's
-	}
-	return { list, paint, keys, what, unused };
+	if (!rows.length) rows = [{ ...marker('red'), id: 'red' }];
+	return { rows, paint: rows.map(r => r.hex), keys, what, zones: pool.length };
 }
 
 let cache: { shapes: readonly Shape[]; hidden: readonly number[]; key: string; mk: XeroxMarkers } | null = null;
 
 export function xeroxMarkers(s: SuperRisoSettings, shapes: readonly Shape[], hidden: readonly number[], srcPaper: RGB, darkBase: string | null): XeroxMarkers {
 	const x = s.xerox;
-	const key = JSON.stringify([x.what, x.colors, x.n, x.manual, srcPaper, darkBase]);
+	const key = JSON.stringify([x.what, x.pal, x.n, x.over, x.box, srcPaper, darkBase]);
 	if (cache && cache.shapes === shapes && cache.hidden === hidden && cache.key === key) return cache.mk;
 	const mk = build(s, shapes, hidden, srcPaper, darkBase);
 	cache = { shapes, hidden, key, mk };

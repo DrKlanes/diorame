@@ -25,17 +25,17 @@ export const XEROX_MARKERS: readonly (readonly [XeroxMarkerId, string])[] = [
 export const XEROX_FILL_DEFAULT: readonly XeroxMarkerId[] = ['red', 'yellow', 'cyan', 'pink', 'green', 'blue'];
 export const xeroxMarkerId = (hex: string): XeroxMarkerId | undefined => XEROX_MARKERS.find(m => m[1] === hex.toLowerCase())?.[0];
 
-type StyleFields = Partial<Omit<XeroxSettings, 'style' | 'fine' | 'manual'>> & { fine?: Partial<Record<XeroxFineKey, number>> };
+type StyleFields = Partial<Omit<XeroxSettings, 'style' | 'fine' | 'over' | 'box'>> & { fine?: Partial<Record<XeroxFineKey, number>> };
 /** The lab's XSTYLES. `fine` overrides (Munari → motion, Tapa abierta → lid) have no slider: they live in state.fine. */
 export const XEROX_STYLES: Readonly<Record<XeroxStyle, StyleFields>> = {
 	flyer:  { mode: 'line', dark: .55, toner: .85, gens: 2, dirt: .55, hand: 'none', paper: 'copy' },
-	zine:   { mode: 'line', dark: .5, gens: 2, dirt: .4, hand: 'marker', colors: 'markers', n: 3, sloppy: .55, paper: 'copy' },
-	water:  { mode: 'line', dark: .45, gens: 1, dirt: .3, hand: 'water', colors: 'own', n: 4, sloppy: .4, paper: 'copy' },
+	zine:   { mode: 'line', dark: .5, gens: 2, dirt: .4, hand: 'marker', pal: 'kit', n: 3, sloppy: .55, paper: 'copy' },
+	water:  { mode: 'line', dark: .45, gens: 1, dirt: .3, hand: 'water', pal: 'own', n: 4, sloppy: .4, paper: 'copy' },
 	fluor:  { mode: 'line', dark: .55, gens: 2, dirt: .45, hand: 'none', paper: 'fpink' },
 	degen:  { mode: 'line', dark: .6, toner: .5, gens: 5, dirt: .85, hand: 'none', paper: 'recycled' },
 	photo:  { mode: 'photo', dark: .5, gens: 1, dirt: .35, hand: 'none', paper: 'copy' },
 	munari: { mode: 'line', dark: .5, gens: 1, dirt: .3, hand: 'none', paper: 'copy', fine: { motion: 10 } },
-	lid:    { mode: 'line', dark: .55, gens: 2, dirt: .5, hand: 'marker', colors: 'markers', n: 2, sloppy: .6, paper: 'copy', fine: { lid: 1 } },
+	lid:    { mode: 'line', dark: .55, gens: 2, dirt: .5, hand: 'marker', pal: 'kit', n: 2, sloppy: .6, paper: 'copy', fine: { lid: 1 } },
 };
 export const XEROX_STYLE_ORDER: readonly XeroxStyle[] = ['flyer', 'zine', 'water', 'fluor', 'degen', 'photo', 'munari', 'lid'];
 
@@ -52,7 +52,7 @@ export const XEROX_FINE_RANGES: Readonly<Record<XeroxFineKey, readonly [number, 
 
 /** The lab's st.x defaults ("Fanzine a rotulador"). */
 export const XEROX_DEFAULTS: Readonly<XeroxSettings> = {
-	style: 'zine', mode: 'line', dark: .5, toner: .75, gens: 2, dirt: .4, hand: 'marker', what: 'auto', colors: 'markers', n: 3, manual: [], sloppy: .55,
+	style: 'zine', mode: 'line', dark: .5, toner: .75, gens: 2, dirt: .4, hand: 'marker', what: 'auto', pal: 'kit', n: 3, over: {}, box: [], sloppy: .55,
 	paper: 'copy', paperHex: '#f6f6f2', fillCover: .85, fillSeed: 1, fine: {},
 };
 
@@ -61,9 +61,17 @@ const int = (v: unknown, lo: number, hi: number, d: number) => Math.round(num(v,
 const oneOf = <T>(v: unknown, list: readonly T[], d: T): T => (list as readonly unknown[]).includes(v) ? v as T : d;
 const isHex = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
 
+const hexList = (v: unknown): string[] => Array.isArray(v) ? v.filter(isHex).map(h => h.toLowerCase()).slice(0, 6) : [];
+function sanitizeOver(v: unknown): Record<string, string> {
+	const out: Record<string, string> = {};
+	if (v && typeof v === 'object') for (const [k, h] of Object.entries(v as Record<string, unknown>)) if (isHex(k) && isHex(h)) out[k.toLowerCase()] = h.toLowerCase();
+	return out;
+}
+
 /** Same contract as sanitizeSuperRiso: every field clamped / checked, so a .dior can never break the engine. */
 export function sanitizeXerox(incoming: unknown): XeroxSettings {
-	const s = (incoming && typeof incoming === 'object' ? incoming : {}) as Partial<Record<keyof XeroxSettings, unknown>>;
+	// Pre-3.19.1 scenes carried `colors` ('own'|'markers'|'manual') and `manual`: migrated here (markers/manual → kit; manual of white gaps → box).
+	const s = (incoming && typeof incoming === 'object' ? incoming : {}) as Partial<Record<keyof XeroxSettings | 'colors' | 'manual', unknown>>;
 	const d = XEROX_DEFAULTS;
 	const fine: Partial<Record<XeroxFineKey, number>> = {};
 	if (s.fine && typeof s.fine === 'object') {
@@ -81,9 +89,10 @@ export function sanitizeXerox(incoming: unknown): XeroxSettings {
 		dirt: num(s.dirt, 0, 1, d.dirt),
 		hand: oneOf(s.hand, ['none', 'marker', 'water'] as const, d.hand),
 		what: oneOf(s.what, ['auto', 'color', 'fill'] as const, d.what),
-		colors: oneOf(s.colors, ['own', 'markers', 'manual'] as const, d.colors),
+		pal: oneOf(s.pal ?? (s.colors === 'own' ? 'own' : s.colors ? 'kit' : undefined), ['own', 'kit'] as const, d.pal),
 		n: int(s.n, 1, 6, d.n),
-		manual: Array.isArray(s.manual) ? s.manual.filter(isHex).map(h => h.toLowerCase()).slice(0, 6) : [],
+		over: sanitizeOver(s.over),
+		box: hexList(s.box ?? (s.what === 'fill' ? s.manual : undefined)),
 		sloppy: num(s.sloppy, 0, 1, d.sloppy),
 		paper: oneOf(s.paper, [...XEROX_PAPER_ORDER, 'custom'] as const, d.paper),
 		paperHex: isHex(s.paperHex) ? s.paperHex.toLowerCase() : d.paperHex,
@@ -96,7 +105,7 @@ export function sanitizeXerox(incoming: unknown): XeroxSettings {
 /** Lab applyXStyle: fine cleared and toner back to .75, then the style; everything else stays. */
 export function applyXeroxStyle(current: XeroxSettings, style: XeroxStyle): XeroxSettings {
 	const s = XEROX_STYLES[style];
-	const next = sanitizeXerox({ ...current, fine: {}, toner: .75, ...s, style });
+	const next = sanitizeXerox({ ...current, fine: {}, toner: .75, over: {}, what: 'auto', ...s, style });
 	if (next.paper !== 'custom') next.paperHex = XEROX_PAPERS[next.paper].paper;
 	return next;
 }

@@ -81,10 +81,11 @@ export type XeroxSettings = {
     gens: number;               // 1–6
     dirt: number;               // 0–1
     hand: 'none' | 'marker' | 'water';
-    what: 'auto' | 'color' | 'fill';
-    colors: 'own' | 'markers' | 'manual';
-    n: number;                  // 1–6
-    manual: string[];           // marker hexes (≤6)
+    what: 'auto' | 'color' | 'fill';  // auto resolves to color when the drawing has colour zones
+    pal: 'own' | 'kit';         // colour zones: the drawing's own colours, or the nearest marker / watercolour of the kit
+    n: number;                  // 1–6 zones coloured
+    over: Record<string, string>;  // zone colour of the drawing → marker hex picked for THAT zone
+    box: string[];              // white gaps: the marker box (hexes, 1–6; empty = default)
     sloppy: number;             // 0–1
     paper: XeroxPaper;
     paperHex: string;
