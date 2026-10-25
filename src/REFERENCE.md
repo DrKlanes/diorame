@@ -364,7 +364,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `svgGeometry.ts` | ~350 | Real-geometry layers with **paper.js** (lazy `import()` → own chunk, precached by the SW, works offline). Per layer in draw order: eraser = subtract from earlier pieces, drawInside = intersect with the layer's ink (per crossing piece), drawBehind = piece at the bottom. `nesting()` settles non-crossing pairs with one point per contour (holes included) — no running union (that cost 100 s on the onboarding scene). Self-crossing outlines are flattened before resolving (paper.js loses area on curves that cross themselves many times). Tapered tap = disc; uniform brush = ribbons + discs along the drawSmoothLine curve. Eraser crumbs < 4 units² dropped. Text arrives as glyph outlines from `svgText.ts` and follows the same rules (split into one solid piece per glyph when an eraser/drawInside reaches it). Fallbacks (live-text words an eraser reaches; failed boolean op; an eraser subtract that comes back empty while leaving ink — retried once rotated first) keep a mask/clip for that one piece and are counted (shown in a toast since v3.17.59). **Invariantes: ver bloque bajo esta tabla** |
 | `svgText.ts` | ~270 | Text → outlines for the SVG export (v3.17.52). Layout from `utils/textLayout.ts` (same as the Canvas renderer) and placement from the text's matrix (`utils/textTransform.ts`: rotation, stretch, mirror — glyph outlines, live-text runs and `runBounds` all use it since v3.17.57); glyphs from the SAME woff2 the app renders with (`?url` imports, no duplicate assets), read by **fontkit** (lazy chunk, precached). Words shaped like Chrome (per word, no kerning across spaces, no ligatures when letter-spacing ≠ 0), placed with Canvas `measureText`. **Every word is checked against Canvas at export**; a mismatch or a missing glyph → live `<text>` + counted. Composite glyphs re-composed per the TrueType spec (fontkit transposes the matrix). `textCorners(shape)` (frame: the block measured by `utils/textMetrics.ts` + slack, mapped by the text's matrix; no layout or width estimate of its own since v3.17.55) and `runBounds` (deliberately generous 1-em-per-char box, only to decide whether an eraser reaches a live-text run) for framing and eraser reach. Invariants below |
 | `PixelArtProcessor.ts` | ~175 | Pixel art post-processing: downscale, palette quantization, Bayer dithering |
-| `postProcessing.ts` | ~430 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge`. Glow/DoF pick native `ctx.filter` or `blurCompat` per browser |
+| `postProcessing.ts` | ~430 | 8 effects: `applyFog`, `applyGlow`, `applyDoFBlur`, `applyRisoV2` (4-pass; the ghost offsets are `·scale` since v3.20.4), `applyChromaticAberration`, `applyVignette`, `applyGrain`, `applyGrunge`. Glow/DoF pick native `ctx.filter` or `blurCompat` per browser |
 | `quantizePixelArtCamera.ts` | ~100 | Snaps camera to pixel grid for pixel art mode |
 | `renderEraserShape.ts` | ~30 | Eraser shape rendering (destination-out compositing) |
 | `renderLayerBody.ts` | ~435 | Per-layer renderer: `renderLayer(z, rc, offCtx, pfc)`. Live Move preview mirrors `TRANSFORM_LAYER`: points get the per-axis bake, text shapes get `bakeTextTransform` (text included in squash & stretch since v3.17.56) |
@@ -445,7 +445,7 @@ Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"
 | File | Lines | Purpose |
 |---|---|---|
 | `colorUtils.ts` | ~35 | `hexToHSL`, `hslToHex`, `getVibrantVariant`, `hexToRgba` |
-| `canvasUtils.ts` | ~30 | `createNoise`, `drawSmoothLine`, `drawStraightLine` |
+| `canvasUtils.ts` | ~40 | `createNoise` (optional `cell` = physical px per noise pixel, nearest-neighbour upscale; the grain canvas passes `renderScale`, so HQ grain keeps its on-screen size, v3.20.4), `drawSmoothLine`, `drawStraightLine` |
 | `strokeGenerators.ts` | ~295 | `generateTaperedStroke`, `generateUniformStroke`, `generateInkStroke`, `generateStrokeForMode` |
 | `textLayout.ts` | ~60 | `layoutText(shape, fontSize)` + `TEXT_FONTS`: font stack, weight, letter spacing, line breaks and per-line `middle`-baseline positions. **Single source** for the Canvas text renderer and the SVG export (v3.17.50) — change text layout here, never in only one of them. Bangers is weight 400 (v3.17.49) |
 | `textMetrics.ts` | ~55 | `measureTextBlock(shape)`: measures a text shape with Canvas over the SAME `layoutText` the renderer paints with → `block` (widest advance × total height) and `ink` (union of every line's `actualBoundingBox*`, no leading or side bearings), anchor-local, before the text's matrix. `boxCorners(box, anchor, matrix)`. Shared measuring context. Needs the fonts loaded, like painting. Used by the Move gizmo (`transformUtils.ts`) CINEMA picking (`pickLayerAtPoint.ts`) and the SVG frame (`svgText.ts` `textCorners`) |
@@ -1113,11 +1113,20 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.20.3)
+## Appendix C: Changelog Highlights (1.7.3 → 3.20.4)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
 
 > Docs-only commits of the Super Riso series carry no version: `e4d7fff` (audit after 3.18.0), `23172d8` (docs of 3.20.1) and the v3.20.1 system audit (tables, traps and provenance in §14; `docs/super-riso.md`, `docs/ux-debt.md`, `CLAUDE.md`).
+
+### 3.20.4 — Grano en HQ ×2: conserva su tamaño en pantalla
+
+**fix(fx)** — El export HQ de CINEMA regeneraba el lienzo de ruido a 2× con celdas de 1 px físico (`createNoise(w, h)` con `w` físico): el grano salía a la mitad de tamaño que en pantalla. Contradecía la nota de 3.9.4 («grain ya escalaba solo»): el patrón de ruido es 1:1 en píxeles, no relativo al lienzo.
+- **Medido con píxeles** (proyecto vacío, 1366×1024, grano 1, diferencia «con grano − sin grano» del mismo render; autocorrelación horizontal): antes, HQ lag-1 = .25 y lag-2 = .03 (celda de 1 px físico); ahora HQ lag-1 = .51–.62 (celdas de 2×2) y, reducido ×2 a píxeles lógicos, lag-1 = .20 / sd 2.1, en el rango de la vista (lag-1 .18–.43 según el desplazamiento aleatorio, sd 1.8–2.7). La amplitud no cambia.
+- **Arreglo:** `createNoise(..., cell)`: ruido a resolución lógica ampliado ×`cell` por vecino más cercano (`imageSmoothingEnabled = false`), una vez al regenerarse. `renderFrame` pasa `renderScale`; con S = 1 devuelve el mismo canvas de antes (byte-idéntico).
+- **Resto de FX con textura:** *Grunge*: ya escala (imagen escalada por la diagonal; medido: HQ reducido ×2 vs vista, lag-1/2/4/8 = .68/.52/.41/.33 vs .73/.59/.46/.37). *Riso antiguo*: el grano y el desgaste de papel se estiran a `w×h` (ya escalan), pero el fantasma de desregistro tenía desplazamientos fijos de 2/1 px: a 2× quedaba a la mitad de distancia relativa; ahora `·scale`.
+- **Pendiente, no tocado** (ver `docs/ux-debt.md`): el patrón de grano de la tinta (`shapePattern`, 256² a 1 px) y la amplitud del Stop Motion (2/4/8 px) tienen el mismo defecto en HQ.
+- **Files**: `utils/canvasUtils.ts`, `canvas/renderPipeline.ts` (solo las dos llamadas a `createNoise` y el argumento `S` de `applyRisoV2`), `canvas/postProcessing.ts`, `docs/ux-debt.md`, `REFERENCE.md`, `version.ts`, `package.json`.
 
 ### 3.20.3 — FXPanel: altura calculada con las anclas reales
 

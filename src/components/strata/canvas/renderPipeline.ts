@@ -408,7 +408,7 @@ export function renderFrame(
 	if (canvas.width !== w || canvas.height !== h) {
 		canvas.width = w; canvas.height = h;
 		// Re-init noise
-		const nc = createNoise(w, h);
+		const nc = createNoise(logicalW, logicalH, 100, 2, 0.45, S);
 		if (nc) rc.noiseCanvasRef.current = nc;
 
 		const patC = createNoise(256, 256, 15, 1, 0.3);
@@ -423,7 +423,7 @@ export function renderFrame(
 	ensureCanvas(rc.tempCanvasRef, w, h);
 	ensureCanvas(rc.pixelCanvasRef, Math.ceil(w / 4), Math.ceil(h / 4)); // Init small, resize later if needed
 
-	if (!rc.noiseCanvasRef.current) rc.noiseCanvasRef.current = createNoise(w, h);
+	if (!rc.noiseCanvasRef.current) rc.noiseCanvasRef.current = createNoise(logicalW, logicalH, 100, 2, 0.45, S);
 	if (!rc.shapePatternRef.current) {
 		const patC = createNoise(256, 256, 15, 1, 0.3);
 		if (patC) rc.shapePatternRef.current = ctx.createPattern(patC, 'repeat');
@@ -588,7 +588,7 @@ export function renderFrame(
 
 	// RISO Texture
 	if (fxEnabled && currentState.postProcessingEnabled.riso && currentState.postProcessing.riso > 0.01 && rc.risoGrain) {
-		applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, rc.risoGrain, rc.helperCanvasRef.current!.getContext('2d')!);
+		applyRisoV2(offCtx, w, h, currentState.postProcessing.riso, rc.risoGrain, rc.helperCanvasRef.current!.getContext('2d')!, S);
 	}
 
 	// Super Riso — see the start of the frame. When it returns true offCtx is opaque (paper

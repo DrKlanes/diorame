@@ -554,3 +554,16 @@ activa, y cada instancia de exportación vuelve a compilar los programas de la t
 Los escalones en los extremos de los trazos de rotulador son del modelo (también están en el Lab); el dentado
 del borde por baja resolución se arregló en v3.20.1 (mínimo de 1,5 texels). Ninguna técnica tiene sliders de
 ajuste fino: los valores salen de `xBase()` / `sBase()` y de los `fine` de los estilos.
+
+---
+
+## Export HQ ×2: texturas y amplitudes en píxeles fijos (v3.20.4)
+
+**Estado:** registrado al arreglar el grano (v3.20.4), sin programar. En el export HQ de CINEMA (`renderScale` = 2) lo que está
+en píxeles de dispositivo y no se multiplica por S sale a la mitad de tamaño relativo.
+
+- **Patrón de grano de la tinta** (`shapePattern`, `createNoise(256, 256, 15, 1, .3)` en `renderPipeline.ts`, relleno `source-atop` por capa):
+  celdas de 1 px físico, también en el HQ de DRAW. Mismo defecto y mismo arreglo que el grano (celda ×S); cambia el aspecto de todo HQ,
+  incluido DRAW, por eso no se tocó sin decisión de Moisés.
+- **Stop Motion** (`renderLayerBody.ts`, amplitud 2/4/8 px sumada a puntos ya proyectados): a 2× el temblor es la mitad de grande.
+- **Verificar por si acaso:** Pixel Art ya escala (3.9.4); Glow y DoF ya escalan; Grunge medido (escala); Riso antiguo corregido en 3.20.4.

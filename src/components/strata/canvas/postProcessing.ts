@@ -230,7 +230,8 @@ export const applyRisoV2 = (
 	h: number,
 	intensity: number,
 	cachedGrainCanvas: HTMLCanvasElement,
-	helperCtx: CanvasRenderingContext2D
+	helperCtx: CanvasRenderingContext2D,
+	scale: number = 1
 ): void => {
 	offCtx.save();
 	// Pass 1 — Paper grain
@@ -255,8 +256,9 @@ export const applyRisoV2 = (
 	// Pass 3 — Misregistration ghost (fixed offsets, no flicker)
 	offCtx.globalCompositeOperation = 'screen';
 	offCtx.globalAlpha = intensity * 0.08;
-	offCtx.drawImage(helperCtx.canvas, 2, 1);
-	offCtx.drawImage(helperCtx.canvas, -1, -2);
+	// Offsets are device px: ·scale (renderScale) keeps the ghost the same relative distance in an HQ export.
+	offCtx.drawImage(helperCtx.canvas, 2 * scale, 1 * scale);
+	offCtx.drawImage(helperCtx.canvas, -1 * scale, -2 * scale);
 	offCtx.restore();
 };
 

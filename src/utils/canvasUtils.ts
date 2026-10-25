@@ -1,13 +1,20 @@
 // Canvas utility functions extracted from StrataCanvas.tsx
 
-export const createNoise = (w: number, h: number, alpha = 100, scale = 2, density = 0.45) => {
+// `cell` = physical px per noise pixel (renderScale in an HQ export): the grain keeps its on-screen size.
+export const createNoise = (w: number, h: number, alpha = 100, scale = 2, density = 0.45, cell = 1) => {
 	if (w <= 0 || h <= 0) return null;
 	const nw = Math.ceil(w / scale), nh = Math.ceil(h / scale);
 	const nc = document.createElement('canvas'); nc.width = nw; nc.height = nh;
 	const nCtx = nc.getContext('2d'); if (!nCtx) return null;
 	const iData = nCtx.createImageData(nw, nh), buffer = new Uint32Array(iData.data.buffer);
 	for (let i = 0; i < buffer.length; i++) if (Math.random() < density) buffer[i] = (alpha << 24) | 0;
-	nCtx.putImageData(iData, 0, 0); return nc;
+	nCtx.putImageData(iData, 0, 0);
+	if (cell === 1) return nc;
+	const up = document.createElement('canvas'); up.width = Math.ceil(nw * cell); up.height = Math.ceil(nh * cell);
+	const uCtx = up.getContext('2d'); if (!uCtx) return null;
+	uCtx.imageSmoothingEnabled = false;
+	uCtx.drawImage(nc, 0, 0, up.width, up.height);
+	return up;
 };
 
 export const drawSmoothLine = (context: CanvasRenderingContext2D, points: { x: number, y: number }[]) => {
