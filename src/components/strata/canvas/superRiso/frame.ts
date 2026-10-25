@@ -89,7 +89,7 @@ export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Fra
 		s.technique, ...(mk ? [s.resolution, JSON.stringify(s.xerox), (mk.keys ?? []).join(','), xeroxMapsVersion()] : sn ? [s.resolution, JSON.stringify(s.stencil), stencilMapsVersion()]
 			: [s.paper, s.screen, s.screenSize, s.imperfection, s.resolution]), inks.inks.join(',')].join('|');
 	const xerox = mk ? { x: s.xerox, mk, isLive: inp.isLive, motion: inp.motion, scene: inp.scene } : undefined;
-	const stencil = sn ? { s: s.stencil, settings: s, shapes: inp.shapes, hidden: inp.hiddenLayers, srcPaper, darkBase: darkInk ? base : null, isLive: inp.isLive, motion: inp.motion, scene: inp.scene } : undefined;
+	const stencil = sn ? { s: s.stencil, settings: s, shapes: inp.shapes, hidden: inp.hiddenLayers, srcPaper, darkBase: darkInk ? base : null, bg: hex2rgb(base), isLive: inp.isLive, motion: inp.motion, scene: inp.scene } : undefined;
 	return { style, fw, fh, base, srcPaper, inks, key, xerox, stencil };
 }
 

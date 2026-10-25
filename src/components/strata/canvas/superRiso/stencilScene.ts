@@ -1,7 +1,8 @@
 // Super Riso · Stencil — the templates of a frame (lab sLayers / sPaper / sTones / stencilMapsFor) and the policy of its
 // CPU work, same family as Fotocopia's maps (xeroxMaps.ts):
 //   colour zones  the scene's colours (xeroxMarkers.xPool): stable, cached per scene.
-//   thresholds    stencilTones (multilevel Otsu over the frame): computed at once the first time and when their inputs
+//   thresholds    stencilTones (multilevel Otsu over the drawing: the scene's background colour is left out): computed at
+//                 once the first time and when their inputs
 //                 change; otherwise refreshed only with the camera still. While it moves the last ones are reused (no flicker).
 //   maps          drips, splats, bridges and cloud (stencilMaps): computed on the STILL frame, in an idle callback from a
 //                 copy of it, at most every THROTTLE_MS (also while moving when there are none yet or their inputs changed). While the camera moves, drips, splats and bridges are OFF (they would
@@ -74,6 +75,8 @@ const idle = (cb: () => void) => { if (typeof requestIdleCallback === 'function'
 export const stencilMapsVersion = (): number => version;
 
 export type StencilFrame = { s: StencilSettings; settings: SuperRisoSettings; shapes: readonly Shape[]; hidden: readonly number[]; srcPaper: RGB; darkBase: string | null;
+	/** The scene's background colour (frame.base): excluded from the thresholds' histogram. */
+	bg: RGB;
 	isLive: boolean; motion?: readonly number[]; scene?: unknown };
 
 /**
@@ -92,8 +95,9 @@ export function stencilFrame(fr: StencilFrame, flat: HTMLCanvasElement, b: Parti
 		if (moved && (!tonesOf || now - tonesOf.at >= THROTTLE_MS)) { tonesCache.clear(); tonesOf = { scene: fr.scene, cam, at: now }; }
 	}
 	const tones = (n: number) => {
-		const k = `${n}|${sp.join(',')}`; let t = tonesCache.get(k);
-		if (!t) { t = stencilTones(flat, sp, n); tonesCache.set(k, t); }
+		// keyed by the background colour too: a theme or background change measures again
+		const k = `${n}|${sp.join(',')}|${fr.bg.join(',')}`; let t = tonesCache.get(k);
+		if (!t) { t = stencilTones(flat, sp, n, fr.bg); tonesCache.set(k, t); }
 		return t;
 	};
 	const { layers, accKey } = stencilLayers(fr.s, pool, tones);

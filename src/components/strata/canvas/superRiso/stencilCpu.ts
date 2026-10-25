@@ -69,9 +69,20 @@ function inkSample(src: HTMLCanvasElement, srcPaper: RGB) {
 
 // Automatic template thresholds: 1D clustering of the «ink» of the whole image (n layers → n + 1 groups). Separates figure
 // and background whatever the background (white, black or coloured paper), as whoever cuts the template would.
-export function stencilTones(src: HTMLCanvasElement, srcPaper: RGB, n: number): number[] {
-	const { D, w, h, sp } = inkSample(src, srcPaper), H = new Float64Array(256);
-	for (let i = 0; i < w * h; i++) { const L = oklab([0, 1, 2].map(j => l2s(Math.min(1, s2l(D[i * 4 + j] / 255) / sp[j]))) as RGB); const d = Math.max(0, Math.min(1, 1 - L[0] + .3 * Math.hypot(L[1], L[2]))); H[Math.min(255, (d * 256) | 0)]++; }
+// bg (v3.20.1): the scene's background colour (the one Diorame flattens under the drawing). Its pixels are left out of the
+// histogram, so the thresholds are measured on the drawing alone (in light and dark mode); if less than 5 % would remain,
+// the whole histogram is used.
+const BG_DIST = .04;
+export function stencilTones(src: HTMLCanvasElement, srcPaper: RGB, n: number, bg: RGB | null = null): number[] {
+	const { D, w, h, sp } = inkSample(src, srcPaper), H = new Float64Array(256), Hall = new Float64Array(256);
+	const BG = bg ? oklab(bg) : null; let kept = 0;
+	for (let i = 0; i < w * h; i++) {
+		const L = oklab([0, 1, 2].map(j => l2s(Math.min(1, s2l(D[i * 4 + j] / 255) / sp[j]))) as RGB); const d = Math.max(0, Math.min(1, 1 - L[0] + .3 * Math.hypot(L[1], L[2])));
+		const b = Math.min(255, (d * 256) | 0); Hall[b]++;
+		if (BG) { const R = oklab([D[i * 4] / 255, D[i * 4 + 1] / 255, D[i * 4 + 2] / 255]); if (Math.hypot(R[0] - BG[0], R[1] - BG[1], R[2] - BG[2]) < BG_DIST) continue; }
+		H[b]++; kept++;
+	}
+	if (kept < w * h * .05) H.set(Hall);
 	{ let tot = 0, ink = 0; for (let b = 0; b < 256; b++) { tot += H[b]; if (b >= 20) ink += H[b]; } if (ink > tot * .05) for (let b = 0; b < 20; b++) H[b] = 0; }   // the paper does not count: tones are spread inside the drawing
 	// exact multilevel Otsu (64 levels): thresholds that maximise the between-class variance; a uniform background is not split in two
 	const B = 64, P = new Float64Array(B); for (let b = 0; b < 256; b++) P[b >> 2] += H[b];
