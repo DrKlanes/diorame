@@ -1113,11 +1113,19 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.20.6)
+## Appendix C: Changelog Highlights (1.7.3 → 3.20.7)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
 
 > Docs-only commits of the Super Riso series carry no version: `e4d7fff` (audit after 3.18.0), `23172d8` (docs of 3.20.1) and the v3.20.1 system audit (tables, traps and provenance in §14; `docs/super-riso.md`, `docs/ux-debt.md`, `CLAUDE.md`).
+
+### 3.20.7 — Ajustes guardados que no marcaban `isDirty`
+
+**fix(persist)** — El autoguardado y el aviso de `beforeunload` dependen de `isDirty`. Estos campos se guardan en el `.dior` y en el autoguardado pero sus acciones no lo marcaban, así que tocar solo uno y recargar lo perdía sin aviso: preset (`SET_CINEMATIC_TYPE`), velocidad, cámara en mano (`TOGGLE_HANDHELD`, `SET_HANDHELD_INTENSITY`), focal, zoom y separación de capas, punto de interés (`SET/CLEAR_POINT_OF_INTEREST`), capas ocultas (`TOGGLE_LAYER_VISIBILITY`) y nombre del proyecto. Ahora marcan; las acciones con un valor idéntico al actual no (`CLEAR_POINT_OF_INTEREST` sin POI tampoco).
+- **La animación nunca cuenta.** El tick de CINEMA escribe `cameraRef` (un ref), jamás despacha; `state.camera` no se guarda. Comprobado: en CINEMA con el preset *forward* animando 33 s sin tocar nada (cubre el intervalo de 30 s) el objeto `state` es el mismo antes y después (cero despachos), `isDirty` sigue `false` y hay 0 escrituras de autoguardado. Todos los `SET_VIEW_ZOOM_OFFSET` de `StrataCanvas` son rueda, pellizco o botón central del usuario.
+- **Dos despachos automáticos que no deben ensuciar:** la primera vista CINEMA de la sesión (`ControlsV2`) fijaba 4 valores por defecto con 4 acciones; ahora es una sola, `INIT_CINEMA_VIEW`, que no marca (si no, entrar en CINEMA en un lienzo vacío y cerrar la pestaña avisaría de cambios sin guardar). Y «Nuevo» (`DocumentPill`) renombraba a «sin título» después de `CLEAR_CANVAS`: ahora lo hace antes, para que el proyecto nuevo arranque limpio. Medido: `isDirty` false tras la entrada a CINEMA y tras «Nuevo».
+- **Medido:** las 11 acciones marcan desde un estado limpio (`MARK_CLEAN`) y las 4 repeticiones del mismo valor no.
+- **Files**: `StrataContext.tsx` (11 reducers + `INIT_CINEMA_VIEW`), `ControlsV2.tsx`, `topbar/DocumentPill.tsx`, `REFERENCE.md`, `version.ts`, `package.json`.
 
 ### 3.20.6 — El autoguardado no corre durante un gesto
 

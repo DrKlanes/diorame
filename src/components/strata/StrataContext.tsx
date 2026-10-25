@@ -123,6 +123,7 @@ type Action =
   | { type: 'SET_POINT_OF_INTEREST'; payload: { x: number; y: number; z: number } }
   | { type: 'CLEAR_POINT_OF_INTEREST' }
   | { type: 'SET_CINEMATIC_SPEED'; payload: number }
+  | { type: 'INIT_CINEMA_VIEW'; payload: { focalLength: number; viewZoomOffset: number; layerSpacingFactor: number; cinematicType: CinematicType } }
   | { type: 'TOGGLE_DRAW_BEHIND' }
   | { type: 'TOGGLE_DRAW_INSIDE' }
   | { type: 'TOGGLE_ORGANIC_MODE' }
@@ -626,7 +627,7 @@ export function appReducer(state: AppState, action: Action): AppState {
       };
     case 'SET_CINEMATIC_TYPE':
       playSound('click');
-      return { ...state, cinematicType: action.payload };
+      return { ...state, cinematicType: action.payload, isDirty: state.isDirty || action.payload !== state.cinematicType };
     case 'SET_COLOR_INDEX':
       return { ...state, currentColorIndex: action.payload };
     case 'UPDATE_CAMERA':
@@ -823,9 +824,18 @@ export function appReducer(state: AppState, action: Action): AppState {
         };
     }
     case 'SET_FOCAL_LENGTH':
-      return { ...state, focalLength: action.payload };
+      return { ...state, focalLength: action.payload, isDirty: state.isDirty || action.payload !== state.focalLength };
     case 'SET_VIEW_ZOOM_OFFSET':
-      return { ...state, viewZoomOffset: action.payload };
+      return { ...state, viewZoomOffset: action.payload, isDirty: state.isDirty || action.payload !== state.viewZoomOffset };
+    // First CINEMA view of a session (ControlsV2): app defaults, not a user change — never dirty.
+    case 'INIT_CINEMA_VIEW':
+      return {
+        ...state,
+        focalLength: action.payload.focalLength,
+        viewZoomOffset: action.payload.viewZoomOffset,
+        layerSpacingFactor: action.payload.layerSpacingFactor,
+        cinematicType: action.payload.cinematicType,
+      };
     case 'SET_DRAWING_ZOOM':
       return { 
           ...state, 
@@ -1190,7 +1200,8 @@ export function appReducer(state: AppState, action: Action): AppState {
             ...state,
             hiddenLayers: isHidden 
                 ? state.hiddenLayers.filter(i => i !== layerIndex)
-                : [...state.hiddenLayers, layerIndex]
+                : [...state.hiddenLayers, layerIndex],
+            isDirty: true,
         };
     }
     case 'TOGGLE_3D_LOCK': {
@@ -1490,12 +1501,12 @@ export function appReducer(state: AppState, action: Action): AppState {
             textSession: { ...state.textSession, isActive: false, content: '' }
         };
     case 'SET_POINT_OF_INTEREST':
-        return { ...state, pointOfInterest: action.payload };
+        return { ...state, pointOfInterest: action.payload, isDirty: true };
     case 'CLEAR_POINT_OF_INTEREST':
         playSound('click');
-        return { ...state, pointOfInterest: null };
+        return { ...state, pointOfInterest: null, isDirty: state.isDirty || state.pointOfInterest !== null };
     case 'SET_CINEMATIC_SPEED':
-        return { ...state, cinematicSpeed: action.payload };
+        return { ...state, cinematicSpeed: action.payload, isDirty: state.isDirty || action.payload !== state.cinematicSpeed };
     case 'SET_BRUSH_THICKNESS': {
         const thickness = action.payload;
         const layerIdx = state.currentLayerIndex;
@@ -1561,9 +1572,9 @@ export function appReducer(state: AppState, action: Action): AppState {
     }
     case 'TOGGLE_HANDHELD':
         playSound('click');
-        return { ...state, isHandheldEnabled: !state.isHandheldEnabled };
+        return { ...state, isHandheldEnabled: !state.isHandheldEnabled, isDirty: true };
     case 'SET_HANDHELD_INTENSITY':
-        return { ...state, handheldIntensity: action.payload };
+        return { ...state, handheldIntensity: action.payload, isDirty: state.isDirty || action.payload !== state.handheldIntensity };
     case 'SET_BRUSH_MODE': {
         const mode = action.payload;
         const layerIdx = state.currentLayerIndex;
@@ -1607,9 +1618,9 @@ export function appReducer(state: AppState, action: Action): AppState {
         };
     }
     case 'SET_LAYER_SPACING_FACTOR':
-        return { ...state, layerSpacingFactor: action.payload };
+        return { ...state, layerSpacingFactor: action.payload, isDirty: state.isDirty || action.payload !== state.layerSpacingFactor };
     case 'SET_PROJECT_NAME':
-        return { ...state, projectName: action.payload };
+        return { ...state, projectName: action.payload, isDirty: state.isDirty || action.payload !== state.projectName };
     case 'REORDER_LAYERS': {
         const { fromIndex, toIndex } = action.payload;
         if (fromIndex === toIndex) return state;

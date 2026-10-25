@@ -79,10 +79,7 @@ export function ControlsV2() {
 			dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 500 } });
 			if (isFirstView) {
 				sessionStorage.setItem('diorame-view-initialized', 'true');
-				dispatch({ type: 'SET_FOCAL_LENGTH', payload: 3840 });
-				dispatch({ type: 'SET_VIEW_ZOOM_OFFSET', payload: -2500 });
-				dispatch({ type: 'SET_LAYER_SPACING_FACTOR', payload: 1.0 });
-				dispatch({ type: 'SET_CINEMATIC_TYPE', payload: 'forward' });
+				dispatch({ type: 'INIT_CINEMA_VIEW', payload: { focalLength: 3840, viewZoomOffset: -2500, layerSpacingFactor: 1.0, cinematicType: 'forward' } });
 			}
 		} else if (state.mode === 'drawing') {
 			const activeZ = state.currentLayerIndex * -BASE_DEPTH_STEP;

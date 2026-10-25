@@ -20,9 +20,10 @@ export function DocumentPill({ dark }: DocumentPillProps) {
 
 	const handleNew = () => setClearCanvasOpen(true);
 	const handleClearConfirm = () => {
+		// The name first: renaming marks the project dirty and CLEAR_CANVAS resets that, so a new project starts clean.
+		dispatch({ type: 'SET_PROJECT_NAME', payload: UNTITLED_PROJECT_SENTINEL });
 		dispatch({ type: 'CLEAR_CANVAS' });
 		dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 0, rotation: 0 } });
-		dispatch({ type: 'SET_PROJECT_NAME', payload: UNTITLED_PROJECT_SENTINEL });
 		sessionStorage.removeItem('diorame-view-initialized');
 		setClearCanvasOpen(false);
 	};
