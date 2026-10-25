@@ -239,7 +239,7 @@ Two distinct actions create layers — they are **not** interchangeable:
 - **Save**: Serializes project state to a `.dior` file (JSON) and triggers a browser download
   - Serialization uses `setTimeout` deferral to avoid blocking the main thread's click handler path
   - Canvas is refocused after download to prevent stuck pointer/keyboard state
-  - Saved data includes: shapes, palette, layers, dark mode, post-processing settings, hidden/locked layers, project name, per-layer render modes, gradient params, brush settings, line mode, active palette ID
+  - Saved data includes: shapes, palette, layers, dark mode, post-processing settings (v3.20.5: also the FX master switch `fxMasterEnabled` and the OFF-snapshot `postProcessingSnapshot`: with the master off every flag is false and the look that was on is the snapshot, which `LOAD_PROJECT` restores only with the master off and sanitised to one boolean per known FX), hidden/locked layers, project name, per-layer render modes, gradient params, brush settings, line mode, active palette ID
 - **Load**: Reads `.dior` files via `FileReader`, validates structure, and dispatches `LOAD_PROJECT`
   - File size guard: rejects files larger than 50 MB
   - Triggers fit-to-view on successful load
@@ -487,7 +487,7 @@ Primitives are documented in CLAUDE.md («Design System»); only the ones with n
 | File | Purpose |
 |---|---|
 | `useAnimationPlayback.ts` | Drives animation playback: `setInterval` at `1000/animationFramerate` ms dispatching `ADVANCE_ANIMATION_FRAME`; invoked in `ControlsV2` |
-| `useAutoSave.ts` | Periodic auto-save of the project |
+| `useAutoSave.ts` | Auto-save of the project to IndexedDB (`diorame-autosave-v1`) while `isDirty`: 30 s interval, **1.5 s after the last change** (debounce), and at once on `visibilitychange` → hidden and `pagehide` (v3.20.5: the iPad kills the PWA in the background without notice). Never on «visible». Skips a write when the state object is the one last written. Same payload as the `.dior` save, `fxMasterEnabled` and `postProcessingSnapshot` included |
 | `useBeforeUnload.ts` | Warns before closing if there are unsaved changes |
 | `useCanvasRecovery.ts` | Calls `onRecover` on `visibilitychange → visible` + `pageshow` to clean up orphaned gesture state after backgrounding; never fires on hidden (see §9.7) |
 | `useExportFlow.ts` | SVG/SVGZ complexity gate: checks visible shape count against 800-shape threshold before dispatching `REQUEST_EXPORT`; shows `ComplexSceneModalV2` on overflow |
@@ -1113,11 +1113,22 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.20.4)
+## Appendix C: Changelog Highlights (1.7.3 → 3.20.5)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
 
 > Docs-only commits of the Super Riso series carry no version: `e4d7fff` (audit after 3.18.0), `23172d8` (docs of 3.20.1) and the v3.20.1 system audit (tables, traps and provenance in §14; `docs/super-riso.md`, `docs/ux-debt.md`, `CLAUDE.md`).
+
+### 3.20.5 — Persistencia de FX: máster OFF, volcado al ocultar y modo oscuro
+
+**fix(persist)** — Tres pérdidas de ajustes reales tras una recarga, medidas en el código y reproducidas.
+- **Máster OFF = look perdido.** Ni el `.dior` ni el autoguardado escribían `fxMasterEnabled` ni `postProcessingSnapshot`: con el máster apagado todas las banderas son `false` y el look que estaba encendido solo vivía en el snapshot, que se perdía. Ahora viajan los dos, y `LOAD_PROJECT` restaura el snapshot solo con el máster apagado, saneado (un booleano por FX conocido, `=== true`; Riso y Super Riso excluyentes; vacío o basura → se descarta). Antes `LOAD_PROJECT` además heredaba el snapshot del proyecto anterior (no lo reiniciaba). Ficheros viejos (sin los campos) abren con el máster encendido, como siempre.
+- **Autoguardado cada 30 s.** Ahora también 1,5 s tras el último cambio (debounce) y de inmediato en `visibilitychange` → hidden y en `pagehide`; no al volver a visible. No repite la escritura del mismo estado.
+- **`TOGGLE_DARK_MODE` no marcaba `isDirty`:** el tema cambia el aspecto de Super Riso y se perdía; ahora marca.
+- **Verificado en navegador** (escena de ejemplo, 2 369 formas): autoguardado con máster OFF → recarga → «Continuar trabajo anterior» → máster OFF con el snapshot `{grain, vignette, distortion, wiggle, fog, riso}` y, al encender el máster, vuelven los seis; guardado `.dior` (Ctrl+S) con máster OFF → carga sobre un estado distinto → máster OFF + snapshot del fichero; entradas hostiles saneadas; autoguardado viejo (sin campos) restaura con máster ON; debounce escribe a ~1,6 s; `visibilitychange` hidden y `pagehide` escriben en ~50 ms; «visible» no escribe.
+- **Coste:** el clon estructurado de la escena de ejemplo cuesta ~35–50 ms en escritorio, síncrono, una vez tras cada pausa de 1,5 s con cambios (antes, una vez cada 30 s). No medido en iPad. [POR MEDIR]
+- **No verificado:** la PWA mandada a segundo plano en el iPad (escritura de IndexedDB al ocultar). Pendiente de Moisés.
+- **Files**: `hooks/useAutoSave.ts`, `hooks/useSaveLoad.ts`, `StrataContext.tsx` (`LOAD_PROJECT`, `TOGGLE_DARK_MODE`), `docs/ux-debt.md`, `REFERENCE.md`, `version.ts`, `package.json`.
 
 ### 3.20.4 — Grano en HQ ×2: conserva su tamaño en pantalla
 

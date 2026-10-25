@@ -834,7 +834,7 @@ export function appReducer(state: AppState, action: Action): AppState {
       };
     case 'TOGGLE_DARK_MODE':
       playSound('click');
-      return { ...state, isDarkMode: !state.isDarkMode };
+      return { ...state, isDarkMode: !state.isDarkMode, isDirty: true };
     case 'SET_FX_INTENSITY':
       return {
           ...state,
@@ -1019,6 +1019,18 @@ export function appReducer(state: AppState, action: Action): AppState {
       if (typeof mergedPostProcessingEnabled.superRiso !== 'boolean') mergedPostProcessingEnabled.superRiso = initialState.postProcessingEnabled.superRiso;
       // The two risos exclude each other; a file with both on keeps Super Riso.
       if (mergedPostProcessingEnabled.superRiso && mergedPostProcessingEnabled.riso) mergedPostProcessingEnabled.riso = false;
+      // Master FX OFF (v3.20.5): while it is off every flag is false and the look that was on lives in the
+      // snapshot, so both travel in the file. The snapshot is restored only with the master off, one boolean
+      // per known FX; a stray or empty one is dropped, and loading never inherits the previous project's.
+      const rawFxSnapshot: any = (action.payload as any).postProcessingSnapshot;
+      let loadedFxSnapshot: PostProcessingEnabled | null = null;
+      if (action.payload.fxMasterEnabled === false && rawFxSnapshot && typeof rawFxSnapshot === 'object' && !Array.isArray(rawFxSnapshot)) {
+          const snap = Object.fromEntries(
+              Object.keys(initialState.postProcessingEnabled).map(k => [k, rawFxSnapshot[k] === true])
+          ) as PostProcessingEnabled;
+          if (snap.superRiso && snap.riso) snap.riso = false;
+          if (Object.values(snap).some(v => v)) loadedFxSnapshot = snap;
+      }
       
       const loadedLayerRenderModes = action.payload.layerRenderModes || {};
       const rawGradParams = action.payload.layerGradParams || {};
@@ -1127,8 +1139,11 @@ export function appReducer(state: AppState, action: Action): AppState {
           cinematicType: safeCinematicType,
           projectName: safeProjectName,
           postProcessing: mergedPostProcessing,
-          postProcessingEnabled: mergedPostProcessingEnabled,
-          fxMasterEnabled: safeFxMasterEnabled,
+          postProcessingEnabled: loadedFxSnapshot
+              ? Object.fromEntries(Object.keys(mergedPostProcessingEnabled).map(k => [k, false])) as PostProcessingEnabled
+              : mergedPostProcessingEnabled,
+          fxMasterEnabled: loadedFxSnapshot ? false : safeFxMasterEnabled,
+          postProcessingSnapshot: loadedFxSnapshot,
           // Ensure critical state is reset/set correctly
           history: [initialSnapshot],
           historyIndex: 0,

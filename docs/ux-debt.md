@@ -567,3 +567,14 @@ en píxeles de dispositivo y no se multiplica por S sale a la mitad de tamaño r
   incluido DRAW, por eso no se tocó sin decisión de Moisés.
 - **Stop Motion** (`renderLayerBody.ts`, amplitud 2/4/8 px sumada a puntos ya proyectados): a 2× el temblor es la mitad de grande.
 - **Verificar por si acaso:** Pixel Art ya escala (3.9.4); Glow y DoF ya escalan; Grunge medido (escala); Riso antiguo corregido en 3.20.4.
+
+---
+
+## Persistencia: ajustes que se guardan pero no marcan `isDirty` (v3.20.5)
+
+**Estado:** registrado al arreglar la persistencia de FX (v3.20.5), sin programar. El autoguardado solo escribe con `isDirty`, y estas
+acciones cambian campos que el `.dior` y el autoguardado SÍ guardan, pero no lo marcan: `SET_CINEMATIC_TYPE`, `SET_CINEMATIC_SPEED`,
+`TOGGLE_HANDHELD`, `SET_HANDHELD_INTENSITY`, `SET_FOCAL_LENGTH`, `SET_VIEW_ZOOM_OFFSET`, `SET_LAYER_SPACING_FACTOR`,
+`SET_POINT_OF_INTEREST` / `CLEAR_POINT_OF_INTEREST`, `TOGGLE_LAYER_VISIBILITY` y `SET_PROJECT_NAME`. Si solo se toca uno de ellos y se
+recarga, el cambio se pierde (y `beforeunload` no avisa). Mismo arreglo que el modo oscuro (`isDirty: true`); no se hizo porque queda
+fuera del alcance de FX y cada acción necesita decidir si entra en el historial.

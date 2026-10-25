@@ -17,7 +17,10 @@ export function useSaveLoad() {
 		const data = {
 			shapes: state.shapes, palette: state.palette, totalLayers: state.totalLayers,
 			isDarkMode: state.isDarkMode, postProcessing: state.postProcessing,
-			postProcessingEnabled: state.postProcessingEnabled, cinematicType: state.cinematicType,
+			postProcessingEnabled: state.postProcessingEnabled,
+			// Master FX OFF: the flags are all false and the look that was on is the snapshot (v3.20.5).
+			fxMasterEnabled: state.fxMasterEnabled, postProcessingSnapshot: state.postProcessingSnapshot,
+			cinematicType: state.cinematicType,
 			hiddenLayers: state.hiddenLayers, locked3DLayers: state.locked3DLayers,
 			projectName: state.projectName, layerRenderModes: state.layerRenderModes,
 			layerGradParams: state.layerGradParams, currentBrushThickness: state.currentBrushThickness,
