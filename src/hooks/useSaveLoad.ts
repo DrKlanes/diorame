@@ -6,6 +6,7 @@ import { useStrata } from '../components/strata/StrataContext';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../constants/project';
 import { useTranslation } from '../i18n';
 import { AUTOSAVE_KEY } from './useAutoSave';
+import { cinemaViewForSave } from '../utils/cinemaView';
 import { analytics } from '../analytics/analytics';
 
 export function useSaveLoad() {
@@ -20,13 +21,12 @@ export function useSaveLoad() {
 			postProcessingEnabled: state.postProcessingEnabled,
 			// Master FX OFF: the flags are all false and the look that was on is the snapshot (v3.20.5).
 			fxMasterEnabled: state.fxMasterEnabled, postProcessingSnapshot: state.postProcessingSnapshot,
-			cinematicType: state.cinematicType,
 			hiddenLayers: state.hiddenLayers, locked3DLayers: state.locked3DLayers,
 			projectName: state.projectName, layerRenderModes: state.layerRenderModes,
 			layerGradParams: state.layerGradParams, currentBrushThickness: state.currentBrushThickness,
 			brushMode: state.brushMode, tool: state.tool, activePaletteId: state.activePaletteId,
-			focalLength: state.focalLength, viewZoomOffset: state.viewZoomOffset,
-			layerSpacingFactor: state.layerSpacingFactor, cinematicSpeed: state.cinematicSpeed,
+			// A project without a view of its own (nobody has been in CINEMA yet) saves the defaults, not the placeholders.
+			...cinemaViewForSave(state), cinematicSpeed: state.cinematicSpeed,
 			isHandheldEnabled: state.isHandheldEnabled, handheldIntensity: state.handheldIntensity,
 			paletteApplyToAllActive: state.paletteApplyToAllActive,
 			paletteApplyToAllSnapshot: state.paletteApplyToAllSnapshot,

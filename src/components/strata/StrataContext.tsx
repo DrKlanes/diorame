@@ -6,6 +6,7 @@ import {
 } from '../../types/strataTypes';
 import { UNTITLED_PROJECT_SENTINEL } from '../../constants/project';
 import { BRUSH_THICKNESS_MIN, BRUSH_THICKNESS_MAX } from '../../constants/brush';
+import { CINEMA_VIEW_DEFAULTS } from '../../constants/cinemaView';
 
 export type {
 	Point, Shape, AppMode, ToolType, CinematicType, ExportType, BrushMode,
@@ -244,7 +245,7 @@ export const initialState: AppState = {
   isUIHidden: false,
   isDrawing: false,
   projectWasLoaded: false,
-  cinemaViewSet: { focalLength: false, viewZoomOffset: false, layerSpacingFactor: false, cinematicType: false },
+  cinemaViewInitialized: false,
   isSymmetryEnabled: false,
   gridEnabled: typeof window !== 'undefined' && window.localStorage?.getItem('diorame-grid-enabled') === 'true',
   paletteMode: 'flat',
@@ -830,15 +831,16 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, viewZoomOffset: action.payload, isDirty: state.isDirty || action.payload !== state.viewZoomOffset };
     // First CINEMA view of a session (ControlsV2): app defaults, not a user change — never dirty.
     case 'INIT_CINEMA_VIEW':
-      // Field by field: what the open project brought (file or autosave) is kept, only the gaps take the default.
-      if (Object.values(state.cinemaViewSet).every(Boolean)) return state;
+      // Only a new project reaches here with nothing of its own: an opened project is already `cinemaViewInitialized`
+      // (LOAD_PROJECT filled its gaps), so its saved view stands.
+      if (state.cinemaViewInitialized) return state;
       return {
         ...state,
-        focalLength: state.cinemaViewSet.focalLength ? state.focalLength : action.payload.focalLength,
-        viewZoomOffset: state.cinemaViewSet.viewZoomOffset ? state.viewZoomOffset : action.payload.viewZoomOffset,
-        layerSpacingFactor: state.cinemaViewSet.layerSpacingFactor ? state.layerSpacingFactor : action.payload.layerSpacingFactor,
-        cinematicType: state.cinemaViewSet.cinematicType ? state.cinematicType : action.payload.cinematicType,
-        cinemaViewSet: { focalLength: true, viewZoomOffset: true, layerSpacingFactor: true, cinematicType: true },
+        cinemaViewInitialized: true,
+        focalLength: action.payload.focalLength,
+        viewZoomOffset: action.payload.viewZoomOffset,
+        layerSpacingFactor: action.payload.layerSpacingFactor,
+        cinematicType: action.payload.cinematicType,
       };
     case 'SET_DRAWING_ZOOM':
       return { 
@@ -971,7 +973,7 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'CLEAR_CANVAS':
       return {
           ...state,
-          cinemaViewSet: { focalLength: false, viewZoomOffset: false, layerSpacingFactor: false, cinematicType: false },
+          cinemaViewInitialized: false,
           shapes: [],
           history: [{
               shapes: [],
@@ -1109,18 +1111,18 @@ export function appReducer(state: AppState, action: Action): AppState {
       const safeBrushThickness = Math.min(Math.max(rawBrushThickness, BRUSH_THICKNESS_MIN), BRUSH_THICKNESS_MAX);
       const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : state.isDarkMode;
       const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom', 'storytelling'].includes(action.payload.cinematicType))
-          ? action.payload.cinematicType as CinematicType : state.cinematicType;
+          ? action.payload.cinematicType as CinematicType : CINEMA_VIEW_DEFAULTS.cinematicType;
       const rawProjectName = typeof action.payload.projectName === 'string'
           ? action.payload.projectName.slice(0, 100) : state.projectName;
       // Backward compat: legacy .dior files (pre-v2.1.0) saved the literal 'Untitled Project'
       // instead of the sentinel. Normalize so display goes through i18n.
       const safeProjectName = rawProjectName === 'Untitled Project' ? UNTITLED_PROJECT_SENTINEL : rawProjectName;
-      const safeFocalLength = typeof action.payload.focalLength === 'number' ? action.payload.focalLength : state.focalLength;
-      const safeViewZoomOffset = typeof action.payload.viewZoomOffset === 'number' ? action.payload.viewZoomOffset : state.viewZoomOffset;
-      const safeLayerSpacingFactor = typeof action.payload.layerSpacingFactor === 'number' ? action.payload.layerSpacingFactor : state.layerSpacingFactor;
-      const safeCinematicSpeed = typeof action.payload.cinematicSpeed === 'number' ? action.payload.cinematicSpeed : state.cinematicSpeed;
-      const safeIsHandheldEnabled = typeof action.payload.isHandheldEnabled === 'boolean' ? action.payload.isHandheldEnabled : state.isHandheldEnabled;
-      const safeHandheldIntensity = (typeof action.payload.handheldIntensity === 'string' && ['low', 'medium', 'high'].includes(action.payload.handheldIntensity as string)) ? action.payload.handheldIntensity as HandheldIntensity : state.handheldIntensity;
+      const safeFocalLength = typeof action.payload.focalLength === 'number' ? action.payload.focalLength : CINEMA_VIEW_DEFAULTS.focalLength;
+      const safeViewZoomOffset = typeof action.payload.viewZoomOffset === 'number' ? action.payload.viewZoomOffset : CINEMA_VIEW_DEFAULTS.viewZoomOffset;
+      const safeLayerSpacingFactor = typeof action.payload.layerSpacingFactor === 'number' ? action.payload.layerSpacingFactor : CINEMA_VIEW_DEFAULTS.layerSpacingFactor;
+      const safeCinematicSpeed = typeof action.payload.cinematicSpeed === 'number' ? action.payload.cinematicSpeed : initialState.cinematicSpeed;
+      const safeIsHandheldEnabled = typeof action.payload.isHandheldEnabled === 'boolean' ? action.payload.isHandheldEnabled : initialState.isHandheldEnabled;
+      const safeHandheldIntensity = (typeof action.payload.handheldIntensity === 'string' && ['low', 'medium', 'high'].includes(action.payload.handheldIntensity as string)) ? action.payload.handheldIntensity as HandheldIntensity : initialState.handheldIntensity;
       const safeFxMasterEnabled = typeof action.payload.fxMasterEnabled === 'boolean' ? action.payload.fxMasterEnabled : true;
       const safePaletteApplyToAllActive = typeof (action.payload as any).paletteApplyToAllActive === 'boolean'
           ? (action.payload as any).paletteApplyToAllActive : false;
@@ -1194,14 +1196,8 @@ export function appReducer(state: AppState, action: Action): AppState {
           pointOfInterest: safePointOfInterest,
           isDirty: false,
           projectWasLoaded: true,
-          // Saved values rule; defaults only fill gaps (INIT_CINEMA_VIEW, on the first CINEMA entry). A field counts as
-          // brought when the file carries a valid value for it — old files and the example scene bring only some.
-          cinemaViewSet: {
-              focalLength: typeof action.payload.focalLength === 'number',
-              viewZoomOffset: typeof action.payload.viewZoomOffset === 'number',
-              layerSpacingFactor: typeof action.payload.layerSpacingFactor === 'number',
-              cinematicType: safeCinematicType === action.payload.cinematicType,
-          },
+          // The file's view stands; its gaps were filled above with the defaults, never with the previous project's.
+          cinemaViewInitialized: true,
       };
     case 'COMPLETE_FIT_TO_VIEW':
         return { ...state, shouldFitToView: false };

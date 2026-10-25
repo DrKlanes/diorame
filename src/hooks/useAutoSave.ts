@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { set } from 'idb-keyval';
 import { useStrata } from '../components/strata/StrataContext';
+import { cinemaViewForSave } from '../utils/cinemaView';
 
 export const AUTOSAVE_KEY = 'diorame-autosave-v1';
 const AUTOSAVE_INTERVAL_MS = 30 * 1000;
@@ -88,7 +89,6 @@ export function useAutoSave() {
 			// Master FX OFF: the flags are all false and the look that was on is the snapshot.
 			fxMasterEnabled: currentState.fxMasterEnabled,
 			postProcessingSnapshot: currentState.postProcessingSnapshot,
-			cinematicType: currentState.cinematicType,
 			hiddenLayers: currentState.hiddenLayers,
 			locked3DLayers: currentState.locked3DLayers,
 			projectName: currentState.projectName,
@@ -98,9 +98,7 @@ export function useAutoSave() {
 			brushMode: currentState.brushMode,
 			tool: currentState.tool,
 			activePaletteId: currentState.activePaletteId,
-			focalLength: currentState.focalLength,
-			viewZoomOffset: currentState.viewZoomOffset,
-			layerSpacingFactor: currentState.layerSpacingFactor,
+			...cinemaViewForSave(currentState),
 			cinematicSpeed: currentState.cinematicSpeed,
 			isHandheldEnabled: currentState.isHandheldEnabled,
 			handheldIntensity: currentState.handheldIntensity,

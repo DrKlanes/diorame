@@ -18,6 +18,7 @@ import { TextSessionPanel } from './text/TextSessionPanel';
 import { ShowUIButton } from './viewport/ShowUIButton';
 import { useBeforeUnload } from '../../hooks/useBeforeUnload';
 import { useAnimationPlayback } from '../../hooks/useAnimationPlayback';
+import { CINEMA_VIEW_DEFAULTS } from '../../constants/cinemaView';
 
 // Overlay panels float above DrawingToolbar:
 // BottomBar bottom = max(12px, env(safe-area-inset-bottom, 0px) + 12px)
@@ -36,7 +37,7 @@ const OVERLAY_BOTTOM = 'calc(env(safe-area-inset-bottom, 0px) + 60px)';
  * Also hosts 2 global side-effects (from legacy Controls.tsx):
  *   1) useKeyboardShortcuts — all global keyboard shortcuts
  *   2) mode-change effect — camera reset + first-view init when entering cinematic
- *      (default values only where the project has none of its own: `cinemaViewSet`, per field)
+ *      (first-view defaults only for a new project: `cinemaViewInitialized`)
  *
  * Note: useSaveLoad and useExportFlow are also instantiated by FileControlsPill
  * internally. Light duplication is intentional and harmless (both hooks rely on
@@ -71,10 +72,9 @@ export function ControlsV2() {
 
 		if (state.mode === 'cinematic') {
 			dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 500 } });
-			// First-view defaults, field by field: a project opened from a file or an autosave keeps the values it
-			// brought and only its gaps are filled (a new project has none, so it gets all of them).
-			if (!Object.values(state.cinemaViewSet).every(Boolean)) {
-				dispatch({ type: 'INIT_CINEMA_VIEW', payload: { focalLength: 3840, viewZoomOffset: -2500, layerSpacingFactor: 1.0, cinematicType: 'forward' } });
+			// A new project gets the first-view defaults; an opened one already has its own view (LOAD_PROJECT).
+			if (!state.cinemaViewInitialized) {
+				dispatch({ type: 'INIT_CINEMA_VIEW', payload: CINEMA_VIEW_DEFAULTS });
 			}
 		} else if (state.mode === 'drawing') {
 			const activeZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
