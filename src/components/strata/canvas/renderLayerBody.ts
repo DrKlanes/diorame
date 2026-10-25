@@ -188,7 +188,8 @@ export function renderLayer(
 			const seed = shape.id.charCodeAt(0) + (shape.id.charCodeAt(1) || 0);
 			const noiseValX = Math.sin(seed + wiggleFrame * 12.9898) * 43758.5453;
 			const noiseValY = Math.cos(seed + wiggleFrame * 78.233) * 43758.5453;
-			const amp = currentState.postProcessing.wiggle <= 0.2 ? 2 : (currentState.postProcessing.wiggle >= 0.8 ? 8 : 4);
+			// Amplitude in device px: ·S (renderScale) keeps the wobble the same relative size in an HQ export.
+			const amp = (currentState.postProcessing.wiggle <= 0.2 ? 2 : (currentState.postProcessing.wiggle >= 0.8 ? 8 : 4)) * S;
 			wiggleX = (noiseValX - Math.floor(noiseValX)) * amp - amp/2;
 			wiggleY = (noiseValY - Math.floor(noiseValY)) * amp - amp/2;
 

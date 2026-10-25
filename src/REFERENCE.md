@@ -1113,11 +1113,19 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.20.7)
+## Appendix C: Changelog Highlights (1.7.3 → 3.20.8)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
 
 > Docs-only commits of the Super Riso series carry no version: `e4d7fff` (audit after 3.18.0), `23172d8` (docs of 3.20.1) and the v3.20.1 system audit (tables, traps and provenance in §14; `docs/super-riso.md`, `docs/ux-debt.md`, `CLAUDE.md`).
+
+### 3.20.8 — HQ ×2: el grano de la tinta y el temblor de Stop Motion escalan
+
+**fix(fx)** — Decisión de Moisés: HQ es la misma impresión con más resolución. Dos restos del arreglo del grano (3.20.4) que seguían en píxeles de dispositivo:
+- **Patrón de grano de la tinta** (`shapePattern`, `createNoise(256, 256, 15, 1, .3)`): celdas de 1 px físico → ahora `cell = S` (mismo mecanismo que el grano). Medido en una ventana plana de tinta de la escena de ejemplo (48 px lógicos, paso alto de luminancia: sd y autocorrelación horizontal): vista sd 2,15 · lag-1 −0,37; HQ antes, reducido ×2: sd **1,15**; HQ ahora, reducido ×2: sd **2,03** · lag-1 −0,37 · lag-2 0,03.
+- **Stop Motion**: la amplitud (2/4/8 px) se sumaba a puntos ya proyectados (físicos) sin ·S → ahora `amp·S`. Medido con `wiggleFrame` 0 (determinista en el export) y desplazamiento por correlación de teselas entre HQ con y sin Stop Motion (154 teselas con borde, luminancia suavizada para ignorar el grano): mediana 1 → **3** px, p90 2 → **4**, media 1,21 → **2,58** (×2,1). Un valor atípico de 12 px es un falso emparejamiento.
+- **A S = 1 la vista no cambia ni un píxel.** Render con `Math.random` sembrado (mulberry32, semilla 777), escena de ejemplo (2 369 formas) en DRAW con los FX apagados, lienzo regenerado a 1000×700 (que regenera ruido y patrón), hash FNV-1a de todos los píxeles, en página recién cargada con el mismo procedimiento: código anterior `ef41ca06`, código nuevo `ef41ca06`. La amplitud de Stop Motion a S = 1 es `amp·1` (exacto); en vivo depende del reloj y no se pudo sembrar.
+- **Files**: `canvas/renderPipeline.ts` (las dos llamadas a `createNoise` del patrón), `canvas/renderLayerBody.ts` (una línea), `REFERENCE.md`, `version.ts`, `package.json`.
 
 ### 3.20.7 — Ajustes guardados que no marcaban `isDirty`
 

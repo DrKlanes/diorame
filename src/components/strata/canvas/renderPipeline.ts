@@ -411,7 +411,7 @@ export function renderFrame(
 		const nc = createNoise(logicalW, logicalH, 100, 2, 0.45, S);
 		if (nc) rc.noiseCanvasRef.current = nc;
 
-		const patC = createNoise(256, 256, 15, 1, 0.3);
+		const patC = createNoise(256, 256, 15, 1, 0.3, S);
 		if (patC) rc.shapePatternRef.current = ctx.createPattern(patC, 'repeat');
 	}
 
@@ -425,7 +425,7 @@ export function renderFrame(
 
 	if (!rc.noiseCanvasRef.current) rc.noiseCanvasRef.current = createNoise(logicalW, logicalH, 100, 2, 0.45, S);
 	if (!rc.shapePatternRef.current) {
-		const patC = createNoise(256, 256, 15, 1, 0.3);
+		const patC = createNoise(256, 256, 15, 1, 0.3, S);
 		if (patC) rc.shapePatternRef.current = ctx.createPattern(patC, 'repeat');
 	}
 
