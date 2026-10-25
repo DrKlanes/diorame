@@ -3,6 +3,7 @@
 
 import type { AnyParams, RenderOpts } from './engine';
 import type { Shape, SuperRisoSettings, XeroxSettings } from '../../../../types/strataTypes';
+import type { StencilEngineParams } from './stencilParams';
 import type { ExportFrame } from '../renderPipeline';
 import { backgroundBaseColor } from '../drawBackground';
 import { hex2rgb, type PickedInks, type RGB } from './inks';
@@ -13,7 +14,9 @@ import { cfg as KNOBS } from './runtimeConfig';
 import { xeroxParams } from './xeroxParams';
 import { xeroxMarkers, type XeroxMarkers } from './xeroxMarkers';
 import { xeroxMaps, xeroxMapsVersion } from './xeroxMaps';
-import { setXeroxPalette } from './xeroxPalette';
+import { setXeroxPalette, setStencilPalette } from './xeroxPalette';
+import { stencilParams } from './stencilParams';
+import { stencilFrame, stencilMapsVersion, type StencilFrame } from './stencilScene';
 import { liveFlat, exportFlat } from './bridge';
 
 // ── Modes ──────────────────────────────────────────────────────────────────────────────────────
@@ -57,14 +60,14 @@ export type SuperRisoInput = {
 };
 /** Fotocopia: the settings, its markers, and what engineParams needs to keep the CPU maps (xeroxMaps.ts) fresh. */
 type XeroxFrame = { x: XeroxSettings; mk: XeroxMarkers; isLive: boolean; motion?: readonly number[]; scene?: unknown };
-export type Frame = { style: AnyParams; fw: number; fh: number; base: string; srcPaper: RGB; inks: PickedInks; key: string; xerox?: XeroxFrame };
+export type Frame = { style: AnyParams; fw: number; fh: number; base: string; srcPaper: RGB; inks: PickedInks; key: string; xerox?: XeroxFrame; stencil?: StencilFrame };
 /** srdebug: the inks and parameters of the last live frame. */
 export const lastFrame: { inks: PickedInks | null; params: AnyParams | null } = { inks: null, params: null };
 
 export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Frame {
 	const { settings: s, isDarkMode, isPixelArt } = inp;
-	const xr = s.technique === 'xerox';
-	const style = xr ? xeroxParams(s.xerox, w * m.res, s.resolution) : fromPanel(s, w * m.res);
+	const xr = s.technique === 'xerox', sn = s.technique === 'stencil';
+	const style = xr ? xeroxParams(s.xerox, w * m.res, s.resolution) : sn ? stencilParams(s.stencil, w * m.res, s.resolution) : fromPanel(s, w * m.res);
 	const simW = Math.round(240 * style.pxmm!);
 	const simH = Math.round(simW * h / w);
 	// sim: flatten straight at the simulation size (the 2D draw IS the reduction pass).
@@ -78,17 +81,27 @@ export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Fra
 	const srcPaper: RGB = darkInk ? [1, 1, 1] : hex2rgb(base);
 	const mk = xr ? xeroxMarkers(s, inp.shapes, inp.hiddenLayers, srcPaper, darkInk ? base : null) : null;
 	if (mk && inp.isLive) setXeroxPalette({ rows: mk.rows, what: mk.what, zones: mk.zones });
-	const inks = mk ? { inks: mk.paint, names: mk.rows.map(e => e.id ?? ''), opac: [], srcPaper } : sceneInks(inp.shapes, inp.hiddenLayers, s, srcPaper, darkInk ? base : null);
+	const inks = mk ? { inks: mk.paint, names: mk.rows.map(e => e.id ?? ''), opac: [], srcPaper } : sn ? { inks: [], names: [], opac: [], srcPaper }
+		: sceneInks(inp.shapes, inp.hiddenLayers, s, srcPaper, darkInk ? base : null);
 	if (inp.isLive) lastFrame.inks = inks;
 	// Anything that changes what a pending/held result means: size, theme, mode, parameters, inks, context.
 	const key = [w, h, +isDarkMode, +isPixelArt, m.res, +m.sim, m.preview, +m.lossless, m.pipe, +KNOBS.mip, +KNOBS.offscreenBack, +KNOBS.preserveDrawingBuffer, +KNOBS.darkPaperFromBase,
-		s.technique, ...(mk ? [s.resolution, JSON.stringify(s.xerox), (mk.keys ?? []).join(','), xeroxMapsVersion()] : [s.paper, s.screen, s.screenSize, s.imperfection, s.resolution]), inks.inks.join(',')].join('|');
+		s.technique, ...(mk ? [s.resolution, JSON.stringify(s.xerox), (mk.keys ?? []).join(','), xeroxMapsVersion()] : sn ? [s.resolution, JSON.stringify(s.stencil), stencilMapsVersion()]
+			: [s.paper, s.screen, s.screenSize, s.imperfection, s.resolution]), inks.inks.join(',')].join('|');
 	const xerox = mk ? { x: s.xerox, mk, isLive: inp.isLive, motion: inp.motion, scene: inp.scene } : undefined;
-	return { style, fw, fh, base, srcPaper, inks, key, xerox };
+	const stencil = sn ? { s: s.stencil, settings: s, shapes: inp.shapes, hidden: inp.hiddenLayers, srcPaper, darkBase: darkInk ? base : null, isLive: inp.isLive, motion: inp.motion, scene: inp.scene } : undefined;
+	return { style, fw, fh, base, srcPaper, inks, key, xerox, stencil };
 }
 
-/** Called right after the frame was flattened (liveFlat / exportFlat hold it): Fotocopia reads its CPU maps from there. */
+/** Called right after the frame was flattened (liveFlat / exportFlat hold it): Fotocopia and Stencil read their CPU work from there. */
 export function engineParams(fr: Frame): AnyParams {
+	const SN = fr.stencil;
+	if (SN) {
+		// The CPU maps keep seed 1: the reprint changes the GPU seed per tick, never the maps.
+		const r = stencilFrame(SN, (SN.isLive ? liveFlat : exportFlat).canvas, fr.style as Partial<StencilEngineParams>, 1);
+		if (SN.isLive) setStencilPalette(r.layers.map(l => ({ hex: l.hex, kind: l.kind })));
+		return (lastFrame.params = { ...fr.style, layers: r.layers, accKey: r.accKey, maps: r.maps, srcPaper: r.srcPaper });
+	}
 	const X = fr.xerox;
 	if (!X) return (lastFrame.params = { ...fr.style, inks: fr.inks.inks, names: fr.inks.names, opac: fr.inks.opac, srcPaper: fr.srcPaper });
 	const maps = X.x.hand === 'none' ? null : xeroxMaps((X.isLive ? liveFlat : exportFlat).canvas, X.mk, X.x, fr.srcPaper, X.isLive, X.motion, X.scene);

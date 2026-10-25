@@ -60,8 +60,38 @@ export type SuperRisoSettings = {
     resolution: number;         // 0–1 (lo-fi … fine)
     reprintFps: 0 | 4 | 6 | 8 | 12;
     fullQuality: boolean;       // force the full level live (held at the reprint rate)
-    technique: 'riso' | 'xerox';  // v3.19.0: Riso or Fotocopia (copy art)
+    technique: 'riso' | 'xerox' | 'stencil';  // v3.19.0: Fotocopia (copy art); v3.20.0: Stencil (plantilla + spray)
     xerox: XeroxSettings;
+    stencil: StencilSettings;
+};
+
+// Super Riso · Stencil (v3.20.0): the lab's st.s + dropSize and supTex (print settings). Data, styles and sanitising
+// in constants/superRisoStencil.ts.
+export type StencilStyle = 'banksy' | 'canvas' | 'wall' | 'layers' | 'accent' | 'color' | 'street' | 'bridges';
+export type StencilSupport = 'wall' | 'wallw' | 'dark' | 'card' | 'canvas' | 'wood' | 'paper' | 'custom';
+export type StencilSettings = {
+    style: StencilStyle | '';
+    mode: 'tone' | 'color';     // templates by tone, or by the drawing's colour zones (+ black)
+    n: number;                  // 1–4 layers (tone) / 1–3 colours (color)
+    dark: number;               // 0–1
+    cut: number;                // 0–1 «simplify the cut» (minimum cut size)
+    bridges: boolean;
+    load: number;               // 0–1 paint load
+    lift: number;               // 0–1 lifted template (mist under it)
+    over: number;               // 0–1 overspray around
+    drips: number;              // 0–1
+    splat: number;              // 0–1
+    sloppy: number;             // 0–1 misregistration, blade edge, uneven pass
+    colors: 'spray' | 'own';
+    manual: string[];           // per-layer spray colours (only used while their count matches the layers)
+    accent: boolean;            // tone mode: one colour accent
+    cloud: 'none' | 'white' | 'color';
+    cloudHex: string;
+    sup: StencilSupport;
+    supHex: string;
+    supType: number;            // 0 paper, 1 wall, 2 cardboard, 3 canvas, 4 wood
+    supTex: number;             // 0–1 support texture (slider; supTex = lerp(0, 1.5, v))
+    dropSize: number;           // 0–1 droplet size (drop = lerp(.4, 3, v))
 };
 
 // Super Riso · Fotocopia (v3.19.0): the lab's st.x. Data, styles and sanitising in constants/superRisoXerox.ts.

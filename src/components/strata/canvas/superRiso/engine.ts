@@ -18,6 +18,8 @@ import { DEFAULTS, type EngineParams } from './panel';
 import { createPassProfiler, type PassProfiler } from './passProfiler';
 import { createXerox } from './xeroxEngine';
 import type { XeroxEngineParams } from './xeroxParams';
+import { createStencil } from './stencilEngine';
+import type { StencilEngineParams } from './stencilParams';
 import { FS_BLUR1, FS_SPREAD_LL, FS_SEP0_LL, FS_SEP0_PV, FS_SPREAD_PV, FS_SCAN_PV, FS_SCREEN_PV, FS_COPY, PV_SEP0, PV_SPREAD, PV_SCAN, PV_SCREEN } from './shadersFast';
 
 export type EngineAssets = { green: TexImageSource; exBlack: TexImageSource & { width: number; height: number }; exRed: TexImageSource & { width: number; height: number }; exLut: TexImageSource };
@@ -27,8 +29,8 @@ export type GLCanvas = HTMLCanvasElement | OffscreenCanvas;
 /** C2a. lossless: shader variants verified identical to the lab. preview: bitmask of lossy
  *  variants (live only). toTexture: SCAN into an internal texture; present() copies it to the canvas. */
 export type RenderOpts = { lossless?: boolean; preview?: number; toTexture?: boolean };
-/** Riso parameters, or Fotocopia ones (tech: 'xerox', xeroxParams.ts): render() dispatches on tech, like the lab's prepare(). */
-export type AnyParams = Partial<EngineParams> & Partial<XeroxEngineParams>;
+/** Riso parameters, or Fotocopia / Stencil ones (tech: 'xerox' | 'stencil'): render() dispatches on tech, like the lab's prepare(). */
+export type AnyParams = Partial<EngineParams> & Partial<Omit<XeroxEngineParams, 'tech'>> & Partial<Omit<StencilEngineParams, 'tech'>> & { tech?: 'xerox' | 'stencil' };
 export type Engine = {
 	canvas: GLCanvas;
 	gl: WebGL2RenderingContext;
@@ -61,6 +63,8 @@ export type RunApi = {
 	i(name: string, v: number): void;
 	fv(name: string, arr: number[], n: number): void;
 	m2(name: string, arr: number[]): void;
+	/** int array uniform (uniform1iv): the Stencil layer kinds and channels. */
+	iv(name: string, arr: number[]): void;
 };
 
 // Generated once per session and shared by every engine instance (the export instance included).
@@ -150,6 +154,7 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 			i(name, v) { if (U[name] != null) gl!.uniform1i(U[name], v); },
 			fv(name, arr, n) { const l = U[name]; if (l == null) return; const a = new Float32Array(arr); if (n === 1) gl!.uniform1fv(l, a); else if (n === 2) gl!.uniform2fv(l, a); else gl!.uniform3fv(l, a); },
 			m2(name, arr) { if (U[name] != null) gl!.uniformMatrix2fv(U[name], false, new Float32Array(arr)); },
+			iv(name, arr) { if (U[name] != null) gl!.uniform1iv(U[name], new Int32Array(arr)); },
 		};
 		api.f('uRes', w, h); setup && setup(api);
 		const q = profiler.mode === 'off' ? null : profiler.before(name, { w, h, att: tg ? tg.t.length : 1 });
@@ -167,7 +172,7 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 	const fibTex = texFrom(once('fib11', () => fiberCanvas(11)), { wrap: gl.REPEAT, mip: true }), incTex = texFrom(once('inc23', () => inclCanvas(23)), { wrap: gl.REPEAT, mip: true });
 	const exU = (a: RunApi) => { a.t('uExB', EX.b); a.t('uExR', EX.r); a.t('uExLut', EX.lut); a.f('uExBSize', EX.bs[0], EX.bs[1]); a.f('uExRSize', EX.rs[0], EX.rs[1]); a.f('uExPxMm', EX_PXMM); };
 
-	let xerox: ReturnType<typeof createXerox> | null = null;
+	let xerox: ReturnType<typeof createXerox> | null = null, stencil: ReturnType<typeof createStencil> | null = null;
 	const LUT = target(33 * 33, 33, 2); let lutKey = '';
 	const srcTex = gl.createTexture()!; let srcW = 0, srcH = 0;
 	let TG: Record<'prep' | 'sep' | 'tmp' | 'loc' | 'qtmp' | 'sol' | 'scr' | 'cov' | 'comp' | 'prepH' | 'prepV' | 'out', Target> | null = null, simW = 0, simH = 0;
@@ -233,15 +238,17 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 			if (query) gl!.beginQuery(timerExt!.TIME_ELAPSED_EXT, query);
 			let w = Math.round(P.printW * P.pxmm), h = Math.round(w * srcH / srcW);
 			const lim = Math.min(MAXTEX, 6144); if (Math.max(w, h) > lim) { const s = lim / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
-			const xr = params.tech === 'xerox';
-			// Fotocopia: multiples of 4, so the ¼ targets fall exactly on the full grid (the lab's tiles are aligned to 4 px).
+			const xr = params.tech === 'xerox' || params.tech === 'stencil';
+			// Fotocopia / Stencil: multiples of 4, so the ¼ targets fall exactly on the full grid (the lab's tiles are aligned to 4 px).
 			if (xr) { w = Math.max(4, w & ~3); h = Math.max(4, h & ~3); }
 			ensureTargets(w, h); eng.width = w; eng.height = h;
 			const T = TG!;
 			if (xr) {
-				xerox ??= createXerox({ gl: gl!, compile, run, target, freeTarget, texFrom, greenTex, fibTex, PR: { prep: PR.prep, blur: PR.blur, scan: PR.scan } });
-				xerox.render(params, { prep: T.prep, qtmp: T.qtmp, comp: T.comp, out: T.out }, srcTex, srcW, srcH, w, h, !!opts.toTexture);
-				eng.lastVariants = 'xerox';
+				const host = { gl: gl!, compile, run, target, freeTarget, texFrom, greenTex, fibTex, PR: { prep: PR.prep, blur: PR.blur, scan: PR.scan } };
+				const shared = { prep: T.prep, qtmp: T.qtmp, comp: T.comp, out: T.out };
+				if (params.tech === 'stencil') (stencil ??= createStencil(host)).render(params as Partial<StencilEngineParams>, shared, srcTex, srcW, srcH, w, h, !!opts.toTexture);
+				else (xerox ??= createXerox(host)).render(params as Partial<XeroxEngineParams>, shared, srcTex, srcW, srcH, w, h, !!opts.toTexture);
+				eng.lastVariants = params.tech ?? 'xerox';
 				if (query) { gl!.endQuery(timerExt!.TIME_ELAPSED_EXT); pendingQuery = query; }
 				gl!.flush();
 				eng.lastMs = performance.now() - t0; return eng;

@@ -51,3 +51,9 @@ vec3 oklabL(vec3 c){
 
 export const MRT = `layout(location=0) out vec4 oA; layout(location=1) out vec4 oB;
 void put(inout vec4 A, inout vec4 B, int i, float v){ if(i<4) A[i]=v; else B[i-4]=v; }`;
+
+// The lab renders in tiles: global pixel = gl_FragCoord + uOff, image size uImg. Diorame renders the whole
+// frame in one go (uOff = 0, uImg = target size), so gpx() is the same coordinate the lab uses.
+export const HEADX = HEAD+`uniform vec2 uOff; uniform vec2 uImg;
+vec2 gpx(){ return gl_FragCoord.xy+uOff; }
+`;

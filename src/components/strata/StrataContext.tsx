@@ -21,7 +21,7 @@ export const MAX_HISTORY_STEPS = 50; // History limit
 
 import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS } from '../../constants/palette';
 import { SUPER_RISO_DEFAULTS, sanitizeSuperRiso, applySuperRisoStyle, patchSuperRiso, type SuperRisoPatch } from '../../constants/superRiso';
-import type { SuperRisoStyle, XeroxStyle } from '../../types/strataTypes';
+import type { SuperRisoStyle, XeroxStyle, StencilStyle } from '../../types/strataTypes';
 export type { PaletteColor } from '../../constants/palette';
 export { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS };
 
@@ -94,7 +94,7 @@ type Action =
   | { type: 'TOGGLE_FX'; payload: keyof PostProcessingEnabled }
   | { type: 'TOGGLE_FX_MASTER' }
   | { type: 'SET_SUPER_RISO'; payload: SuperRisoPatch }
-  | { type: 'APPLY_SUPER_RISO_STYLE'; payload: SuperRisoStyle | XeroxStyle }
+  | { type: 'APPLY_SUPER_RISO_STYLE'; payload: SuperRisoStyle | XeroxStyle | StencilStyle }
   | { type: 'REQUEST_EXPORT'; payload: ExportType }
   | { type: 'FINISH_EXPORT' }
   | { type: 'CLEAR_CANVAS' }

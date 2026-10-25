@@ -3,14 +3,7 @@
 // Do not reformat or "simplify" the GLSL: it is the lab's engine, byte for byte.
 // Model: the copier is a dirty threshold. Toner (opaque black) + colour added by hand afterwards (marker or watercolour)
 // that does not match the line. All the noise lives in mm of the sheet (global coordinates).
-import { HEAD, OKLAB, MRT } from './shadersCommon';
-
-// The lab renders in tiles: global pixel = gl_FragCoord + uOff, image size uImg. Diorame renders the whole
-// frame in one go (uOff = 0, uImg = target size), so gpx() is the same coordinate the lab uses.
-const HEADX = HEAD+`uniform vec2 uOff; uniform vec2 uImg;
-vec2 gpx(){ return gl_FragCoord.xy+uOff; }
-`;
-
+import { HEADX, OKLAB, MRT } from './shadersCommon';
 
 // XLUM: original → densidad de tóner suave (dial de oscuridad), modo foto (trama gruesa), barrido movido (Munari), tapa abierta
 export const FS_XLUM = HEADX+`

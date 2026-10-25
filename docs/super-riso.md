@@ -1,7 +1,7 @@
 # Super Riso — página de diseño
 
 Estado: público desde **v3.18.0** (L1 en v3.17.74, motor y niveles; L2 en v3.18.0, panel y
-lanzamiento; técnica Fotocopia en v3.19.0). Descripción técnica exhaustiva: `src/REFERENCE.md` §14 y §10. Reglas de
+lanzamiento; técnica Fotocopia en v3.19.0; técnica Stencil en v3.20.0). Descripción técnica exhaustiva: `src/REFERENCE.md` §14 y §10. Reglas de
 trabajo y lecciones de medición: `CLAUDE.md`. Deuda abierta: `docs/ux-debt.md`.
 
 ## Qué es
@@ -30,6 +30,14 @@ blancos) no se calculan por fotograma en vivo: al cambiar sus entradas, y si no,
 300 ms en un idle callback; en exportación, siempre. Diferencia consciente con el Lab: el papel
 de origen es el color base del lienzo («imprime lo que ves»), no el claro dominante del dibujo.
 Detalle: REFERENCE.md §14, «Technique Fotocopia».
+
+**Técnica Stencil (v3.20.0).** Plantilla recortada + spray, del Lab v14: hasta 4 plantillas por tono o por
+color (+ negro), filo de cuchilla, puentes, spray punteado (campo de gotas generado una vez en CPU), plantilla
+levantada, niebla, goteras, salpicaduras, nube a mano alzada y soporte (pared, cartón, lienzo, madera, papel).
+Port 1:1 de shaders con las trampas de GPU del Lab respetadas. Mismo panel que las otras dos técnicas, con
+Soporte, Textura del soporte, Tamaño de gota, Descuido y Resolución en «Ajustes de impresión». Umbrales y mapas
+en CPU solo en reposo; en movimiento las goteras, salpicaduras y puentes se apagan. Detalle: REFERENCE.md §14,
+«Technique Stencil».
 
 ## Arquitectura
 

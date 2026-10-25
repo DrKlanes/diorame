@@ -17,7 +17,7 @@ const marker = (id: string): XeroxMarker => { const m = XEROX_MARKERS.find(e => 
 const okd = (a: RGB, b: RGB) => { const e0 = (a[0] - b[0]) * .6, e1 = a[1] - b[1], e2 = a[2] - b[2]; return e0 * e0 + e1 * e1 + e2 * e2; };
 
 /** Colours of the drawing a marker can take: the most vivid ones (not the paper, not the near-black, which is toner). */
-function xPool(s: SuperRisoSettings, shapes: readonly Shape[], hidden: readonly number[], srcPaper: RGB, darkBase: string | null): string[] {
+export function xPool(s: SuperRisoSettings, shapes: readonly Shape[], hidden: readonly number[], srcPaper: RGB, darkBase: string | null): string[] {
 	const P = oklab(srcPaper);
 	return sceneInks(shapes, hidden, { ...s, inkSet: 'own', maxInks: 8 }, srcPaper, darkBase).inks
 		.filter(h => { const L = oklab(hex2rgb(h)); return L[0] > .36 && Math.hypot(L[0] - P[0], L[1] - P[1], L[2] - P[2]) > .08; })

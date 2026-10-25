@@ -5,10 +5,12 @@ import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 import { useTranslation } from '../../../i18n';
 import { SUPER_RISO_STYLES, SUPER_RISO_PAPERS, SUPER_RISO_REPRINT_FPS, type SuperRisoPatch } from '../../../constants/superRiso';
 import { XEROX_STYLE_ORDER, XEROX_PAPERS, XEROX_PAPER_ORDER, xeroxStyleMatches } from '../../../constants/superRisoXerox';
+import { STENCIL_STYLE_ORDER, STENCIL_SUPPORTS, STENCIL_SUPPORT_ORDER, supTexSlider, stencilStyleMatches } from '../../../constants/superRisoStencil';
 import { isSuperRisoPreviewDevice, subscribeSuperRisoPreviewDevice } from '../canvas/superRiso/deviceLevel';
 import type { SuperRisoSettings, SuperRisoStyle, SuperRisoPaper, XeroxSettings } from '../../../types/strataTypes';
 import { Field, segmentWrap, pct, labelStyle, Divider } from './superRisoFields';
 import { XeroxControls } from './XeroxControls';
+import { StencilControls } from './StencilControls';
 
 // Paper tints as the engine prints them (canvas/superRiso/panel.ts PAPERS).
 const PAPER_HEX: Readonly<Record<SuperRisoPaper, string>> = {
@@ -38,9 +40,13 @@ export function SuperRisoBlock({ dark, isActive, onToggle }: SuperRisoBlockProps
 	const tint = isActive ? T.purple : dk(dark, T.dark, T.textDark) as string;
 	const headTint = isMuted ? (dk(dark, T.muted, T.textDarkMuted) as string) : tint;
 	const set = (patch: SuperRisoPatch) => dispatch({ type: 'SET_SUPER_RISO', payload: patch });
-	const xerox = sr.technique === 'xerox';
-	const screenSize = xerox ? sr.xerox.screenSize : sr.screenSize;
-	const imperfection = xerox ? sr.xerox.dirt : sr.imperfection;
+	const xerox = sr.technique === 'xerox', stencil = sr.technique === 'stencil', riso = !xerox && !stencil;
+	// The print settings hold each technique's values in the same five slots (Stencil: support · its texture · droplet
+	// size · sloppiness · resolution).
+	const screenSize = xerox ? sr.xerox.screenSize : stencil ? sr.stencil.dropSize : sr.screenSize;
+	const imperfection = xerox ? sr.xerox.dirt : stencil ? sr.stencil.sloppy : sr.imperfection;
+	const setSize = (v: number) => set(xerox ? { xerox: { screenSize: v } } : stencil ? { stencil: { dropSize: v } } : { screenSize: v });
+	const setImperfection = (v: number) => set(xerox ? { xerox: { dirt: v } } : stencil ? { stencil: { sloppy: v } } : { imperfection: v });
 
 	// A style chip stays lit only while the controls still match it.
 	const matches = (id: SuperRisoStyle) => sr.style === id
@@ -70,7 +76,7 @@ export function SuperRisoBlock({ dark, isActive, onToggle }: SuperRisoBlockProps
 					<Field label={t('fx.superRiso.technique')} dark={dark} muted={isMuted}>
 						<div style={segmentWrap(dark)}>
 							<DiSegmentControl<SuperRisoSettings['technique']> dark={dark} small
-								options={[{ value: 'riso', label: t('fx.superRiso.technique.riso') }, { value: 'xerox', label: t('fx.superRiso.technique.xerox') }]}
+								options={(['riso', 'xerox', 'stencil'] as const).map(v => ({ value: v, label: t(`fx.superRiso.technique.${v}`) }))}
 								value={sr.technique} onChange={v => set({ technique: v })} />
 						</div>
 					</Field>
@@ -79,6 +85,9 @@ export function SuperRisoBlock({ dark, isActive, onToggle }: SuperRisoBlockProps
 						{xerox ? XEROX_STYLE_ORDER.map(id => (
 							<DiChip key={id} dark={dark} active={xeroxStyleMatches(sr.xerox, id)} label={t(`fx.superRiso.xerox.style.${id}`)}
 								onClick={() => dispatch({ type: 'APPLY_SUPER_RISO_STYLE', payload: id })} />
+						)) : stencil ? STENCIL_STYLE_ORDER.map(id => (
+							<DiChip key={id} dark={dark} active={stencilStyleMatches(sr.stencil, id)} label={t(`fx.superRiso.stencil.style.${id}`)}
+								onClick={() => dispatch({ type: 'APPLY_SUPER_RISO_STYLE', payload: id })} />
 						)) : STYLE_ORDER.map(id => (
 							<DiChip key={id} dark={dark} active={matches(id)} label={t(`fx.superRiso.style.${id}`)}
 								onClick={() => dispatch({ type: 'APPLY_SUPER_RISO_STYLE', payload: id })} />
@@ -86,8 +95,9 @@ export function SuperRisoBlock({ dark, isActive, onToggle }: SuperRisoBlockProps
 					</div>
 
 					{xerox && <XeroxControls dark={dark} muted={isMuted} x={sr.xerox} set={set} />}
+					{stencil && <StencilControls dark={dark} muted={isMuted} s={sr.stencil} set={set} />}
 
-					{!xerox && (
+					{riso && (
 						<>
 							<Field label={t('fx.superRiso.inks')} dark={dark} muted={isMuted}>
 								<div style={segmentWrap(dark)}>
@@ -122,12 +132,16 @@ export function SuperRisoBlock({ dark, isActive, onToggle }: SuperRisoBlockProps
 						<Ico name={printOpen ? 'chevron-up' : 'chevron-down'} size={14} color={dk(dark, T.muted, T.textDarkMuted) as string} />
 					</button>
 
-					{/* Same five controls in the same order for both techniques; only what they hold differs (Fotocopia: xerox.* fields). */}
+					{/* Same five controls in the same order for every technique; only what they hold differs (Fotocopia: xerox.*, Stencil: stencil.*). */}
 					{printOpen && (
 						<>
-							<Field label={t('fx.superRiso.paper')} dark={dark} muted={isMuted}>
+							<Field label={t(stencil ? 'fx.superRiso.stencil.support' : 'fx.superRiso.paper')} dark={dark} muted={isMuted}>
 								<div style={{ display: 'flex', gap: 4 }}>
-									{xerox ? XEROX_PAPER_ORDER.map(p => (
+									{stencil ? STENCIL_SUPPORT_ORDER.map(p => (
+										<DiChip key={p} dark={dark} active={sr.stencil.sup === p} swatch={STENCIL_SUPPORTS[p].hex}
+											tooltip={t(`fx.superRiso.stencil.support.${p}`)} ariaLabel={t(`fx.superRiso.stencil.support.${p}`)}
+											onClick={() => set({ stencil: { sup: p, supHex: STENCIL_SUPPORTS[p].hex, supType: STENCIL_SUPPORTS[p].type, supTex: supTexSlider(p) } })} />
+									)) : xerox ? XEROX_PAPER_ORDER.map(p => (
 										<DiChip key={p} dark={dark} active={sr.xerox.paper === p} swatch={XEROX_PAPERS[p].paper}
 											tooltip={t(`fx.superRiso.xerox.paper.${p}`)} ariaLabel={t(`fx.superRiso.xerox.paper.${p}`)}
 											onClick={() => set({ xerox: { paper: p, paperHex: XEROX_PAPERS[p].paper } })} />
@@ -139,7 +153,11 @@ export function SuperRisoBlock({ dark, isActive, onToggle }: SuperRisoBlockProps
 								</div>
 							</Field>
 
-							<Field label={t('fx.superRiso.screen')} dark={dark} muted={isMuted}>
+							{stencil ? (
+								<Field label={t('fx.superRiso.stencil.supTex')} value={pct(sr.stencil.supTex)} dark={dark} muted={isMuted}>
+									<DiMiniSlider dark={dark} value={sr.stencil.supTex} min={0} max={1} step={0.01} onChange={v => set({ stencil: { supTex: v } })} />
+								</Field>
+							) : <Field label={t('fx.superRiso.screen')} dark={dark} muted={isMuted}>
 								<div style={segmentWrap(dark)}>
 									{xerox ? (
 										<DiSegmentControl<XeroxSettings['mode']> dark={dark} small
@@ -157,15 +175,13 @@ export function SuperRisoBlock({ dark, isActive, onToggle }: SuperRisoBlockProps
 											value={sr.screen} onChange={v => set({ screen: v })} />
 									)}
 								</div>
-							</Field>
+							</Field>}
 
-							<Field label={t('fx.superRiso.screenSize')} value={pct(screenSize)} dark={dark} muted={isMuted}>
-								<DiMiniSlider dark={dark} value={screenSize} min={0} max={1} step={0.01}
-									onChange={v => set(xerox ? { xerox: { screenSize: v } } : { screenSize: v })} />
+							<Field label={t(stencil ? 'fx.superRiso.stencil.drop' : 'fx.superRiso.screenSize')} value={pct(screenSize)} dark={dark} muted={isMuted}>
+								<DiMiniSlider dark={dark} value={screenSize} min={0} max={1} step={0.01} onChange={setSize} />
 							</Field>
-							<Field label={t(xerox ? 'fx.superRiso.xerox.dirt' : 'fx.superRiso.imperfection')} value={pct(imperfection)} dark={dark} muted={isMuted}>
-								<DiMiniSlider dark={dark} value={imperfection} min={0} max={1} step={0.01}
-									onChange={v => set(xerox ? { xerox: { dirt: v } } : { imperfection: v })} />
+							<Field label={t(xerox ? 'fx.superRiso.xerox.dirt' : stencil ? 'fx.superRiso.xerox.sloppy' : 'fx.superRiso.imperfection')} value={pct(imperfection)} dark={dark} muted={isMuted}>
+								<DiMiniSlider dark={dark} value={imperfection} min={0} max={1} step={0.01} onChange={setImperfection} />
 							</Field>
 							<Field label={t('fx.superRiso.resolution')} value={pct(sr.resolution)} dark={dark} muted={isMuted}>
 								<DiMiniSlider dark={dark} value={sr.resolution} min={0} max={1} step={0.01} onChange={v => set({ resolution: v })} />
