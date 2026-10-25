@@ -2,7 +2,7 @@
 
 **Estado (2026-10-25): F0 HECHA, F1 SIGUIENTE.** El proyecto está en pausa tras F0. Este documento es autocontenido: quien lo
 retome no necesita la conversación de diseño. Lo marcado [VERIFICADO] se midió en código o en el navegador; [POR MEDIR] / [POR
-CONFIRMAR] está sin comprobar. Versión de partida: 3.20.1; F0 cerró en 3.20.8.
+CONFIRMAR] está sin comprobar. Versión de partida: 3.20.1; F0 cerró en 3.20.9.
 
 Documentos relacionados: `docs/super-riso.md` y `src/REFERENCE.md` §14 (Super Riso), `docs/ux-debt.md` (deuda), `CLAUDE.md`
 (reglas de núcleo y de FX: «FX: criterio de ingeniería gráfica», «Tocar StrataCanvas.tsx»).
@@ -133,7 +133,7 @@ Alturas de los paneles de DRAW: paleta 240×164 (plana) / 240×204 (degradado); 
 ¿Super Riso desplegado + 2 tarjetas en 1180×820 horizontal? **No** sin acordeón ni paleta plegada: Riso desplegado (539) + 2 tarjetas
 (~52 c/u) = 643 > 496 (DRAW) y > 620 (CINEMA).
 
-## 6 · Lo ya hecho: F0 (v3.20.2 → v3.20.8) [VERIFICADO]
+## 6 · Lo ya hecho: F0 (v3.20.2 → v3.20.9) [VERIFICADO]
 
 Tres bugs que ya afectaban a usuarios, independientes del flag, más la persistencia.
 
@@ -146,6 +146,7 @@ Tres bugs que ya afectaban a usuarios, independientes del flag, más la persiste
 | 3.20.6 | El autoguardado no corre durante un gesto (pointer/touch/rueda/`isDrawing`), en `requestIdleCallback` |
 | 3.20.7 | Cámara, preset, velocidad, cámara en mano, focal, zoom, separación, POI, capas ocultas y nombre marcan `isDirty` (la animación nunca); `INIT_CINEMA_VIEW` no marca |
 | 3.20.8 | HQ ×2 escala el patrón de grano de la tinta (`shapePattern`) y el temblor de Stop Motion; a S = 1 la vista no cambia ni un píxel |
+| 3.20.9 | Abrir un proyecto (`.dior` o autoguardado) ya no pisa su cámara de CINEMA con los valores por defecto: `cinemaViewInitialized` |
 
 **Pendiente de Moisés (iPad):** ver §10.
 
@@ -204,7 +205,7 @@ Hoy los fantasmas se renderizan en offCtx antes del bucle de capas (`renderPipel
 
 | Fase | Qué | Riesgo | Modelo | Estado |
 |---|---|---|---|---|
-| **F0** | Persistencia y bugs de layout/HQ (§6) | Bajo | Sonnet | **HECHA** (3.20.2–3.20.8) |
+| **F0** | Persistencia y bugs de layout/HQ (§6) | Bajo | Sonnet | **HECHA** (3.20.2–3.20.9) |
 | **F1** | Prototipo tras flag oculto (`?drawfx=1`): (a) partir `applySuperRiso.ts` sin cambiar comportamiento; (b) inspector de dos caras + tarjetas + acordeón de Super Riso + paleta plegable con la cara FX; (c) disponibilidad por FX en DRAW + puerta de gesto/reposo + congelados + retención de Super Riso + Pixel Art sin cámara cuantizada. Sin el flag, byte-idéntico. **Capturas a 1180×820, 820×1180, 1366×1024 y 1024×1366 con 0, 2 y 6 FX, y Super Riso en cada una de sus tres técnicas.** Juzga Moisés sobre las capturas | Alto: puerta del pipeline, gancho protegido de Super Riso, papel cebolla | Opus, con GO e impacto por escrito | **SIGUIENTE** |
 | **F2** | Revelado con fundido, comparar (pulsación larga + `\`), overscroll, palma | Medio | Sonnet | pendiente |
 | **F3** | Export PNG de DRAW con FX: override de fondo en `renderFrame`, semillas fijas, reglas de transparente. Verificar vista contra export píxel a píxel con el grano sembrado | Alto (forma del RenderContext) | Opus, con GO | pendiente |

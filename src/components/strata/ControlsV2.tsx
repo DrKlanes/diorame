@@ -33,10 +33,10 @@ const OVERLAY_BOTTOM = 'calc(env(safe-area-inset-bottom, 0px) + 60px)';
  * isUIHidden is enforced at root level: all atoms are unmounted together.
  * A persistent mini-button at bottom-right allows reactivating UI when hidden.
  *
- * Also hosts 3 global side-effects (preserved from legacy Controls.tsx):
+ * Also hosts 2 global side-effects (from legacy Controls.tsx):
  *   1) useKeyboardShortcuts — all global keyboard shortcuts
- *   2) sessionStorage cleanup on mount — re-arms first-view defaults each refresh
- *   3) mode-change effect — camera reset + first-view init when entering cinematic
+ *   2) mode-change effect — camera reset + first-view init when entering cinematic
+ *      (only for a project that has no CINEMA view of its own: `cinemaViewInitialized`)
  *
  * Note: useSaveLoad and useExportFlow are also instantiated by FileControlsPill
  * internally. Light duplication is intentional and harmless (both hooks rely on
@@ -63,11 +63,6 @@ export function ControlsV2() {
 	const { handleExportRequest } = useExportFlow();
 	useKeyboardShortcuts({ handleExportRequest, handleSaveProject });
 
-	// Side-effect 2: clear "first view initialized" flag on mount
-	useEffect(() => {
-		sessionStorage.removeItem('diorame-view-initialized');
-	}, []);
-
 	// Side-effect 3: mode-change camera reset + first-view init
 	const prevModeRef = useRef(state.mode);
 	useEffect(() => {
@@ -75,10 +70,10 @@ export function ControlsV2() {
 		prevModeRef.current = state.mode;
 
 		if (state.mode === 'cinematic') {
-			const isFirstView = !sessionStorage.getItem('diorame-view-initialized');
 			dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 500 } });
-			if (isFirstView) {
-				sessionStorage.setItem('diorame-view-initialized', 'true');
+			// New project: first-view defaults. A project opened from a file or an autosave keeps its saved view
+			// (the reducer ignores the action once `cinemaViewInitialized`).
+			if (!state.cinemaViewInitialized) {
 				dispatch({ type: 'INIT_CINEMA_VIEW', payload: { focalLength: 3840, viewZoomOffset: -2500, layerSpacingFactor: 1.0, cinematicType: 'forward' } });
 			}
 		} else if (state.mode === 'drawing') {

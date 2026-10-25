@@ -587,6 +587,8 @@ fuera del alcance de FX y cada acción necesita decidir si entra en el historial
 
 ### Entrar en CINEMA por primera vez en la sesión pisa los valores de cámara del proyecto abierto
 
+**Estado: RESUELTO en v3.20.9** (señal `cinemaViewInitialized`: un proyecto abierto desde `.dior` o autoguardado conserva su vista; uno nuevo recibe los valores por defecto). Se conserva el texto original como historial.
+
 `ControlsV2.tsx` fija focal 3840, zoom −2500, separación 1.0 y preset *forward* (`INIT_CINEMA_VIEW`) la primera vez que se entra en CINEMA
 tras cargar la página, **también si se acaba de abrir un `.dior` con otros valores**. Reproducido en navegador: `LOAD_PROJECT` con focal 2000,
 zoom −900, separación 1.5 y preset *spiral* → al pasar a CINEMA quedan 3840 / −2500 / 1 / *forward*. Es anterior a la serie (los mismos valores

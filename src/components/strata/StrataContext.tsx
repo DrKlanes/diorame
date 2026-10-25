@@ -244,6 +244,7 @@ export const initialState: AppState = {
   isUIHidden: false,
   isDrawing: false,
   projectWasLoaded: false,
+  cinemaViewInitialized: false,
   isSymmetryEnabled: false,
   gridEnabled: typeof window !== 'undefined' && window.localStorage?.getItem('diorame-grid-enabled') === 'true',
   paletteMode: 'flat',
@@ -829,8 +830,11 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, viewZoomOffset: action.payload, isDirty: state.isDirty || action.payload !== state.viewZoomOffset };
     // First CINEMA view of a session (ControlsV2): app defaults, not a user change — never dirty.
     case 'INIT_CINEMA_VIEW':
+      // A project that already carries its CINEMA view (opened from a file or an autosave) keeps it.
+      if (state.cinemaViewInitialized) return state;
       return {
         ...state,
+        cinemaViewInitialized: true,
         focalLength: action.payload.focalLength,
         viewZoomOffset: action.payload.viewZoomOffset,
         layerSpacingFactor: action.payload.layerSpacingFactor,
@@ -967,6 +971,7 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'CLEAR_CANVAS':
       return {
           ...state,
+          cinemaViewInitialized: false,
           shapes: [],
           history: [{
               shapes: [],
@@ -1189,6 +1194,9 @@ export function appReducer(state: AppState, action: Action): AppState {
           pointOfInterest: safePointOfInterest,
           isDirty: false,
           projectWasLoaded: true,
+          // A file that saved its CINEMA view (focal and zoom as numbers) keeps it; one that did not (old files,
+          // the example scene) gets the first-view defaults on its first CINEMA entry, as before.
+          cinemaViewInitialized: typeof action.payload.focalLength === 'number' && typeof action.payload.viewZoomOffset === 'number',
       };
     case 'COMPLETE_FIT_TO_VIEW':
         return { ...state, shouldFitToView: false };

@@ -24,7 +24,6 @@ export function DocumentPill({ dark }: DocumentPillProps) {
 		dispatch({ type: 'SET_PROJECT_NAME', payload: UNTITLED_PROJECT_SENTINEL });
 		dispatch({ type: 'CLEAR_CANVAS' });
 		dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 0, rotation: 0 } });
-		sessionStorage.removeItem('diorame-view-initialized');
 		setClearCanvasOpen(false);
 	};
 
