@@ -487,7 +487,7 @@ Primitives are documented in CLAUDE.md («Design System»); only the ones with n
 | File | Purpose |
 |---|---|
 | `useAnimationPlayback.ts` | Drives animation playback: `setInterval` at `1000/animationFramerate` ms dispatching `ADVANCE_ANIMATION_FRAME`; invoked in `ControlsV2` |
-| `useAutoSave.ts` | Auto-save of the project to IndexedDB (`diorame-autosave-v1`) while `isDirty`: 30 s interval, **1.5 s after the last change** (debounce), and at once on `visibilitychange` → hidden and `pagehide` (v3.20.5: the iPad kills the PWA in the background without notice). Never on «visible». Skips a write when the state object is the one last written. Same payload as the `.dior` save, `fxMasterEnabled` and `postProcessingSnapshot` included |
+| `useAutoSave.ts` | Auto-save of the project to IndexedDB (`diorame-autosave-v1`) while `isDirty`: 30 s interval, **1.5 s after the last change** (debounce), and at once on `visibilitychange` → hidden and `pagehide` (v3.20.5: the iPad kills the PWA in the background without notice). Never on «visible». Skips a write when the state object is the one last written. **Scheduled writes (interval and debounce) never run during a gesture** (v3.20.6): a pointer down (stroke, pan, Move transform), a touch down (pinch, Pencil — tracked apart because the canvas cancels `touchstart`, which suppresses its pointer events), `state.isDrawing`, or a wheel within 300 ms; capture listeners on `window`, the canvas core is not involved. It asks again every 400 ms and writes in `requestIdleCallback` (timeout 1 s; Safari has none: next frame, then task). A pointer with no `pointerup` stops counting after 30 s or on `blur`. The flush on hidden/pagehide ignores all this Same payload as the `.dior` save, `fxMasterEnabled` and `postProcessingSnapshot` included |
 | `useBeforeUnload.ts` | Warns before closing if there are unsaved changes |
 | `useCanvasRecovery.ts` | Calls `onRecover` on `visibilitychange → visible` + `pageshow` to clean up orphaned gesture state after backgrounding; never fires on hidden (see §9.7) |
 | `useExportFlow.ts` | SVG/SVGZ complexity gate: checks visible shape count against 800-shape threshold before dispatching `REQUEST_EXPORT`; shows `ComplexSceneModalV2` on overflow |
@@ -1113,11 +1113,17 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.20.5)
+## Appendix C: Changelog Highlights (1.7.3 → 3.20.6)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
 
 > Docs-only commits of the Super Riso series carry no version: `e4d7fff` (audit after 3.18.0), `23172d8` (docs of 3.20.1) and the v3.20.1 system audit (tables, traps and provenance in §14; `docs/super-riso.md`, `docs/ux-debt.md`, `CLAUDE.md`).
+
+### 3.20.6 — El autoguardado no corre durante un gesto
+
+**fix(persist)** — La escritura del autoguardado clona la escena entera de forma síncrona (35–50 ms en escritorio con 2 369 formas, más en iPad): si saltaba justo al apoyar el Pencil, el inicio del trazo daba un tirón. Medido en escritorio con un pointerdown sostenido 2 s que cubre el instante del debounce: **antes**, el `put` caía durante el gesto (a +125 ms del pointerdown); **ahora**, 0 escrituras durante el gesto y una ~1 s después de soltar. Rueda (zoom) y touch (con pointer events suprimidos) igual: 0 durante, 1 después. Un pointer sin `pointerup` no bloquea para siempre (caduca a los 30 s; `blur` lo limpia). Los volcados de `visibilitychange`/`pagehide` siguen siendo inmediatos.
+- **Efecto de borde:** con el canvas ocupado, `requestIdleCallback` puede tardar hasta su `timeout` de 1 s, así que tras la última rueda el `put` llegó a los ~2,4 s (1,5 s de debounce + ~0,9 s de espera de hueco).
+- **Files**: `hooks/useAutoSave.ts`, `REFERENCE.md`, `version.ts`, `package.json`.
 
 ### 3.20.5 — Persistencia de FX: máster OFF, volcado al ocultar y modo oscuro
 
