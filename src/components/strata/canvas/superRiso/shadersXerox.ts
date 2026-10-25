@@ -1,5 +1,6 @@
 // Super Riso · Fotocopia (copy art / xerox) — shaders.
-// Copied VERBATIM from diorame-riso-lab/tools/studio/shaders.xerox.js (the lab validated by Moisés, 24-oct-2026).
+// Copied VERBATIM from diorame-riso-lab/tools/studio/shaders.xerox.js (the lab validated by Moisés; synced with lab v15:
+// organic specks with no grid in XGEN, XDIRT and XCOMP).
 // Do not reformat or "simplify" the GLSL: it is the lab's engine, byte for byte.
 // Model: the copier is a dirty threshold. Toner (opaque black) + colour added by hand afterwards (marker or watercolour)
 // that does not match the line. All the noise lives in mm of the sheet (global coordinates).
@@ -35,14 +36,16 @@ float seg(vec2 p, vec2 a, vec2 b){ vec2 pa=p-a, ba=b-a; float h=clamp(dot(pa,ba)
 void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; float g=uGen+uSeed*.137;
   float d=texture(uD,uv).r;
   float n=texture(uGreen, mm/(uGrain*3.)/1024.*vec2(1.,1.)+vec2(g*.31,g*.17)).r-.5;   // grano de tóner: racimos
-  float n2=h12(floor(mm/.035)+g*3.7)-.5;
+  float n2=(vnoise(mat2(.8,.6,-.6,.8)*mm/.03+g*3.7)-.5)*1.7;                         // grano fino sin celdas cuadradas
   float on=smoothstep(uThr-.06,uThr+.06, d + n*.13 + n2*.11);
   // motas del cristal (fijas en la hoja para toda la tirada; cada generación añade su cristal)
   vec2 c=floor(mm/1.6); float hs=h12(c+g*11.3);
   if(hs<uDust*.05){ vec2 ctr=(c+vec2(h12(c+1.7+g),h12(c+5.3+g)))*1.6; float r=.035+.16*pow(h12(c+9.1+g),3.);
     on=max(on, smoothstep(r, r*.55, length(mm-ctr)+(vnoise(mm*9.)-.5)*.03)); }
   // velo de fondo: tóner suelto sobre el blanco
-  float hf=h12(floor(mm/.07)+g*2.3); on=max(on, step(hf, uFog*.012)*.85);
+  { vec2 q=mat2(.83,.56,-.56,.83)*mm/.25+g*2.3; vec2 c=floor(q), f=fract(q); float r=mix(.07,.18,h12(c+3.1));
+    vec2 ctr=vec2(r)+(1.-2.*r)*vec2(h12(c+1.7),h12(c+4.9));
+    on=max(on, step(h12(c), uFog*.15)*.85*(1.-smoothstep(r*.6,r,length(f-ctr)))); }
   // rayas del tambor: líneas finas en la dirección de avance (vertical), con intensidad que va y viene
   float col=floor(mm.x/.09); float hr=h12(vec2(col,7.7));
   if(hr<uStreak*.006){ float inten=smoothstep(.35,.7,vnoise(vec2(col*3.1, mm.y/35.))); on=max(on, inten*(.6+.4*h12(vec2(col,mm.y*3.)))); }
@@ -237,7 +240,9 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; float sd=uSeed*.
   // racimos de polvo
   vec2 c2=floor(mm/14.); float hc=h12(c2+sd+3.3);
   if(hc<uHair*.25){ vec2 ctr=(c2+vec2(h12(c2+.7),h12(c2+.9)))*14.; float r=length(mm-ctr);
-    if(r<3.){ vec2 g=floor(mm/.09); float hg=h12(g+c2); dirt=max(dirt, step(hg, .09*(1.-r/3.))*.95); } }
+    if(r<3.){ vec2 q=mat2(.6,.8,-.8,.6)*mm/.2; vec2 g=floor(q), f=fract(q); float rr=mix(.1,.24,h12(g+c2+2.2));
+      vec2 ce=vec2(rr)+(1.-2.*rr)*vec2(h12(g+c2+.4),h12(g+c2+6.1));
+      dirt=max(dirt, step(h12(g+c2), .45*(1.-r/3.))*.95*(1.-smoothstep(rr*.6,rr,length(f-ce)))); } }
   // arañazos del cristal: rectos, largos y finos, grises
   vec2 c3=floor(mm/70.);
   for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++){ vec2 c=c3+vec2(x,y); float h=h12(c+sd*.3+11.);
@@ -268,9 +273,9 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm;
   vec3 cp=c*T;                                                                     // color sobre el papel (transparente)
   float d=texture(uD,uv).r, S=texture(uSolX,uv).r;
   float inner=smoothstep(.62,.95,S);                                               // dentro de un sólido grande
-  float mot=.55*vnoise(mm/.45)+.3*vnoise(mm/.13)+.15*h12(floor(mm/.04));
+  float mot=.55*vnoise(mm/.45)+.3*vnoise(mm/.13)+.15*vnoise(mat2(.8,.6,-.6,.8)*mm/.035);
   float dT=d*(1.-uHollow*(1.-.75*uTonerK)*inner*(.006+.08*mot));
   dT*=1.-uBand*.05*smoothstep(.4,.9,vnoise(vec2(mm.x/9.,.5)));                      // bandas claras en la dirección de avance
-  vec3 toner=vec3(1.,1.,1.08)*mix(.045,.0018,uTonerK)*(1.+.6*h12(floor(mm/.03)));    // negro del tóner: de gris gastado a negro profundo
+  vec3 toner=vec3(1.,1.,1.08)*mix(.045,.0018,uTonerK)*(1.+.6*vnoise(mat2(.6,.8,-.8,.6)*mm/.028));    // negro del tóner: de gris gastado a negro profundo
   c=mix(cp, toner*mix(vec3(1.),T,.04), clamp(dT,0.,1.)*.995);                     // el tóner tapa; el color encima apenas lo tiñe
   o=vec4(l2s(min(c,vec3(1.))),1.); }`;

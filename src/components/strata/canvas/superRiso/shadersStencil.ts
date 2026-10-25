@@ -1,5 +1,6 @@
 // Super Riso · Stencil (plantilla + spray) — shaders.
-// Copied VERBATIM from diorame-riso-lab/tools/studio/shaders.stencil.js (the lab v14 validated by Moisés).
+// Copied VERBATIM from diorame-riso-lab/tools/studio/shaders.stencil.js (the lab v14 validated by Moisés; synced with lab v15:
+// pores() as round specks on 3 rotated grids, wall grain with vnoise, pore coverage that depends on the load).
 // Do not reformat or "simplify" the GLSL. Anatomy: diorame-riso-lab/research/stencil-anatomia.md.
 // Layers in painting order (light to dark; the accent last). Kinds: 0 tone (darkness threshold, cumulative),
 // 1 colour zone of the original, 2 black (threshold), 3 accent.
@@ -47,14 +48,21 @@ float sprayCov(float c, vec2 mm, float k){
   float T=textureLod(uSpT,uv,0.).r;                                                    // sin promediar: el grano del spray se ve también en la vista
   float fine=smoothstep(T,T+.02,c*1.02);                                                // carga 0 = nada; carga 1 = todo
   return mix(fine, clamp(c,0.,1.), smoothstep(5.,9.,tp)); }
+// poros: motas redondas repartidas al azar en 3 rejillas giradas de escalas distintas y agrupadas por manchas (sin rejilla visible)
+float pores(vec2 mm, float t){ float p=0., cl=smoothstep(.25,.75,fbm(mm/14.+7.3));
+  for(int i=0;i<3;i++){ float fi=float(i), s=fi==0.?.55:fi==1.?.95:1.7, a=fi*1.13+.41;
+    vec2 q=mat2(cos(a),sin(a),-sin(a),cos(a))*mm/s+fi*17.3; vec2 c=floor(q), f=fract(q);
+    float r=mix(.07,.3,pow(h12(c+9.1),2.)); vec2 ctr=vec2(r)+(1.-2.*r)*vec2(h12(c+1.3),h12(c+5.7));
+    float on=step(1.-(.05+.16*t)*(.35+1.3*cl), h12(c+13.+fi));
+    p=max(p, on*(1.-smoothstep(r*.55,r,length(f-ctr)+(vnoise(q*5.)-.5)*.12*r))); }
+  return p; }
 void support(vec2 mm, out vec3 C, out float m, out float pore){
   C=uSupLin; m=1.; pore=0.; float t=uSupTex; float n1=fbm(mm/40.), n2=fbm(mm/6.);
   if(uSup==0){                                                                         // papel
     C*=1.+t*(.03*(n2-.5)+.025*(vnoise(mm/.25)-.5)); }
   else if(uSup==1){                                                                    // pared: manchas, grano y poros
-    C*=1.+t*(.18*(n1-.5)+.08*(n2-.5)+.05*(h12(floor(mm*9.)+3.)-.5));
-    vec2 c=floor(mm/.8), f=fract(mm/.8)-.5-(vec2(h12(c),h12(c+5.))-.5)*.5; float r=mix(.06,.24,h12(c+9.))/.8;
-    pore=step(1.-.35*t,h12(c+13.))*(1.-smoothstep(r*.6,r,length(f)))*smoothstep(1.5,3.,.2*uPxMm);
+    C*=1.+t*(.18*(n1-.5)+.08*(n2-.5)+.06*(vnoise(mm*9.+3.)-.5));
+    pore=pores(mm,t)*smoothstep(1.5,3.,.2*uPxMm);
     C*=1.-.3*pore; }
   else if(uSup==2){                                                                    // cartón ondulado
     float a=smoothstep(2.,5.,4.6*uPxMm), s=sin(mm.x*6.2832/4.6);
@@ -85,6 +93,6 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; vec2 g=gpx()/uIm
     int c=uCh[k]; float drip=0.;
     if(c>=0){ drip=c==0?dr.r:c==1?dr.g:dr.b; drip=smoothstep(.5-uDrTp,.5+uDrTp,drip+(vnoise(mm*3.)-.5)*.12); }
     dens=max(dens*(1.+(sm-1.)*(1.-min(dens*dens,1.))), drip*1.4);                    // la textura del soporte solo se nota con poca carga
-    float cv=sprayCov(dens,mm,fk)*(1.-pore*.88*(1.-drip));
+    float cv=sprayCov(dens,mm,fk)*(1.-pore*(.9-.45*smoothstep(1.,1.3,dens))*(1.-drip));
     C=mix(C, uLc[k]*mix(1.,.85,drip), cv*uOp[k]); } }
   o=vec4(l2s(min(C,vec3(1.))),1.); }`;
