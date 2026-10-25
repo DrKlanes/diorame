@@ -559,7 +559,7 @@ ajuste fino: los valores salen de `xBase()` / `sBase()` y de los `fine` de los e
 
 ## Export HQ ×2: texturas y amplitudes en píxeles fijos (v3.20.4)
 
-**Estado:** registrado al arreglar el grano (v3.20.4), sin programar. En el export HQ de CINEMA (`renderScale` = 2) lo que está
+**Estado: RESUELTO en v3.20.4 (grano, Riso antiguo) y v3.20.8 (patrón de grano de la tinta, Stop Motion).** Se conserva el texto original como historial. Registrado al arreglar el grano (v3.20.4), sin programar. En el export HQ de CINEMA (`renderScale` = 2) lo que está
 en píxeles de dispositivo y no se multiplica por S sale a la mitad de tamaño relativo.
 
 - **Patrón de grano de la tinta** (`shapePattern`, `createNoise(256, 256, 15, 1, .3)` en `renderPipeline.ts`, relleno `source-atop` por capa):
@@ -572,9 +572,37 @@ en píxeles de dispositivo y no se multiplica por S sale a la mitad de tamaño r
 
 ## Persistencia: ajustes que se guardan pero no marcan `isDirty` (v3.20.5)
 
-**Estado:** registrado al arreglar la persistencia de FX (v3.20.5), sin programar. El autoguardado solo escribe con `isDirty`, y estas
+**Estado: RESUELTO en v3.20.7** (todas las acciones de la lista marcan `isDirty`; la animación de CINEMA nunca). Se conserva el texto original como historial. Registrado al arreglar la persistencia de FX (v3.20.5), sin programar. El autoguardado solo escribe con `isDirty`, y estas
 acciones cambian campos que el `.dior` y el autoguardado SÍ guardan, pero no lo marcan: `SET_CINEMATIC_TYPE`, `SET_CINEMATIC_SPEED`,
 `TOGGLE_HANDHELD`, `SET_HANDHELD_INTENSITY`, `SET_FOCAL_LENGTH`, `SET_VIEW_ZOOM_OFFSET`, `SET_LAYER_SPACING_FACTOR`,
 `SET_POINT_OF_INTEREST` / `CLEAR_POINT_OF_INTEREST`, `TOGGLE_LAYER_VISIBILITY` y `SET_PROJECT_NAME`. Si solo se toca uno de ellos y se
 recarga, el cambio se pierde (y `beforeunload` no avisa). Mismo arreglo que el modo oscuro (`isDirty: true`); no se hizo porque queda
 fuera del alcance de FX y cada acción necesita decidir si entra en el historial.
+
+---
+
+## Serie 3.20.2–3.20.8 (cierre): pendientes que siguen abiertos
+
+**Estado:** registrados al cerrar la serie de F0 de «FX en DRAW» (`docs/fx-in-draw.md`).
+
+### Entrar en CINEMA por primera vez en la sesión pisa los valores de cámara del proyecto abierto
+
+`ControlsV2.tsx` fija focal 3840, zoom −2500, separación 1.0 y preset *forward* (`INIT_CINEMA_VIEW`) la primera vez que se entra en CINEMA
+tras cargar la página, **también si se acaba de abrir un `.dior` con otros valores**. Reproducido en navegador: `LOAD_PROJECT` con focal 2000,
+zoom −900, separación 1.5 y preset *spiral* → al pasar a CINEMA quedan 3840 / −2500 / 1 / *forward*. Es anterior a la serie (los mismos valores
+se fijaban con cuatro acciones); la persistencia de estos campos (3.20.5–3.20.7) lo hace más visible. Arreglo previsto: no inicializar si
+`projectWasLoaded` o si el estado ya no es el inicial. [Confirmado el síntoma; el arreglo, sin programar.]
+
+### Coste del autoguardado en iPad
+
+El clon estructurado de la escena de ejemplo (2 369 formas) cuesta ~35–50 ms síncronos en escritorio, una vez tras cada pausa de 1,5 s con
+cambios y nunca durante un gesto (3.20.6). En iPad sin medir. [POR MEDIR] Si se nota, moverlo a un worker o espaciarlo.
+
+### `requestIdleCallback` con el canvas ocupado tarda hasta su `timeout`
+
+Con el RAF pintando sin parar (DRAW con zoom reciente, CINEMA), el hueco de idle llega a tardar 1 s: el `put` tras la última interacción se
+midió a ~2,4 s en lugar de ~1,6 s. Aceptado: los volcados de `visibilitychange`/`pagehide` son inmediatos.
+
+### FX también en DRAW: proyecto en pausa
+
+Plan, decisiones, inventario y fases F1–F6 en `docs/fx-in-draw.md`. La deuda de FXPanel (grupos plegables, altura) se resuelve dentro de ese plan.

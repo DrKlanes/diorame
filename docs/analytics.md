@@ -141,7 +141,7 @@ alguien piensa "falta medir esto", que lea esto primero:
 | `SET_CINEMATIC_TYPE` en `ControlsV2.tsx:85` | Es el **reset automático** al entrar en CINEMA por primera vez, no una elección del usuario. Instrumentarlo dispararía `camera_preset_used: forward` para todo el que entra en modo cine, y `forward` parecería un éxito arrollador que en realidad no eligió nadie |
 | `TOGGLE_FX_MASTER` (`FXPanel.tsx` y `FXRow.tsx:109`) | Encender o apagar el bloque entero de FX no es aplicar un FX concreto. No hay `filter` que informar |
 | `NEXT_LAYER` con `]` estando en la última capa | **Sí crea capa**, pero es una vía lateral con acción distinta (`useKeyboardShortcuts.ts:79`). El único punto común con `ADD_LAYER` sería el reducer, y meter efectos en una función pura es peor que perder esta vía. **Consecuencia: `layer_added` infracuenta ligeramente** — quien solo use `]` no aparece |
-| El autosave periódico (`useAutoSave.ts`) | No es una acción del usuario |
+| El autosave (`useAutoSave.ts`: intervalo, debounce y volcado al ocultar) | No es una acción del usuario |
 
 **Toggles bidireccionales:** `TOGGLE_FX` enciende **y** apaga. El helper
 `toggleFx` (`FXPanel.tsx:119-122`) solo emite al encender, leyendo el estado
@@ -244,7 +244,7 @@ nada: en GA4 se segmenta por comparación cuando haga falta.
   no lanza. Esas sesiones son invisibles.
 - **Nada personal.** Ni texto del usuario, ni nombres de archivo, ni contenido
   del dibujo. Solo contadores y enumerados.
-- **El autosave periódico** (`useAutoSave.ts`, IndexedDB cada 30s) **no se
-  mide.** Ojo al interpretar `project_saved` bajo: puede que la gente no
+- **El autosave** (`useAutoSave.ts`, IndexedDB: cada 30 s, 1,5 s tras el último
+  cambio y al ocultar la página, desde 3.20.5) **no se mide.** Ojo al interpretar `project_saved` bajo: puede que la gente no
   necesite guardar a mano porque el autosave ya le cubre.
 - **`OnboardingOverlayV2`** no está instrumentado.
