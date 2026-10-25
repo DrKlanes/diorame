@@ -511,3 +511,46 @@ forzando el nivel con `?srdebug=1&srlevel=preview`. En un iPad real no se ha vis
 nivel se detecte como *preview* en el umbral esperado (12 ms), ni cómo se ve el aviso a 196 px
 de ancho, ni cómo se siente `fullQuality` (calidad completa a 12 fps). Solo se puede probar
 tras el push.
+
+---
+
+## Super Riso · Fotocopia y Stencil (v3.19.0–3.20.1): pendientes y decisiones abiertas
+
+**Estado:** registradas en la auditoría de v3.20.1, sin programar. Detalle técnico: REFERENCE.md §14.
+
+### Stencil «Banksy» en modo oscuro con niebla atmosférica: sale casi negro
+
+En modo oscuro la niebla tiñe el propio dibujo hacia el fondo oscuro, y los umbrales de Otsu se miden sobre
+esos píxeles (la exclusión del color de fondo de v3.20.1 no los caza: son una mezcla). En la escena de ejemplo
+«Banksy en cartón» queda en .3125 con niebla y .4375 sin ella. **Decisión de Moisés (v3.20.1): aceptado**; se
+ajusta con Oscuridad, con Multicapa o apagando la niebla. Opción futura: medir los umbrales con la niebla apagada.
+
+### El spray de Stencil sale algo más blando que en el Lab
+
+El escáner de Fotocopia y Stencil sigue la Resolución compartida (`lerp(1, .65, r)` px de suavizado) en vez de
+los valores fijos del Lab. Decisión de v3.19.2 (misma traducción que Riso); revisable si Moisés lo quiere más
+duro.
+
+### Goteras, salpicaduras y puentes de Stencil no aparecen en vivo con un preset de cámara activo
+
+Por diseño se apagan mientras la cámara se mueve (flotarían desencajados del dibujo) y los mapas se calculan
+con la cámara en reposo (≥ 200 ms; solo cuenta la cámara). Con un preset en marcha nunca hay reposo; las
+exportaciones siempre los calculan. La nube se mantiene con el último mapa.
+
+### Papel de origen distinto al del Lab
+
+Fotocopia y Stencil usan el fondo del lienzo (blanco en oscuro) como papel de origen; el Lab toma el claro
+dominante del dibujo. Con las mismas entradas coinciden; con las automáticas los umbrales y las zonas pueden
+diferir. Los rotuladores salen de los colores de la escena, no de un k-means de la imagen.
+
+### Sin medir en iPad real
+
+Ni Fotocopia ni Stencil se han medido en iPad (usan el nivel y el aviso de Riso; sin variantes con pérdida, el
+nivel *preview* solo baja la resolución). Stencil genera el campo de spray (~150 ms) la primera vez que se
+activa, y cada instancia de exportación vuelve a compilar los programas de la técnica activa.
+
+### Restos del dibujo del rotulador y sin ajuste fino
+
+Los escalones en los extremos de los trazos de rotulador son del modelo (también están en el Lab); el dentado
+del borde por baja resolución se arregló en v3.20.1 (mínimo de 1,5 texels). Ninguna técnica tiene sliders de
+ajuste fino: los valores salen de `xBase()` / `sBase()` y de los `fine` de los estilos.

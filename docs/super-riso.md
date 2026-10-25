@@ -1,8 +1,10 @@
 # Super Riso — página de diseño
 
-Estado: público desde **v3.18.0** (L1 en v3.17.74, motor y niveles; L2 en v3.18.0, panel y
-lanzamiento; técnica Fotocopia en v3.19.0; técnica Stencil en v3.20.0). Descripción técnica exhaustiva: `src/REFERENCE.md` §14 y §10. Reglas de
-trabajo y lecciones de medición: `CLAUDE.md`. Deuda abierta: `docs/ux-debt.md`.
+Estado: público desde **v3.18.0**; tres técnicas desde **v3.20.0** (Riso, Fotocopia en v3.19.0, Stencil en
+v3.20.0); última versión auditada: **v3.20.1**. Este documento es la visión de producto y de uso. La descripción
+técnica (tablas de estado, mapeos, pasadas, mapas en CPU, trampas de GPU, procedencia del Lab) está en
+`src/REFERENCE.md` §14 y §10; reglas de trabajo y lecciones de medición, en `CLAUDE.md`; deuda y decisiones
+abiertas, en `docs/ux-debt.md`.
 
 ## Qué es
 
@@ -14,30 +16,50 @@ cromática, viñeta, grano, grunge). Separa el frame en tintas, imprime cada una
 inclusiones, y puede **reimprimir** con otra tirada a 4/6/8/12 fps (el stop motion de la
 impresión entera).
 
-Panel de 8 controles (los ~35 parámetros del laboratorio, bajo curvas fijadas allí): Tintas ·
+Riso: panel de 8 controles (los ~35 parámetros del laboratorio, bajo curvas fijadas allí): Tintas ·
 Número de tintas · Papel · Trama · Tamaño de trama · Imperfección · Resolución · Reimpresión,
 más 4 estilos que fijan todo de una vez (Taller limpio · Fanzine · Lo-fi · Cuatricromía) y,
 solo en dispositivos lentos, «Calidad completa siempre».
 
-**Técnica Fotocopia (v3.19.0).** Un selector «Técnica: Riso / Fotocopia» cambia el motor por el
-de copy art del Lab (`diorame-riso-lab/tools/studio/`, validado por Moisés): la copiadora como
-umbral sucio (tóner, generaciones de copia, suciedad física, sólidos huecos) y el color puesto a
-mano después (rotulador o acuarela), que no casa con la línea. Port 1:1: shaders byte a byte,
-mismas pasadas y mismos targets a ¼. Panel reducido a los controles macro del Lab (Copiadora,
-Color a mano) y sus 8 estilos, más el mismo «Ajustes de impresión» plegable de Riso (Papel, Trama Línea|Foto, Tamaño de trama, Suciedad, Resolución); el ajuste fino del Lab no tiene sliders: sale de `xBase()`
-más los overrides `fine` de cada estilo. Los mapas en CPU (orientación del trazo y huecos
-blancos) no se calculan por fotograma en vivo: al cambiar sus entradas, y si no, como mucho cada
-300 ms en un idle callback; en exportación, siempre. Diferencia consciente con el Lab: el papel
-de origen es el color base del lienzo («imprime lo que ves»), no el claro dominante del dibujo.
-Detalle: REFERENCE.md §14, «Technique Fotocopia».
+## Las tres técnicas
 
-**Técnica Stencil (v3.20.0).** Plantilla recortada + spray, del Lab v14: hasta 4 plantillas por tono o por
-color (+ negro), filo de cuchilla, puentes, spray punteado (campo de gotas generado una vez en CPU), plantilla
-levantada, niebla, goteras, salpicaduras, nube a mano alzada y soporte (pared, cartón, lienzo, madera, papel).
-Port 1:1 de shaders con las trampas de GPU del Lab respetadas. Mismo panel que las otras dos técnicas, con
-Soporte, Textura del soporte, Tamaño de gota, Descuido y Resolución en «Ajustes de impresión». Umbrales y mapas
-en CPU solo en reposo; en movimiento las goteras, salpicaduras y puentes se apagan. Detalle: REFERENCE.md §14,
-«Technique Stencil».
+Un selector «Técnica» al principio del bloque cambia el motor de impresión; todas comparten el mismo gancho en
+el render, los niveles de calidad, las exportaciones, la Reimpresión y el bloque plegable «Ajustes de
+impresión», con cinco ranuras en el mismo orden (Papel/Soporte · Trama/Textura · Tamaño de trama/de gota ·
+Imperfección/Suciedad/Descuido · Resolución). La Resolución es una sola para las tres. Qué ocupa cada ranura y
+cómo se traduce al motor: REFERENCE.md §14, «inventory».
+
+**Riso** — la risografía escaneada (arriba). 4 estilos: Taller limpio, Fanzine, Lo-fi, Cuatricromía. Controles:
+Tintas (Dibujo · CMYK · Riso), Número de tintas, Reimpresión y los ajustes de impresión.
+
+**Fotocopia** (v3.19.0, ajustes de impresión en v3.19.2) — copy art / xerox. La copiadora como umbral sucio
+(tóner, generaciones de copia, suciedad física, sólidos huecos) y el color puesto a mano después (rotulador o
+acuarela), que no casa con la línea. Controles: Copiadora (Oscuridad, Negro del tóner, Generaciones), Color a mano
+(Sin color · Rotulador · Acuarela; «Manchas de color» pinta cada zona de color del dibujo con su rotulador, con
+selector de los 16 y ↺ para volver al automático; «Huecos en blanco» colorea los huecos cerrados por la línea con
+la caja de rotuladores y «Otro reparto»), Descuido. 8 estilos: Flyer punk, Fanzine a rotulador, Acuarela sobre
+copia, Papel flúor, Copia de copia, Modo foto, Munari y Tapa abierta.
+
+**Stencil** (v3.20.0) — plantilla recortada + spray. Hasta 4 plantillas por tono o por color (+ negro) con filo
+de cuchilla y puentes opcionales, spray punteado, plantilla levantada, niebla, goteras, salpicaduras, nube a mano
+alzada y soporte (pared gris/blanca/oscura, cartón, lienzo, madera, papel). Controles: Plantillas, Spray, Colores
+(sprays o los del dibujo, una fila por capa, acento y nube) y, en los ajustes de impresión, Soporte, Textura del
+soporte, Tamaño de gota y Descuido. 8 estilos: Banksy en cartón, Lienzo limpio, Retrato en muro, Multicapa, Acento
+de color, Capas de color, Callejero sucio y Plantilla de letras.
+
+**Limitaciones conocidas** (el detalle y las decisiones abiertas, en `docs/ux-debt.md`):
+- Stencil: goteras, salpicaduras y puentes solo aparecen con la cámara en reposo (por diseño, para que no floten
+  desencajados del dibujo); con un preset de cámara en marcha no se ven en vivo, pero las exportaciones siempre
+  los llevan. La nube se mantiene.
+- Stencil en modo oscuro con niebla atmosférica sale muy oscuro (la niebla tiñe el propio dibujo hacia el fondo
+  oscuro): se ajusta con Oscuridad, con Multicapa o apagando la niebla. Decisión de Moisés: aceptado.
+- Fotocopia y Stencil toman el color de fondo del lienzo como papel de origen («imprime lo que ves»; blanco en
+  oscuro); el Lab toma el claro dominante del dibujo, así que con las mismas entradas coinciden pero con las
+  automáticas pueden diferir.
+- El escáner de Fotocopia y Stencil sigue la Resolución compartida: un poco más blando que en el Lab.
+- Fotocopia y Stencil aún no se han medido en iPad real (el nivel y el aviso de efecto exigente son los de Riso).
+- Los mapas en CPU hacen que la primera activación de Stencil (campo de spray, ~150 ms) y las exportaciones con
+  muchas capas tarden algo más.
 
 ## Arquitectura
 
@@ -103,7 +125,7 @@ el frame sale sin Super Riso. Sin WebGL2: aviso al activar y nada más.
    al laboratorio, es la referencia: se usa siempre en escritorio y en todas las exportaciones.
    Cualquier optimización es un modo de vista previa adicional para GPUs débiles; nunca sustituye
    al motor completo ni cambia su aspecto.
-4. **Panel de 8 controles, encajado en 196 px** de ancho útil: papel como 4 muestras de color,
+4. **Panel de 8 controles (Riso), encajado en 196 px** de ancho útil: papel como 4 muestras de color,
    tintas con etiquetas cortas (Dibujo · CMYK · Riso) y nombre completo en tooltip, ajustes de
    impresión plegados.
 5. **Texturas propias**, sintetizadas (ver abajo): ya no dependemos de escaneos de terceros.
@@ -111,6 +133,11 @@ el frame sale sin Super Riso. Sin WebGL2: aviso al activar y nada más.
    una nueva ronda.
 7. **Lazy load.** Nada se carga hasta que el estado lo trae encendido; así una sesión que no lo
    usa no paga chunk, texturas ni contexto WebGL.
+8. **Tres técnicas, un solo motor y un solo panel.** Fotocopia y Stencil reutilizan el gancho, los niveles
+   de calidad, las exportaciones y el bloque de ajustes de impresión de Riso; no hay estructuras paralelas.
+9. **El Super Riso Lab es la fuente canónica.** Los shaders se portan 1:1 y se validan contra el Lab con las
+   mismas entradas (procedimiento y tabla Lab ↔ Diorame: REFERENCE.md §14, «provenance»).
+10. **Imprime lo que ves.** El papel de origen es el fondo del lienzo (blanco en oscuro) en las tres técnicas.
 
 ## Cifras clave
 
@@ -142,20 +169,17 @@ Las 4 texturas de `public/textures/superRiso/` son propias:
   (espectro de potencia e histograma de grosor de la película; densidad, tamaño, forma y
   agrupación de los vacíos). La película sale por IAAFT y los vacíos por un proceso de puntos
   de Thomas. No contienen ningún píxel de los escaneos y son enlosables.
-- `greennoise1024.png`: generada proceduralmente. Las fibras e inclusiones del papel se generan
-  en ejecución.
+- `greennoise1024.png`: generada proceduralmente. Las fibras e inclusiones del papel y el campo de
+  spray de Stencil (2048², una vez por sesión) se generan en ejecución.
 - Las estadísticas de la síntesis coinciden con las del original y, en render, original y
   sintética son prácticamente indistinguibles.
 - La lista de tintas es riso-colors (MIT, Matt DesLauriers): ver `src/Attributions.md`.
 
 ## Dónde viven las herramientas
 
-**Fuera del repo**, en `C:\Users\Usuario\Desktop\diorame-riso-lab\tools\` (privado: sus datos
-medidos, `tools/textures/data/`, salen de escaneos de terceros). El plan, las decisiones y las
-mediciones completas están en `C:\Users\Usuario\Desktop\diorame-riso-lab\research\PLAN-super-riso.md`
-(§1–§16). El laboratorio autónomo y sus renders viven en la misma carpeta (`lab/`, `renders/`).
-
-Contenido de `tools/`: `lab-build/` (fuente del laboratorio y del motor autónomo, `build.py`),
-`textures/` (síntesis: `synth.py`, `voids.py`, `rp.py`, `stats.py`), `measure/` (anchura de
-borde y tamaño de grano de riso real) y un `README.md`. No subir nada de esa carpeta al repo
-público.
+**Fuera del repo**, en `C:\Users\Usuario\Desktop\diorame-riso-lab` (privado: `tools/textures/data/` sale de
+escaneos de terceros). Es la fuente canónica de las tres técnicas: `tools/studio/` (shaders y motor por técnica,
+interfaz), `research/` (anatomías y plan, `PLAN-super-riso.md` §1–§16), `lab/` (versiones publicadas del
+laboratorio) y `renders/`. Su `tools/README.md` lista las fuentes y la tabla Lab ↔ versión de Diorame (la
+versión sincronizada hoy es la v16; el procedimiento para cambios futuros está en REFERENCE.md §14,
+«provenance»). No subir nada de esa carpeta al repo público.
