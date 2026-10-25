@@ -9,6 +9,9 @@ import { toast } from 'sonner@2.0.3';
 import { FXRow } from './FXRow';
 import { SuperRisoBlock } from './SuperRisoBlock';
 import { isWebGL2Available } from '../canvas/superRiso/flag';
+import { useIsStandalone } from '../../../hooks/useIsStandalone';
+import { useIsCameraBarCompact } from '../../../hooks/useIsCameraBarCompact';
+import { rightPanelInsets, CAMERA_BAR_HEIGHT } from '../../../utils/panelLayout';
 
 const STORAGE_KEY = 'diorame-fx-expanded';
 
@@ -111,6 +114,8 @@ export function FXPanel() {
 		try { return localStorage.getItem(STORAGE_KEY) === 'true'; }
 		catch { return false; }
 	});
+	const isStandalone = useIsStandalone();
+	const isCameraBarCompact = useIsCameraBarCompact();
 
 	if (state.mode !== 'cinematic') return null;
 	if (state.isUIHidden) return null;
@@ -142,6 +147,7 @@ export function FXPanel() {
 	};
 
 	const mutedColor = dk(dark, T.muted, T.textDarkMuted) as string;
+	const insets = rightPanelInsets(isCameraBarCompact ? CAMERA_BAR_HEIGHT.compact : CAMERA_BAR_HEIGHT.wide, isStandalone);
 
 	const PillHSep = () => (
 		<div style={{
@@ -179,8 +185,10 @@ export function FXPanel() {
 
 	if (isExpanded) {
 		return (
-			<div style={{ position: 'absolute', top: '50%', right: SPACE.edge, transform: 'translateY(-50%)', zIndex: 50 }}>
-				<DiPanel dark={dark} width={248} radius={RADIUS.panel} padding="10px" style={{ gap: 0, maxHeight: 'calc(var(--app-h, 100vh) - 80px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+			// The wrapper spans the free band between the TopBar and the camera bar (utils/panelLayout.ts): the panel is
+			// centred in it and never taller than it. Only the panel takes pointer events.
+			<div style={{ position: 'absolute', top: insets.top, bottom: insets.bottom, right: SPACE.edge, zIndex: 50, display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+				<DiPanel dark={dark} width={248} radius={RADIUS.panel} padding="10px" style={{ gap: 0, maxHeight: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', pointerEvents: 'auto' }}>
 					{/* Header */}
 					<div style={{ display: 'flex', alignItems: 'center', marginBottom: 4, flexShrink: 0 }}>
 						<span style={{
@@ -210,7 +218,7 @@ export function FXPanel() {
 						</div>
 					</div>
 					<PanelHSep />
-					<div className="di-panel-scroll" style={{ overflowY: 'auto', maxHeight: 'calc(var(--app-h, 100vh) - 141px)' }}>
+					<div className="di-panel-scroll" style={{ overflowY: 'auto', flex: '1 1 auto', minHeight: 0 }}>
 					{/* Texture */}
 					<GroupLabel label={t('fx.group.texture')} />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
