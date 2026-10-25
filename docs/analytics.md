@@ -138,7 +138,7 @@ alguien piensa "falta medir esto", que lea esto primero:
 
 | Camino | Por qué queda fuera |
 |---|---|
-| `SET_CINEMATIC_TYPE` en `ControlsV2.tsx:85` | Es el **reset automático** al entrar en CINEMA por primera vez, no una elección del usuario. Instrumentarlo dispararía `camera_preset_used: forward` para todo el que entra en modo cine, y `forward` parecería un éxito arrollador que en realidad no eligió nadie |
+| `INIT_CINEMA_VIEW` en `ControlsV2.tsx` (antes `SET_CINEMATIC_TYPE`) | Es la **inicialización automática** al entrar en CINEMA (solo rellena los campos de cámara que el proyecto no trae, 3.20.10), no una elección del usuario. Instrumentarlo dispararía `camera_preset_used: forward` para todo el que entra en modo cine, y `forward` parecería un éxito arrollador que en realidad no eligió nadie |
 | `TOGGLE_FX_MASTER` (`FXPanel.tsx` y `FXRow.tsx:109`) | Encender o apagar el bloque entero de FX no es aplicar un FX concreto. No hay `filter` que informar |
 | `NEXT_LAYER` con `]` estando en la última capa | **Sí crea capa**, pero es una vía lateral con acción distinta (`useKeyboardShortcuts.ts:79`). El único punto común con `ADD_LAYER` sería el reducer, y meter efectos en una función pura es peor que perder esta vía. **Consecuencia: `layer_added` infracuenta ligeramente** — quien solo use `]` no aparece |
 | El autosave (`useAutoSave.ts`: intervalo, debounce y volcado al ocultar) | No es una acción del usuario |

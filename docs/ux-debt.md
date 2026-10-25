@@ -587,7 +587,7 @@ fuera del alcance de FX y cada acción necesita decidir si entra en el historial
 
 ### Entrar en CINEMA por primera vez en la sesión pisa los valores de cámara del proyecto abierto
 
-**Estado: RESUELTO en v3.20.9** (señal `cinemaViewInitialized`: un proyecto abierto desde `.dior` o autoguardado conserva su vista; uno nuevo recibe los valores por defecto). Se conserva el texto original como historial.
+**Estado: RESUELTO en v3.20.9 y refinado en v3.20.10.** 3.20.9: un proyecto abierto desde `.dior` o autoguardado conserva su vista y uno nuevo recibe los valores por defecto (señal booleana `cinemaViewInitialized`, «todo o nada»). 3.20.10: los valores por defecto rellenan huecos **campo a campo** (`cinemaViewSet`, uno por `focalLength`, `viewZoomOffset`, `layerSpacingFactor`, `cinematicType`), porque el «todo o nada» seguía pisando el preset *yoyo* de la escena de ejemplo (guarda el preset pero no focal, zoom ni separación). Regla general en CLAUDE.md. Se conserva el texto original como historial.
 
 `ControlsV2.tsx` fija focal 3840, zoom −2500, separación 1.0 y preset *forward* (`INIT_CINEMA_VIEW`) la primera vez que se entra en CINEMA
 tras cargar la página, **también si se acaba de abrir un `.dior` con otros valores**. Reproducido en navegador: `LOAD_PROJECT` con focal 2000,
