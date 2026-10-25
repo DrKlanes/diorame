@@ -79,7 +79,11 @@ export function createXerox(H: XeroxHost) {
 		if (hasColor) {
 			bl('ps ¼ H', S.prep, S.qtmp, 1, 0, Math.max(.3, .12 * pxmm / 4)); bl('ps ¼ V', S.qtmp, X.xq1, 0, 1, Math.max(.3, .12 * pxmm / 4));
 			run('XID', R.xid, X.xq2, a => { a.t('uPS', X.xq1.t[0]); a.fv('uKey', keyLin, 3); a.t('uIdMap', idTex); a.i('uUseMap', useMap); a.i('uNk', nk); a.f('uSrcPaperL', ...srcPaperLin); a.f('uMinL', .32); a.f('uPxMm', pxmm); a.f('uVoteMm', P.colorSmooth); });
-			const sg = Math.max(.3, (P.hand === 1 ? .8 : P.sloppy) * pxmm / 4);   // the marker decides its edges stroke by stroke
+			// The marker decides its edges stroke by stroke from this mask, read bilinearly at full resolution. The lab never runs
+			// below ~7 px/mm, where .8 mm is ≥ 1.5 texels of the ¼ grid; Diorame does (a ~1000 px canvas at Resolution .85 is
+			// ~3.9 px/mm: .8 mm = .78 texels) and the barely blurred binary vote then shows the ¼ texel as a staircase.
+			// Floor: 1.5 texels for the marker (identical to the lab from 7.5 px/mm up); the watercolour keeps the lab's .3.
+			const sg = P.hand === 1 ? Math.max(1.5, .8 * pxmm / 4) : Math.max(.3, P.sloppy * pxmm / 4);
 			bl('mask H', X.xq2, S.qtmp, 1, 0, sg); bl('mask V', S.qtmp, X.xq1, 0, 1, sg);
 			run('XCOLOR', R.xcolor, X.xc, a => {
 				a.f('uPxMm', pxmm); a.f('uSeed', P.seed); a.t('uMA', X.xq1.t[0]); a.t('uMB', X.xq1.t[1]); a.fv('uMk', mkLin, 3); a.i('uNk', nk); a.i('uMed', P.hand);
