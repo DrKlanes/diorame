@@ -327,7 +327,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `topbar/ThemeTogglePill.tsx` | Light/dark paper toggle |
 | `bottombar/BottomBar.tsx` | Slot router: DrawingToolbar (draw) / CameraBar (view) |
 | `bottombar/DrawingToolbar.tsx` | 5-tool selector + modifiers + LineModeButton (line tool) |
-| `bottombar/CameraBar.tsx` | Camera presets + speed + sliders; responsive desktop/tablet layout |
+| `bottombar/CameraBar.tsx` | Camera presets + speed + sliders + the `POIPill` framing hint (moved here from `BottomBar` in v3.20.2); responsive desktop/tablet layout: one row above 1100 px, two below (`useIsCameraBarCompact`), with the hint beside the sliders so no row is wider than the presets pill (709 px — next to the presets the bar was 873 px and lost its first button at 820 px wide) |
 | `layers/LayersPanel.tsx` | Layer management (collapsed pill + expanded panel) with dnd-kit drag-reorder. The expanded row list is `role="listbox"` (v3.17.30): ArrowUp/Down move focus between rows, clamped at the ends — selection does NOT follow focus, only Enter/Space (handled per-row) selects. Owns the `anchorRef` for `LayersDiscoveryTooltip` (v3.17.32), attached to whichever of the two root divs (collapsed pill / expanded panel) is currently rendered |
 | `layers/LayerRow.tsx` | Per-layer row: Empty/Flat/Grad/Fade chip, visibility, 3D lock. Keyboard-navigable `role="option"` (v3.17.30) — `tabIndex`/`role` set explicitly AFTER `{...attributes}` in JSX so they win over dnd-kit's own defaults (`role="button"`, silently reapplied every render otherwise); Enter/Space select via a local handler that stops propagation, same pattern as `DiSelectorOption`. Focus ring is `.di-layer-row:focus-visible` in `globals.css`, not JS state — native `:focus-visible` already tells a Tab/arrow move from a mouse click apart. The row itself does NOT get the `DiActionButton`-style `onMouseDown` `preventDefault` (v3.17.21) — it is a focus-retaining control, not an immediate action; the inner eye/lock buttons still do |
 | `layers/LayerDotsRail.tsx` | Dot indicator rail, inline or fixed |
@@ -491,6 +491,7 @@ Primitives are documented in CLAUDE.md («Design System»); only the ones with n
 | `useCanvasRecovery.ts` | Calls `onRecover` on `visibilitychange → visible` + `pageshow` to clean up orphaned gesture state after backgrounding; never fires on hidden (see §9.7) |
 | `useExportFlow.ts` | SVG/SVGZ complexity gate: checks visible shape count against 800-shape threshold before dispatching `REQUEST_EXPORT`; shows `ComplexSceneModalV2` on overflow |
 | `useIsMobile.ts` | Mobile device detection via `matchMedia` |
+| `useIsCameraBarCompact.ts` | `(max-width: 1100px)` via `matchMedia`: true when the CINEMA camera bar stacks in two rows. Read by `CameraBar` and by the panels that size themselves above it |
 | `useIsStandalone.ts` | Reactive PWA standalone detection: combines `matchMedia('(display-mode: standalone)')` + legacy `navigator.standalone`; used by `TopBar` for iOS safe-area paddingTop |
 | `useKeyboardShortcuts.ts` | All global and drawing-mode keyboard shortcuts, except Space — that moved to `StrataCanvas` in v3.17.15 (hold to pan / tap to reset needs the pan refs and a keyup) |
 | `useLayersDiscoveryTooltip.ts` | First-session-only contextual tooltip pointing at the layers panel (v3.17.32): fires once a user who drew a first real stroke (module-level flag, immune to `LayersPanel` remounts on `isUIHidden` toggle — see note in the file) crosses `TOOLTIP_TRIGGER_SHAPES`/`_SECONDS` with a single layer, no modal open, and no `.dior`/autosave load this session. Auto-fades after `TOOLTIP_VISIBLE_SECONDS` (v3.17.33) — drawing while it's visible no longer dismisses it (the original stroke-based auto-close killed it before the user could read it, since it opens mid-drawing); closes immediately if `totalLayers` increases while open (`layer_added` — the tooltip already did its job). Returns `{ isOpen, dismiss }` to `LayersPanel` |
@@ -1111,11 +1112,17 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.20.1)
+## Appendix C: Changelog Highlights (1.7.3 → 3.20.2)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
 
 > Docs-only commits of the Super Riso series carry no version: `e4d7fff` (audit after 3.18.0), `23172d8` (docs of 3.20.1) and the v3.20.1 system audit (tables, traps and provenance in §14; `docs/super-riso.md`, `docs/ux-debt.md`, `CLAUDE.md`).
+
+### 3.20.2 — CameraBar vertical: cabe entera en los cuatro viewports del iPad
+
+**fix(ui)** — A 820×1180 la barra de cámara medía 873 px y, centrada, perdía el primer botón (x = −19). Causa: `BottomBar` ponía la pastilla de encuadre (`POIPill`, 154 px) a la derecha de las presets (709 px). Arreglo: `CameraBar` es dueña de la pastilla; en compacto va junto a los sliders (fila 1) y las presets quedan solas (fila 2): ninguna fila pasa de 709 px. El `matchMedia` compacto sale a `hooks/useIsCameraBarCompact.ts` (lo reutiliza el cálculo de alturas de los paneles laterales).
+- **Verificado:** 820×1180 (x = 56), 1024×1366 (x = 158), 1180×820 y 1366×1024 (una fila, x = 7 y 100).
+- **Files**: `bottombar/CameraBar.tsx`, `bottombar/BottomBar.tsx`, `hooks/useIsCameraBarCompact.ts`, `REFERENCE.md`, `version.ts`, `package.json`.
 
 ### 3.20.1 — Super Riso: bordes del rotulador, motas orgánicas y umbrales de Stencil sobre el dibujo
 
