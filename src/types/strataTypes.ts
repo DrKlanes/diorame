@@ -162,6 +162,9 @@ export type PostProcessingEnabled = {
     superRiso: boolean;
 };
 
+// Per field: true = the open project brought its own value, or the first-view default is already in. See INIT_CINEMA_VIEW.
+export type CinemaViewSet = { focalLength: boolean; viewZoomOffset: boolean; layerSpacingFactor: boolean; cinematicType: boolean };
+
 export type HandheldIntensity = 'low' | 'medium' | 'high';
 
 // Canvas gesture state (pinch / orbit / two- and three-finger taps), held in a ref
@@ -293,7 +296,7 @@ export interface AppState {
   isUIHidden: boolean; // New: Toggle UI visibility in View mode
   isDrawing: boolean; // Transient: true during active pointer drag (draw/move/orbit). NOT serialized.
   projectWasLoaded: boolean; // Transient: true once LOAD_PROJECT ran this session (.dior or autosave restore). NOT serialized.
-  cinemaViewInitialized: boolean; // Transient: the CINEMA view params (focal, zoom, spacing, preset) already hold their first-view values or the open project's own. False for a new project until its first CINEMA entry. NOT serialized.
+  cinemaViewSet: CinemaViewSet; // Transient: which CINEMA view params (focal, zoom, spacing, preset) already hold a value of the open project's own (true) or still wait for the first-view default (false). Per field. NOT serialized.
   isSymmetryEnabled: boolean; // New: Vertical Symmetry Mode
   gridEnabled: boolean; // Composition guide overlay (3x3 dot grid). Persisted in localStorage. NOT serialized in .dior.
   paletteMode: 'flat' | 'grad'; // New: Palette Rendering Mode

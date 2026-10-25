@@ -36,7 +36,7 @@ const OVERLAY_BOTTOM = 'calc(env(safe-area-inset-bottom, 0px) + 60px)';
  * Also hosts 2 global side-effects (from legacy Controls.tsx):
  *   1) useKeyboardShortcuts — all global keyboard shortcuts
  *   2) mode-change effect — camera reset + first-view init when entering cinematic
- *      (only for a project that has no CINEMA view of its own: `cinemaViewInitialized`)
+ *      (default values only where the project has none of its own: `cinemaViewSet`, per field)
  *
  * Note: useSaveLoad and useExportFlow are also instantiated by FileControlsPill
  * internally. Light duplication is intentional and harmless (both hooks rely on
@@ -71,9 +71,9 @@ export function ControlsV2() {
 
 		if (state.mode === 'cinematic') {
 			dispatch({ type: 'UPDATE_CAMERA', payload: { x: 0, y: 0, z: 500 } });
-			// New project: first-view defaults. A project opened from a file or an autosave keeps its saved view
-			// (the reducer ignores the action once `cinemaViewInitialized`).
-			if (!state.cinemaViewInitialized) {
+			// First-view defaults, field by field: a project opened from a file or an autosave keeps the values it
+			// brought and only its gaps are filled (a new project has none, so it gets all of them).
+			if (!Object.values(state.cinemaViewSet).every(Boolean)) {
 				dispatch({ type: 'INIT_CINEMA_VIEW', payload: { focalLength: 3840, viewZoomOffset: -2500, layerSpacingFactor: 1.0, cinematicType: 'forward' } });
 			}
 		} else if (state.mode === 'drawing') {

@@ -244,7 +244,7 @@ export const initialState: AppState = {
   isUIHidden: false,
   isDrawing: false,
   projectWasLoaded: false,
-  cinemaViewInitialized: false,
+  cinemaViewSet: { focalLength: false, viewZoomOffset: false, layerSpacingFactor: false, cinematicType: false },
   isSymmetryEnabled: false,
   gridEnabled: typeof window !== 'undefined' && window.localStorage?.getItem('diorame-grid-enabled') === 'true',
   paletteMode: 'flat',
@@ -830,15 +830,15 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, viewZoomOffset: action.payload, isDirty: state.isDirty || action.payload !== state.viewZoomOffset };
     // First CINEMA view of a session (ControlsV2): app defaults, not a user change — never dirty.
     case 'INIT_CINEMA_VIEW':
-      // A project that already carries its CINEMA view (opened from a file or an autosave) keeps it.
-      if (state.cinemaViewInitialized) return state;
+      // Field by field: what the open project brought (file or autosave) is kept, only the gaps take the default.
+      if (Object.values(state.cinemaViewSet).every(Boolean)) return state;
       return {
         ...state,
-        cinemaViewInitialized: true,
-        focalLength: action.payload.focalLength,
-        viewZoomOffset: action.payload.viewZoomOffset,
-        layerSpacingFactor: action.payload.layerSpacingFactor,
-        cinematicType: action.payload.cinematicType,
+        focalLength: state.cinemaViewSet.focalLength ? state.focalLength : action.payload.focalLength,
+        viewZoomOffset: state.cinemaViewSet.viewZoomOffset ? state.viewZoomOffset : action.payload.viewZoomOffset,
+        layerSpacingFactor: state.cinemaViewSet.layerSpacingFactor ? state.layerSpacingFactor : action.payload.layerSpacingFactor,
+        cinematicType: state.cinemaViewSet.cinematicType ? state.cinematicType : action.payload.cinematicType,
+        cinemaViewSet: { focalLength: true, viewZoomOffset: true, layerSpacingFactor: true, cinematicType: true },
       };
     case 'SET_DRAWING_ZOOM':
       return { 
@@ -971,7 +971,7 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'CLEAR_CANVAS':
       return {
           ...state,
-          cinemaViewInitialized: false,
+          cinemaViewSet: { focalLength: false, viewZoomOffset: false, layerSpacingFactor: false, cinematicType: false },
           shapes: [],
           history: [{
               shapes: [],
@@ -1194,9 +1194,14 @@ export function appReducer(state: AppState, action: Action): AppState {
           pointOfInterest: safePointOfInterest,
           isDirty: false,
           projectWasLoaded: true,
-          // A file that saved its CINEMA view (focal and zoom as numbers) keeps it; one that did not (old files,
-          // the example scene) gets the first-view defaults on its first CINEMA entry, as before.
-          cinemaViewInitialized: typeof action.payload.focalLength === 'number' && typeof action.payload.viewZoomOffset === 'number',
+          // Saved values rule; defaults only fill gaps (INIT_CINEMA_VIEW, on the first CINEMA entry). A field counts as
+          // brought when the file carries a valid value for it — old files and the example scene bring only some.
+          cinemaViewSet: {
+              focalLength: typeof action.payload.focalLength === 'number',
+              viewZoomOffset: typeof action.payload.viewZoomOffset === 'number',
+              layerSpacingFactor: typeof action.payload.layerSpacingFactor === 'number',
+              cinematicType: safeCinematicType === action.payload.cinematicType,
+          },
       };
     case 'COMPLETE_FIT_TO_VIEW':
         return { ...state, shouldFitToView: false };
