@@ -11,7 +11,7 @@
 //   - GPU timer query (EXT_disjoint_timer_query_webgl2) when available: eng.gpuMs, async
 
 import { EX_PXMM, VS } from './shadersCommon';
-import { FS_LUT, FS_PREP, FS_SEP0, FS_SEP, FS_BLUR } from './shadersSeparation';
+import { FS_LUT, FS_PREP, FS_SEP0, FS_FILL, FS_SEP, FS_BLUR } from './shadersSeparation';
 import { FS_SCREEN, FS_SPREAD, FS_COMPOSE, FS_SCAN } from './shadersPrint';
 import { MAXI, hex2rgb, lin, oklab, dist, printedHex, rng } from './inks';
 import { DEFAULTS, type EngineParams } from './panel';
@@ -120,7 +120,7 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 	// C2a variants, compiled on first use.
 	const variants = new Map<string, Program>();
 	const variant = (src: string) => { let p = variants.get(src); if (!p) { p = compile(src); variants.set(src, p); } return p; };
-	const PR = { sep0: compile(FS_SEP0), lut: compile(FS_LUT), prep: compile(FS_PREP), sep: compile(FS_SEP), blur: compile(FS_BLUR), screen: compile(FS_SCREEN), spread: compile(FS_SPREAD), compose: compile(FS_COMPOSE), scan: compile(FS_SCAN) };
+	const PR = { fill: compile(FS_FILL), sep0: compile(FS_SEP0), lut: compile(FS_LUT), prep: compile(FS_PREP), sep: compile(FS_SEP), blur: compile(FS_BLUR), screen: compile(FS_SCREEN), spread: compile(FS_SPREAD), compose: compile(FS_COMPOSE), scan: compile(FS_SCAN) };
 	const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
 	gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 	function tex(w: number, h: number, { filter = gl!.LINEAR, wrap = gl!.CLAMP_TO_EDGE }: TexOpts = {}): WebGLTexture {
@@ -278,9 +278,15 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 				run('BLUR prep V', PR.blur, T.scr, a => { a.t('uTexA', T.loc.t[0]); a.t('uTexB', T.loc.t[0]); a.f('uDir', 0, 1); a.f('uSig', .3 * pxmm); });
 				prepS = T.scr.t[0];
 			}
-			run('SEP0', (pv & PV_SEP0) ? variant(FS_SEP0_PV) : ll ? variant(FS_SEP0_LL) : PR.sep0, T.tmp, a => { a.t('uPrepS', prepS); a.t('uPrep', T.prep.t[0]); a.t('uSet', LUT.t[0]); a.fv('uCon', con, 1); a.fv('uInk', inkLin, 3); a.fv('uOp', opac, 1); a.i('uN', N); a.f('uPaper', ...paperLin); a.f('uCost', P.inkCost); a.f('uPair', P.pair); a.f('uMinDot', P.minDot); });
+			run('SEP0', (pv & PV_SEP0) ? variant(FS_SEP0_PV) : ll ? variant(FS_SEP0_LL) : PR.sep0, T.tmp, a => { a.t('uPrepS', prepS); a.t('uPrep', T.prep.t[0]); a.t('uSet', LUT.t[0]); a.fv('uCon', con, 1); a.fv('uInk', inkLin, 3); a.fv('uOp', opac, 1); a.i('uN', N); a.f('uPaper', ...paperLin); a.f('uCost', P.inkCost); a.f('uPair', P.pair); a.f('uMinDot', P.minDot); a.f('uSingle', P.single); });
 			// uM is a mat2[8]: the lab's m2() sends all 8 matrices in one uniformMatrix2fv call.
-			run('WARP', PR.sep, T.sep, a => { a.f('uPxMm', pxmm); a.t('uSA', T.tmp.t[0]); a.t('uSB', T.tmp.t[1]); a.i('uN', N); a.f('uCtr', P.printW / 2, h / pxmm / 2); a.m2('uM', M); a.fv('uT', Tt, 2); });
+			// Overprint / trap (lab v18): light inks continue under the darker inks printed after them, with the density of their
+			// surroundings, so misregistration no longer opens white paper threads beside each dark stroke. Fill width > misregistration.
+			const fillMm = Math.max(.2, P.misreg * .9 + .12), fsg = Math.max(.3, fillMm * pxmm / 4);
+			run('BLUR fill ¼ H', PR.blur, T.qtmp, a => { a.t('uTexA', T.tmp.t[0]); a.t('uTexB', T.tmp.t[1]); a.f('uDir', 1, 0); a.f('uSig', fsg); });
+			run('BLUR fill ¼ V', PR.blur, T.sol, a => { a.t('uTexA', T.qtmp.t[0]); a.t('uTexB', T.qtmp.t[1]); a.f('uDir', 0, 1); a.f('uSig', fsg); });
+			run('FILL', PR.fill, T.loc, a => { a.t('uRawA', T.tmp.t[0]); a.t('uRawB', T.tmp.t[1]); a.t('uWA', T.sol.t[0]); a.t('uWB', T.sol.t[1]); a.i('uN', N); a.f('uFill', P.fill); });
+			run('WARP', PR.sep, T.sep, a => { a.f('uPxMm', pxmm); a.t('uSA', T.loc.t[0]); a.t('uSB', T.loc.t[1]); a.i('uN', N); a.f('uCtr', P.printW / 2, h / pxmm / 2); a.m2('uM', M); a.fv('uT', Tt, 2); });
 			const blur2 = (label: string, src: Target, tmp: Target, dst: Target, sigPx: number) => {
 				run(`BLUR ${label} H`, PR.blur, tmp, a => { a.t('uTexA', src.t[0]); a.t('uTexB', src.t[1]); a.f('uDir', 1, 0); a.f('uSig', sigPx); });
 				run(`BLUR ${label} V`, PR.blur, dst, a => { a.t('uTexA', tmp.t[0]); a.t('uTexB', tmp.t[1]); a.f('uDir', 0, 1); a.f('uSig', sigPx); });

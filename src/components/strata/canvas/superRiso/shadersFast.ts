@@ -34,11 +34,13 @@ export const FS_BLUR1 = patch(patch(FS_BLUR,
 // SEP0_LL (L1): the two final solves repeat solves already done. solve(bS,t,tL) for bS = Sa is the
 // pass-0 solve that elected Sa (same set, same target), and solve(Ss,t,tL) for Ss = Sa is that same
 // solve too, so both reuse it. In flat areas (one set per pass, Ss = Sa) that is 2 solves of 4.
+// v3.20.12 (lab v18): the error of that final solve feeds the single-ink check, so it is carried
+// along too (ba, or es when Ss wins); the single-ink solve itself is new work and is kept.
 export const FS_SEP0_LL = patch(patch(patch(FS_SEP0,
 	'float ba=eP, bs=length(oklabL(uPaper)-tSL);', 'float ba=eP, bs=length(oklabL(uPaper)-tSL); vec3 Da=vec3(0);'),
 	'if(pass==0){ if(e<ba){ ba=e; Sa=S; } }', 'if(pass==0){ if(e<ba){ ba=e; Sa=S; Da=D; } }'),
-	'  ivec3 bS=Sa; vec3 bD=vec3(0);\n  if(Ss.x>=0){ vec3 Ds; float es=solve(Ss,t,tL,Ds); if(es<=ba+.025){ bS=Ss; } }\n  else if(ba>eP-.025) bS=ivec3(-1);\n  if(bS.x>=0){ float e=solve(bS,t,tL,bD); }\n',
-	'  ivec3 bS=Sa; vec3 bD=Da;\n  if(Ss.x>=0){ vec3 Ds=Da; float es=ba; if(Ss!=Sa) es=solve(Ss,t,tL,Ds); if(es<=ba+.025){ bS=Ss; bD=Ds; } }\n  else if(ba>eP-.025) bS=ivec3(-1);\n');
+	'  ivec3 bS=Sa; vec3 bD=vec3(0);\n  if(Ss.x>=0){ vec3 Ds; float es=solve(Ss,t,tL,Ds); if(es<=ba+.025){ bS=Ss; } }\n  else if(ba>eP-.025) bS=ivec3(-1);\n  if(bS.x>=0){ float e=solve(bS,t,tL,bD);\n',
+	'  ivec3 bS=Sa; vec3 bD=Da; float e=ba;\n  if(Ss.x>=0){ vec3 Ds=Da; float es=ba; if(Ss!=Sa) es=solve(Ss,t,tL,Ds); if(es<=ba+.025){ bS=Ss; bD=Ds; e=es; } }\n  else if(ba>eP-.025) bS=ivec3(-1);\n  if(bS.x>=0){\n');
 
 const SPREAD_INK = '    float v=pick(a,b,i); float d=pick(sA,sB,i);\n';
 export const FS_SPREAD_LL = patch(FS_SPREAD, SPREAD_INK,

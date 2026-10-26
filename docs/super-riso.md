@@ -12,7 +12,7 @@ Un FX de CINEMA que convierte cada frame en una **risografía escaneada, en tiem
 Se aplica después de que la escena esté compuesta (capas, profundidad, niebla, DoF, glow), así
 que funciona con todos los presets de cámara y se combina con lo que va detrás (aberración
 cromática, viñeta, grano, grunge). Separa el frame en tintas, imprime cada una con su trama
-(grano o puntos), le añade el desregistro, la película de tinta, las fibras del papel y las
+(grano o puntos) con las tintas claras continuando bajo las oscuras (sobreimpresión, v3.20.12), le añade el desregistro, la película de tinta, las fibras del papel y las
 inclusiones, y puede **reimprimir** con otra tirada a 4/6/8/12 fps (el stop motion de la
 impresión entera).
 
@@ -146,7 +146,7 @@ el frame sale sin Super Riso. Sin WebGL2: aviso al activar y nada más.
 - GPU del motor: 3,9–4,9 ms a 1920, ~2,9 ms a 1366; 1080p medido en 3,1 ms → nivel full.
 - Palancas: res .75 → 2,5 ms; res .5 → 1,3 ms (a 1920). Preview shaders: GPU del render −46 a −52 %.
 - Variantes sin pérdida: SPREAD −59 %, SEP0 −7,5 % de GPU, todas 0 px frente al laboratorio.
-- 13 pasadas por frame + LUT 33³ solo al cambiar tintas o papel.
+- 13 pasadas por frame + LUT 33³ solo al cambiar tintas o papel (medido así; desde v3.20.12 son 16, con la sobreimpresión FILL y sus dos desenfoques a ¼, sin medir aún).
 
 **iPad** (Safari 27, DPR 2, canvas 1366×967, Apple GPU, sin temporizador de GPU; línea base de
 Diorame sin Super Riso: 42 fps, frame 23 ms):
@@ -181,5 +181,5 @@ Las 4 texturas de `public/textures/superRiso/` son propias:
 escaneos de terceros). Es la fuente canónica de las tres técnicas: `tools/studio/` (shaders y motor por técnica,
 interfaz), `research/` (anatomías y plan, `PLAN-super-riso.md` §1–§16), `lab/` (versiones publicadas del
 laboratorio) y `renders/`. Su `tools/README.md` lista las fuentes y la tabla Lab ↔ versión de Diorame (la
-versión sincronizada hoy es la v16; el procedimiento para cambios futuros está en REFERENCE.md §14,
+versión sincronizada hoy es la v18; el procedimiento para cambios futuros está en REFERENCE.md §14,
 «provenance»). No subir nada de esa carpeta al repo público.

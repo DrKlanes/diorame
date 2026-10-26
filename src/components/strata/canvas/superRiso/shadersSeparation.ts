@@ -1,5 +1,6 @@
-// Super Riso — separation shaders: LUT 33³, prep (bilateral + paper balance), per-pixel separation, plate warp, blur.
-// Copied VERBATIM from diorame-riso-lab/lab/dist/superRiso.engine.js (laboratorio v0.3).
+// Super Riso — separation shaders: LUT 33³, prep (bilateral + paper balance), per-pixel separation, overprint fill, plate warp, blur.
+// Copied VERBATIM from diorame-riso-lab/lab/dist/superRiso.engine.js (laboratorio v0.3); synced with lab v18
+// (tools/studio/shaders.studio.js: FS_FILL, single-ink preference in SEP0).
 // Do not reformat the GLSL: it is the lab's engine, byte for byte.
 import { HEAD, OKLAB, MRT } from './shadersCommon';
 
@@ -53,7 +54,7 @@ void main(){
 
 // de menor error. Así una rampa de una tinta da esa tinta sola, sin saltos entre soluciones.
 export const FS_SEP0 = HEAD+OKLAB+MRT+`
-uniform sampler2D uPrep, uPrepS, uSet; uniform vec3 uInk[8]; uniform float uOp[8]; uniform float uCon[8]; uniform int uN; uniform vec3 uPaper; uniform float uCost, uPair, uMinDot;
+uniform sampler2D uPrep, uPrepS, uSet; uniform vec3 uInk[8]; uniform float uOp[8]; uniform float uCon[8]; uniform int uN; uniform vec3 uPaper; uniform float uCost, uPair, uMinDot, uSingle;
 vec3 layer(vec3 c, int i, float d){ vec3 ink=uInk[i]; return c*(1.-d+d*(1.-uOp[i])*ink) + d*uOp[i]*uPaper*ink; }
 vec3 model(ivec3 S, vec3 D){ vec3 c=uPaper; if(S.x>=0) c=layer(c,S.x,D.x); if(S.y>=0) c=layer(c,S.y,D.y); if(S.z>=0) c=layer(c,S.z,D.z); return c; }
 float solve(ivec3 S, vec3 t, vec3 tL, out vec3 D){
@@ -83,11 +84,31 @@ void main(){
   ivec3 bS=Sa; vec3 bD=vec3(0);
   if(Ss.x>=0){ vec3 Ds; float es=solve(Ss,t,tL,Ds); if(es<=ba+.025){ bS=Ss; } }
   else if(ba>eP-.025) bS=ivec3(-1);
-  if(bS.x>=0){ float e=solve(bS,t,tL,bD); }
+  if(bS.x>=0){ float e=solve(bS,t,tL,bD);
+    // una sola tinta si queda casi igual: un negro se imprime con negro, no con negro + azul en grano (islas moteadas)
+    if(bS.y>=0){ int dk=bS.x; float dl=dot(uInk[bS.x],vec3(.2126,.7152,.0722));
+      for(int k=1;k<3;k++){ if(bS[k]<0) continue; float l=dot(uInk[bS[k]],vec3(.2126,.7152,.0722)); if(l<dl){ dl=l; dk=bS[k]; } }
+      ivec3 S1=ivec3(dk,-1,-1); vec3 D1; float e1=solve(S1,t,tL,D1);
+      if(e1<=e+uSingle && D1.x>.97){ bS=S1; bD=D1; } } }   // solo si la tinta oscura ya va saturada: la segunda tinta solo serviría para oscurecer más allá de ella
   vec4 A=vec4(0), B=vec4(0);
   for(int k=0;k<3;k++) if(bS[k]>=0){ float v=bD[k]; put(A,B,bS[k], v<uMinDot?0.:v); }
   oA=A; oB=B;
 }`;
+
+// FILL (sobreimpresión / trap): como en una separación riso de verdad, la tinta clara NO se reserva bajo una tinta más oscura
+// que imprime después: continúa por debajo. Sin esto, el desregistro abre hilos de papel blanco a los lados de cada trazo oscuro
+// (efecto relieve). Se rellena con la densidad del entorno (desenfoque ancho), solo donde hay tinta más oscura encima.
+export const FS_FILL = HEAD+MRT+`
+uniform sampler2D uRawA, uRawB, uWA, uWB; uniform int uN; uniform float uFill;
+void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec4 rA=texture(uRawA,uv), rB=texture(uRawB,uv), wA=texture(uWA,uv), wB=texture(uWB,uv);
+  vec4 A=vec4(0), B=vec4(0);
+  for(int i=0;i<8;i++){ if(i<uN){
+    float d=pick(rA,rB,i), W=pick(wA,wB,i), cov=0., Wc=0.;
+    for(int j=0;j<8;j++){ if(j>i && j<uN){ cov+=pick(rA,rB,j); Wc+=pick(wA,wB,j); } }   // tintas que imprimen después (más oscuras)
+    float rho=min(1., W/max(.25, 1.-min(Wc,.95)));                                  // densidad de esta tinta alrededor, sin contar los huecos
+    float f=rho*smoothstep(.2,.55,cov)*smoothstep(.035,.13,W)*uFill;                      // trap fino en bordes; trazos finos, relleno completo
+    put(A,B,i,max(d,f)); } }
+  oA=A; oB=B; }`;
 
 // WARP: desregistro por plancha (afín en mm). La plancha ya separada se desplaza, como el papel al pasar por cada tambor.
 export const FS_SEP = HEAD+MRT+`

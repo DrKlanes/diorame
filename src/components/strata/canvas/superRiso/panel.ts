@@ -6,7 +6,7 @@ import type { RGB } from './inks';
 export type EngineParams = {
 	inks: string[]; names: string[]; opac: number[];
 	printW: number; pxmm: number; srcPaper: RGB;
-	smooth: number; inkCost: number; pair: number; trap: number; minDot: number; solidLv: number;
+	smooth: number; inkCost: number; pair: number; trap: number; minDot: number; solidLv: number; fill: number; single: number;
 	misreg: number; rot: number; scl: number;
 	screen: number; grain: number; inkLoad: number; lpi: number; gain: number; bleed: number; edge: number;
 	texAmp: number; mottle: number; streak: number; voids: number; starve: number;
@@ -19,7 +19,7 @@ export type EngineParams = {
 export const DEFAULTS: EngineParams = {
 	inks: ["#000000"], names: ["Black"], opac: [.32],
 	printW: 240, pxmm: 11.8, srcPaper: [1, 1, 1],
-	smooth: .25, inkCost: .03, pair: .01, trap: 1, minDot: .06, solidLv: .8,
+	smooth: .25, inkCost: .03, pair: .01, trap: 1, minDot: .06, solidLv: .8, fill: 1, single: .035,
 	misreg: .30, rot: .04, scl: .6,
 	screen: 0, grain: .16, inkLoad: .6, lpi: 85, gain: .5, bleed: .045, edge: .5,
 	texAmp: .85, mottle: .5, streak: 0, voids: .15, starve: .15,
@@ -67,8 +67,9 @@ export function fromPanel(panel: Partial<PanelSettings>, frameW: number): Partia
 	return Object.assign({
 		...resolutionParams(r, frameW),       // pxmm, crisp (ampliar sin suavizado → lo-fi nítido, no borroso), scanBlur, scanNoise
 		screen: p.screen === 'dots' ? 1 : 0, grain: lerp(.09, .30, z), lpi: Math.round(lerp(120, 45, z)),
-		misreg: .04 + 1.1 * Math.pow(i, 1.6), rot: lerp(.01, .16, i), scl: lerp(.2, 1.6, i),
-		edge: lerp(.25, 1.05, i), voids: lerp(.05, .45, i), texAmp: lerp(.6, 1.45, i), starve: lerp(.05, .4, i), mottle: lerp(.3, 1.2, i),
+		// lab v18 curve: subtler misregistration, rotation, scale, edge, voids and ink texture at the top of the range
+		misreg: .04 + .6 * Math.pow(i, 1.6), rot: lerp(.01, .1, i), scl: lerp(.2, 1.2, i),
+		edge: lerp(.2, .65, i), voids: lerp(.05, .4, i), texAmp: lerp(.5, 1.05, i), starve: lerp(.05, .4, i), mottle: lerp(.3, 1.2, i),
 		bleed: lerp(.04, .07, i), inkLoad: lerp(.75, .5, i),
 	}, PAPERS[p.paper] || PAPERS.natural);
 }

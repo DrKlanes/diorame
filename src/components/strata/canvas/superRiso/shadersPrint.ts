@@ -1,5 +1,6 @@
 // Super Riso — print shaders: screening (FM/AM), ink spread, compose on paper, scanner.
-// Copied VERBATIM from diorame-riso-lab/lab/dist/superRiso.engine.js (laboratorio v0.3).
+// Copied VERBATIM from diorame-riso-lab/lab/dist/superRiso.engine.js (laboratorio v0.3); synced with lab v18
+// (tools/studio/shaders.studio.js: continuous close to solid in SCREEN and SPREAD).
 // Do not reformat the GLSL: it is the lab's engine, byte for byte.
 import { HEAD, EXF, MRT } from './shadersCommon';
 
@@ -40,8 +41,8 @@ void main(){
     if(d<=0.){ continue; }
     float tone=1.-smoothstep(.06,.18,abs(d-pick(lA,lB,i)));     // zona suave (degradado o tinte) vs. borde/línea
     bool grad= tone>.5 && slope(uLocA,uLocB,uv,i,uPxMm)>.02;
-    if(!grad && d>=uSolidLv) d=1.;                                // casi lleno y sin pendiente = sólido (el máster es binario); en degradados no
-    if(d>=.999){ put(A,B,i,1.); continue; }
+    d=mix(d,1.,smoothstep(uSolidLv-.08,uSolidLv+.14,d)*(grad?.5:1.));   // casi lleno → se cierra hacia sólido de forma continua (sin escalón)
+    if(d>=.995){ put(A,B,i,1.); continue; }
     float s=uSeed*7.31+float(i)*19.17;
     float t=exT(mm,s,uExSel[i]);
     float x=d*(1.+uTexAmp*(t-1.))*(1.+uMottle*.05*(vnoise(mm/28.+s)-.5)*2.);
@@ -65,7 +66,7 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gl_FragCoord.xy/uPxMm;
     float s=uSeed*7.31+float(i)*19.17;
     float v=pick(a,b,i); float d=pick(sA,sB,i);
     float tone=1.-smoothstep(.06,.18,abs(d-pick(lA,lB,i))); bool grad= tone>.5 && slope(uLocA,uLocB,uv,i,uPxMm)>.02;
-    if(d>=.999||(!grad&&d>=uSolidLv)) tone=0.;
+    if(d>=.995) tone=0.;
     float t=exT(mm,s,uExSel[i])-1., t2=exThickR(mm*2.3+17.,s*1.7)-1.;
     float aa=clamp(.5/(2.*r+1.),.06,.3);
     float edge=smoothstep(uGain-aa, uGain+aa, v + uEdge*(2.2*t+1.6*t2));
