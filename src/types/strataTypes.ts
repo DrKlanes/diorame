@@ -251,6 +251,16 @@ export type HistorySnapshot = {
     activePaletteId: 'primary' | 'alternative';
 };
 
+// Identity of a drawing (.dior format v2, v3.21.0). Lives in the state and in the autosave; the file adds
+// formatVersion, shapeCount and thumbnail when it is written (utils/projectMeta.ts).
+export interface ProjectMeta {
+  projectId: string;          // fixed from the moment the canvas is created; groups the versions of one drawing
+  version: number;            // saves so far (0 = never saved)
+  createdAt: string;          // ISO 8601
+  updatedAt: string | null;   // ISO 8601 of the last save
+  derivedFrom: string | null; // projectId this drawing was duplicated from
+}
+
 export interface AppState {
   shapes: Shape[];
   palette: string[];
@@ -318,6 +328,7 @@ export interface AppState {
   handheldIntensity: HandheldIntensity; // New: Handheld shake intensity
   brushMode: BrushMode; // New: Brush mode (tapered or uniform)
   projectName: string; // New: Project name for saving
+  projectMeta: ProjectMeta; // .dior v2 identity — not undo state
   isDirty: boolean; // true when there are unsaved changes since last save
   soundsEnabled: boolean;
   shouldFitToView?: boolean; // New: Trigger fit-to-view on load

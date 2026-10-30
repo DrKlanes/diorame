@@ -16,6 +16,7 @@ import { FXPanel } from './fx/FXPanel';
 import { ToolOptionsPanel } from './drawing/ToolOptionsPanel';
 import { TextSessionPanel } from './text/TextSessionPanel';
 import { ShowUIButton } from './viewport/ShowUIButton';
+import { SaveDialogsV2 } from './modals/SaveDialogsV2';
 import { useBeforeUnload } from '../../hooks/useBeforeUnload';
 import { useAnimationPlayback } from '../../hooks/useAnimationPlayback';
 import { CINEMA_VIEW_DEFAULTS } from '../../constants/cinemaView';
@@ -142,6 +143,9 @@ export function ControlsV2() {
 					</div>
 				</div>
 			)}
+
+			{/* Save flow questions (empty canvas, name) — outside the hidden-UI block: Ctrl+S works with the UI hidden */}
+			<SaveDialogsV2 dark={dark} />
 
 			{/* Persistent mini-button — only visible when UI is hidden, allows reactivation */}
 			{state.isUIHidden && <ShowUIButton />}

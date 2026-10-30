@@ -80,6 +80,8 @@ export function useAutoSave() {
 		if (!currentState.isDirty || currentState === lastWrittenRef.current) return;
 
 		const data = {
+			// .dior v2 identity: a recovered project keeps its projectId and version.
+			meta: currentState.projectMeta,
 			shapes: currentState.shapes,
 			palette: currentState.palette,
 			totalLayers: currentState.totalLayers,

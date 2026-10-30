@@ -11,6 +11,7 @@ import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOve
 import { generateRisoGrain } from './canvas/postProcessing';
 import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, DOUBLE_CLICK_MAX_DISTANCE } from '../../constants/renderConstants';
 import { exportAsPNG, exportAsMP4 } from './canvas/exportHandlers';
+import { registerThumbnailSource } from './canvas/projectThumbnail';
 import { exportAsSVG } from './canvas/svgExport';
 import { analytics } from '../../analytics/analytics';
 import { renderAnimationFrames } from './canvas/animationExportRender';
@@ -553,6 +554,27 @@ export const StrataCanvas = () => {
           );
       }
   }, [state.exportRequest, dispatch, state.shapes, state.projectName, t]);
+
+  // Thumbnail of the .dior (v3.21.0): the save reads the same snapshot inputs as the PNG export, on demand.
+  useEffect(() => registerThumbnailSource(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      return {
+          state: stateRef.current,
+          shapesByZ: shapesByZRef.current, waypoints: waypointsRef.current,
+          sortedZs: sortedZsRef.current,
+          camera: { ...cameraRef.current },
+          w: containerRef.current?.clientWidth ?? canvas.width,
+          h: containerRef.current?.clientHeight ?? canvas.height,
+          paperImg: paperImgRef.current,
+          risoGrain: risoGrainRef.current,
+          grungeImg: grungeImgRef.current,
+          particles: particlesRef.current,
+          noiseCanvas: noiseCanvasRef.current,
+          shapePattern: shapePatternRef.current,
+          getActiveZ,
+      };
+  }), []);
 
   // --- Event Handlers ---
   const handleTouchStart = (e: React.TouchEvent) => {

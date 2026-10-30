@@ -9,6 +9,14 @@
 	"background_color": "#511d65",
 	"orientation": "any",
 	"lang": "en",
+	"file_handlers": [
+		{
+			"action": "/",
+			"accept": {
+				"application/x-diorame": [".dior"]
+			}
+		}
+	],
 	"icons": [
 		{
 			"src": "/pwa/icon-192.png",

@@ -3,26 +3,58 @@ import { toast } from 'sonner@2.0.3';
 import { del } from 'idb-keyval';
 import { playSound } from '../utils/soundManager';
 import { useStrata } from '../components/strata/StrataContext';
-import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../constants/project';
+import { UNTITLED_PROJECT_SENTINEL } from '../constants/project';
 import { useTranslation } from '../i18n';
 import { AUTOSAVE_KEY } from './useAutoSave';
 import { cinemaViewForSave } from '../utils/cinemaView';
 import { analytics } from '../analytics/analytics';
+import { downloadBlob } from '../utils/downloadBlob';
+import { DIOR_FORMAT_VERSION, DIOR_MIME, createProjectMeta, projectFileStem, readProjectMeta, type DiorFileMeta } from '../utils/projectMeta';
+import {
+	canOverwriteFiles, getProjectFileHandle, setProjectFileHandle, hasWritePermission, pickSaveFile, pickOpenFile,
+	writeProjectFile, isDiorFile, isAbortError, type ProjectFileHandle,
+} from '../utils/projectFile';
+import { renderProjectThumbnail } from '../components/strata/canvas/projectThumbnail';
+import { setSavePrompt, type SaveIntent } from './useSavePrompt';
+import type { ProjectMeta } from '../types/strataTypes';
 
 export function useSaveLoad() {
 	const { state, dispatch } = useStrata();
 	const { t } = useTranslation();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const handleSaveProject = useCallback(() => {
+	// Writes the file. Chromium desktop: over the file this drawing is linked to ("Guardar"), or a new one
+	// chosen in the save dialog ("Guardar como…", first save). Elsewhere: a download named "<name> (<date time>).dior".
+	const performSave = useCallback(async (intent: 'save' | 'saveAs', name: string) => {
+		const meta = state.projectMeta;
+		let handle: ProjectFileHandle | null = null;
+		if (canOverwriteFiles()) {
+			try {
+				const linked = intent === 'save' ? getProjectFileHandle(meta.projectId) : null;
+				// The dialog first, inside the user's gesture: the thumbnail and the payload come after.
+				handle = linked && await hasWritePermission(linked) ? linked : await pickSaveFile(`${projectFileStem(name)}.dior`);
+			} catch (err) {
+				if (isAbortError(err)) return;
+				console.warn('[save] file dialog failed, downloading instead:', err);
+				handle = null;
+			}
+		}
+		const now = new Date();
+		const nextMeta: ProjectMeta = { ...meta, version: meta.version + 1, updatedAt: now.toISOString() };
+		const fileMeta: DiorFileMeta = {
+			formatVersion: DIOR_FORMAT_VERSION, ...nextMeta,
+			shapeCount: state.shapes.length,
+			thumbnail: await renderProjectThumbnail(),
+		};
 		const data = {
+			meta: fileMeta,
 			shapes: state.shapes, palette: state.palette, totalLayers: state.totalLayers,
 			isDarkMode: state.isDarkMode, postProcessing: state.postProcessing,
 			postProcessingEnabled: state.postProcessingEnabled,
 			// Master FX OFF: the flags are all false and the look that was on is the snapshot (v3.20.5).
 			fxMasterEnabled: state.fxMasterEnabled, postProcessingSnapshot: state.postProcessingSnapshot,
 			hiddenLayers: state.hiddenLayers, locked3DLayers: state.locked3DLayers,
-			projectName: state.projectName, layerRenderModes: state.layerRenderModes,
+			projectName: name, layerRenderModes: state.layerRenderModes,
 			layerGradParams: state.layerGradParams, currentBrushThickness: state.currentBrushThickness,
 			brushMode: state.brushMode, tool: state.tool, activePaletteId: state.activePaletteId,
 			// A project without a view of its own (nobody has been in CINEMA yet) saves the defaults, not the placeholders.
@@ -36,39 +68,61 @@ export function useSaveLoad() {
 			// reload was real pain, not a theoretical one.
 			pointOfInterest: state.pointOfInterest,
 		};
-		const displayName = state.projectName === UNTITLED_PROJECT_SENTINEL
-			? t('topbar.file.untitledProject')
-			: state.projectName;
-		const sanitized = getFilenameBase(displayName);
-		setTimeout(() => {
-			let url: string | null = null;
-			let link: HTMLAnchorElement | null = null;
-			try {
-				const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-				url = URL.createObjectURL(blob);
-				link = document.createElement('a');
-				link.href = url;
-				link.download = `${sanitized}-${Date.now()}.dior`;
-				link.style.display = 'none';
-				document.body.appendChild(link);
-				link.click();
-				toast.success(t('toast.save.successTitle'), { description: t('toast.save.successDesc', { filename: sanitized }), duration: 2000 });
-				playSound('success');
-				dispatch({ type: 'MARK_CLEAN' });
-				del(AUTOSAVE_KEY).catch(() => {});
-				analytics.projectSaved();
-			} catch (err) {
-				toast.error(t('toast.save.errorTitle'), { description: t('common.pleaseRetry') });
-			} finally {
-				setTimeout(() => {
-					try { if (link?.parentNode) document.body.removeChild(link!); } catch (_) { /* */ }
-					if (url) URL.revokeObjectURL(url);
-				}, 200);
+		try {
+			const blob = new Blob([JSON.stringify(data)], { type: DIOR_MIME });
+			let filename: string;
+			if (handle) {
+				await writeProjectFile(handle, blob);
+				setProjectFileHandle(meta.projectId, handle);
+				filename = handle.name;
+			} else {
+				filename = `${projectFileStem(name, now)}.dior`;
+				downloadBlob(blob, filename);
 			}
-		}, 0);
-	}, [state, t]);
+			toast.success(t('toast.save.successTitle'), { description: t('toast.save.successDesc', { filename }), duration: 2000 });
+			playSound('success');
+			dispatch({ type: 'PROJECT_SAVED', payload: nextMeta });
+			del(AUTOSAVE_KEY).catch(() => {});
+			analytics.projectSaved();
+		} catch (err) {
+			console.warn('[save] failed:', err);
+			if (handle) setProjectFileHandle(meta.projectId, null);
+			toast.error(t('toast.save.errorTitle'), { description: t('common.pleaseRetry') });
+		}
+	}, [state, dispatch, t]);
 
-	const handleLoadProject = useCallback((file: File) => {
+	// Before writing: an empty canvas asks first, and a drawing without a name gets one.
+	const startSave = useCallback((intent: 'save' | 'saveAs', emptyConfirmed = false) => {
+		if (!emptyConfirmed && state.shapes.length === 0) { setSavePrompt({ step: 'empty', intent }); return; }
+		if (state.projectName === UNTITLED_PROJECT_SENTINEL) { setSavePrompt({ step: 'name', intent }); return; }
+		void performSave(intent, state.projectName);
+	}, [state.shapes.length, state.projectName, performSave]);
+
+	const handleSaveProject = useCallback(() => startSave('save'), [startSave]);
+	const handleSaveProjectAs = useCallback(() => startSave('saveAs'), [startSave]);
+	const handleDuplicateProject = useCallback(() => setSavePrompt({ step: 'name', intent: 'duplicate' }), []);
+
+	// Answers from SaveDialogsV2.
+	const confirmEmptySave = useCallback((intent: SaveIntent) => {
+		setSavePrompt(null);
+		if (intent !== 'duplicate') startSave(intent, true);
+	}, [startSave]);
+
+	const confirmProjectName = useCallback((intent: SaveIntent, name: string) => {
+		setSavePrompt(null);
+		dispatch(intent === 'duplicate'
+			? { type: 'DUPLICATE_PROJECT', payload: { projectName: name } }
+			: { type: 'SET_PROJECT_NAME', payload: name });
+		if (intent === 'duplicate') {
+			toast.success(t('toast.duplicate.title'), { description: t('toast.duplicate.desc', { name }), duration: 3000 });
+			return;
+		}
+		void performSave(intent, name);
+	}, [dispatch, performSave, t]);
+
+	// `handle`: the file on disk (Chromium open dialog, or the OS through launchQueue). A real .dior stays
+	// linked, so "Guardar" writes over it; any other load unlinks.
+	const handleLoadProject = useCallback((file: File, handle: ProjectFileHandle | null = null) => {
 		if (file.size > 50 * 1024 * 1024) {
 			toast.error(t('toast.load.errorDescFile'), { description: t('toast.load.errorDescSize') });
 			if (fileInputRef.current) fileInputRef.current.value = '';
@@ -79,7 +133,10 @@ export function useSaveLoad() {
 			try {
 				const json = JSON.parse(ev.target?.result as string);
 				if (!json || typeof json !== 'object' || !Array.isArray(json.shapes)) throw new Error('Invalid project format');
-				dispatch({ type: 'LOAD_PROJECT', payload: json });
+				// Decided here, not in the reducer, so the linked file knows its projectId.
+				const meta = readProjectMeta(json.meta) ?? createProjectMeta();
+				dispatch({ type: 'LOAD_PROJECT', payload: { ...json, meta } });
+				setProjectFileHandle(meta.projectId, handle && isDiorFile(handle.name) ? handle : null);
 				const n = json.shapes.length;
 				const desc = n === 1 ? t('toast.load.successDescOne', { n }) : t('toast.load.successDesc', { n });
 				toast.success(t('toast.load.successTitle'), { description: desc, duration: 2000 });
@@ -93,8 +150,18 @@ export function useSaveLoad() {
 	}, [dispatch, t]);
 
 	const triggerFileSelect = useCallback(() => {
-		fileInputRef.current?.click();
-	}, []);
+		if (!canOverwriteFiles()) { fileInputRef.current?.click(); return; }
+		pickOpenFile()
+			.then(async handle => { if (handle) handleLoadProject(await handle.getFile(), handle); })
+			.catch(err => {
+				if (isAbortError(err)) return;
+				console.warn('[load] file dialog failed:', err);
+				fileInputRef.current?.click();
+			});
+	}, [handleLoadProject]);
 
-	return { handleSaveProject, handleLoadProject, triggerFileSelect, fileInputRef };
+	return {
+		handleSaveProject, handleSaveProjectAs, handleDuplicateProject, confirmEmptySave, confirmProjectName,
+		handleLoadProject, triggerFileSelect, fileInputRef,
+	};
 }

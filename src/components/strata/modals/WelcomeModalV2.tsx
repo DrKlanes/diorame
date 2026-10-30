@@ -11,6 +11,7 @@ import { useTranslation } from '../../../i18n';
 import { LanguageToggle } from '../../../design-system/LanguageToggle';
 import { useStrata } from '../StrataContext';
 import { useSaveLoad } from '../../../hooks/useSaveLoad';
+import { DIOR_ACCEPT } from '../../../utils/projectMeta';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -204,7 +205,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 								<input
 									ref={loadFileInputRef}
 									type="file"
-									accept=".dior"
+									accept={DIOR_ACCEPT}
 									style={{ display: 'none' }}
 									onChange={e => {
 										const f = e.target.files?.[0];

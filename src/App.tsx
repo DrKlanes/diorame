@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { get, del } from 'idb-keyval';
 import { StrataProvider, useStrata } from './components/strata/StrataContext';
 import { StrataCanvas } from './components/strata/StrataCanvas';
@@ -13,6 +13,8 @@ import { useAutoSave, AUTOSAVE_KEY } from './hooks/useAutoSave';
 import { initSoundsFromStorage } from './utils/soundManager';
 import { analytics } from './analytics/analytics';
 import { useIsStandalone } from './hooks/useIsStandalone';
+import { useSaveLoad } from './hooks/useSaveLoad';
+import { onLaunchedFile } from './utils/projectFile';
 
 function AppContent() {
   const { state, dispatch } = useStrata();
@@ -50,6 +52,19 @@ function AppContent() {
   useEffect(() => {
     analytics.layerCount(state.totalLayers);
   }, [state.totalLayers]);
+
+  // .dior abierto desde el sistema (doble clic) en la PWA instalada de escritorio: manifest file_handlers (v3.21.0).
+  // Queda enlazado para que «Guardar» escriba sobre él. El autoguardado pendiente no se borra.
+  const { handleLoadProject } = useSaveLoad();
+  const launchRef = useRef({ handleLoadProject, welcomeOpen: state.isWelcomeModalOpen });
+  launchRef.current = { handleLoadProject, welcomeOpen: state.isWelcomeModalOpen };
+  useEffect(() => {
+    onLaunchedFile(async handle => {
+      const { handleLoadProject, welcomeOpen } = launchRef.current;
+      handleLoadProject(await handle.getFile(), handle);
+      if (welcomeOpen) dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
+    });
+  }, []);
 
   // Mantener el autosave actualizado cada 30s cuando isDirty
   const { suspendAutosave, resumeAutosave } = useAutoSave();

@@ -2,9 +2,10 @@ import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import {
 	Point, Shape, AppMode, ToolType, CinematicType, ExportType, BrushMode,
 	PostProcessingSettings, PostProcessingEnabled, HandheldIntensity,
-	TextSession, HistorySnapshot, AppState, LayerGradParams,
+	TextSession, HistorySnapshot, AppState, LayerGradParams, ProjectMeta,
 } from '../../types/strataTypes';
 import { UNTITLED_PROJECT_SENTINEL } from '../../constants/project';
+import { createProjectMeta, readProjectMeta } from '../../utils/projectMeta';
 import { BRUSH_THICKNESS_MIN, BRUSH_THICKNESS_MAX } from '../../constants/brush';
 import { CINEMA_VIEW_DEFAULTS } from '../../constants/cinemaView';
 
@@ -146,6 +147,8 @@ type Action =
   | { type: 'FLIP_LAYER'; payload: { layerIndex: number; direction: 'horizontal' | 'vertical'; centerX: number; centerY: number } }
   | { type: 'TOGGLE_PALETTE_APPLY_TO_ALL' }
   | { type: 'MARK_CLEAN' }
+  | { type: 'PROJECT_SAVED'; payload: ProjectMeta }
+  | { type: 'DUPLICATE_PROJECT'; payload: { projectName: string } }
   | { type: 'SET_SOUNDS_ENABLED'; payload: boolean }
   | { type: 'TOGGLE_ANIMATION_MODE' }
   | { type: 'SET_ANIMATION_PLAYING'; payload: boolean }
@@ -265,6 +268,7 @@ export const initialState: AppState = {
   handheldIntensity: 'medium',
   brushMode: 'tapered',
   projectName: UNTITLED_PROJECT_SENTINEL, // Default project name (sentinel; resolved via t() at render time)
+  projectMeta: createProjectMeta(),
   paletteApplyToAllActive: false,
   paletteApplyToAllSnapshot: null,
   isDirty: false,
@@ -348,6 +352,11 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, isWelcomeModalOpen: !state.isWelcomeModalOpen };
     case 'MARK_CLEAN':
       return { ...state, isDirty: false };
+    case 'PROJECT_SAVED':
+      return { ...state, projectMeta: action.payload, isDirty: false };
+    // A new drawing that starts as a copy of this one: new identity, the old one kept as its origin.
+    case 'DUPLICATE_PROJECT':
+      return { ...state, projectName: action.payload.projectName, projectMeta: createProjectMeta(state.projectMeta.projectId), isDirty: true };
     case 'SET_SOUNDS_ENABLED':
       setSoundsManagerEnabled(action.payload);
       persistSoundsPreference(action.payload);
@@ -973,6 +982,8 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'CLEAR_CANVAS':
       return {
           ...state,
+          // A new canvas is a new drawing.
+          projectMeta: createProjectMeta(),
           cinemaViewInitialized: false,
           shapes: [],
           history: [{
@@ -1155,6 +1166,8 @@ export function appReducer(state: AppState, action: Action): AppState {
           isDarkMode: safeIsDarkMode,
           cinematicType: safeCinematicType,
           projectName: safeProjectName,
+          // .dior v2: a file (or autosave) without meta gets a new identity, written at the next save.
+          projectMeta: readProjectMeta((action.payload as any).meta) ?? createProjectMeta(),
           postProcessing: mergedPostProcessing,
           postProcessingEnabled: loadedFxSnapshot
               ? Object.fromEntries(Object.keys(mergedPostProcessingEnabled).map(k => [k, false])) as PostProcessingEnabled

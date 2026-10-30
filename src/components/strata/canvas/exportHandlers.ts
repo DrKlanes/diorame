@@ -158,7 +158,7 @@ const hqScale = (options: AnimationExportRenderOptions): number => {
  *   solid:       pure white (light) / black (dark), layers transferred with the same op.
  *   transparent: the buffer itself — real alpha, nothing under the ink.
  */
-const renderDrawSnapshot = (
+export const renderDrawSnapshot = (
 	options: AnimationExportRenderOptions,
 	scale: number,
 	background: ExportBackground,
