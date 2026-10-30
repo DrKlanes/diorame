@@ -4,18 +4,15 @@
 //
 // LOSSLESS (the full level since L1, exports included; srlossless=0 under srdebug compares against
 // the lab shaders; verified identical on a frozen frame):
-//   BLUR1      the PREP blur samples one texture and writes one output (the lab blurred PREP into
-//              both MRT outputs and read the same texture twice; only output A is ever used).
 //   SPREAD_LL  an ink with no density, no blurred coverage and no local density is skipped: the lab
 //              computes mix(edge, v, tone) with tone = 1 and v = 0 there, i.e. exactly 0.
 //
 // PREVIEW (srpreview=1 = all bits, srprevmask=N for one at a time; live only, NEVER in exports):
-//   1 SEP0     3 alternating least-squares iterations instead of 5
+//   1 SEP0     no variant since v3.20.13 (lab v21: SEP0 is one trilinear LUT read; the bit does nothing)
 //   2 SPREAD   3×3 bleed kernel instead of 5×5
 //   4 SCAN     3×3 scanner kernel instead of 5×5 (the outer taps weigh ≲2 % at r ≈ .7–1 px)
 //   8 SCREEN   2×2 grain subsamples instead of 3×3
 
-import { FS_SEP0, FS_BLUR } from './shadersSeparation';
 import { FS_SPREAD, FS_SCAN, FS_SCREEN } from './shadersPrint';
 
 function patch(src: string, from: string, to: string): string {
@@ -25,33 +22,14 @@ function patch(src: string, from: string, to: string): string {
 }
 
 // ── Lossless ───────────────────────────────────────────────────────────────────────────────────
-export const FS_BLUR1 = patch(patch(FS_BLUR,
-	' b+=texture(uTexB,uv+o2)*k;', ''),
-	'oA=a/w; oB=b/w;', 'oA=a/w; oB=vec4(0);');
-
-// (A SEP0 variant that solved each LUT set once was identical but measured no faster on desktop —
-// register pressure of the seen-set arrays — so it was dropped.)
-// SEP0_LL (L1): the two final solves repeat solves already done. solve(bS,t,tL) for bS = Sa is the
-// pass-0 solve that elected Sa (same set, same target), and solve(Ss,t,tL) for Ss = Sa is that same
-// solve too, so both reuse it. In flat areas (one set per pass, Ss = Sa) that is 2 solves of 4.
-// v3.20.12 (lab v18): the error of that final solve feeds the single-ink check, so it is carried
-// along too (ba, or es when Ss wins); the single-ink solve itself is new work and is kept.
-export const FS_SEP0_LL = patch(patch(patch(FS_SEP0,
-	'float ba=eP, bs=length(oklabL(uPaper)-tSL);', 'float ba=eP, bs=length(oklabL(uPaper)-tSL); vec3 Da=vec3(0);'),
-	'if(pass==0){ if(e<ba){ ba=e; Sa=S; } }', 'if(pass==0){ if(e<ba){ ba=e; Sa=S; Da=D; } }'),
-	'  ivec3 bS=Sa; vec3 bD=vec3(0);\n  if(Ss.x>=0){ vec3 Ds; float es=solve(Ss,t,tL,Ds); if(es<=ba+.025){ bS=Ss; } }\n  else if(ba>eP-.025) bS=ivec3(-1);\n  if(bS.x>=0){ float e=solve(bS,t,tL,bD);\n',
-	'  ivec3 bS=Sa; vec3 bD=Da; float e=ba;\n  if(Ss.x>=0){ vec3 Ds=Da; float es=ba; if(Ss!=Sa) es=solve(Ss,t,tL,Ds); if(es<=ba+.025){ bS=Ss; bD=Ds; e=es; } }\n  else if(ba>eP-.025) bS=ivec3(-1);\n  if(bS.x>=0){\n');
-
+// v3.20.13 (lab v21): BLUR1 and SEP0_LL retired with the old SEP0 — the new SEP0 is one LUT read and no
+// longer needs the blurred PREP.
 const SPREAD_INK = '    float v=pick(a,b,i); float d=pick(sA,sB,i);\n';
 export const FS_SPREAD_LL = patch(FS_SPREAD, SPREAD_INK,
 	SPREAD_INK + '    if(v<=0. && d<=0. && pick(lA,lB,i)<=0.) continue;\n');
 
 // ── Preview ────────────────────────────────────────────────────────────────────────────────────
 export const PV_SEP0 = 1, PV_SPREAD = 2, PV_SCAN = 4, PV_SCREEN = 8, PV_ALL = 15;
-
-export const FS_SEP0_PV = patch(FS_SEP0_LL,
-	'for(int it=0;it<5;it++) for(int k=0;k<3;k++){ if(S[k]<0) continue;',
-	'for(int it=0;it<3;it++) for(int k=0;k<3;k++){ if(S[k]<0) continue;');
 
 export const FS_SPREAD_PV = patch(FS_SPREAD_LL,
 	'for(int j=-2;j<=2;j++) for(int i=-2;i<=2;i++){ float k=exp(-float(i*i+j*j)/2.); vec2 o2=vec2(i,j)*r*.5/uRes; a+=texture(uScrA',

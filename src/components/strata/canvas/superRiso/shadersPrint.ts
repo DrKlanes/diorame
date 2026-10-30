@@ -1,5 +1,5 @@
 // Super Riso — print shaders: screening (FM/AM), ink spread, compose on paper, scanner.
-// Copied VERBATIM from diorame-riso-lab/lab/dist/superRiso.engine.js (laboratorio v0.3); synced with lab v18
+// Copied VERBATIM from diorame-riso-lab/lab/dist/superRiso.engine.js (laboratorio v0.3); synced with lab v21
 // (tools/studio/shaders.studio.js: continuous close to solid in SCREEN and SPREAD).
 // Do not reformat the GLSL: it is the lab's engine, byte for byte.
 import { HEAD, EXF, MRT } from './shadersCommon';
@@ -41,7 +41,7 @@ void main(){
     if(d<=0.){ continue; }
     float tone=1.-smoothstep(.06,.18,abs(d-pick(lA,lB,i)));     // zona suave (degradado o tinte) vs. borde/línea
     bool grad= tone>.5 && slope(uLocA,uLocB,uv,i,uPxMm)>.02;
-    d=mix(d,1.,smoothstep(uSolidLv-.08,uSolidLv+.14,d)*(grad?.5:1.));   // casi lleno → se cierra hacia sólido de forma continua (sin escalón)
+    d=mix(d,1.,smoothstep(max(uSolidLv,.93),.99,d)*(grad?.3:1.));   // casi lleno → se cierra hacia sólido de forma continua (sin escalón)
     if(d>=.995){ put(A,B,i,1.); continue; }
     float s=uSeed*7.31+float(i)*19.17;
     float t=exT(mm,s,uExSel[i]);

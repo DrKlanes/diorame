@@ -13,14 +13,14 @@
 import { EX_PXMM, VS } from './shadersCommon';
 import { FS_LUT, FS_PREP, FS_SEP0, FS_FILL, FS_SEP, FS_BLUR } from './shadersSeparation';
 import { FS_SCREEN, FS_SPREAD, FS_COMPOSE, FS_SCAN } from './shadersPrint';
-import { MAXI, hex2rgb, lin, oklab, dist, printedHex, rng } from './inks';
+import { MAXI, hex2rgb, lin, oklab, printedHex, rng } from './inks';
 import { DEFAULTS, type EngineParams } from './panel';
 import { createPassProfiler, type PassProfiler } from './passProfiler';
 import { createXerox } from './xeroxEngine';
 import type { XeroxEngineParams } from './xeroxParams';
 import { createStencil } from './stencilEngine';
 import type { StencilEngineParams } from './stencilParams';
-import { FS_BLUR1, FS_SPREAD_LL, FS_SEP0_LL, FS_SEP0_PV, FS_SPREAD_PV, FS_SCAN_PV, FS_SCREEN_PV, FS_COPY, PV_SEP0, PV_SPREAD, PV_SCAN, PV_SCREEN } from './shadersFast';
+import { FS_SPREAD_LL, FS_SPREAD_PV, FS_SCAN_PV, FS_SCREEN_PV, FS_COPY, PV_SPREAD, PV_SCAN, PV_SCREEN } from './shadersFast';
 
 export type EngineAssets = { green: TexImageSource; exBlack: TexImageSource & { width: number; height: number }; exRed: TexImageSource & { width: number; height: number }; exLut: TexImageSource };
 export type EngineOptions = { preserveDrawingBuffer?: boolean };
@@ -175,12 +175,12 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 	let xerox: ReturnType<typeof createXerox> | null = null, stencil: ReturnType<typeof createStencil> | null = null;
 	const LUT = target(33 * 33, 33, 2); let lutKey = '';
 	const srcTex = gl.createTexture()!; let srcW = 0, srcH = 0;
-	let TG: Record<'prep' | 'sep' | 'tmp' | 'loc' | 'qtmp' | 'sol' | 'scr' | 'cov' | 'comp' | 'prepH' | 'prepV' | 'out', Target> | null = null, simW = 0, simH = 0;
+	let TG: Record<'prep' | 'sep' | 'tmp' | 'loc' | 'qtmp' | 'sol' | 'scr' | 'cov' | 'comp' | 'out', Target> | null = null, simW = 0, simH = 0;
 	function ensureTargets(w: number, h: number) {
 		if (w === simW && h === simH) return; simW = w; simH = h;
 		if (TG) Object.values(TG).forEach(freeTarget);
 		const qw = Math.max(1, w >> 2), qh = Math.max(1, h >> 2);
-		TG = { prep: target(w, h), sep: target(w, h, 2), tmp: target(w, h, 2), loc: target(w, h, 2), qtmp: target(qw, qh, 2), sol: target(qw, qh, 2), scr: target(w, h, 2), cov: target(w, h, 2), comp: target(w, h), prepH: target(w, h), prepV: target(w, h), out: target(w, h) };
+		TG = { prep: target(w, h), sep: target(w, h, 2), tmp: target(w, h, 2), loc: target(w, h, 2), qtmp: target(qw, qh, 2), sol: target(qw, qh, 2), scr: target(w, h, 2), cov: target(w, h, 2), comp: target(w, h), out: target(w, h) };
 		canvas.width = w; canvas.height = h;
 	}
 
@@ -229,7 +229,7 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 			const P: EngineParams = Object.assign({}, DEFAULTS, params);
 			const pv = opts.preview ?? 0, ll = !!opts.lossless || pv !== 0;
 			const lvl = (bit: number, hasLL: boolean) => (pv & bit) ? 'preview' : (ll && hasLL) ? 'lossless' : 'lab';
-			eng.lastVariants = `blurPrep:${ll ? 'lossless' : 'lab'} sep0:${lvl(PV_SEP0, true)} screen:${lvl(PV_SCREEN, false)} spread:${lvl(PV_SPREAD, true)} scan:${lvl(PV_SCAN, false)}`;
+			eng.lastVariants = `screen:${lvl(PV_SCREEN, false)} spread:${lvl(PV_SPREAD, true)} scan:${lvl(PV_SCAN, false)}`;
 			const t0 = performance.now();
 			pollTimer();
 			if (profiler.mode !== 'off') profiler.frameStart();
@@ -257,28 +257,17 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 			const inks = P.inks.concat(Array(MAXI).fill('#000000')).slice(0, MAXI), opac = P.opac.concat(Array(MAXI).fill(.15)).slice(0, MAXI);
 			const inkLin: number[] = []; for (let i = 0; i < MAXI; i++) inkLin.push(...lin(hex2rgb(printedHex(inks[i]))));
 			const exSel = inks.map(h => oklab(hex2rgb(printedHex(h)))[0] < .42 ? 0 : 1);
-			const P0 = oklab(hex2rgb(P.paper)); const con = inks.map(h => Math.min(1.5, dist(oklab(hex2rgb(printedHex(h))), P0) / .5));
 			// la tabla de separación solo se recalcula si cambian tintas, papel o costes
 			const key = JSON.stringify([inks, opac, N, P.paper, P.inkCost, P.pair]);
-			if (key !== lutKey) { run('LUT', PR.lut, LUT, a => { a.fv('uCon', con, 1); a.fv('uInk', inkLin, 3); a.fv('uOp', opac, 1); a.i('uN', N); a.f('uPaper', ...paperLin); a.f('uCost', P.inkCost); a.f('uPair', P.pair); }); lutKey = key; }
+			if (key !== lutKey) { run('LUT', PR.lut, LUT, a => { a.fv('uInk', inkLin, 3); a.i('uN', N); a.f('uPaper', ...paperLin); a.f('uMu', P.inkCost * .25); }); lutKey = key; }
 			run('PREP', PR.prep, T.prep, a => { a.t('uSrc', srcTex); a.f('uSrcRes', srcW, srcH); a.f('uSmoothPx', P.smooth * srcW / P.printW); a.f('uSrcPaper', ...P.srcPaper); a.f('uPaper', ...paperLin); });
 			const R = rng(P.seed * 7919 + 13); const M: number[] = [], Tt: number[] = [];
 			for (let i = 0; i < MAXI; i++) {
 				const ang = (R() * 2 - 1) * P.rot * Math.PI / 180, sc = 1 + (R() * 2 - 1) * P.scl / 1000, ca = Math.cos(ang) * sc, sa = Math.sin(ang) * sc;
 				M.push(ca, sa, -sa, ca); const a = R() * Math.PI * 2, m = P.misreg * Math.sqrt(R()); Tt.push(Math.cos(a) * m, Math.sin(a) * m);
 			}
-			let prepS: WebGLTexture;
-			if (ll) {
-				const B1 = variant(FS_BLUR1);
-				run('BLUR prep H', B1, T.prepH, a => { a.t('uTexA', T.prep.t[0]); a.f('uDir', 1, 0); a.f('uSig', .3 * pxmm); });
-				run('BLUR prep V', B1, T.prepV, a => { a.t('uTexA', T.prepH.t[0]); a.f('uDir', 0, 1); a.f('uSig', .3 * pxmm); });
-				prepS = T.prepV.t[0];
-			} else {
-				run('BLUR prep H', PR.blur, T.loc, a => { a.t('uTexA', T.prep.t[0]); a.t('uTexB', T.prep.t[0]); a.f('uDir', 1, 0); a.f('uSig', .3 * pxmm); });
-				run('BLUR prep V', PR.blur, T.scr, a => { a.t('uTexA', T.loc.t[0]); a.t('uTexB', T.loc.t[0]); a.f('uDir', 0, 1); a.f('uSig', .3 * pxmm); });
-				prepS = T.scr.t[0];
-			}
-			run('SEP0', (pv & PV_SEP0) ? variant(FS_SEP0_PV) : ll ? variant(FS_SEP0_LL) : PR.sep0, T.tmp, a => { a.t('uPrepS', prepS); a.t('uPrep', T.prep.t[0]); a.t('uSet', LUT.t[0]); a.fv('uCon', con, 1); a.fv('uInk', inkLin, 3); a.fv('uOp', opac, 1); a.i('uN', N); a.f('uPaper', ...paperLin); a.f('uCost', P.inkCost); a.f('uPair', P.pair); a.f('uMinDot', P.minDot); a.f('uSingle', P.single); });
+			// lab v21: SEP0 reads the coverage LUT trilinearly; the blurred PREP it used to need is gone.
+			run('SEP0', PR.sep0, T.tmp, a => { a.t('uPrep', T.prep.t[0]); a.t('uSetA', LUT.t[0]); a.t('uSetB', LUT.t[1]); a.i('uN', N); a.f('uMinDot', P.minDot); });
 			// uM is a mat2[8]: the lab's m2() sends all 8 matrices in one uniformMatrix2fv call.
 			// Overprint / trap (lab v18): light inks continue under the darker inks printed after them, with the density of their
 			// surroundings, so misregistration no longer opens white paper threads beside each dark stroke. Fill width > misregistration.

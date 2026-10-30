@@ -181,5 +181,5 @@ Las 4 texturas de `public/textures/superRiso/` son propias:
 escaneos de terceros). Es la fuente canónica de las tres técnicas: `tools/studio/` (shaders y motor por técnica,
 interfaz), `research/` (anatomías y plan, `PLAN-super-riso.md` §1–§16), `lab/` (versiones publicadas del
 laboratorio) y `renders/`. Su `tools/README.md` lista las fuentes y la tabla Lab ↔ versión de Diorame (la
-versión sincronizada hoy es la v18; el procedimiento para cambios futuros está en REFERENCE.md §14,
+versión sincronizada hoy es la v21; el procedimiento para cambios futuros está en REFERENCE.md §14,
 «provenance»). No subir nada de esa carpeta al repo público.
