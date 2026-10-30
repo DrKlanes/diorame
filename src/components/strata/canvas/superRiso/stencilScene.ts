@@ -56,10 +56,10 @@ const tonesCache = new Map<string, number[]>();
 /** What the cached thresholds were measured on (live): the scene, the camera and when. */
 let tonesOf: { scene: unknown; cam: number[] | null; at: number } | null = null;
 
-// ── Rest detection (camera only: motion indices 0–6 and 9) ──────────────────────────────────────
+// ── Rest detection (the user's camera: SuperRisoInput.motion; animations never block it, v3.20.15) ──────────────────────────────────────
 type Sig = readonly number[] | undefined;
 let lastCam: number[] | null = null, camSince = 0;
-const camOf = (m: Sig) => m ? [...m.slice(0, 7), m[9] ?? 0] : null;
+const camOf = (m: Sig) => m ? [...m] : null;
 function atRest(motion: Sig, now: number): boolean {
 	const c = camOf(motion);
 	if (!c || !lastCam || c.length !== lastCam.length || c.some((v, i) => v !== lastCam![i])) { lastCam = c; camSince = now; }

@@ -135,7 +135,7 @@ export type RenderContext = {
 	// Storytelling rack-focus target written by the cinematic tick (fase 5), read by the DoF
 	// focus block next frame. null for every non-storytelling preset → manual focus untouched.
 	storyFocusRef: React.MutableRefObject<number | null>;
-	lastShakeRef: React.MutableRefObject<{ x: number; y: number; z: number }>;
+	lastShakeRef: React.MutableRefObject<{ x: number; y: number; z: number; r?: number }>;
 	transformHandlesRef: React.MutableRefObject<GizmoHandles | null>;
 	// The projection parameters this frame was ACTUALLY drawn with, stamped mid-frame
 	// (see DrawnFrameOptics). Written every frame, read by the CINEMA double-click so
@@ -592,16 +592,24 @@ export function renderFrame(
 	}
 
 	// Super Riso — see the start of the frame. When it returns true offCtx is opaque (paper
-	// included), so the transfer must not multiply it with the background. motion + scene: what
-	// moves the image; while none of it changes, preview devices refine to full quality.
+	// included), so the transfer must not multiply it with the background. motion + scene: what the
+	// USER moves (camera without the handheld shake — cameraRef, unquantised, minus lastShakeRef —,
+	// optics, a running camera preset, the gizmo) and edits; while none of it changes, preview devices
+	// refine to full quality. anim: what animates on its own (wiggle, particles, handheld, and the
+	// stop-motion playback via `playing`): preview devices re-refine at ≤ 8/s (v3.20.15).
 	if (superRisoInput) {
+		const cam = rc.cameraRef.current, sh = rc.lastShakeRef.current, q = (v: number) => Math.round(v * 1e4) / 1e4;
 		superRisoInput.scene = currentState;
 		superRisoInput.motion = [
-			currentCamera.x, currentCamera.y, currentCamera.z, currentCamera.rotation, FL, effectiveCameraZ, fxFocusDist,
-			currentState.postProcessingEnabled.wiggle ? pfc.wiggleFrame : 0,
-			currentState.postProcessingEnabled.particles ? renderTime : 0,
+			q(cam.x - sh.x), q(cam.y - sh.y), q(cam.z - sh.z), q((cam.rotation || 0) - (sh.r ?? 0)), FL, rc.storyFocusRef.current ?? -1,
 			rc.transformState.isActive ? renderTime : 0,
 		];
+		superRisoInput.anim = [
+			currentState.postProcessingEnabled.wiggle ? pfc.wiggleFrame : 0,
+			currentState.postProcessingEnabled.particles ? renderTime : 0,
+			sh.x, sh.y, sh.z, sh.r ?? 0,
+		];
+		superRisoInput.playing = currentState.isAnimationMode && currentState.isAnimationPlaying;
 	}
 	const superRisoApplied = superRiso !== null && superRisoInput !== null && superRiso.applySuperRiso(offCtx, w, h, superRisoInput);
 

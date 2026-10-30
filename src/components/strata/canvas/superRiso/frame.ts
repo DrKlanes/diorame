@@ -60,10 +60,14 @@ export type SuperRisoInput = {
 	isLive: boolean;
 	/** GIF / PNG-sequence: frame index, frame count and fps of the export (RenderContext.exportFrame). */
 	exportFrame?: ExportFrame;
-	/** Live, filled in phase 3: what moves the image (camera, optics, wiggle…) and the state object.
-	 *  While neither changes the image is still (refinement on preview devices). */
+	/** Live, filled in phase 3: what the user moves (camera without handheld, optics, gizmo) and the state
+	 *  object. While neither changes the image is still (refinement on preview devices). */
 	motion?: readonly number[];
 	scene?: unknown;
+	/** Live: what animates on its own (wiggle, particles, handheld); playing: stop-motion playback (its scene
+	 *  changes are animation, not edits). Both count as a still image for the quality (v3.20.15). */
+	anim?: readonly number[];
+	playing?: boolean;
 	info: { preset: string; speed: number };
 };
 /** Fotocopia: the settings, its markers, and what engineParams needs to keep the CPU maps (xeroxMaps.ts) fresh. */
@@ -99,7 +103,7 @@ export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Fra
 		s.technique, ...(mk ? [s.resolution, JSON.stringify(s.xerox), (mk.keys ?? []).join(',')] : sn ? [s.resolution, JSON.stringify(s.stencil)]
 			: [s.paper, s.screen, s.screenSize, s.imperfection, s.resolution]), inks.inks.join(',')].join('|');
 	const key = `${hk}|${mk ? xeroxMapsVersion() : sn ? stencilMapsVersion() : 0}`;
-	const xerox = mk ? { x: s.xerox, mk, isLive: inp.isLive, motion: inp.motion, scene: inp.scene } : undefined;
+	const xerox = mk ? { x: s.xerox, mk, isLive: inp.isLive, motion: inp.motion && [...inp.motion, ...(inp.anim ?? [])], scene: inp.scene } : undefined;
 	const stencil = sn ? { s: s.stencil, settings: s, shapes: inp.shapes, hidden: inp.hiddenLayers, srcPaper, darkBase: darkInk ? base : null, bg: hex2rgb(base), isLive: inp.isLive, motion: inp.motion, scene: inp.scene } : undefined;
 	return { style, fw, fh, base, srcPaper, inks, key, hk, xerox, stencil };
 }

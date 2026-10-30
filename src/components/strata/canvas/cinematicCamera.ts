@@ -18,7 +18,8 @@ export interface CinematicTickResult {
 	accumulatedHandheldTime: number;
 	wiggleFrame: number;
 	newCamera: { x: number; y: number; z: number; rotation: number };
-	newShake: { x: number; y: number; z: number };
+	/** r: the roll of the shake (Super Riso tells the user's camera from the handheld animation). */
+	newShake: { x: number; y: number; z: number; r?: number };
 	// Storytelling rack-focus: the (possibly fractional) REAL layer index the tour is
 	// currently framing, for DoF lock to follow. null for every non-storytelling preset
 	// and for the n===0 degenerate case → consumer gate falls back to the manual focus.
@@ -240,7 +241,7 @@ export const computeCinematicTick = (
 	}
 
 	// Apply Handheld Camera Shake (if enabled)
-	let newShake = { x: 0, y: 0, z: 0 };
+	let newShake: { x: number; y: number; z: number; r?: number } = { x: 0, y: 0, z: 0 };
 	if (isHandheldEnabled) {
 		const intensityMap: Record<string, number> = { low: 0.8, medium: 2.0, high: 3.5 };
 		// Increase frequency for High intensity to simulate more frantic movement
@@ -272,11 +273,12 @@ export const computeCinematicTick = (
 		nc.y += shakeY;
 		nc.z += shakeZ;
 
-		newShake = { x: shakeX, y: shakeY, z: shakeZ };
+		newShake = { x: shakeX, y: shakeY, z: shakeZ, r: 0 };
 
 		// Rotation shake (roll/pitch)
 		const tr = ht * freqMult;
-		nc.rotation += ((Math.sin(tr * 1.1) * 0.005) + (Math.cos(tr * 3.7) * 0.003)) * baseIntensity;
+		newShake.r = ((Math.sin(tr * 1.1) * 0.005) + (Math.cos(tr * 3.7) * 0.003)) * baseIntensity;
+		nc.rotation += newShake.r;
 	}
 
 	return {

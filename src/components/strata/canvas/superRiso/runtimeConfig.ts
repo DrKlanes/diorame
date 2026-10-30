@@ -94,6 +94,8 @@ export const live = {
 	pipeFrames: 0,
 	/** srhold: live frames that only redrew the held result. */
 	heldFrames: 0,
+	/** Refines driven by an animation with the camera still (≤ 8/s). */
+	animRefines: 0,
 	/** Path the last live frame took: sync · pipe · held · refine · detect. */
 	lastPath: '',
 	/** Automatic level of the current canvas size: detect · full · preview. */

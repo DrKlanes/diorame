@@ -19,6 +19,8 @@ const WARMUP_FRAMES = 5;      // shader variants and the LUT compile on the firs
 const MEASURE_FRAMES = 30;
 const THRESHOLD_MS = 12;
 export const STILL_MS = 300;
+/** Camera still and something animated: a new refine at most every ANIM_MS (8 per second). */
+export const ANIM_MS = 125;
 
 const levels = new Map<string, Exclude<Level, 'detect'>>();
 let detecting: { size: string; seen: number; samples: number[] } | null = null;
@@ -76,4 +78,11 @@ export function stillFor(motion: readonly number[] | undefined, scene: unknown, 
 	lastMotion = motion ?? null;
 	lastScene = scene;
 	return now - stillSince;
+}
+
+let animScene: unknown = null, animGen = 0;
+/** What animates on its own as a key: anim numbers + (stop motion playing) a generation bumped per scene change. */
+export function animKey(anim: readonly number[] | undefined, scene: unknown, playing: boolean): string {
+	if (playing && scene !== animScene) { animScene = scene; animGen++; }
+	return `${(anim ?? []).join(',')}|${playing ? animGen : 0}`;
 }

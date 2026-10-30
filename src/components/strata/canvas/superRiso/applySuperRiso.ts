@@ -32,7 +32,7 @@ import { createEngine, type Engine, type EngineAssets, type GLCanvas, type Rende
 import type { EngineParams } from './panel';
 import * as quality from './quality';
 import { isSuperRisoPreviewDevice } from './deviceLevel';
-import { detectSample, stillFor, qualityReport, STILL_MS } from './quality';
+import { detectSample, stillFor, animKey, qualityReport, STILL_MS, ANIM_MS } from './quality';
 import { fullMode, liveMode, modeLabel, pathLabel, prepare, engineParams, seedOf, seedTickFor, tickAt, opts, lastFrame, type Mode, type Frame, type SuperRisoInput } from './frame';
 import { renderExportFrame } from './exportEngine';
 import { record, mountOverlay, setHeader, snapshot, reset } from './perfOverlay';
@@ -117,7 +117,7 @@ type Held = { key: string; tick: number; ew: number; eh: number; crisp: boolean;
 let ready: (Held & { frame: number }) | null = null;
 let held: Held | null = null;
 /** Preview level, image still: the full-level frame held until something moves. */
-let refined: { key: string; tick: number; ew: number; eh: number; crisp: boolean } | null = null;
+let refined: { key: string; tick: number; ew: number; eh: number; crisp: boolean; anim: string; at: number } | null = null;
 // Stage CPU of the current live frame (the begin part is added to the phase-3 part).
 const st = { begin: 0, upload: 0, mip: 0, render: 0, backBegin: 0 };
 /** pipe 2: the engine launched at the start of a frame (into its texture), and the consumed one
@@ -261,7 +261,7 @@ export function applySuperRiso(
 		const fr = prepare(w, h, inp, m);
 		live.level = level;
 		if (held && (held.key !== fr.hk || !m.hold)) { held = null; if (!refined) dropHeld(); }
-		const still = stillFor(inp.motion, inp.scene, t0);
+		const still = stillFor(inp.motion, inp.playing ? null : inp.scene, t0);
 
 		let tFlat = t0, tBack0 = t0;
 		const done = (path: string, mm: Mode = m) => {
@@ -286,14 +286,15 @@ export function applySuperRiso(
 			return done('detect');
 		}
 
-		// Preview level with the image still: refine one frame at full level and res 1, and hold it
-		// until something moves.
+		// Preview level with the camera still: refine one frame at full level and res 1, and hold it until something
+		// moves; animations alone (anim, stop motion) re-refine at most every ANIM_MS.
 		if (level === 'preview' && still >= STILL_MS) {
 			const fm = fullMode();
 			const ff = prepare(w, h, inp, fm);
 			pending = null; ready = null; held = null;
 			const hr = heldResult();
-			if (refined && refined.key === ff.key && refined.tick === tick && hr) {
+			const ak = animKey(inp.anim, inp.scene, !!inp.playing);
+			if (refined && refined.key === ff.key && refined.tick === tick && hr && (refined.anim === ak || t0 - refined.at < ANIM_MS)) {
 				tBack0 = performance.now();
 				drawFrom(offCtx, hr, refined.ew, refined.eh, w, h, refined.crisp);
 				live.heldFrames++;
@@ -304,9 +305,10 @@ export function applySuperRiso(
 			const eng = runSync(ff, flat, engineParams(ff), tick, opts(fm));
 			if (eng.gl.isContextLost()) return false;
 			tBack0 = performance.now();
-			if (DEBUG) console.info(`[SuperRiso] refine (last change: ${quality.lastChange})`);
+			const byAnim = !!refined && refined.key === ff.key && refined.tick === tick && refined.anim !== ak;
+			if (DEBUG && byAnim) live.animRefines++; else if (DEBUG) console.info(`[SuperRiso] refine (last change: ${quality.lastChange})`);
 			const src = holdResult(glCanvas, eng.width, eng.height);
-			refined = { key: ff.key, tick, ew: eng.width, eh: eng.height, crisp: !!ff.style.crisp };
+			refined = { key: ff.key, tick, ew: eng.width, eh: eng.height, crisp: !!ff.style.crisp, anim: ak, at: t0 };
 			drawFrom(offCtx, src, eng.width, eng.height, w, h, refined.crisp);
 			return done('refine', fm);
 		}
