@@ -15,7 +15,7 @@ export function createStencil(H: XeroxHost) {
 	const { gl } = H;
 	let PR: { scut: Program; spray: Program } | null = null;
 	let ST: Record<'b1' | 'b2' | 'sm' | 'sq' | 'sw', Target> | null = null, sw = 0, sh = 0;
-	let spT: WebGLTexture | null = null;
+	let spT: WebGLTexture | null = null, zeroT: WebGLTexture | null = null;
 	const drTex = gl.createTexture()!, brTex = gl.createTexture()!, clTex = gl.createTexture()!; let mapsSrc: StencilMaps | null | undefined = undefined;
 	let black: HTMLCanvasElement | null = null;
 	const blankBlack = () => {
@@ -31,7 +31,8 @@ export function createStencil(H: XeroxHost) {
 		ST = { b1: H.target(w, h), b2: H.target(w, h), sm: H.target(w, h, 2), sq: H.target(qw, qh, 2), sw: H.target(qw, qh, 2) };
 	}
 
-	function render(params: Partial<StencilEngineParams>, S: XeroxShared, srcTex: WebGLTexture, srcW: number, srcH: number, w: number, h: number, toTexture: boolean) {
+	/** light: the slow tier in motion — no lift / wide fog passes (SPRAY reads black there: no fog under the template). */
+	function render(params: Partial<StencilEngineParams>, S: XeroxShared, srcTex: WebGLTexture, srcW: number, srcH: number, w: number, h: number, toTexture: boolean, light = false) {
 		ensure(w, h);
 		const P: StencilEngineParams = Object.assign({}, SDEFAULTS, params), T = ST!, R = PR!;
 		const pxmm = w / P.printW;
@@ -66,11 +67,12 @@ export function createStencil(H: XeroxHost) {
 			a.iv('uKind', kind); a.iv('uCh', ch);
 			a.fv('uThr', thr, 1); a.fv('uKey', key, 3); a.f('uAccK', acc[0], acc[1], acc[2]); a.fv('uOffs', offs, 2); a.f('uFacet', P.facet); a.f('uAA', Math.max(.008, Math.min(.05, .1 / Math.max(.7, cs))));
 		});
-		const sq = Math.max(.3, P.liftMm * pxmm / 4); bl('lift ¼ H', T.sm, S.qtmp, 1, 0, sq); bl('lift ¼ V', S.qtmp, T.sq, 0, 1, sq);
-		bl('wide ¼ H', T.sq, S.qtmp, 1, 0, sq * 2); bl('wide ¼ V', S.qtmp, T.sw, 0, 1, sq * 2);
+		const sq = Math.max(.3, P.liftMm * pxmm / 4);
+		if (!light) { bl('lift ¼ H', T.sm, S.qtmp, 1, 0, sq); bl('lift ¼ V', S.qtmp, T.sq, 0, 1, sq); bl('wide ¼ H', T.sq, S.qtmp, 1, 0, sq * 2); bl('wide ¼ V', S.qtmp, T.sw, 0, 1, sq * 2); }
+		const fog = light ? (zeroT ??= H.texFrom(blankBlack())) : null;
 		run('SPRAY', R.spray, S.comp, a => {
-			a.f('uPxMm', pxmm); a.f('uSeed', P.seed); a.t('uMA', T.sm.t[0]); a.t('uMB', T.sm.t[1]); a.t('uQA', T.sq.t[0]); a.t('uQB', T.sq.t[1]);
-			a.t('uWA', T.sw.t[0]); a.t('uWB', T.sw.t[1]); a.t('uDr', drTex); a.t('uCl', clTex); a.t('uSpT', spT!); a.i('uNL', NL); a.i('uSup', P.supType | 0);
+			a.f('uPxMm', pxmm); a.f('uSeed', P.seed); a.t('uMA', T.sm.t[0]); a.t('uMB', T.sm.t[1]); a.t('uQA', fog ?? T.sq.t[0]); a.t('uQB', fog ?? T.sq.t[1]);
+			a.t('uWA', fog ?? T.sw.t[0]); a.t('uWB', fog ?? T.sw.t[1]); a.t('uDr', drTex); a.t('uCl', clTex); a.t('uSpT', spT!); a.i('uNL', NL); a.i('uSup', P.supType | 0);
 			a.iv('uCh', ch);
 			a.fv('uLc', lc, 3); a.fv('uOp', op, 1); a.f('uSupLin', ...supLin); a.f('uCloudLin', ...cloudLin); a.f('uSupTex', P.supTex); a.f('uLift', P.lift); a.f('uOver', P.over);
 			a.f('uLoad', P.load); a.f('uMist', P.mist); a.f('uDrop', P.drop); a.f('uCloud', M.cloud ? P.cloud : 0); a.f('uSpN', SPRAY_N); a.f('uTp', SPRAY_N / (143.36 * P.drop * pxmm)); a.f('uDrTp', drTp); a.f('uLiftScale', P.liftScale);

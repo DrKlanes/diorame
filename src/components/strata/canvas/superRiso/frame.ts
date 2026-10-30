@@ -17,7 +17,8 @@ import { xeroxMaps, xeroxMapsVersion } from './xeroxMaps';
 import { setXeroxPalette, setStencilPalette } from './xeroxPalette';
 import { stencilParams } from './stencilParams';
 import { stencilFrame, stencilMapsVersion, type StencilFrame } from './stencilScene';
-import { liveFlat, exportFlat } from './bridge';
+import { liveFlat, exportFlat, offscreenWebGL2Available } from './bridge';
+import { PV_ALL, PV_LIGHT } from './shadersFast';
 
 // ── Modes ──────────────────────────────────────────────────────────────────────────────────────
 /** How a live frame (or an export) is rendered. */
@@ -31,12 +32,19 @@ export function liveMode(w: number, h: number, s: SuperRisoSettings): { m: Mode;
 	if (level !== 'preview') return { m: fullMode(), level };
 	// "Calidad completa siempre": the full level, held between reprint ticks (12 fps without reprint).
 	if (s.fullQuality) return { m: { ...fullMode(), hold: true, holdFps: s.reprintFps || 12 }, level: 'preview·full' };
-	return { m: { res: .75, sim: KNOBS.simUpload, preview: 15, lossless: true, pipe: 1, hold: false, holdFps: 12 }, level };
+	// «Modo ligero» (v3.20.14): res .5, preview + light variants, pipelined and held at 12 fps — applySuperRiso prints only
+	// when something changed since the held result. At rest (quality.STILL_MS) applySuperRiso refines at the full level.
+	return { m: { res: .5, sim: KNOBS.simUpload, preview: PV_ALL | PV_LIGHT, lossless: true, pipe: 1, hold: true, holdFps: 12 }, level };
 }
 
 export const modeLabel = (m: Mode) => [
 	`res ${m.res}`, m.sim ? 'sim-upload' : '', m.pipe ? `PIPE${m.pipe}` : '', m.hold ? `HOLD ${m.holdFps}` : '',
 	m.lossless ? 'LOSSLESS' : '', m.preview ? `PREVIEW ${m.preview}` : '',
+].filter(Boolean).join(' · ');
+
+export const pathLabel = () => [
+	`pdb ${KNOBS.preserveDrawingBuffer ? 'on' : 'off'}`, `mip ${KNOBS.mip ? 'on' : 'off'}`, KNOBS.bitmapUpload ? 'bitmap' : '',
+	KNOBS.offscreenBack ? (offscreenWebGL2Available ? 'offscreen' : 'offscreen→DOM') : '', KNOBS.bypass ? 'BYPASS' : '',
 ].filter(Boolean).join(' · ');
 
 // ── Per-frame preparation ──────────────────────────────────────────────────────────────────────
@@ -60,7 +68,7 @@ export type SuperRisoInput = {
 };
 /** Fotocopia: the settings, its markers, and what engineParams needs to keep the CPU maps (xeroxMaps.ts) fresh. */
 type XeroxFrame = { x: XeroxSettings; mk: XeroxMarkers; isLive: boolean; motion?: readonly number[]; scene?: unknown };
-export type Frame = { style: AnyParams; fw: number; fh: number; base: string; srcPaper: RGB; inks: PickedInks; key: string; xerox?: XeroxFrame; stencil?: StencilFrame };
+export type Frame = { style: AnyParams; fw: number; fh: number; base: string; srcPaper: RGB; inks: PickedInks; key: string; hk: string; xerox?: XeroxFrame; stencil?: StencilFrame };
 /** srdebug: the inks and parameters of the last live frame. */
 export const lastFrame: { inks: PickedInks | null; params: AnyParams | null } = { inks: null, params: null };
 
@@ -84,13 +92,16 @@ export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Fra
 	const inks = mk ? { inks: mk.paint, names: mk.rows.map(e => e.id ?? ''), opac: [], srcPaper } : sn ? { inks: [], names: [], opac: [], srcPaper }
 		: sceneInks(inp.shapes, inp.hiddenLayers, s, srcPaper, darkInk ? base : null, true);
 	if (inp.isLive) lastFrame.inks = inks;
-	// Anything that changes what a pending/held result means: size, theme, mode, parameters, inks, context.
-	const key = [w, h, +isDarkMode, +isPixelArt, m.res, +m.sim, m.preview, +m.lossless, m.pipe, +KNOBS.mip, +KNOBS.offscreenBack, +KNOBS.preserveDrawingBuffer, +KNOBS.darkPaperFromBase,
-		s.technique, ...(mk ? [s.resolution, JSON.stringify(s.xerox), (mk.keys ?? []).join(','), xeroxMapsVersion()] : sn ? [s.resolution, JSON.stringify(s.stencil), stencilMapsVersion()]
+	// Anything that changes what a pending/held result means: size, theme, mode, parameters, inks, context. hk (hold key) leaves
+	// out the version of the CPU maps (Fotocopia / Stencil, redone every ~300 ms in motion): a held result keeps being shown
+	// until the next tick prints the new maps, instead of a synchronous frame (v3.20.14).
+	const hk = [w, h, +isDarkMode, +isPixelArt, m.res, +m.sim, m.preview, +m.lossless, m.pipe, +KNOBS.mip, +KNOBS.offscreenBack, +KNOBS.preserveDrawingBuffer, +KNOBS.darkPaperFromBase,
+		s.technique, ...(mk ? [s.resolution, JSON.stringify(s.xerox), (mk.keys ?? []).join(',')] : sn ? [s.resolution, JSON.stringify(s.stencil)]
 			: [s.paper, s.screen, s.screenSize, s.imperfection, s.resolution]), inks.inks.join(',')].join('|');
+	const key = `${hk}|${mk ? xeroxMapsVersion() : sn ? stencilMapsVersion() : 0}`;
 	const xerox = mk ? { x: s.xerox, mk, isLive: inp.isLive, motion: inp.motion, scene: inp.scene } : undefined;
 	const stencil = sn ? { s: s.stencil, settings: s, shapes: inp.shapes, hidden: inp.hiddenLayers, srcPaper, darkBase: darkInk ? base : null, bg: hex2rgb(base), isLive: inp.isLive, motion: inp.motion, scene: inp.scene } : undefined;
-	return { style, fw, fh, base, srcPaper, inks, key, xerox, stencil };
+	return { style, fw, fh, base, srcPaper, inks, key, hk, xerox, stencil };
 }
 
 /** Called right after the frame was flattened (liveFlat / exportFlat hold it): Fotocopia and Stencil read their CPU work from there. */

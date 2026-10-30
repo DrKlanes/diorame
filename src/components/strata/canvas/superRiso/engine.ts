@@ -20,7 +20,7 @@ import { createXerox } from './xeroxEngine';
 import type { XeroxEngineParams } from './xeroxParams';
 import { createStencil } from './stencilEngine';
 import type { StencilEngineParams } from './stencilParams';
-import { FS_SPREAD_LL, FS_SPREAD_PV, FS_SCAN_PV, FS_SCREEN_PV, FS_COPY, PV_SPREAD, PV_SCAN, PV_SCREEN } from './shadersFast';
+import { FS_SPREAD_LL, FS_SPREAD_PV, FS_SCAN_PV, FS_SCREEN_PV, FS_SCREEN_LT, FS_COPY, PV_SPREAD, PV_SCAN, PV_SCREEN, PV_LIGHT } from './shadersFast';
 
 export type EngineAssets = { green: TexImageSource; exBlack: TexImageSource & { width: number; height: number }; exRed: TexImageSource & { width: number; height: number }; exLut: TexImageSource };
 export type EngineOptions = { preserveDrawingBuffer?: boolean };
@@ -227,9 +227,9 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 		},
 		render(params, opts = {}) {
 			const P: EngineParams = Object.assign({}, DEFAULTS, params);
-			const pv = opts.preview ?? 0, ll = !!opts.lossless || pv !== 0;
+			const pv = opts.preview ?? 0, ll = !!opts.lossless || pv !== 0, light = !!(pv & PV_LIGHT);
 			const lvl = (bit: number, hasLL: boolean) => (pv & bit) ? 'preview' : (ll && hasLL) ? 'lossless' : 'lab';
-			eng.lastVariants = `screen:${lvl(PV_SCREEN, false)} spread:${lvl(PV_SPREAD, true)} scan:${lvl(PV_SCAN, false)}`;
+			eng.lastVariants = `screen:${light ? 'light' : lvl(PV_SCREEN, false)} spread:${lvl(PV_SPREAD, true)} scan:${lvl(PV_SCAN, false)}`;
 			const t0 = performance.now();
 			pollTimer();
 			if (profiler.mode !== 'off') profiler.frameStart();
@@ -246,9 +246,9 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 			if (xr) {
 				const host = { gl: gl!, compile, run, target, freeTarget, texFrom, greenTex, fibTex, PR: { prep: PR.prep, blur: PR.blur, scan: PR.scan } };
 				const shared = { prep: T.prep, qtmp: T.qtmp, comp: T.comp, out: T.out };
-				if (params.tech === 'stencil') (stencil ??= createStencil(host)).render(params as Partial<StencilEngineParams>, shared, srcTex, srcW, srcH, w, h, !!opts.toTexture);
-				else (xerox ??= createXerox(host)).render(params as Partial<XeroxEngineParams>, shared, srcTex, srcW, srcH, w, h, !!opts.toTexture);
-				eng.lastVariants = params.tech ?? 'xerox';
+				if (params.tech === 'stencil') (stencil ??= createStencil(host)).render(params as Partial<StencilEngineParams>, shared, srcTex, srcW, srcH, w, h, !!opts.toTexture, light);
+				else (xerox ??= createXerox(host)).render(params as Partial<XeroxEngineParams>, shared, srcTex, srcW, srcH, w, h, !!opts.toTexture, light);
+				eng.lastVariants = (params.tech ?? 'xerox') + (light ? ' light' : '');
 				if (query) { gl!.endQuery(timerExt!.TIME_ELAPSED_EXT); pendingQuery = query; }
 				gl!.flush();
 				eng.lastMs = performance.now() - t0; return eng;
@@ -282,7 +282,7 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 			};
 			blur2('loc', T.sep, T.tmp, T.loc, .22 * pxmm);
 			blur2('sol ¼', T.sep, T.qtmp, T.sol, 1.5 * pxmm / 4);
-			run('SCREEN', (pv & PV_SCREEN) ? variant(FS_SCREEN_PV) : PR.screen, T.scr, a => {
+			run('SCREEN', light ? variant(FS_SCREEN_LT) : (pv & PV_SCREEN) ? variant(FS_SCREEN_PV) : PR.screen, T.scr, a => {
 				exU(a); a.f('uPxMm', pxmm); a.f('uSeed', P.seed); a.t('uSepA', T.sep.t[0]); a.t('uSepB', T.sep.t[1]); a.t('uSolA', T.sol.t[0]); a.t('uSolB', T.sol.t[1]); a.t('uLocA', T.loc.t[0]); a.t('uLocB', T.loc.t[1]); a.t('uGreen', greenTex);
 				a.i('uN', N); a.i('uMode', +P.screen); a.f('uGrain', P.grain); a.f('uLoad', P.inkLoad); a.f('uLpi', P.lpi); a.f('uMottle', P.mottle); a.f('uStarve', P.starve); a.f('uTexAmp', P.texAmp); a.f('uStreak', P.streak); a.f('uSolidLv', P.solidLv); a.fv('uExSel', exSel, 1); a.f('uTrap', P.trap);
 			});

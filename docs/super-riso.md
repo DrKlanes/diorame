@@ -100,7 +100,7 @@ síncrono: nunca se dibuja un frame con un tamaño viejo.
 |---|---|---|
 | detect | primeros frames a cada tamaño de lienzo | 5 de calentamiento + 30 medidos a nivel completo; mediana > 12 ms → preview, si no full |
 | full | escritorio, y SIEMPRE las exportaciones | motor del laboratorio + variantes sin pérdida (0 px frente al lab) |
-| preview | solo vivo, en GPUs lentas (iPad) | resolución .75, shaders simplificados, canalizado; con la imagen quieta ≥ 300 ms se refina un frame a completa y res 1 y se retiene |
+| preview («modo ligero», v3.20.14) | solo vivo, en GPUs lentas (iPad) | en movimiento: resolución .5, shaders simplificados y ligeros, canalizado e impreso a 12 fps como máximo y solo si algo cambió; con la imagen quieta ≥ 300 ms se refina un frame a completa y res 1 y se retiene (cero trabajo después) |
 | fullQuality | interruptor, solo en preview | nivel completo retenido entre ticks de reimpresión (12 fps sin reimpresión) |
 
 La medida usa el temporizador de GPU donde existe (escritorio) y la espera de un readback 1×1

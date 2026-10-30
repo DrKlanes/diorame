@@ -1,9 +1,10 @@
 // Super Riso — automatic quality levels (L1, decision 5 of the plan).
 //
 //   full     the lab's engine + lossless variants. Desktop, and every export always.
-//   preview  live only, on devices measured as slow: res .75 + preview shaders, pipelined (pipe1).
-//            With the image still ~300 ms, one frame is refined at full level and res 1 and held
-//            until something moves (applySuperRiso).
+//   preview  live only, on devices measured as slow («modo ligero», v3.20.14): in motion res .5 +
+//            preview and light shaders, pipelined (pipe1), printed at 12 fps at most and only when
+//            something changed (held in between). With the image still ~300 ms, one frame is refined
+//            at full level and res 1 and held until something moves (applySuperRiso).
 // The level is MEASURED, never guessed from the device type: the first ~30 live frames at a
 // canvas size run at full level and the median cost decides (GPU timer where there is one, else
 // the wait from upload to a 1×1 readback: see applySuperRiso.runSync). Re-measured only when the

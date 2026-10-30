@@ -6,7 +6,7 @@
 let previewDevice = false;
 const listeners = new Set<() => void>();
 
-/** true once the automatic level put the live view in preview (res .75 + preview shaders). */
+/** true once the automatic level put the live view in preview (res .5 + preview and light shaders in motion). */
 export const isSuperRisoPreviewDevice = (): boolean => previewDevice;
 
 export function subscribeSuperRisoPreviewDevice(cb: () => void): () => void {

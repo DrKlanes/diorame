@@ -40,8 +40,8 @@ export function createXerox(H: XeroxHost) {
 		XT = { xa: H.target(w, h), xb: H.target(w, h), xc: H.target(w, h), xq1: H.target(qw, qh, 2), xq2: H.target(qw, qh, 2), xs: H.target(qw, qh) };
 	}
 
-	/** Renders into the canvas (or shared.out with toTexture). srcW/srcH: the uploaded flattened frame. */
-	function render(params: Partial<XeroxEngineParams>, S: XeroxShared, srcTex: WebGLTexture, srcW: number, srcH: number, w: number, h: number, toTexture: boolean) {
+	/** Renders into the canvas (or shared.out with toTexture). srcW/srcH: the uploaded flattened frame. light: the slow tier in motion (1 generation). */
+	function render(params: Partial<XeroxEngineParams>, S: XeroxShared, srcTex: WebGLTexture, srcW: number, srcH: number, w: number, h: number, toTexture: boolean, light = false) {
 		ensure(w, h);
 		const P: XeroxEngineParams = Object.assign({}, XDEFAULTS, params), X = XT!, R = PR!;
 		const pxmm = w / P.printW;
@@ -64,7 +64,7 @@ export function createXerox(H: XeroxHost) {
 		run('PREP', H.PR.prep, S.prep, a => { a.t('uSrc', srcTex); a.f('uSrcRes', srcW, srcH); a.f('uSmoothPx', P.smooth * srcW / P.printW); a.f('uSrcPaper', ...(P.srcPaper || [1, 1, 1])); a.f('uPaper', 1, 1, 1); });
 		run('XLUM', R.xlum, X.xa, a => { a.f('uPxMm', pxmm); a.t('uPrep', S.prep.t[0]); a.f('uDark', P.dark); a.f('uSoft', P.soft); a.f('uMotion', P.motion); a.f('uPhoto', P.photo); a.f('uLpi', P.lpi); a.f('uLid', P.lid); });
 		const bl = (label: string, src: Target, dst: Target, dx: number, dy: number, sig: number) => run(`BLUR ${label}`, H.PR.blur, dst, a => { a.t('uTexA', src.t[0]); a.t('uTexB', src.t[src.t.length > 1 ? 1 : 0]); a.f('uDir', dx, dy); a.f('uSig', sig); });
-		const G = Math.max(1, Math.round(P.gens));
+		const G = light ? 1 : Math.max(1, Math.round(P.gens));
 		for (let g = 1; g <= G; g++) {
 			const sig = Math.max(.05, P.genSpread * pxmm * (g === 1 ? .6 : 1));
 			bl(`gen${g} H`, X.xa, X.xb, 1, 0, sig); bl(`gen${g} V`, X.xb, X.xc, 0, 1, sig);

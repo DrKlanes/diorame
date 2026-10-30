@@ -12,6 +12,10 @@
 //   2 SPREAD   3×3 bleed kernel instead of 5×5
 //   4 SCAN     3×3 scanner kernel instead of 5×5 (the outer taps weigh ≲2 % at r ≈ .7–1 px)
 //   8 SCREEN   2×2 grain subsamples instead of 3×3
+//
+// LIGHT (bit 16, v3.20.14: the slow tier in motion, live only; added to the preview bits): Riso SCREEN with 1 grain
+// subsample instead of 3×3 (FS_SCREEN_LT, over bit 8); Fotocopia 1 generation; Stencil without the lift / wide fog
+// passes (xeroxEngine / stencilEngine read the bit).
 
 import { FS_SPREAD, FS_SCAN, FS_SCREEN } from './shadersPrint';
 
@@ -29,7 +33,7 @@ export const FS_SPREAD_LL = patch(FS_SPREAD, SPREAD_INK,
 	SPREAD_INK + '    if(v<=0. && d<=0. && pick(lA,lB,i)<=0.) continue;\n');
 
 // ── Preview ────────────────────────────────────────────────────────────────────────────────────
-export const PV_SEP0 = 1, PV_SPREAD = 2, PV_SCAN = 4, PV_SCREEN = 8, PV_ALL = 15;
+export const PV_SEP0 = 1, PV_SPREAD = 2, PV_SCAN = 4, PV_SCREEN = 8, PV_ALL = 15, PV_LIGHT = 16;
 
 export const FS_SPREAD_PV = patch(FS_SPREAD_LL,
 	'for(int j=-2;j<=2;j++) for(int i=-2;i<=2;i++){ float k=exp(-float(i*i+j*j)/2.); vec2 o2=vec2(i,j)*r*.5/uRes; a+=texture(uScrA',
@@ -45,6 +49,13 @@ export const FS_SCREEN_PV = patch(patch(patch(FS_SCREEN,
 	'return cov/9.; }', 'return cov/4.; }'),
 	'// El campo está ecualizado: umbral x → cobertura x. Se integra con 9 submuestras por píxel, como el sensor del escáner.',
 	'// [preview C2a] 4 submuestras por píxel en lugar de 9.');
+
+export const FS_SCREEN_LT = patch(patch(patch(FS_SCREEN,
+	'for(int j=0;j<3;j++) for(int i=0;i<3;i++){\n    vec2 p=mm/tx+mod(vec2(s*131.,s*57.),1024.)+(vec2(i,j)-1.)/3.*px;',
+	'for(int j=0;j<1;j++) for(int i=0;i<1;i++){\n    vec2 p=mm/tx+mod(vec2(s*131.,s*57.),1024.)+vec2(i,j)*px;'),
+	'return cov/9.; }', 'return cov; }'),
+	'// El campo está ecualizado: umbral x → cobertura x. Se integra con 9 submuestras por píxel, como el sensor del escáner.',
+	'// [ligero] 1 submuestra por píxel en lugar de 9.');
 
 // ── Present (srpipe=2): exact copy of a result texture to the canvas ────────────────────────────
 export const FS_COPY = `#version 300 es

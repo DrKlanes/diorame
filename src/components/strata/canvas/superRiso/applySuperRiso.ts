@@ -21,8 +21,8 @@
 // what WebKit waits for. Phase 3 then flattens the current offCtx for the next frame and shows the
 // result (one frame late). With no valid pending result — first frame, size, theme or parameter
 // change — that frame takes the synchronous path, so no frame is ever drawn with a stale size.
-// hold (fullQuality on a preview device; srhold) — the engine only runs on the reprint ticks; in
-// between, the held result. Refine (preview level, image still) — one full frame, held.
+// hold — the engine only runs on the hold ticks, the held result in between: the preview level in motion (12 fps, and
+// only if something changed since the held result), fullQuality (reprint fps), srhold. Refine (image still) — one full frame, held.
 // Exports (skipCinematicOverlays) always take the synchronous path, on their own flatten canvas.
 // pipe 2 (C2a, srdebug only) — beginSuperRisoFrame() of frame N+1 first consumes the engine
 // launched at the start of N (present → copy into the held 2D canvas), then launches N+1 from N's
@@ -33,16 +33,16 @@ import type { EngineParams } from './panel';
 import * as quality from './quality';
 import { isSuperRisoPreviewDevice } from './deviceLevel';
 import { detectSample, stillFor, qualityReport, STILL_MS } from './quality';
-import { fullMode, liveMode, modeLabel, prepare, engineParams, seedOf, seedTickFor, tickAt, opts, lastFrame, type Mode, type Frame, type SuperRisoInput } from './frame';
+import { fullMode, liveMode, modeLabel, pathLabel, prepare, engineParams, seedOf, seedTickFor, tickAt, opts, lastFrame, type Mode, type Frame, type SuperRisoInput } from './frame';
 import { renderExportFrame } from './exportEngine';
 import { record, mountOverlay, setHeader, snapshot, reset } from './perfOverlay';
 import { cfg as KNOBS, live, hooks, DEBUG } from './runtimeConfig';
 import { runMeasurement } from './measure';
+import { loadAssets } from './textures';
 import { flatten, liveFlat, takeBitmap, resetBitmaps, drawBack, drawFrom, holdResult, heldResult, dropHeld, makeGLCanvas, isOffscreen, offscreenWebGL2Available } from './bridge';
 
 export type { SuperRisoInput } from './frame';
 
-const TEXTURES = ['greennoise1024', 'ink_black', 'ink_red', 'ink_lut'] as const;
 let assets: EngineAssets | null = null;
 let disabled = false;
 let contextLost = false;
@@ -59,16 +59,7 @@ const disable = (why: string, e?: unknown) => {
 	console.warn(`[SuperRiso] disabled for this session: ${why}`, e ?? '');
 };
 
-const loadImage = (name: string) => new Promise<HTMLImageElement>((resolve, reject) => {
-	const img = new Image();
-	img.onload = () => resolve(img);
-	img.onerror = () => reject(new Error(`texture ${name} failed to load`));
-	img.src = `/textures/superRiso/${name}.png`;
-});
-
-Promise.all(TEXTURES.map(loadImage))
-	.then(([green, exBlack, exRed, exLut]) => { assets = { green, exBlack, exRed, exLut }; })
-	.catch(e => disable('textures', e));
+loadAssets().then(a => { assets = a; }).catch(e => disable('textures', e));
 
 const watchContext = (c: GLCanvas) => {
 	c.addEventListener('webglcontextlost', (e) => {
@@ -100,11 +91,6 @@ hooks.recreateEngine = recreateEngine;
 hooks.engineInfo = () => engine ? { gl: engine.gl, width: engine.width, height: engine.height } : null;
 hooks.profiler = () => engine ? engine.profiler : null;
 
-const pathLabel = () => [
-	`pdb ${KNOBS.preserveDrawingBuffer ? 'on' : 'off'}`, `mip ${KNOBS.mip ? 'on' : 'off'}`, KNOBS.bitmapUpload ? 'bitmap' : '',
-	KNOBS.offscreenBack ? (offscreenWebGL2Available ? 'offscreen' : 'offscreen→DOM') : '', KNOBS.bypass ? 'BYPASS' : '',
-].filter(Boolean).join(' · ');
-
 // ?srdebug=1 only: the overlay, "Medir" and a read-only handle for the measurement harness.
 if (DEBUG) {
 	mountOverlay(() => { void runMeasurement(); });
@@ -121,14 +107,15 @@ function ensureEngine(): Engine {
 	return engine;
 }
 
-
 // ── Pipeline / hold state (all of it lives here) ──────────────────────────────────────────────
 let frameNo = 0;
 /** liveFlat holds this frame's flatten, waiting to be uploaded at the start of the next frame. */
-let pending: { key: string; frame: number; params: Partial<EngineParams> } | null = null;
+let pending: { key: string; frame: number; params: Partial<EngineParams>; at: number } | null = null;
+/** A result: at = when its source was flattened, seed = its reprint tick (hold: is it still up to date?). */
+type Held = { key: string; tick: number; ew: number; eh: number; crisp: boolean; at: number; seed: number };
 /** The engine ran in this frame's beginSuperRisoFrame(); its result is in glCanvas. */
-let ready: { key: string; frame: number; ew: number; eh: number; crisp: boolean; tick: number } | null = null;
-let held: { key: string; tick: number; ew: number; eh: number; crisp: boolean } | null = null;
+let ready: (Held & { frame: number }) | null = null;
+let held: Held | null = null;
 /** Preview level, image still: the full-level frame held until something moves. */
 let refined: { key: string; tick: number; ew: number; eh: number; crisp: boolean } | null = null;
 // Stage CPU of the current live frame (the begin part is added to the phase-3 part).
@@ -160,15 +147,16 @@ export function beginSuperRisoFrame(w: number, h: number, inp: SuperRisoInput): 
 		// same key: otherwise (first frame, resize, theme, params) phase 3 goes synchronous.
 		if (!pending || pending.key !== fr.key || pending.frame !== frameNo - 1) { pending = null; return; }
 		const tick = tickAt(m.holdFps);
-		if (m.hold && held && held.key === fr.key && held.tick === tick && heldResult()) return;
+		if (m.hold && held && held.key === fr.hk && held.tick === tick && heldResult()) return;
 		const eng = ensureEngine();
 		eng.setSource(liveFlat.canvas, KNOBS.mip);
 		const t1 = performance.now();
-		eng.render({ ...pending.params, seed: seedOf(seedTickFor(inp)) }, opts(m));
+		const seed = seedTickFor(inp), at = pending.at;
+		eng.render({ ...pending.params, seed: seedOf(seed) }, opts(m));
 		const t2 = performance.now();
 		pending = null;
 		if (eng.gl.isContextLost()) return;
-		ready = { key: fr.key, frame: frameNo, ew: eng.width, eh: eng.height, crisp: !!fr.style.crisp, tick };
+		ready = { key: fr.key, frame: frameNo, ew: eng.width, eh: eng.height, crisp: !!fr.style.crisp, tick, at, seed };
 		st.upload = eng.lastUploadMs; st.mip = eng.lastMipMs; st.render = t2 - t1;
 		st.begin = t2 - t0;
 	} catch (e) {
@@ -204,13 +192,13 @@ function beginPipe2(fr: Frame, m: Mode, seedTick: number, t0: number): void {
 }
 
 /** Shows the engine result now in glCanvas (holding a copy in hold modes). */
-function show(offCtx: CanvasRenderingContext2D, w: number, h: number, m: Mode, key: string, ew: number, eh: number, crisp: boolean, holdTick: number): void {
+function show(offCtx: CanvasRenderingContext2D, w: number, h: number, m: Mode, r: Held, hk: string): void {
 	if (m.hold) {
-		const src = holdResult(glCanvas, ew, eh);
-		held = { key, tick: holdTick, ew, eh, crisp };
-		drawFrom(offCtx, src, ew, eh, w, h, crisp);
+		const src = holdResult(glCanvas, r.ew, r.eh);
+		held = { key: hk, tick: r.tick, ew: r.ew, eh: r.eh, crisp: r.crisp, at: r.at, seed: r.seed };
+		drawFrom(offCtx, src, r.ew, r.eh, w, h, r.crisp);
 	} else {
-		drawBack(offCtx, glCanvas, ew, eh, w, h, crisp);
+		drawBack(offCtx, glCanvas, r.ew, r.eh, w, h, r.crisp);
 	}
 }
 
@@ -272,7 +260,7 @@ export function applySuperRiso(
 		const tick = seedTickFor(inp);
 		const fr = prepare(w, h, inp, m);
 		live.level = level;
-		if (held && (held.key !== fr.key || !m.hold)) { held = null; if (!refined) dropHeld(); }
+		if (held && (held.key !== fr.hk || !m.hold)) { held = null; if (!refined) dropHeld(); }
 		const still = stillFor(inp.motion, inp.scene, t0);
 
 		let tFlat = t0, tBack0 = t0;
@@ -316,6 +304,7 @@ export function applySuperRiso(
 			const eng = runSync(ff, flat, engineParams(ff), tick, opts(fm));
 			if (eng.gl.isContextLost()) return false;
 			tBack0 = performance.now();
+			if (DEBUG) console.info(`[SuperRiso] refine (last change: ${quality.lastChange})`);
 			const src = holdResult(glCanvas, eng.width, eng.height);
 			refined = { key: ff.key, tick, ew: eng.width, eh: eng.height, crisp: !!ff.style.crisp };
 			drawFrom(offCtx, src, eng.width, eng.height, w, h, refined.crisp);
@@ -323,14 +312,14 @@ export function applySuperRiso(
 		}
 		if (refined) { refined = null; dropHeld(); }
 
-		const heldNow = () => m.hold && held && held.key === fr.key ? heldResult() : null;
+		const heldNow = () => m.hold && held && held.key === fr.hk ? heldResult() : null;
 
 		if (m.pipe === 2) {
 			// Flatten THIS frame for the next launch, then show what the start of this frame consumed.
 			const flat = flatten(liveFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
 			tFlat = performance.now();
 			const params = engineParams(fr);
-			pending = { key: fr.key, frame: frameNo, params };
+			pending = { key: fr.key, frame: frameNo, params, at: tFlat };
 			tBack0 = performance.now();
 			const hr = heldResult();
 			if (res2 && res2.key === fr.key && hr && (res2.frame === frameNo || m.hold)) {
@@ -349,29 +338,33 @@ export function applySuperRiso(
 		}
 
 		if (m.pipe) {
+			// hold (the preview level in motion): nothing to flatten while the held result is from this tick, or is up to
+			// date (flattened after the last change, t0 − still) with the same reprint seed; a new print comes next frame.
+			const readyNow = !!ready && ready.key === fr.key && ready.frame === frameNo;
+			const hr = heldNow();
+			const skip = m.hold && (readyNow || (!!hr && !!held && (held.tick === tickAt(m.holdFps) || (held.at >= t0 - still && held.seed === tick))));
 			// (2) flatten THIS frame for the next one — before offCtx is overwritten.
-			const flat = flatten(liveFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
+			const flat = skip ? null : flatten(liveFlat, offCtx.canvas, fr.fw, fr.fh, fr.base, isDarkMode);
 			tFlat = performance.now();
-			const params = engineParams(fr);
-			pending = { key: fr.key, frame: frameNo, params };
+			const params = skip ? null : engineParams(fr);
+			pending = params ? { key: fr.key, frame: frameNo, params, at: tFlat } : null;
 			tBack0 = performance.now();
 			// (1) show the result the engine produced at the start of this frame.
-			if (ready && ready.key === fr.key && ready.frame === frameNo) {
-				show(offCtx, w, h, m, fr.key, ready.ew, ready.eh, ready.crisp, ready.tick);
+			if (readyNow) {
+				show(offCtx, w, h, m, ready!, fr.hk);
 				live.pipeFrames++;
 				return done('pipe');
 			}
-			const hr = heldNow();
 			if (hr && held) {
 				drawFrom(offCtx, hr, held.ew, held.eh, w, h, held.crisp);
 				live.heldFrames++;
 				return done('held');
 			}
-			// No valid result (first frame, resize, theme, params): this frame goes synchronous.
-			const eng = runSync(fr, flat, params, tick, opts(m));
+			// No valid result (first frame, resize, theme, params): this frame goes synchronous (never skipped: no result to show).
+			const eng = runSync(fr, flat!, params!, tick, opts(m));
 			if (eng.gl.isContextLost()) return false;
 			tBack0 = performance.now();
-			show(offCtx, w, h, m, fr.key, eng.width, eng.height, !!fr.style.crisp, tickAt(m.holdFps));
+			show(offCtx, w, h, m, { key: fr.key, tick: tickAt(m.holdFps), ew: eng.width, eh: eng.height, crisp: !!fr.style.crisp, at: tFlat, seed: tick }, fr.hk);
 			live.pipeSyncFrames++;
 			return done('sync');
 		}
@@ -388,7 +381,7 @@ export function applySuperRiso(
 		const eng = runSync(fr, flat, engineParams(fr), tick, opts(m));
 		if (eng.gl.isContextLost()) return false;
 		tBack0 = performance.now();
-		show(offCtx, w, h, m, fr.key, eng.width, eng.height, !!fr.style.crisp, holdTick);
+		show(offCtx, w, h, m, { key: fr.key, tick: holdTick, ew: eng.width, eh: eng.height, crisp: !!fr.style.crisp, at: tFlat, seed: tick }, fr.hk);
 		return done('sync');
 	} catch (e) {
 		engine = null;
