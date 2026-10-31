@@ -6,7 +6,7 @@ import { useStrata } from '../components/strata/StrataContext';
 import { UNTITLED_PROJECT_SENTINEL } from '../constants/project';
 import { useTranslation } from '../i18n';
 import { AUTOSAVE_KEY } from './useAutoSave';
-import { cinemaViewForSave } from '../utils/cinemaView';
+import { buildDiorData } from '../utils/diorPayload';
 import { analytics } from '../analytics/analytics';
 import { downloadBlob } from '../utils/downloadBlob';
 import { DIOR_FORMAT_VERSION, DIOR_MIME, createProjectMeta, projectFileStem, diorNameFromFile, readProjectMeta, type DiorFileMeta } from '../utils/projectMeta';
@@ -56,28 +56,7 @@ export function useSaveLoad() {
 			shapeCount: state.shapes.length,
 			thumbnail: await renderProjectThumbnail(),
 		};
-		const data = {
-			meta: fileMeta,
-			shapes: state.shapes, palette: state.palette, totalLayers: state.totalLayers,
-			isDarkMode: state.isDarkMode, postProcessing: state.postProcessing,
-			postProcessingEnabled: state.postProcessingEnabled,
-			// Master FX OFF: the flags are all false and the look that was on is the snapshot (v3.20.5).
-			fxMasterEnabled: state.fxMasterEnabled, postProcessingSnapshot: state.postProcessingSnapshot,
-			hiddenLayers: state.hiddenLayers, locked3DLayers: state.locked3DLayers,
-			projectName: name, layerRenderModes: state.layerRenderModes,
-			layerGradParams: state.layerGradParams, currentBrushThickness: state.currentBrushThickness,
-			brushMode: state.brushMode, tool: state.tool, activePaletteId: state.activePaletteId,
-			// A project without a view of its own (nobody has been in CINEMA yet) saves the defaults, not the placeholders.
-			...cinemaViewForSave(state), cinematicSpeed: state.cinematicSpeed,
-			isHandheldEnabled: state.isHandheldEnabled, handheldIntensity: state.handheldIntensity,
-			paletteApplyToAllActive: state.paletteApplyToAllActive,
-			paletteApplyToAllSnapshot: state.paletteApplyToAllSnapshot,
-			// View state, not undo state — same category as hiddenLayers/locked3DLayers
-			// above. Worth persisting: choosing a good CINEMA framing point takes real
-			// work now that the picking is accurate (v3.17.17-25), and losing it on
-			// reload was real pain, not a theoretical one.
-			pointOfInterest: state.pointOfInterest,
-		};
+		const data = buildDiorData(state, name, fileMeta);
 		try {
 			const blob = new Blob([JSON.stringify(data)], { type: DIOR_MIME });
 			let filename: string;

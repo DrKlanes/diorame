@@ -65,6 +65,8 @@ export const en: Dictionary = {
 	'topbar.export.pngSeq':       'PNG sequence',
 	'topbar.export.group.image':  'IMAGE',
 	'topbar.export.group.motion': 'MOTION',
+	'topbar.export.superRiso':     'Super Riso ↗',
+	'topbar.export.superRisoDesc': 'Print as riso, photocopy or stencil · export in high resolution',
 
 	// Info
 	'topbar.info.about': 'About Diorame',
@@ -663,6 +665,12 @@ export const en: Dictionary = {
 	'toast.save.successTitle': 'Project saved',
 	'toast.save.successDesc': '{filename}',
 	'toast.save.errorTitle': 'Failed to save',
+	'toast.superRiso.opened': 'Opened in Super Riso',
+	'toast.superRiso.failedTitle': 'Could not open Super Riso',
+	'toast.superRiso.failedDesc': 'Download the .dior and open it there',
+	'toast.superRiso.download': 'Download .dior',
+	'toast.superRiso.emptyTitle': 'Nothing to send',
+	'toast.superRiso.emptyDesc': 'Draw something visible first',
 	'toast.duplicate.title': 'Copy created',
 	'toast.duplicate.desc': 'You are now working on "{name}". Save it to create its file.',
 

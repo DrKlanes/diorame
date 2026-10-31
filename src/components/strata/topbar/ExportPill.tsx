@@ -3,6 +3,7 @@ import { DiPill, DiActionButton, DiSegmentControl } from '../../../design-system
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { useExportFlow } from '../../../hooks/useExportFlow';
+import { useSuperRisoExport } from '../../../hooks/useSuperRisoExport';
 import { DiSelectorPopover, DiSelectorOption } from '../popovers';
 import { ComplexSceneModalV2 } from '../modals/ComplexSceneModalV2';
 import { setNextPNGQuality, setNextPNGBackground } from '../canvas/exportHandlers';
@@ -127,6 +128,8 @@ export function ExportPill({ dark }: ExportPillProps) {
 		showComplexityWarning,
 		shapeCount,
 	} = useExportFlow();
+
+	const handleSuperRiso = useSuperRisoExport();
 
 	const [open, setOpen] = useState(false);
 	const [sub, setSub] = useState<'capture' | 'video' | 'gif' | null>(null);
@@ -255,6 +258,12 @@ export function ExportPill({ dark }: ExportPillProps) {
 								<DiSelectorOption title={t('topbar.snapshot.highQuality')} onSelect={() => handleCapture('hq')} />
 							</>
 						)}
+
+						<DiSelectorOption
+							title={t('topbar.export.superRiso')}
+							description={t('topbar.export.superRisoDesc')}
+							onSelect={handleSuperRiso}
+						/>
 
 						{isAnim && (
 							<>

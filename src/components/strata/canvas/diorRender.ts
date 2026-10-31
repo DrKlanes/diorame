@@ -139,10 +139,11 @@ export async function parseDior(buffer: ArrayBuffer): Promise<DiorProject> {
 	return project;
 }
 
-/** Size in px of the DRAW PNG at 1× of the frame: the ink of the visible layers plus the margin. Throws Error('vacío'). */
-export function frameOf(project: DiorProject): { width: number; height: number } {
-	const { width, height } = frame(project);
-	return { width, height };
+/** Size in px of the DRAW PNG at 1× of the frame: the ink of the visible layers plus the margin. Throws Error('vacío').
+ *  x0, y0 (v3.23.0): where its corner falls in DRAW coordinates (zoom 1), to place a `drawView` from the app. */
+export function frameOf(project: DiorProject): { width: number; height: number; x0: number; y0: number } {
+	const { width, height, x0, y0 } = frame(project);
+	return { width, height, x0, y0 };
 }
 
 /** The drawing (no Super Riso, no UI) with the project's background: `view` (frameOf coordinates, null = all) at width px. */

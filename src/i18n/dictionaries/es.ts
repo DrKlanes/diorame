@@ -61,6 +61,8 @@ export const es: Dictionary = {
 	'topbar.export.pngSeq':       'Secuencia PNG',
 	'topbar.export.group.image':  'IMAGEN',
 	'topbar.export.group.motion': 'MOVIMIENTO',
+	'topbar.export.superRiso':     'Super Riso ↗',
+	'topbar.export.superRisoDesc': 'Imprimir en riso, fotocopia o stencil · exportar en alta',
 
 	'topbar.info.about': 'Acerca de Diorame',
 
@@ -626,6 +628,12 @@ export const es: Dictionary = {
 	'toast.save.successTitle': 'Proyecto guardado',
 	'toast.save.successDesc': '{filename}',
 	'toast.save.errorTitle': 'Error al guardar',
+	'toast.superRiso.opened': 'Abierto en Super Riso',
+	'toast.superRiso.failedTitle': 'No se pudo abrir Super Riso',
+	'toast.superRiso.failedDesc': 'Descarga el .dior y ábrelo allí',
+	'toast.superRiso.download': 'Descargar .dior',
+	'toast.superRiso.emptyTitle': 'Nada que enviar',
+	'toast.superRiso.emptyDesc': 'Dibuja algo visible primero',
 	'toast.duplicate.title': 'Copia creada',
 	'toast.duplicate.desc': 'Ahora trabajas en «{name}». Guárdala para crear su archivo.',
 
