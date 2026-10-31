@@ -1131,7 +1131,7 @@ Every item cost a bug. They are the checklist for porting or touching any Super 
 
 The **Super Riso Lab** (`C:\Users\Usuario\Desktop\diorame-riso-lab`, outside the repo, private) is the visual and code reference of the three techniques: `tools\studio\` (`shaders.studio.js` Riso, `shaders.xerox.js`, `shaders.stencil.js`, `engine.studio.js`, `ui.src.html`), `research\` (`riso-anatomia.md`, `xerox-anatomia.md`, `stencil-anatomia.md`, `PLAN-super-riso.md`), `lab\` (published versions `super-riso-lab-vN.html`). Its `tools\README.md` carries the list of sources and the Lab ↔ Diorame table.
 
-**Synced with Lab v22** (v3.22.0: the six `FS_X*` bodies checked against the published v22 page, ignoring whitespace. v3.20.13: the Riso shader bodies are byte-identical to `shaders.studio.js` apart from the tile coordinates and the flipped SCAN; the `FS_X*` and `FS_S*` bodies are byte-identical to `shaders.xerox.js` / `shaders.stencil.js`, checked in the v3.20.1 audit; v17 changed nothing that Diorame uses — `.dior` work in the lab's UI, not ported; v19–v20 are intermediate steps folded into v21's diff).
+**Synced with Lab v22.8** (v3.22.0: the six `FS_X*` bodies checked against the published v22 page, ignoring whitespace. v3.20.13: the Riso shader bodies are byte-identical to `shaders.studio.js` apart from the tile coordinates and the flipped SCAN; the `FS_X*` and `FS_S*` bodies are byte-identical to `shaders.xerox.js` / `shaders.stencil.js`, checked in the v3.20.1 audit; v17 changed nothing that Diorame uses — `.dior` work in the lab's UI, not ported; v19–v20 are intermediate steps folded into v21's diff).
 
 | Lab | What | Diorame |
 |---|---|---|
@@ -1143,6 +1143,11 @@ The **Super Riso Lab** (`C:\Users\Usuario\Desktop\diorame-riso-lab`, outside the
 | v18 | Riso: FILL (overprint), single ink in darks, continuous solids, no twin inks, Imperfection curve (`riso-v17-a-v18.diff`) | 3.20.12 |
 | v21 | Riso: optical-density LUT + trilinear SEP0 (gradients without bands or rings), FILL only under solid ink, solids closed later (`riso-v18-a-v21.diff`) | 3.20.13 |
 | v22 | Fotocopia: marker stroke ends against the contour computed per pixel (`xerox-v21-a-v22.diff`); the Lab opens `.dior` through `dior-render.js` (`ui-v21-a-v22.diff`, §8) | 3.22.0 |
+| v22.8 | Stencil: loaded paint fills the wall pores (`FS_SPRAY`, the `pores()` factor; the pores used to cut through solid black) | 3.22.4 |
+
+**Product decision: the Riso paper colour only affects what is printed.** In Diorame the paper colour chosen in Super Riso tints the print (inks over that paper), not the canvas background; in the Lab (v22.7) it also tints the page behind the image. This is deliberate, not an accidental difference: in Diorame the background is the drawing's own (paper texture / dark mode). Do not "fix" it to match the Lab.
+
+**Pending (Moisés, iPad):** PWA with «Super Riso ↗» (expected: download fallback, no `opener`), with the `superriso` tab already open (reuse + 2.5 s probe), and «‹ Diorame» from the Lab (`window.close`, may be ignored by iPadOS). [POR CONFIRMAR]
 
 **Procedure for any future change:** validate in the Lab → diff of the shader files → port 1:1 (never "simplify" GLSL) → compare against the Lab with the same inputs (trap 9) → update the table above and `tools\README.md`.
 
@@ -1215,7 +1220,7 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ### 3.22.4 — Stencil: los poros ya no atraviesan la pintura cargada
 
-**fix(fx)** — Port 1:1 de lab v22.8 en FS_SPRAY: la pintura cargada rellena los poros de «pared» (factor `.9·(1-smoothstep(.45,.9,dens))` en vez de `.9-.45·smoothstep(1,1.3,dens)`). Retira el tope de resolución de 3.22.3 (era un parche del síntoma). **Files**: `superRiso/shadersStencil.ts`, `superRiso/stencilParams.ts`, `superRiso/frame.ts`, `REFERENCE.md`, `version.ts`, `package.json`.
+**fix(fx)** — Port 1:1 de lab v22.8 en FS_SPRAY: la pintura cargada rellena los poros de «pared» (factor `.9·(1-smoothstep(.45,.9,dens))` en vez de `.9-.45·smoothstep(1,1.3,dens)`). Causa real: los poros de «pared» (`pores()`, se abren por encima de ~7,5 px/mm: pantallas anchas, HiDPI y exportaciones a 300 ppp) atravesaban la pintura cargada; no era la densidad ni un fallo de port. Retira `STENCIL_LIVE_MAX_PXMM` de 3.22.3 (parche del síntoma: ocultaba las motas en vivo pero no en exportaciones y costaba nitidez). **Files**: `superRiso/shadersStencil.ts`, `superRiso/stencilParams.ts`, `superRiso/frame.ts`, `REFERENCE.md`, `version.ts`, `package.json`.
 
 ### 3.22.3 — Stencil: sin motas claras en el negro en pantallas grandes (superado por 3.22.4: el tope se retiró)
 
