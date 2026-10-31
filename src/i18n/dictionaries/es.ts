@@ -9,6 +9,8 @@ export const es: Dictionary = {
 	'topbar.file.open': 'Abrir',
 	'topbar.file.save': 'Guardar',
 	'topbar.file.saveDownload': 'Guardar (descarga una copia)',
+	'topbar.file.saveTo': "Guardar en «{file}»",
+	'topbar.file.saveAsNew': "Guardar como «{file}» (el original no se toca)",
 	'topbar.file.saveMore': 'Más opciones de guardado',
 	'topbar.file.saveAs': 'Guardar como…',
 	'topbar.file.saveAsDesc': 'Guarda en un archivo nuevo',
@@ -650,6 +652,7 @@ export const es: Dictionary = {
 	'shortcuts.category.canvasDraw': 'Lienzo (Dibujo)',
 
 	'shortcuts.label.saveProject': 'Guardar proyecto',
+	'shortcuts.label.saveProjectAs': 'Guardar como…',
 	'shortcuts.label.exportSvg': 'Exportar SVG',
 	'shortcuts.label.exportSvgz': 'Exportar SVGZ',
 	'shortcuts.label.undo': 'Deshacer',

@@ -88,6 +88,7 @@ export function formatShortcut(s: string): string {
 export const SHORTCUTS_GROUPS: ShortcutGroup[] = [
 	{ categoryKey: 'shortcuts.category.file', items: [
 		{ labelKey: 'shortcuts.label.saveProject', shortcut: 'Ctrl+S' },
+		{ labelKey: 'shortcuts.label.saveProjectAs', shortcut: 'Ctrl+Shift+S' },
 		{ labelKey: 'shortcuts.label.exportSvg',   shortcut: 'Ctrl+E' },
 		{ labelKey: 'shortcuts.label.exportSvgz',  shortcut: 'Ctrl+Shift+E' },
 	] },

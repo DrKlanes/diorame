@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { DiPill, DiVSep, DiActionButton } from '../../../design-system';
+import { T, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { useSaveLoad } from '../../../hooks/useSaveLoad';
 import { useTranslation } from '../../../i18n';
@@ -8,7 +9,8 @@ import { ClearCanvasAlertV2 } from '../modals/ClearCanvasAlertV2';
 import { InfoButton } from './InfoButton';
 import { DiSelectorPopover, DiSelectorOption } from '../popovers';
 import { DIOR_ACCEPT } from '../../../utils/projectMeta';
-import { canOverwriteFiles } from '../../../utils/projectFile';
+import { canOverwriteFiles, getProjectFileLink } from '../../../utils/projectFile';
+import { projectFileStem } from '../../../utils/projectMeta';
 import { ProjectNameButton } from './ProjectNameButton';
 
 interface DocumentPillProps { dark: boolean; }
@@ -23,6 +25,14 @@ export function DocumentPill({ dark }: DocumentPillProps) {
 	// Overwriting the same file exists only with the File System Access API (Chromium desktop); elsewhere every
 	// save is a new download, and the button says so.
 	const canOverwrite = canOverwriteFiles();
+	// What «Guardar» will do now: write over the linked file, or (name changed) make a new one. The file on disk
+	// is never touched by a rename.
+	const link = canOverwrite ? getProjectFileLink(state.projectMeta.projectId) : null;
+	const docName = state.projectName === UNTITLED_PROJECT_SENTINEL ? t('topbar.file.untitledProject') : state.projectName;
+	const saveTooltip = !canOverwrite ? t('topbar.file.saveDownload')
+		: link && link.name === state.projectName ? t('topbar.file.saveTo', { file: link.handle.name })
+		: link ? t('topbar.file.saveAsNew', { file: `${projectFileStem(docName)}.dior` })
+		: t('topbar.file.save');
 
 	const isDrawing = state.mode === 'drawing';
 
@@ -54,8 +64,10 @@ export function DocumentPill({ dark }: DocumentPillProps) {
 
 				<DiActionButton name="new"  onClick={handleNew}         dark={dark} tooltip={t('topbar.file.new')} />
 				<DiActionButton name="open" onClick={triggerFileSelect} dark={dark} tooltip={t('topbar.file.open')} />
-				<DiActionButton name="save" onClick={handleSaveProject} dark={dark} tooltip={t(canOverwrite ? 'topbar.file.save' : 'topbar.file.saveDownload')} shortcut="Ctrl+S" />
-				<div ref={saveMenuRef}>
+				{/* Split button: Save + menu are one control */}
+				<div ref={saveMenuRef} style={{ display: 'flex', alignItems: 'center', height: 30, borderRadius: RADIUS.iconBtn, boxShadow: `inset 0 0 0 1px ${dk(dark, T.border, T.borderDark)}` }}>
+					<DiActionButton name="save" onClick={handleSaveProject} dark={dark} tooltip={saveTooltip} shortcut="Ctrl+S" />
+					<div style={{ width: 1, height: 16, backgroundColor: dk(dark, T.border, T.borderDark), flexShrink: 0 }} />
 					<DiActionButton name="chevron-down" onClick={() => setSaveMenuOpen(v => !v)} dark={dark} active={saveMenuOpen} iconSize={14} tooltip={t('topbar.file.saveMore')} />
 				</div>
 
@@ -74,8 +86,9 @@ export function DocumentPill({ dark }: DocumentPillProps) {
 			</DiPill>
 
 			<DiSelectorPopover anchorRef={saveMenuRef} open={saveMenuOpen} onClose={() => setSaveMenuOpen(false)} dark={dark} placement="bottom" align="start">
+				<DiSelectorOption title={t('topbar.file.save')} description="Ctrl+S" onSelect={handleSaveProject} />
 				{canOverwrite && (
-					<DiSelectorOption title={t('topbar.file.saveAs')} description={t('topbar.file.saveAsDesc')} onSelect={handleSaveProjectAs} />
+					<DiSelectorOption title={t('topbar.file.saveAs')} description={`${t('topbar.file.saveAsDesc')} · Ctrl+Shift+S`} onSelect={handleSaveProjectAs} />
 				)}
 				<DiSelectorOption title={t('topbar.file.duplicate')} description={t('topbar.file.duplicateDesc')} onSelect={handleDuplicateProject} />
 			</DiSelectorPopover>

@@ -11,7 +11,7 @@ import { analytics } from '../analytics/analytics';
 import { downloadBlob } from '../utils/downloadBlob';
 import { DIOR_FORMAT_VERSION, DIOR_MIME, createProjectMeta, projectFileStem, readProjectMeta, type DiorFileMeta } from '../utils/projectMeta';
 import {
-	canOverwriteFiles, getProjectFileHandle, setProjectFileHandle, hasWritePermission, pickSaveFile, pickOpenFile,
+	canOverwriteFiles, getProjectFileLink, setProjectFileLink, hasWritePermission, pickSaveFile, pickOpenFile,
 	writeProjectFile, isDiorFile, isAbortError, type ProjectFileHandle,
 } from '../utils/projectFile';
 import { renderProjectThumbnail } from '../components/strata/canvas/projectThumbnail';
@@ -23,16 +23,20 @@ export function useSaveLoad() {
 	const { t } = useTranslation();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// Writes the file. Chromium desktop: over the file this drawing is linked to ("Guardar"), or a new one
-	// chosen in the save dialog ("Guardar como…", first save). Elsewhere: a download named "<name> (<date time>).dior".
+	// Writes the file. Chromium desktop: over the file this drawing is linked to ("Guardar" with the name it was
+	// linked with), or a new one chosen in the save dialog ("Guardar como…", first save, or "Guardar" after a
+	// rename: new name = new file, the original is never touched). Elsewhere: a download named "<name> (<date time>).dior".
 	const performSave = useCallback(async (intent: 'save' | 'saveAs', name: string) => {
 		const meta = state.projectMeta;
 		let handle: ProjectFileHandle | null = null;
 		if (canOverwriteFiles()) {
 			try {
-				const linked = intent === 'save' ? getProjectFileHandle(meta.projectId) : null;
+				const link = getProjectFileLink(meta.projectId);
+				const overwrite = intent === 'save' && link && link.name === name ? link.handle : null;
 				// The dialog first, inside the user's gesture: the thumbnail and the payload come after.
-				handle = linked && await hasWritePermission(linked) ? linked : await pickSaveFile(`${projectFileStem(name)}.dior`);
+				handle = overwrite && await hasWritePermission(overwrite)
+					? overwrite
+					: await pickSaveFile(`${projectFileStem(name)}.dior`, link?.handle);
 			} catch (err) {
 				if (isAbortError(err)) return;
 				console.warn('[save] file dialog failed, downloading instead:', err);
@@ -73,7 +77,7 @@ export function useSaveLoad() {
 			let filename: string;
 			if (handle) {
 				await writeProjectFile(handle, blob);
-				setProjectFileHandle(meta.projectId, handle);
+				setProjectFileLink(meta.projectId, handle, name);
 				filename = handle.name;
 			} else {
 				filename = `${projectFileStem(name, now)}.dior`;
@@ -86,7 +90,7 @@ export function useSaveLoad() {
 			analytics.projectSaved();
 		} catch (err) {
 			console.warn('[save] failed:', err);
-			if (handle) setProjectFileHandle(meta.projectId, null);
+			if (handle) setProjectFileLink(meta.projectId, null);
 			toast.error(t('toast.save.errorTitle'), { description: t('common.pleaseRetry') });
 		}
 	}, [state, dispatch, t]);
@@ -136,7 +140,8 @@ export function useSaveLoad() {
 				// Decided here, not in the reducer, so the linked file knows its projectId.
 				const meta = readProjectMeta(json.meta) ?? createProjectMeta();
 				dispatch({ type: 'LOAD_PROJECT', payload: { ...json, meta } });
-				setProjectFileHandle(meta.projectId, handle && isDiorFile(handle.name) ? handle : null);
+				const loadedName = typeof json.projectName === 'string' ? json.projectName.slice(0, 100) : '';
+				setProjectFileLink(meta.projectId, handle && isDiorFile(handle.name) ? handle : null, loadedName === 'Untitled Project' ? UNTITLED_PROJECT_SENTINEL : loadedName);
 				const n = json.shapes.length;
 				const desc = n === 1 ? t('toast.load.successDescOne', { n }) : t('toast.load.successDesc', { n });
 				toast.success(t('toast.load.successTitle'), { description: desc, duration: 2000 });

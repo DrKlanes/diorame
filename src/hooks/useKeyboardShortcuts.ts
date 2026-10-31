@@ -1,13 +1,15 @@
 import { useEffect } from 'react';
 import { useStrata } from '../components/strata/StrataContext';
 import { shouldIgnoreGlobalKey } from '../utils/keyboardShortcuts';
+import { canOverwriteFiles } from '../utils/projectFile';
 
 interface KeyboardShortcutsDeps {
 	handleExportRequest: (format: 'svg' | 'svgz') => void;
 	handleSaveProject: () => void;
+	handleSaveProjectAs?: () => void;
 }
 
-export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject }: KeyboardShortcutsDeps): void {
+export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject, handleSaveProjectAs }: KeyboardShortcutsDeps): void {
 	const { state, dispatch } = useStrata();
 
 	useEffect(() => {
@@ -55,6 +57,12 @@ export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject }:
 				handleSaveProject();
 				return;
 			}
+			// Save as: only where a dialog exists (Chromium desktop); elsewhere every save is already a download.
+			if (cmd && shift && e.key.toLowerCase() === 's') {
+				e.preventDefault();
+				if (canOverwriteFiles()) handleSaveProjectAs?.();
+				return;
+			}
 			if (!cmd && shift && e.key === '?') {
 				dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
 				return;
@@ -82,5 +90,5 @@ export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject }:
 
 		window.addEventListener('keydown', handleKeyDown);
 		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, [handleExportRequest, handleSaveProject, dispatch, state.textSession.isActive, state.mode, state.isAnimationMode, state.isAnimationPlaying]);
+	}, [handleExportRequest, handleSaveProject, handleSaveProjectAs, dispatch, state.textSession.isActive, state.mode, state.isAnimationMode, state.isAnimationPlaying]);
 }

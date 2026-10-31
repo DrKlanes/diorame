@@ -10,6 +10,8 @@ export const en: Dictionary = {
 	'topbar.file.open': 'Open',
 	'topbar.file.save': 'Save',
 	'topbar.file.saveDownload': 'Save (downloads a copy)',
+	'topbar.file.saveTo': 'Save to "{file}"',
+	'topbar.file.saveAsNew': 'Save as "{file}" (the original is not touched)',
 	'topbar.file.saveMore': 'More save options',
 	'topbar.file.saveAs': 'Save as…',
 	'topbar.file.saveAsDesc': 'Saves to a new file',
@@ -688,6 +690,7 @@ export const en: Dictionary = {
 	'shortcuts.category.canvasDraw': 'Canvas (Draw)',
 
 	'shortcuts.label.saveProject': 'Save project',
+	'shortcuts.label.saveProjectAs': 'Save as…',
 	'shortcuts.label.exportSvg': 'Export SVG',
 	'shortcuts.label.exportSvgz': 'Export SVGZ',
 	'shortcuts.label.undo': 'Undo',

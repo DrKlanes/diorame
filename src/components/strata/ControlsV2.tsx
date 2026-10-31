@@ -61,9 +61,9 @@ export function ControlsV2() {
 	const isPlaybackLocked = state.isAnimationMode && state.isAnimationPlaying;
 
 	// Side-effect 1: global keyboard shortcuts
-	const { handleSaveProject } = useSaveLoad();
+	const { handleSaveProject, handleSaveProjectAs } = useSaveLoad();
 	const { handleExportRequest } = useExportFlow();
-	useKeyboardShortcuts({ handleExportRequest, handleSaveProject });
+	useKeyboardShortcuts({ handleExportRequest, handleSaveProject, handleSaveProjectAs });
 
 	// Side-effect 3: mode-change camera reset + first-view init
 	const prevModeRef = useRef(state.mode);

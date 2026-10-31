@@ -12,6 +12,7 @@ type FileHandle = {
 type PickerOptions = {
 	id?: string;
 	suggestedName?: string;
+	startIn?: FileHandle;
 	multiple?: boolean;
 	types?: { description: string; accept: Record<string, string[]> }[];
 };
@@ -35,15 +36,17 @@ const OPEN_TYPES = [{ description: 'Diorame', accept: { 'application/octet-strea
 const PICKER_ID = 'diorame-projects';
 
 // The file the current drawing is saved in. Tied to its projectId: a new canvas, a duplicate or another file
-// opened never inherit it.
-let current: { projectId: string; handle: FileHandle } | null = null;
+// opened never inherit it. `name` is the project name the link was made with: a different name in the document
+// means a new file (v3.22.1), whatever the file on disk is called.
+export type ProjectFileLink = { handle: FileHandle; name: string };
+let current: (ProjectFileLink & { projectId: string }) | null = null;
 
-export function getProjectFileHandle(projectId: string): FileHandle | null {
-	return current && current.projectId === projectId ? current.handle : null;
+export function getProjectFileLink(projectId: string): ProjectFileLink | null {
+	return current && current.projectId === projectId ? current : null;
 }
 
-export function setProjectFileHandle(projectId: string, handle: FileHandle | null): void {
-	current = handle ? { projectId, handle } : null;
+export function setProjectFileLink(projectId: string, handle: FileHandle | null, name = ''): void {
+	current = handle ? { projectId, handle, name } : null;
 }
 
 // Only a real .dior is adopted for overwriting: a "x.dior.json" opened from an old save gets a clean .dior
@@ -53,8 +56,9 @@ export const isDiorFile = (name: string) => /\.dior$/i.test(name);
 export const isAbortError = (err: unknown) => err instanceof DOMException && err.name === 'AbortError';
 
 // Must run inside the user's gesture (Chromium requires transient activation).
-export function pickSaveFile(suggestedName: string): Promise<FileHandle> {
-	return fsWindow().showSaveFilePicker!({ id: PICKER_ID, suggestedName, types: PICKER_TYPES });
+// `startIn`: the linked file, so the dialog opens in its folder.
+export function pickSaveFile(suggestedName: string, startIn?: FileHandle): Promise<FileHandle> {
+	return fsWindow().showSaveFilePicker!({ id: PICKER_ID, suggestedName, types: PICKER_TYPES, ...(startIn ? { startIn } : {}) });
 }
 
 export async function pickOpenFile(): Promise<FileHandle | null> {
