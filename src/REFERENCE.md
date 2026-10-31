@@ -489,7 +489,7 @@ Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"
 | `browserCapabilities.ts` | ~55 | `supportsCanvasFilter()` — cached functional detection for `ctx.filter` support (Safari/WebKit silently ignores filter). Consumed by `postProcessing.ts` to route Glow/DoF to `blurCompat` |
 | `panelLayout.ts` | ~25 | `rightPanelInsets(bottomBarHeight, isStandalone)` → `{ top, bottom }` CSS for a wrapper that spans the free band on the right edge (below the TopBar pills, above the bottom bar, safe-area included); `CAMERA_BAR_HEIGHT` (40 wide · 88 compact). The panel is centred in the band and never taller than it (`maxHeight: 100%`, inner scroll). First user: `FXPanel` (v3.20.3); the DRAW inspector will reuse it |
 | `downloadBlob.ts` | ~25 | `downloadBlob(blob, filename)` — Blob download via hidden appended anchor + deferred cleanup/revoke (iPadOS WebKit drops detached-anchor clicks and sync-revoked URLs); shared by PNG/SVG/MP4/GIF/ZIP export sinks and, since v3.21.0, the `.dior` download |
-| `projectMeta.ts` | ~50 | `.dior` format v2 (v3.21.0): `DIOR_FORMAT_VERSION`, `DIOR_MIME` (`application/octet-stream`), `DIOR_ACCEPT`, `DiorFileMeta`, `createProjectMeta(derivedFrom?)`, `readProjectMeta(raw)` (field by field, null without a valid `projectId`), `projectFileStem(name, date?)` (sanitized name + ` (YYYY-MM-DD HH-mm)`) |
+| `projectMeta.ts` | ~50 | `.dior` format v2 (v3.21.0): `DIOR_FORMAT_VERSION`, `DIOR_MIME` (`application/octet-stream`), `DIOR_ACCEPT`, `DiorFileMeta`, `createProjectMeta(derivedFrom?)`, `readProjectMeta(raw)` (field by field, null without a valid `projectId`), `projectFileStem(name, date?)` (sanitized name + ` (YYYY-MM-DD HH-mm)`), `diorNameFromFile(filename)` (inverse: strips `.dior` and the date suffix) |
 | `projectFile.ts` | ~85 | File System Access API (v3.21.0, Chromium desktop): `canOverwriteFiles`, the linked file per `projectId` + the project name it was linked with (`get/setProjectFileLink`), `pickSaveFile(name, startIn?)` / `pickOpenFile`, `hasWritePermission`, `writeProjectFile`, `onLaunchedFile` (`launchQueue`), `isDiorFile`, `isAbortError` |
 | `soundManager.ts` | ~140 | UI sound playback manager: click, success, brush stroke (pool of 6), mode switch via HTMLAudioElement |
 | `cinemaView.ts` | ~20 | `cinemaViewForSave(state)` (v3.20.11): the four CINEMA view fields as written to a `.dior` and the autosave — the defaults while `cinemaViewInitialized` is false (the state then holds placeholders, not a framing anyone chose), the state's values otherwise |
@@ -1181,9 +1181,13 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.22.1)
+## Appendix C: Changelog Highlights (1.7.3 → 3.22.2)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.22.2 — Guardar: el nombre escrito en el diálogo manda
+
+**fix(save)** — Si en el picker (Guardar con nombre cambiado, Guardar como, primer Guardar) se escribe un nombre distinto del sugerido, `state.projectName` pasa a ser ese nombre (`diorNameFromFile`: sin `.dior` ni sufijo « (YYYY-MM-DD HH-mm)») y es también el nombre enlazado al handle: campo y archivo coinciden y el siguiente Guardar sobrescribe sin picker. Duplicar no abre picker; su primer Guardar sí y entra por el mismo camino. Verificado con picker simulado: sugerido «Y», devuelto «Z (2026-10-31 11-30).dior» → campo «Z» → Guardar sin picker. **Files**: `hooks/useSaveLoad.ts`, `utils/projectMeta.ts`, `REFERENCE.md`, `version.ts`, `package.json`.
 
 ### 3.22.1 — Guardar: nombre nuevo = archivo nuevo
 

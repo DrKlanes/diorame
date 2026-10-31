@@ -9,7 +9,7 @@ import { AUTOSAVE_KEY } from './useAutoSave';
 import { cinemaViewForSave } from '../utils/cinemaView';
 import { analytics } from '../analytics/analytics';
 import { downloadBlob } from '../utils/downloadBlob';
-import { DIOR_FORMAT_VERSION, DIOR_MIME, createProjectMeta, projectFileStem, readProjectMeta, type DiorFileMeta } from '../utils/projectMeta';
+import { DIOR_FORMAT_VERSION, DIOR_MIME, createProjectMeta, projectFileStem, diorNameFromFile, readProjectMeta, type DiorFileMeta } from '../utils/projectMeta';
 import {
 	canOverwriteFiles, getProjectFileLink, setProjectFileLink, hasWritePermission, pickSaveFile, pickOpenFile,
 	writeProjectFile, isDiorFile, isAbortError, type ProjectFileHandle,
@@ -26,7 +26,8 @@ export function useSaveLoad() {
 	// Writes the file. Chromium desktop: over the file this drawing is linked to ("Guardar" with the name it was
 	// linked with), or a new one chosen in the save dialog ("Guardar como…", first save, or "Guardar" after a
 	// rename: new name = new file, the original is never touched). Elsewhere: a download named "<name> (<date time>).dior".
-	const performSave = useCallback(async (intent: 'save' | 'saveAs', name: string) => {
+	const performSave = useCallback(async (intent: 'save' | 'saveAs', requestedName: string) => {
+		let name = requestedName;
 		const meta = state.projectMeta;
 		let handle: ProjectFileHandle | null = null;
 		if (canOverwriteFiles()) {
@@ -42,6 +43,11 @@ export function useSaveLoad() {
 				console.warn('[save] file dialog failed, downloading instead:', err);
 				handle = null;
 			}
+		}
+		// The name typed in the dialog wins (v3.22.2): the field and the file agree, so the next save overwrites.
+		if (handle && handle.name !== getProjectFileLink(meta.projectId)?.handle.name) {
+			const typed = diorNameFromFile(handle.name);
+			if (typed && typed !== name) { name = typed; dispatch({ type: 'SET_PROJECT_NAME', payload: name }); }
 		}
 		const now = new Date();
 		const nextMeta: ProjectMeta = { ...meta, version: meta.version + 1, updatedAt: now.toISOString() };

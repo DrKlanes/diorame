@@ -36,6 +36,11 @@ export function readProjectMeta(raw: unknown): ProjectMeta | null {
 	};
 }
 
+// Project name out of a file name the user typed in a save dialog: no .dior, no « (YYYY-MM-DD HH-mm)» suffix.
+export function diorNameFromFile(filename: string): string {
+	return filename.replace(/\.dior$/i, '').replace(/ \(\d{4}-\d{2}-\d{2} \d{2}-\d{2}\)$/, '').trim().slice(0, 100);
+}
+
 // "<name> (YYYY-MM-DD HH-mm)": the time keeps several saves of one day from turning into "(1)", "(2)".
 export function projectFileStem(name: string, date?: Date): string {
 	const clean = name
