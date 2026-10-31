@@ -551,8 +551,9 @@ activa, y cada instancia de exportación vuelve a compilar los programas de la t
 
 ### Restos del dibujo del rotulador y sin ajuste fino
 
-Los escalones en los extremos de los trazos de rotulador son del modelo (también están en el Lab); el dentado
-del borde por baja resolución se arregló en v3.20.1 (mínimo de 1,5 texels). Ninguna técnica tiene sliders de
+Los escalones en los extremos de los trazos de rotulador eran del modelo (corte a escuadra de cada pasada donde su
+eje cruzaba el contorno) y se arreglaron en el Lab v22 → Diorame v3.22.0 (final por píxel, §14). El mínimo de
+1,5 texels de v3.20.1 se mantiene. Ninguna técnica tiene sliders de
 ajuste fino: los valores salen de `xBase()` / `sBase()` y de los `fine` de los estilos.
 
 ---

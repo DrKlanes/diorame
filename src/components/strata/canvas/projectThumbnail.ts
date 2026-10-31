@@ -1,4 +1,4 @@
-import { renderDrawSnapshot } from './exportHandlers';
+import { renderDrawSnapshot } from './drawSnapshot';
 import type { AnimationExportRenderOptions } from './animationExportRender';
 
 // Thumbnail embedded in the .dior (meta.thumbnail, v3.21.0): for Diorame's own future gallery and the Super

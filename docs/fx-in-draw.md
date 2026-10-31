@@ -175,7 +175,7 @@ Super Riso (`superRiso = fxEnabled ? superRisoLoaded : null`). No hace falta una
 6. **El RAF de DRAW recompone todas las capas en cada frame aunque nada se mueva** (`StrataCanvas.tsx`, bucle RAF). Con resplandor o
    aberración en reposo es coste sostenido y calor en el iPad. La solución de fondo (cachear el frame final en reposo) es núcleo del
    RAF: **medir primero en iPad (F4)**.
-7. **Export PNG de DRAW** (`exportHandlers.ts`, `renderDrawSnapshot`): ya re-renderiza con `renderFrame` y el estado tal cual, así que
+7. **Export PNG de DRAW** (`drawSnapshot.ts`, `renderDrawSnapshot`; en `exportHandlers.ts` hasta v3.21.0; también lo usa `dior-render.js`): ya re-renderiza con `renderFrame` y el estado tal cual, así que
    al abrir la puerta los FX entran solos con fondo **papel**. Problemas: (a) **liso y transparente** se reconstruyen desde el buffer
    de capas (`layers`), y se pierden viñeta, grano, grunge y aberración, que viven en `ctx` **después** de la transferencia → un
    override de fondo dentro de `renderFrame` (campo nuevo del RenderContext: GO); con transparente solo sobreviven los FX del buffer
