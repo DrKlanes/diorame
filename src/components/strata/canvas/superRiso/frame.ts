@@ -15,7 +15,7 @@ import { xeroxParams } from './xeroxParams';
 import { xeroxMarkers, type XeroxMarkers } from './xeroxMarkers';
 import { xeroxMaps, xeroxMapsVersion } from './xeroxMaps';
 import { setXeroxPalette, setStencilPalette } from './xeroxPalette';
-import { stencilParams } from './stencilParams';
+import { stencilParams, STENCIL_LIVE_MAX_PXMM } from './stencilParams';
 import { stencilFrame, stencilMapsVersion, type StencilFrame } from './stencilScene';
 import { liveFlat, exportFlat, offscreenWebGL2Available } from './bridge';
 import { PV_ALL, PV_LIGHT } from './shadersFast';
@@ -79,7 +79,7 @@ export const lastFrame: { inks: PickedInks | null; params: AnyParams | null } = 
 export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Frame {
 	const { settings: s, isDarkMode, isPixelArt } = inp;
 	const xr = s.technique === 'xerox', sn = s.technique === 'stencil';
-	const style = xr ? xeroxParams(s.xerox, w * m.res, s.resolution) : sn ? stencilParams(s.stencil, w * m.res, s.resolution) : fromPanel(s, w * m.res);
+	const style = xr ? xeroxParams(s.xerox, w * m.res, s.resolution) : sn ? stencilParams(s.stencil, w * m.res, s.resolution, inp.isLive ? STENCIL_LIVE_MAX_PXMM : Infinity) : fromPanel(s, w * m.res);
 	const simW = Math.round(240 * style.pxmm!);
 	const simH = Math.round(simW * h / w);
 	// sim: flatten straight at the simulation size (the 2D draw IS the reduction pass).

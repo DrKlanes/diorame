@@ -40,7 +40,15 @@ function sBase(s: StencilSettings) {
 	};
 }
 
+/**
+ * Live density limit (px/mm). Above 7.5 px/mm the wall pores open (FS_SPRAY: smoothstep(1.5, 3, .2·uPxMm)) and punch
+ * light specks through solid paint. The lab's view never gets there (its preview: 2048 px over an A4 sheet = 6.9 px/mm);
+ * its exports do, and so do Diorame's (no limit).
+ */
+export const STENCIL_LIVE_MAX_PXMM = 7.5;
+
 /** Engine parameters without what comes from the frame (layers, maps, srcPaper, seed: frame.ts engineParams). */
-export function stencilParams(s: StencilSettings, frameW: number, resolution: number): Partial<StencilEngineParams> {
-	return { ...resolutionParams(resolution, frameW), ...sBase(s), tech: 'stencil' };
+export function stencilParams(s: StencilSettings, frameW: number, resolution: number, maxPxmm = Infinity): Partial<StencilEngineParams> {
+	const r = resolutionParams(resolution, frameW);
+	return { ...r, pxmm: Math.min(r.pxmm, maxPxmm), ...sBase(s), tech: 'stencil' };
 }
