@@ -93,6 +93,6 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; vec2 g=gpx()/uIm
     int c=uCh[k]; float drip=0.;
     if(c>=0){ drip=c==0?dr.r:c==1?dr.g:dr.b; drip=smoothstep(.5-uDrTp,.5+uDrTp,drip+(vnoise(mm*3.)-.5)*.12); }
     dens=max(dens*(1.+(sm-1.)*(1.-min(dens*dens,1.))), drip*1.4);                    // la textura del soporte solo se nota con poca carga
-    float cv=sprayCov(dens,mm,fk)*(1.-pore*(.9-.45*smoothstep(1.,1.3,dens))*(1.-drip));
+    float cv=sprayCov(dens,mm,fk)*(1.-pore*.9*(1.-smoothstep(.45,.9,dens))*(1.-drip));   // la pintura cargada rellena los poros; solo asoman con poca carga (niebla, bordes)
     C=mix(C, uLc[k]*mix(1.,.85,drip), cv*uOp[k]); } }
   o=vec4(l2s(min(C,vec3(1.))),1.); }`;
