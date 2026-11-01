@@ -2,6 +2,7 @@ import { Shape } from '../../../types/strataTypes';
 import { layoutText } from '../../../utils/textLayout';
 import { measureTextBlock, boxCorners } from '../../../utils/textMetrics';
 import { textMatrix } from '../../../utils/textTransform';
+import { paintShapeRun } from './renderShapeRun';
 
 export const getLayerBoundingBox = (shapes: Shape[]) => {
 	if (shapes.length === 0) return null;
@@ -43,7 +44,7 @@ export const getLayerBoundingBox = (shapes: Shape[]) => {
 	if (!tempCtx) return null;
 
 	// Render all shapes with proper composite operations
-	shapes.forEach(s => {
+	paintShapeRun(tempCtx, shapes, (tempCtx, s) => {
 		const localPoints = s.points.map(p => ({ x: p.x - roughMinX, y: p.y - roughMinY }));
 
 		if (s.type === 'text' && s.text && localPoints.length > 0) {

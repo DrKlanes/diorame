@@ -186,6 +186,8 @@ export const ICONS: Record<string, string> = {
 		`<path d="M12 3.5L18.5 7L12 10.5L5.5 7L12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 11.5L12 15L18.5 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 16L12 19.5L18.5 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'duplicate':
 		`<path d="M9 6.25H18V14.75H15M6 8.75H15V17.75H6V8.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+	'merge-down':
+		`<path d="M12 4.5V13.5M8 9.5L12 13.5L16 9.5M5.5 18.25H18.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'trash':
 		`<path d="M5 7.25H19M9 4.75H15M6.5 7.25L7.5 19.25H16.5L17.5 7.25M10 10.75V16.25M14 10.75V16.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'arrow-up':
@@ -368,7 +370,7 @@ export const ICON_SECTIONS: Record<string, string[]> = {
 	'Camera Controls':     ['ctrl-speed', 'ctrl-handshake', 'ctrl-handshake-off', 'ctrl-focal', 'ctrl-distance', 'ctrl-spacing', 'ctrl-dof-free', 'ctrl-dof-lock'],
 	'Drawing Tools':       ['brush', 'eraser', 'blob', 'text', 'move', 'symmetry', 'smooth', 'organic', 'draw-behind', 'draw-inside', 'rotate', 'pen', 'line-tapered', 'line-uniform', 'line-ink'],
 	'File Operations':     ['new', 'open', 'save', 'export', 'undo', 'redo'],
-	'Layer Panel':         ['eye', 'eye-off', 'layers', 'duplicate', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal'],
+	'Layer Panel':         ['eye', 'eye-off', 'layers', 'duplicate', 'merge-down', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal'],
 	'Custom Additions':    ['align-left', 'align-center', 'align-right', 'lock', 'unlock', 'pin', 'pin-off', 'flip-horizontal', 'maximize', 'minimize', 'cloud-fog', 'globe', 'scan-line', 'zoom-in', 'target', 'loader', 'monitor', 'tablet', 'sparkles', 'guide', 'info', 'check', 'x', 'plus', 'hand', 'move-vertical', 'move-horizontal', 'aperture', 'wand', 'tornado', 'image'],
 	'Animation':           ['play', 'pause', 'film', 'bounce', 'frame-back', 'frame-fwd', 'anim-loop', 'anim-pingpong', 'onion'],
 	'Depth':               ['depth-on', 'depth-off'],

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useStrata } from '../components/strata/StrataContext';
 import { shouldIgnoreGlobalKey } from '../utils/keyboardShortcuts';
 import { canOverwriteFiles } from '../utils/projectFile';
+import { useMergeLayerDown } from './useMergeLayerDown';
 
 interface KeyboardShortcutsDeps {
 	handleExportRequest: (format: 'svg' | 'svgz') => void;
@@ -11,6 +12,7 @@ interface KeyboardShortcutsDeps {
 
 export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject, handleSaveProjectAs }: KeyboardShortcutsDeps): void {
 	const { state, dispatch } = useStrata();
+	const { mergeDown } = useMergeLayerDown();
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -71,6 +73,10 @@ export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject, h
 			// === DRAWING MODE ONLY (Guard 3) ===
 			if (state.mode !== 'drawing') return;
 
+			if (!cmd && shift && e.key.toLowerCase() === 'm') {
+				mergeDown();
+				return;
+			}
 			if (!cmd && !shift) {
 				switch (e.key.toLowerCase()) {
 					case 'b': dispatch({ type: 'SET_TOOL', payload: 'blob' }); return;
@@ -90,5 +96,5 @@ export function useKeyboardShortcuts({ handleExportRequest, handleSaveProject, h
 
 		window.addEventListener('keydown', handleKeyDown);
 		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, [handleExportRequest, handleSaveProject, handleSaveProjectAs, dispatch, state.textSession.isActive, state.mode, state.isAnimationMode, state.isAnimationPlaying]);
+	}, [handleExportRequest, handleSaveProject, handleSaveProjectAs, mergeDown, dispatch, state.textSession.isActive, state.mode, state.isAnimationMode, state.isAnimationPlaying]);
 }

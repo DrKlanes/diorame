@@ -10,6 +10,7 @@ import { renderEraserShape } from './renderEraserShape';
 import { renderRegularFillShape } from './renderRegularFillShape';
 import { renderLiveStroke } from './renderLiveStroke';
 import { composeLayer } from './composeLayer';
+import { paintShapeRun } from './renderShapeRun';
 import type { RenderContext, PerFrameComputed } from './renderPipeline';
 
 /**
@@ -181,7 +182,7 @@ export function renderLayer(
 	}
 
 	// Draw Shapes
-	shapes.forEach(shape => {
+	paintShapeRun(layerCtx, shapes, (layerCtx, shape) => {
 		if (shape.points.length === 0) return;
 		let wiggleX = 0, wiggleY = 0;
 		if (fxEnabled && currentState.postProcessingEnabled.wiggle) {

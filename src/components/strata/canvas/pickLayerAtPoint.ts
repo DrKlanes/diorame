@@ -122,13 +122,16 @@ export const pickLayerAtPoint = (
 		// painted on top is the one the user sees. Erasers subtract: landing on one means
 		// the content there was rubbed out, so this layer shows nothing at that point and
 		// the search moves on. Deciding this in paint order is what makes an eraser hole
-		// behave like a hole instead of like content.
+		// behave like a hole instead of like content. An eraser inside an isolated group
+		// (merged layers) only rubs out its own group: the walk resumes below that group.
 		let covered = false;
 		for (let i = shapes.length - 1; i >= 0; i--) {
 			const shape = shapes[i];
 			if (!shapeCoversPoint(world.x, world.y, shape)) continue;
 			covered = !shape.isEraser;
-			break;
+			const scope = shape.group;
+			if (covered || !scope?.length) break;
+			while (i > 0 && scope.every((id, d) => shapes[i - 1].group?.[d] === id)) i--;
 		}
 		if (covered) {
 			return { layerIndex, z: layerIndex * -baseDepthStep, x: world.x, y: world.y };

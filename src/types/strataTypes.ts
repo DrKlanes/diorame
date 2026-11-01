@@ -24,6 +24,7 @@ export interface Shape {
   brushThickness?: number; // Store thickness value
   brushMode?: BrushMode; // Store brush mode (tapered or uniform)
   eraserPolygon?: Point[]; // Expanded polygon for SVG mask export
+  group?: string[]; // Isolated group chain, outermost first (merged layers, v3.24.0); absent = top level
 }
 
 export type AppMode = 'drawing' | 'cinematic';

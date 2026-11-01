@@ -22,6 +22,7 @@ const circle = (cx: number, cy: number, r: number, turns = 1, growth = 0): Point
 
 const blob = (points: Point[], extra: Partial<Shape> = {}): Shape => ({ id: nextId(), zIndex: 0, color: '#000000', points, ...extra });
 const eraser = (points: Point[]): Shape => ({ id: nextId(), zIndex: 0, color: '#000000', points, isEraser: true, brushThickness: 20 });
+const inGroup = (group: string[], ...shapes: Shape[]): Shape[] => shapes.map(s => ({ ...s, group: s.group ?? group }));
 // Same transform the symmetry tool applies in handlePointerUp: x → -x (reverses winding).
 const mirror = (s: Shape): Shape => ({ ...s, id: nextId(), points: s.points.map(p => ({ ...p, x: -p.x })) });
 
@@ -105,4 +106,8 @@ export const CASES: ReadonlyArray<{ id: string; label: string; shapes: Shape[]; 
 	{ id: 'T23', label: 'texto espejado + goma encima (resta vacía de paper.js)', shapes: [mirrored(text('BODEGA', { font: 'mansion', fontSize: 110, align: 'center', points: [{ x: 0, y: 0 }] }), 'horizontal'), eraser(circle(40, 0, 70)), eraser(circle(-160, 30, 40))] },
 	{ id: 'T24', label: 'drawInside en texto espejado y estirado', shapes: [stretched(mirrored(text('DOBLE', { font: 'pharma', fontSize: 120, align: 'center', points: [{ x: 0, y: 0 }] }), 'horizontal'), 1.4, 1), blob(circle(60, 0, 90), { isDrawInside: true })] },
 	{ id: 'T25', label: 'texto vivo espejado + estirado + goma encima', shapes: [stretched(mirrored(text('Año 1º', { font: 'dungeons' }), 'horizontal'), 1.5, 1), eraser(circle(-540, 0, 30))] },
+	// Isolated groups (merged layers, v3.24.0): what is inside only reaches its own group; what comes after reaches everything.
+	{ id: 'T26', label: 'grupo: su goma no borra la capa', shapes: [base(), ...inGroup(['g'], blob(circle(150, 0, 220)), eraser(circle(150, 0, 120)))] },
+	{ id: 'T27', label: 'grupo: dentro y detrás solo contra el grupo', shapes: [blob(circle(-200, 0, 150)), ...inGroup(['g'], blob(circle(150, 0, 120)), blob(circle(100, 0, 250), { isDrawInside: true, color: '#000000' }), blob(circle(150, 200, 100), { isDrawBehind: true }))] },
+	{ id: 'T28', label: 'grupos anidados + goma y dentro posteriores', shapes: [base(), ...inGroup(['n'], blob(circle(-100, -50, 180)), ...inGroup(['n', 'g'], blob(circle(100, 50, 180)), eraser(circle(100, 50, 90)))), eraser(circle(-250, 0, 60)), blob(circle(250, 0, 140), { isDrawInside: true })] },
 ];

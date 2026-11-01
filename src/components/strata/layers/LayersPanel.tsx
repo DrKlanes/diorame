@@ -18,6 +18,7 @@ import { LayerRow } from './LayerRow';
 import { LayerDotsRail } from './LayerDotsRail';
 import { LayersDiscoveryTooltip } from './LayersDiscoveryTooltip';
 import { useLayersDiscoveryTooltip } from '../../../hooks/useLayersDiscoveryTooltip';
+import { useMergeLayerDown } from '../../../hooks/useMergeLayerDown';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { useTheme } from '../../../design-system/useTheme';
 import { useTranslation } from '../../../i18n';
@@ -34,6 +35,7 @@ export function LayersPanel() {
 	});
 	const anchorRef = useRef<HTMLDivElement>(null);
 	const { isOpen: tooltipOpen, dismiss: dismissTooltip } = useLayersDiscoveryTooltip();
+	const { canMerge, mergeDown } = useMergeLayerDown();
 
 	// dnd-kit sensors — distance:5 avoids drag activation on short clicks
 	const sensors = useSensors(
@@ -129,6 +131,9 @@ export function LayersPanel() {
 					<DiActionButton name="duplicate"
 						onClick={() => dispatch({ type: 'DUPLICATE_LAYER', payload: currentLayerIndex } as any)}
 						dark={dark} tooltip={t('layers.action.duplicate')} disabled={isPlaybackLocked || !canDuplicate} />
+					<DiActionButton name="merge-down"
+						onClick={mergeDown}
+						dark={dark} tooltip={t('layers.action.mergeDown')} shortcut="Shift+M" disabled={isPlaybackLocked || !canMerge} />
 					<DiActionButton name="trash"
 						onClick={() => dispatch({ type: 'DELETE_CURRENT_LAYER' } as any)}
 						dark={dark} tooltip={t('layers.action.delete')} disabled={isPlaybackLocked || !canDelete} danger={true} />
@@ -290,6 +295,9 @@ export function LayersPanel() {
 					<DiActionButton name="duplicate"
 						onClick={() => dispatch({ type: 'DUPLICATE_LAYER', payload: currentLayerIndex } as any)}
 						dark={dark} tooltip={t('layers.action.duplicate')} disabled={isPlaybackLocked || !canDuplicate} />
+					<DiActionButton name="merge-down"
+						onClick={mergeDown}
+						dark={dark} tooltip={t('layers.action.mergeDown')} shortcut="Shift+M" disabled={isPlaybackLocked || !canMerge} />
 					<DiActionButton name="arrow-up"
 						onClick={() => dispatch({ type: 'REORDER_LAYERS', payload: { fromIndex: currentLayerIndex, toIndex: currentLayerIndex + 1 } } as any)}
 						dark={dark} tooltip={t('layers.action.moveUp')} disabled={isPlaybackLocked || isAtTop} />

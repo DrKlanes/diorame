@@ -42,6 +42,7 @@ import {
 
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { bakeTextTransform, flipTextProps } from '../../utils/textTransform';
+import { mergeLayerDown } from '../../utils/mergeLayers';
 
 export {
 	generateTaperedStroke, generateUniformStroke, generateInkStroke, generateStrokeForMode,
@@ -118,6 +119,7 @@ type Action =
   | { type: 'COMMIT_PALETTE_GRADIENT' }
   | { type: 'RESET_DRAWING_VIEW' }
   | { type: 'DELETE_CURRENT_LAYER' }
+  | { type: 'MERGE_LAYER_DOWN' }
   | { type: 'START_TEXT_SESSION'; payload: { x: number; y: number } }
   | { type: 'UPDATE_TEXT_SESSION'; payload: Partial<TextSession> }
   | { type: 'COMMIT_TEXT_SESSION' }
@@ -1466,6 +1468,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
         return { ...newState, history, historyIndex: index };
     }
+    case 'MERGE_LAYER_DOWN': return mergeLayerDown(state, next => pushHistory(state.history, state.historyIndex, createSnapshot(next)));
     case 'START_TEXT_SESSION':
         return {
             ...state,

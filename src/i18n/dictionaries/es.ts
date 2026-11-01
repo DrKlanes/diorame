@@ -401,6 +401,7 @@ export const es: Dictionary = {
 	'layers.action.show': 'Mostrar capa',
 	'layers.action.hide': 'Ocultar capa',
 	'layers.action.duplicate': 'Duplicar capa',
+	'layers.action.mergeDown': 'Acoplar con la capa de abajo',
 	'layers.action.delete': 'Eliminar capa',
 	'layers.action.moveUp': 'Subir capa',
 	'layers.action.moveDown': 'Bajar capa',
@@ -603,6 +604,7 @@ export const es: Dictionary = {
 	// TOASTS
 	// ═══════════════════════════════════════════════
 
+	'toast.layers.mergeGradient': 'Se ha usado el degradado de la capa de abajo',
 	'toast.export.snapshot.successTitle': '¡Captura guardada!',
 	'toast.export.snapshot.successDesc': 'Imagen PNG descargada correctamente',
 	'toast.export.vector.successTitle': '¡Vector exportado!',
@@ -674,6 +676,7 @@ export const es: Dictionary = {
 	'shortcuts.label.move': 'Mover',
 	'shortcuts.label.previousLayer': 'Capa anterior',
 	'shortcuts.label.nextLayer': 'Capa siguiente',
+	'shortcuts.label.mergeDown': 'Acoplar con la capa de abajo',
 	'shortcuts.label.panCanvas': 'Desplazar lienzo',
 	'shortcuts.label.centerCanvas': 'Centrar lienzo',
 	'shortcuts.qualifier.hold': 'mantener',

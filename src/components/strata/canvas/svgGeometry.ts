@@ -219,8 +219,10 @@ const splitText = (P: Paper, pieces: Work[], area: paper.Rectangle): Work[] => p
 		? p.glyphs.map(d => ({ item: solidGlyph(P, d), color: p.color, maskErasers: [...p.maskErasers] }))
 		: [p]);
 
+type Counters = { failures: number; fallbackChars: number };
+
 /**
- * Resolves one layer in draw order, reproducing Canvas compositing as geometry:
+ * Resolves a run of shapes in draw order, reproducing Canvas compositing as geometry:
  *   normal     → new piece on top
  *   drawBehind → new piece at the bottom (destination-over)
  *   eraser     → subtracted from every piece drawn before it (destination-out)
@@ -230,27 +232,38 @@ const splitText = (P: Paper, pieces: Work[], area: paper.Rectangle): Work[] => p
  * onboarding scene). Boolean failures degrade to the old mask/clip for that piece and are counted.
  * Text becomes outlines (svgText.ts) and then follows the same rules as any shape; words that
  * cannot (glyph missing or not matching Canvas) stay live text. `text` null = engine unavailable.
+ * An isolated group (Shape.group, merged layers) is resolved apart, as renderShapeRun.ts paints it on
+ * its own canvas: its pieces then enter this run as ordinary pieces, under later erasers and drawInside.
  */
-export const buildLayerGeometry = async (
+const resolveRun = async (
 	P: Paper,
 	shapes: Shape[],
+	depth: number,
 	ox: number,
 	oy: number,
 	maybeYield: () => Promise<void>,
 	text: TextEngine | null,
-): Promise<{ pieces: GeometryPiece[]; failures: number; fallbackChars: number }> => {
+	count: Counters,
+): Promise<Work[]> => {
 	let pieces: Work[] = [];
-	let failures = 0;
-	let fallbackChars = 0;
 
-	for (const s of shapes) {
+	for (let i = 0; i < shapes.length; i++) {
+		const s = shapes[i];
+		const groupId = s.group?.[depth];
+		if (groupId !== undefined) {
+			let end = i + 1;
+			while (end < shapes.length && shapes[end].group?.[depth] === groupId) end++;
+			pieces.push(...await resolveRun(P, shapes.slice(i, end), depth + 1, ox, oy, maybeYield, text, count));
+			i = end - 1;
+			continue;
+		}
 		await maybeYield();
 		let item: paper.PathItem | null;
 		let textGlyphs: string[] | undefined;
 		try {
 			if (s.type === 'text' && s.text) {
 				const t = text ? textOutline(text, s, ox, oy) : textAsRuns(s, ox, oy);
-				fallbackChars += t.fallbackChars;
+				count.fallbackChars += t.fallbackChars;
 				if (t.runs.length > 0) {
 					// Only an eraser that reaches the live words masks them.
 					const runBox = t.runs.map(r => {
@@ -267,7 +280,7 @@ export const buildLayerGeometry = async (
 				item = shapeItem(P, s, ox, oy);
 			}
 		} catch (e) {
-			failures++;
+			count.failures++;
 			console.warn('[svg] shape geometry failed', s.id, e);
 			continue;
 		}
@@ -289,7 +302,7 @@ export const buildLayerGeometry = async (
 				try {
 					const erased = eraseFrom(P, p.item, shape);
 					if (!erased) {
-						failures++;
+						count.failures++;
 						console.warn('[svg] eraser subtract came back empty, piece masked', s.id);
 						p.maskErasers.push(eraserD);
 						return true;
@@ -298,7 +311,7 @@ export const buildLayerGeometry = async (
 					p.cut = true;
 					return !p.item.isEmpty();
 				} catch (e) {
-					failures++;
+					count.failures++;
 					console.warn('[svg] eraser subtract failed', s.id, e);
 					p.maskErasers.push(eraserD);
 					return true;
@@ -321,7 +334,7 @@ export const buildLayerGeometry = async (
 					try {
 						hits.push(part.intersect(p.item, { insert: false }) as paper.PathItem);
 					} catch (e) {
-						failures++;
+						count.failures++;
 						console.warn('[svg] drawInside intersect failed', s.id, e);
 						pieces.push({ item: part, color: s.color, maskErasers: [], clipD: pathD(p.item), inside: true });
 					}
@@ -336,6 +349,20 @@ export const buildLayerGeometry = async (
 		}
 	}
 
+	return pieces;
+};
+
+export const buildLayerGeometry = async (
+	P: Paper,
+	shapes: Shape[],
+	ox: number,
+	oy: number,
+	maybeYield: () => Promise<void>,
+	text: TextEngine | null,
+): Promise<{ pieces: GeometryPiece[]; failures: number; fallbackChars: number }> => {
+	const count: Counters = { failures: 0, fallbackChars: 0 };
+	const pieces = await resolveRun(P, shapes, 0, ox, oy, maybeYield, text, count);
+
 	const out: GeometryPiece[] = [];
 	for (const p of pieces) {
 		if (p.runs) {
@@ -346,5 +373,5 @@ export const buildLayerGeometry = async (
 		if (item) out.push({ d: pathD(item), color: p.color, maskErasers: p.maskErasers, clipD: p.clipD });
 	}
 	P.project.clear();
-	return { pieces: out, failures, fallbackChars };
+	return { pieces: out, failures: count.failures, fallbackChars: count.fallbackChars };
 };

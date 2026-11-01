@@ -110,6 +110,7 @@ export const SHORTCUTS_GROUPS: ShortcutGroup[] = [
 	{ categoryKey: 'shortcuts.category.layersDraw', items: [
 		{ labelKey: 'shortcuts.label.previousLayer', shortcut: '[' },
 		{ labelKey: 'shortcuts.label.nextLayer',     shortcut: ']' },
+		{ labelKey: 'shortcuts.label.mergeDown',     shortcut: 'Shift+M' },
 	] },
 	{ categoryKey: 'shortcuts.category.canvasDraw', items: [
 		// Two rows for one key on purpose: tap-to-centre already existed and was just

@@ -420,6 +420,7 @@ export const en: Dictionary = {
 	'layers.action.show': 'Show layer',
 	'layers.action.hide': 'Hide layer',
 	'layers.action.duplicate': 'Duplicate layer',
+	'layers.action.mergeDown': 'Merge down',
 	'layers.action.delete': 'Delete layer',
 	'layers.action.moveUp': 'Move layer up',
 	'layers.action.moveDown': 'Move layer down',
@@ -638,6 +639,7 @@ export const en: Dictionary = {
 	// ═══════════════════════════════════════════════
 
 	// Export — success
+	'toast.layers.mergeGradient': 'Used the gradient of the layer below',
 	'toast.export.snapshot.successTitle': 'Snapshot saved!',
 	'toast.export.snapshot.successDesc': 'PNG image downloaded successfully',
 	'toast.export.vector.successTitle': 'Vector exported!',
@@ -712,6 +714,7 @@ export const en: Dictionary = {
 	'shortcuts.label.move': 'Move',
 	'shortcuts.label.previousLayer': 'Previous layer',
 	'shortcuts.label.nextLayer': 'Next layer',
+	'shortcuts.label.mergeDown': 'Merge down',
 	'shortcuts.label.panCanvas': 'Pan canvas',
 	'shortcuts.label.centerCanvas': 'Center canvas',
 	'shortcuts.qualifier.hold': 'hold',
