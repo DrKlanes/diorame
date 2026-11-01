@@ -609,3 +609,7 @@ midió a ~2,4 s en lugar de ~1,6 s. Aceptado: los volcados de `visibilitychange`
 ### FX también en DRAW: proyecto en pausa
 
 Plan, decisiones, inventario y fases F1–F6 en `docs/fx-in-draw.md`. La deuda de FXPanel (grupos plegables, altura) se resuelve dentro de ese plan.
+
+## El gizmo de Move se queda corto en trazos uniformes
+
+El gizmo de Move / `getLayerBoundingBox` se queda hasta 10 px corto en trazos uniformes. Aparece también sin grupos, así que no es del acoplado (v3.24.0). Sin comprobar en main anterior a 3.24.0.

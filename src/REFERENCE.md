@@ -1,7 +1,7 @@
 # Diorame — Project Reference Document
 
 **Version**: see `src/constants/version.ts` (single source; the Super Riso chapter, §14, is audited up to v3.20.15)
-**Last Updated**: Octubre 2026
+**Last Updated**: Noviembre 2026
 **Audience**: Designers, developers, and human collaborators.
 **Purpose**: Product and UX reference for Diorame. Covers feature design, tool behavior, visual philosophy, and architecture rationale.
 For AI collaboration instructions (architecture rules, coding conventions, workflow), see **CLAUDE.md** in the repo root.
@@ -118,7 +118,7 @@ These principles are the foundation of every decision:
 
 ### Operational Modes
 1. **DRAW Mode** (Shortcut: D)
-   - 2D orthographic view
+   - 2D view with shallow parallax (~3 % per layer, see §7)
    - Camera locked to active layer
    - Zoom and pan controls for precision
    - All drawing tools available
@@ -1202,7 +1202,7 @@ BASE_DEPTH_STEP = 150           // Z-units per layer
 MAX_LAYERS = 10                 // Maximum number of layers
 MAX_HISTORY_STEPS = 50          // Undo/redo limit
 CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
-DRAW_FOCAL_LENGTH = 5000        // Orthographic focal length
+DRAW_FOCAL_LENGTH = 5000        // DRAW focal length (shallow parallax, not orthographic)
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
 APP_VERSION                     // → src/constants/version.ts (single source; not duplicated here)
