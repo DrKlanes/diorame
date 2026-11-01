@@ -43,6 +43,7 @@ import {
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { bakeTextTransform, flipTextProps } from '../../utils/textTransform';
 import { mergeLayerDown } from '../../utils/mergeLayers';
+import { remapLayerIndices, remapFocusLayer, shiftFocusLayer } from '../../utils/remapViewLayers';
 
 export {
 	generateTaperedStroke, generateUniformStroke, generateInkStroke, generateStrokeForMode,
@@ -565,6 +566,9 @@ export function appReducer(state: AppState, action: Action): AppState {
         palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
         currentBrushThickness: restoredBrush.thickness,
         brushMode: restoredBrush.mode,
+        hiddenLayers: remapLayerIndices(state.hiddenLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
+        locked3DLayers: remapLayerIndices(state.locked3DLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
+        postProcessing: { ...state.postProcessing, focusTargetLayer: remapFocusLayer(state.postProcessing.focusTargetLayer, state.shapes, snapshot.shapes, snapshot.totalLayers) },
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -605,6 +609,9 @@ export function appReducer(state: AppState, action: Action): AppState {
         palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
         currentBrushThickness: restoredBrush.thickness,
         brushMode: restoredBrush.mode,
+        hiddenLayers: remapLayerIndices(state.hiddenLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
+        locked3DLayers: remapLayerIndices(state.locked3DLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
+        postProcessing: { ...state.postProcessing, focusTargetLayer: remapFocusLayer(state.postProcessing.focusTargetLayer, state.shapes, snapshot.shapes, snapshot.totalLayers) },
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
         isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
@@ -790,6 +797,7 @@ export function appReducer(state: AppState, action: Action): AppState {
             totalLayers: state.totalLayers + 1,
             currentLayerIndex: newLayerIndex,
             camera: { ...state.camera, z: newZ, rotation: 0 },
+            postProcessing: { ...state.postProcessing, focusTargetLayer: shiftFocusLayer(state.postProcessing.focusTargetLayer, newLayerIndex, 1) },
             hiddenLayers: newHidden,
             locked3DLayers: newLocked,
             layerRenderModes: newRenderModes,
@@ -1455,6 +1463,7 @@ export function appReducer(state: AppState, action: Action): AppState {
             totalLayers: state.totalLayers - 1,
             currentLayerIndex: newCurrentLayer,
             camera: { ...state.camera, z: newCurrentLayer * -BASE_DEPTH_STEP, rotation: 0 },
+            postProcessing: { ...state.postProcessing, focusTargetLayer: shiftFocusLayer(state.postProcessing.focusTargetLayer, layerToDelete, -1) },
             hiddenLayers: newHidden,
             locked3DLayers: newLocked,
             layerRenderModes: newRenderModes,
@@ -1887,6 +1896,7 @@ export function appReducer(state: AppState, action: Action): AppState {
             totalLayers: state.totalLayers + 1,
             currentLayerIndex: newLayerIndex,
             camera: { ...state.camera, z: newLayerIndex * -BASE_DEPTH_STEP, rotation: 0 },
+            postProcessing: { ...state.postProcessing, focusTargetLayer: shiftFocusLayer(state.postProcessing.focusTargetLayer, newLayerIndex, 1) },
             hiddenLayers: newHidden,
             locked3DLayers: newLocked,
             layerRenderModes: newRenderModes,
