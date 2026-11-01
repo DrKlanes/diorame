@@ -187,7 +187,7 @@ Two distinct actions create layers — they are **not** interchangeable:
 - **Plane change [VERIFICADO]:** DRAW projects each layer at `5000 / (5000 + z − camera.z)` around the world origin, ~3 % per layer, so moving shapes to another `zIndex` displaces them. A and the layers above it are rescaled around the origin (points, `originalPoints`, `eraserPolygon`, `brushThickness`, text matrix) so they stay put **with the camera on the merged layer**. B and the layers below are not touched.
 - **What the merge shows:** the camera moves from A to B, so the whole view shifts as it does with `[`. Compared with B active before the merge, the live canvas differs by Δ1/255 in ~110 px of 1.4 M, the same as two renders of the same state. A plane cannot reproduce two planes from every camera: with the camera elsewhere (Lab, thumbnail, other active layer) A slides against B by ~0.1 % at low layers and up to ~1 % at layers 8–9. CINEMA loses A's own depth: that is the point of a merge.
 - **Resulting layer:** B's render mode, gradient, brush settings and pin. Toast only if that repaints A's ink (render modes differ, or both in gradient with different parameters). Layers above move down one index in `hiddenLayers`, `locked3DLayers`, `layerRenderModes`, `layerGradParams`, `layerBrushSettings`, `paletteApplyToAllSnapshot` and `focusTargetLayer`.
-- **Inherited debt:** undoing a merge leaves `hiddenLayers`/`locked3DLayers` on the wrong layer, like undoing a delete (`docs/ux-debt.md`).
+- **Undo:** hidden/pinned/DoF indices follow their content (v3.24.1, §11). A's pin is dropped by the merge and does not come back on undo.
 
 ### 3D Depth & Parallax
 - **DRAW Mode**: Shallow parallax, `5000 / (5000 + z − camera.z)` (~3 % per layer), camera at active layer Z. Not orthographic
@@ -510,6 +510,7 @@ Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"
 | `textMetrics.ts` | ~55 | `measureTextBlock(shape)`: measures a text shape with Canvas over the SAME `layoutText` the renderer paints with → `block` (widest advance × total height) and `ink` (union of every line's `actualBoundingBox*`, no leading or side bearings), anchor-local, before the text's matrix. `boxCorners(box, anchor, matrix)`. Shared measuring context. Needs the fonts loaded, like painting. Used by the Move gizmo (`transformUtils.ts`) CINEMA picking (`pickLayerAtPoint.ts`) and the SVG frame (`svgText.ts` `textCorners`) |
 | `textTransform.ts` | ~65 | A text's geometry beyond its layout: `textMatrix(shape)` (2×2, canvas order, local frame → world around the anchor; falls back to `R(rotation)` for every text without one — all files before v3.17.56 — so they render byte-identical). **Single reader**: render, gizmo, picking and SVG export never read `rotation`. `bakeTextTransform` (TRANSFORM_LAYER + live preview: a uniform transform of a matrix-less text keeps the legacy fontSize × scale / rotation + delta bake; a stretch composes S·R·M — a stretch of rotated text is a shear, which only a full 2×2 holds), `flipTextProps` (true reflection F·M, alignment untouched; old flipped texts are just data and open unchanged). Writes `rotation = atan2(b, a)` next to the matrix as a hint for a cached older app, never read |
 | `animationFrames.ts` | ~80 | `getAnimationFrames`, `isLayerEmpty`, `getOnionGhostZs` — animation frame logic shared by the render pipeline, playback, onion skin, and exports |
+| `remapViewLayers.ts` | ~55 | v3.24.1: `remapLayerIndices` (UNDO/REDO: hidden/pinned layers follow their content by shape id), `remapFocusLayer`, `shiftFocusLayer` (ADD/DUPLICATE/DELETE shift the pinned DoF layer like they shift hidden/locked) |
 | `mergeLayers.ts` | ~125 | `MERGE_LAYER_DOWN` as a pure function (v3.24.0, §6): `mergeLayerDown(state, pushStep)`, `canMergeDown` (guards shared by button, shortcut and reducer), `mergeChangesGradient` (toast condition) |
 | `cinematic.ts` | ~10 | `flToMm`, `mmToFl` — focal-length conversion helpers (FL raw ↔ mm); extracted from legacy ControlsCinematic |
 | `keyboardShortcuts.ts` | ~105 | `ShortcutItem`/`ShortcutGroup` types, `formatShortcut`, `isMac`, `hasFinePointer` — shared keyboard shortcut formatting and platform detection. Also `shouldIgnoreGlobalKey`: the focus / text-session / animation guards for global KEYDOWNs, shared by `useKeyboardShortcuts` and the Space pan in `StrataCanvas` so the two window listeners cannot drift apart. Never applied to a keyup — releasing state is unconditional |
@@ -798,7 +799,7 @@ This section is critical. These actions are **forbidden**:
 - Draw Inside / Draw Behind compositing
 - Clipping / composition / rendering pipeline
 - Isolated groups (v3.24.0) do not change the logic of eraser, drawInside or drawBehind, only their scope: what is inside a `Shape.group` reaches only that group
-- Undo/redo follow the HYBRID contract (v3.11.3): brush/palette selectors display document properties — when changing them restyled/remapped shapes it is a content op (undo step; selector travels with undo/redo), when it changed nothing it is a pure selection (no step; last-writer-wins onto the current snapshot). `hiddenLayers` and `locked3DLayers` are pure view state, never in `HistorySnapshot`. Do not revert to the 3.7.3 (always-travel) or 3.11.2 (never-travel) models — both failed in production
+- Undo/redo follow the HYBRID contract (v3.11.3): brush/palette selectors display document properties — when changing them restyled/remapped shapes it is a content op (undo step; selector travels with undo/redo), when it changed nothing it is a pure selection (no step; last-writer-wins onto the current snapshot). `hiddenLayers` and `locked3DLayers` are pure view state, never in `HistorySnapshot`; since v3.24.1 UNDO/REDO reassign `hiddenLayers`, `locked3DLayers` and `postProcessing.focusTargetLayer` by CONTENT (`utils/remapViewLayers.ts`) and they stay out of the snapshot. Limits: a hidden or pinned layer deleted or merged away comes back visible/unpinned (nothing recorded it), and an empty layer keeps its index. Do not revert to the 3.7.3 (always-travel) or 3.11.2 (never-travel) models — both failed in production
 
 ### UX Changes
 - **No Hidden Complexity**: Every interaction must be transparent
@@ -1247,9 +1248,17 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.24.0)
+## Appendix C: Changelog Highlights (1.7.3 → 3.24.1)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.24.1 — Deshacer/rehacer ya no descoloca ocultas, fijadas ni foco
+
+**fix** — Ocultar y fijar guardan posiciones y no están en el snapshot (contrato híbrido, intacto): al deshacer o rehacer eliminar, acoplar, duplicar, añadir, subir/bajar o arrastrar una capa, apuntaban a otra capa. `utils/remapViewLayers.ts` las reasigna por contenido (id de forma) en UNDO y REDO; si no se encuentra el contenido, conserva el índice mientras exista.
+- **Desviación:** `ADD_LAYER`, `DUPLICATE_LAYER` y `DELETE_CURRENT_LAYER` no desplazaban `focusTargetLayer` (el foco de DoF quedaba en otra capa ya al hacer la operación, sin deshacer). Ahora lo desplazan (`shiftFocusLayer`); si se borra la capa enfocada, el foco pasa a libre (-1).
+- **Límites:** una capa oculta o fijada que se borra o se acopla y se deshace vuelve visible/sin fijar; una capa vacía conserva su índice; deshacer un duplicado con el clon oculto oculta la capa que ocupe ese índice.
+- **Verificado** con el reducer real y su historial (operación → deshacer → rehacer → deshacer × 9 operaciones, doble acoplado) y en la app (borrar con el botón + Ctrl+Z). Deshacer un trazo no mueve nada; ocultar/fijar no crea paso; los fotogramas de animación se mantienen.
+- **Files**: `utils/remapViewLayers.ts` (nuevo), `StrataContext.tsx`, `REFERENCE.md`, `docs/ux-debt.md`, `version.ts`, `package.json`.
 
 ### 3.24.0 — Acoplar abajo (Merge down)
 

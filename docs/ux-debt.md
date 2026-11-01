@@ -609,18 +609,3 @@ midió a ~2,4 s en lugar de ~1,6 s. Aceptado: los volcados de `visibilitychange`
 ### FX también en DRAW: proyecto en pausa
 
 Plan, decisiones, inventario y fases F1–F6 en `docs/fx-in-draw.md`. La deuda de FXPanel (grupos plegables, altura) se resuelve dentro de ese plan.
-
-## Deshacer Eliminar o Acoplar deja `hiddenLayers` / `locked3DLayers` en la capa equivocada
-
-**Estado:** documentado, sin arreglar. Verificado en `main` (v3.23.0) con `appReducer`.
-
-Esos dos campos son estado de vista: no entran en `HistorySnapshot`, por contrato. Pero `DELETE_CURRENT_LAYER` los reindexa al bajar las capas de encima, y `UNDO` restaura las formas sin deshacer ese reindexado.
-
-Cuatro capas, capa `e` (índice 3) oculta, capa `c` (índice 2) fijada. Eliminar la capa 1 y deshacer:
-
-```
-antes:             hidden [3] = e    locked [2] = c
-tras deshacer:     hidden [2] = c    locked [1] = b
-```
-
-La capa oculta deja de estarlo y se oculta otra. `MERGE_LAYER_DOWN` (v3.24.0) reindexa igual y hereda el mismo fallo. El arreglo necesita una decisión: el contrato híbrido dice que estos campos nunca viajan con el historial.
