@@ -158,13 +158,14 @@ Constraints breed creativity. Fixed palettes force intentional color choices and
 ### Layer System
 - **Maximum 10 Layers** (`MAX_LAYERS = 10`)
 - **Depth Step**: 150 units per layer (`BASE_DEPTH_STEP`)
-- **Layer 0 (Front)** -> **Layer 9 (Back)**
+- **Layer 0 (Back)** -> **Layer 9 (Front)**: painted in ascending index (`renderZs`, descending z); the top row of the panel is the highest index
 - Layers are created on-demand (next layer created when you navigate forward from the last layer)
 
 ### Layer Operations
 - **Reorder**: Move layers up/down in the stack (swaps all shapes between layers)
 - **Duplicate**: Clone all shapes from a layer into a new adjacent layer (respects `MAX_LAYERS` limit)
 - **Delete**: Remove a layer and all its shapes (re-maps remaining layers to close gaps)
+- **Merge down** (v3.24.0): the active layer onto the one below it in the panel, looking the same. See «Merge Down» below
 - **Flip**: Mirror all shapes on a layer horizontally or vertically around the layer's bounding box center
 - **Per-Layer Settings**: Each layer stores its own render mode (flat/grad), gradient params, and brush settings (thickness + line mode)
 
@@ -177,8 +178,19 @@ Two distinct actions create layers — they are **not** interchangeable:
 | `ADD_LAYER` | "+" button in Layers Panel | Always creates a new layer **above the active layer**, shifting indices. Does not navigate. |
 | `NEXT_LAYER` | `]` key | Navigates to the next layer. Creates a new layer only when already on the last layer. |
 
+### Merge Down (v3.24.0)
+
+`MERGE_LAYER_DOWN` (`utils/mergeLayers.ts`), button after Duplicate in the rail and in the open panel, Shift+M. Merges the active layer A (index i) onto B (index i−1). One undo step with the final state.
+
+- **Guards** (`canMergeDown`, same for button, shortcut and reducer): i > 0; A not empty (`isLayerEmpty`); A and B visible; no open text session (it blocks: the text is never committed for the user); no stroke in progress; no animation playback.
+- **Isolation:** eraser, drawInside and drawBehind act on all that is painted on a layer's canvas. If A contains any (nested groups included), all its shapes get `group = [newId, ...(s.group ?? [])]` and keep acting on A alone. If not, they join B with no group. A's shapes go after all of B's, in order. Whatever is drawn later has no group and acts on the whole layer.
+- **Plane change [VERIFICADO]:** DRAW projects each layer at `5000 / (5000 + z − camera.z)` around the world origin, ~3 % per layer, so moving shapes to another `zIndex` displaces them. A and the layers above it are rescaled around the origin (points, `originalPoints`, `eraserPolygon`, `brushThickness`, text matrix) so they stay put **with the camera on the merged layer**. B and the layers below are not touched.
+- **What the merge shows:** the camera moves from A to B, so the whole view shifts as it does with `[`. Compared with B active before the merge, the live canvas differs by Δ1/255 in ~110 px of 1.4 M, the same as two renders of the same state. A plane cannot reproduce two planes from every camera: with the camera elsewhere (Lab, thumbnail, other active layer) A slides against B by ~0.1 % at low layers and up to ~1 % at layers 8–9. CINEMA loses A's own depth: that is the point of a merge.
+- **Resulting layer:** B's render mode, gradient, brush settings and pin. Toast only if that repaints A's ink (render modes differ, or both in gradient with different parameters). Layers above move down one index in `hiddenLayers`, `locked3DLayers`, `layerRenderModes`, `layerGradParams`, `layerBrushSettings`, `paletteApplyToAllSnapshot` and `focusTargetLayer`.
+- **Inherited debt:** undoing a merge leaves `hiddenLayers`/`locked3DLayers` on the wrong layer, like undoing a delete (`docs/ux-debt.md`).
+
 ### 3D Depth & Parallax
-- **DRAW Mode**: Orthographic, no parallax (camera at active layer Z)
+- **DRAW Mode**: Shallow parallax, `5000 / (5000 + z − camera.z)` (~3 % per layer), camera at active layer Z. Not orthographic
 - **VIEW Mode**: Perspective projection, full parallax based on layer depth
 - **Layer Spacing Factor**: Adjustable multiplier (0.00-2.00) to compress/expand depth; value of 0 produces a flat 2D visualization
 
@@ -626,6 +638,32 @@ APIs they import change.
 **`renderFrame` phase sequence:**
 throttle → quantize cam → FL/focus → buffers → [Super Riso `beginSuperRisoFrame`, only when on] → background → viewport → layer loop → post-processing (Super Riso in the `applyRisoV2` slot) → overlays → cinematic tick
 
+### Isolated Groups (`Shape.group`, v3.24.0)
+
+`group?: string[]` is the chain of isolated groups a shape belongs to, outermost first; absent = top level. Purely additive: older `.dior` files do not change, and `LOAD_PROJECT` keeps the field (`...rest`). Consecutive shapes sharing `group[depth]` are one group. Created only by `MERGE_LAYER_DOWN`; no shape creator sets it, and every reducer that transforms shapes spreads it along.
+
+**Render:** `paintShapeRun` paints a group on a clean pooled canvas with the usual per-shape logic and lands it on the parent with source-over, alpha 1. **SVG:** `resolveRun` in `svgGeometry.ts` does the same with geometry; the group's pieces enter the parent's sequence as ordinary pieces, under later erasers and drawInside.
+
+**Cost:** one full-canvas `drawImage` per group per frame, on the layers that have them, at most one pooled canvas per depth. On the iPad's TBDR GPU each group is one more full-screen pass; not measured there. A layer without groups: same bytes (SHA-256 with seeded `Math.random`, 1× and 2×) and same time (8.3 vs 8.4 ms) as before. Repeating duplicate + merge deepens the nesting without limit: real, but unlikely.
+
+| Consumer of a layer's shapes | Verdict |
+|---|---|
+| `renderLayerBody.ts` (live pipeline) | Adjusted: `paintShapeRun` |
+| `transformUtils.ts` `getLayerBoundingBox` (gizmo, Move grab, `frameOf`) | Adjusted: it composites with eraser and drawInside, and a group eraser would shrink the box over B's ink |
+| `pickLayerAtPoint.ts` (CINEMA picking) | Adjusted: an eraser in a group only cancels that group |
+| `svgGeometry.ts` (SVG export) | Adjusted: `resolveRun` |
+| `drawSnapshot.ts` (DRAW PNG, HQ ×2) | Inherits (`renderFrame`). The pool resizes to the physical size |
+| `animationExportRender.ts` (GIF, PNG sequence) | Inherits (`renderFrame`) |
+| Onion skin | Inherits (`renderLayer`) |
+| `projectThumbnail.ts` | Inherits (`renderDrawSnapshot`) |
+| `diorRender.ts` / `dior-render.js` | Inherits (`LOAD_PROJECT` + `renderDrawSnapshot` + `getLayerBoundingBox`). No contract change, no page side effects |
+| `.dior` and autosave (`diorPayload.ts`, `useAutoSave.ts`) | Inherits: shapes are saved whole |
+| `svgExport.ts` `svgBounds` | No effect: bounds, no compositing |
+| `isLayerEmpty`, `LayerRow.tsx`, `LayersPanel.tsx` | No effect: «has a non-eraser shape» |
+| Move hit-testing (`moveGizmoInteraction.ts`) | No effect: tests the gizmo box, which comes from `getLayerBoundingBox` |
+| Waypoints (`StrataCanvas.tsx`), `useExportFlow.ts` | No effect: centroids and counts |
+| Super Riso (`sceneInks.ts`, `xeroxMarkers.ts`, `stencilScene.ts`) | No effect: reads colours and usage from shapes; the image comes from `offCtx` |
+
 ### CINEMA Framing (POI) — Invariants
 
 The double-click framing point (`state.pointOfInterest`) went through several
@@ -759,6 +797,7 @@ This section is critical. These actions are **forbidden**:
 - Eraser tool logic
 - Draw Inside / Draw Behind compositing
 - Clipping / composition / rendering pipeline
+- Isolated groups (v3.24.0) do not change the logic of eraser, drawInside or drawBehind, only their scope: what is inside a `Shape.group` reaches only that group
 - Undo/redo follow the HYBRID contract (v3.11.3): brush/palette selectors display document properties — when changing them restyled/remapped shapes it is a content op (undo step; selector travels with undo/redo), when it changed nothing it is a pure selection (no step; last-writer-wins onto the current snapshot). `hiddenLayers` and `locked3DLayers` are pure view state, never in `HistorySnapshot`. Do not revert to the 3.7.3 (always-travel) or 3.11.2 (never-travel) models — both failed in production
 
 ### UX Changes
@@ -1198,6 +1237,7 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 | **Shift + B** | Draw Behind mode |
 | **Shift + O** | Organic/Fluid mode |
 | **[** / **]** | Previous / Next layer |
+| **Shift + M** | Merge down (DRAW) |
 | **Cmd/Ctrl + Z** | Undo |
 | **Cmd/Ctrl + Shift + Z** | Redo |
 | **Cmd/Ctrl + E** | Export SVG |
@@ -1207,9 +1247,18 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.23.0)
+## Appendix C: Changelog Highlights (1.7.3 → 3.24.0)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.24.0 — Acoplar abajo (Merge down)
+
+**feat** — Botón tras Duplicar en el riel y en el panel abierto, y Shift+M: la capa activa pasa a la de abajo y se ve igual. Reglas en §6 «Merge Down»; consumidores en §10 «Isolated Groups».
+- **`Shape.group`:** la goma, el dentro y el detrás de la capa acoplada solo actúan sobre ella (`canvas/renderShapeRun.ts`, `svgGeometry.ts`); lo dibujado después actúa sobre toda la capa.
+- **Paralaje de DRAW [VERIFICADO]:** cambiar solo el `zIndex` desplaza las formas ~3 % por capa (60 582 px distintos en la escena de prueba). La capa acoplada y las de encima se reescalan para seguir en su sitio con la cámara en la capa acoplada. Es una desviación consciente de «solo baja el `zIndex`».
+- **Verificado en Chrome de escritorio:** capa comparada con B activa antes de acoplar: Δ ≤ 2/255 en ≤ 513 px de 1,4 M en goma, dentro y detrás (dos renders del mismo estado ya difieren Δ1 en 107 px). Controles: sin grupos 29 213 px, sin reescalar 60 582 px. Grupos anidados, goma y dentro nuevos sobre el conjunto, undo/redo, `.dior`, HQ ×2 y SVG (svg-diff, 0 px estructurales, T26–T28 nuevos). `text-check` sin cambios. Sin grupos: mismos bytes y mismo tiempo.
+- **[POR CONFIRMAR]:** coste en iPad de la pasada por grupo; prueba en el Lab real, que importa `dior-render.js` de producción (probado el módulo local).
+- **Files**: `utils/mergeLayers.ts`, `hooks/useMergeLayerDown.ts`, `canvas/renderShapeRun.ts` (nuevos), `canvas/renderLayerBody.ts`, `canvas/svgGeometry.ts`, `canvas/transformUtils.ts`, `canvas/pickLayerAtPoint.ts`, `StrataContext.tsx`, `layers/LayersPanel.tsx`, `hooks/useKeyboardShortcuts.ts`, `utils/keyboardShortcuts.ts`, `design-system/icons.ts`, `i18n/dictionaries/{es,en}.ts`, `types/strataTypes.ts`, `tools/svg-diff/cases.ts`, `REFERENCE.md`, `docs/ux-debt.md`, `version.ts`, `package.json`.
 
 ### 3.23.0 — Exportar › Super Riso ↗: del DRAW al Lab con su vista
 
