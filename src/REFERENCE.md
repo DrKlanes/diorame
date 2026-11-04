@@ -543,6 +543,7 @@ Primitives are documented in CLAUDE.md («Design System»); only the ones with n
 | `superRiso.ts` | ~70 | Super Riso panel data: `SUPER_RISO_PANEL_DEFAULTS`, `SUPER_RISO_STYLES` (Taller limpio · Fanzine · Lo-fi · Cuatricromía), `SUPER_RISO_DEFAULTS` (technique `'riso'` + `XEROX_DEFAULTS` + `STENCIL_DEFAULTS`), `sanitizeSuperRiso` (clamp + enums, for `.dior`; also `technique` and `xerox` via `sanitizeXerox`), `patchSuperRiso` (`SET_SUPER_RISO`: `xerox` merged field by field), `applySuperRisoStyle` (routes by technique: the style ids overlap), `SUPER_RISO_PAPERS`, `SUPER_RISO_REPRINT_FPS` |
 | `superRisoXerox.ts` | ~110 | Fotocopia panel data (v3.19.0), from the lab: `XEROX_PAPERS` (7 copy papers), `XEROX_MARKERS` (16 markers, names in i18n), `XEROX_FILL_DEFAULT`, `XEROX_STYLES` (8 XSTYLES, with their `fine` overrides), `XEROX_FINE_RANGES` (lab XFINE: the only valid `fine` values), `XEROX_DEFAULTS` (lab `st.x`), `sanitizeXerox`, `applyXeroxStyle` (lab `applyXStyle`: fine cleared + toner .75, then the style), `xeroxStyleMatches` (chip lit while controls and fine still match) |
 | `superRisoStencil.ts` | ~100 | Stencil panel data (v3.20.0), from the lab: `STENCIL_SPRAYS` (18 cans, names in i18n), `STENCIL_TONES`, `STENCIL_SUPPORTS` (7: colour, generator type, default texture), `STENCIL_STYLES` (8 SSTYLES), `STENCIL_DEFAULTS` (lab `st.s` + `supTex`, `dropSize`), `supTexSlider`, `sanitizeStencil`, `applyStencilStyle` (lab `applySStyle`: manual cleared, sprays; the support fixes colour, type and texture), `stencilStyleMatches` |
+| `videos.ts` | ~12 | `INTERFACE_TOUR_URL` and `PRESENTATION_URL` (v3.24.2): public YouTube videos keyed by app language (`es`/`en`). The Welcome modal links the interface tour; the presentation has no screen yet (no About/Help) and is only declared |
 | `version.ts` | ~5 | `APP_VERSION` — single source of truth for the current release version |
 | `project.ts` | ~30 | `UNTITLED_PROJECT_SENTINEL` (`'__UNTITLED__'`) + `getFilenameBase()` — NFD-normalized filename sanitizer for exports (the `.dior` uses `projectFileStem`, `utils/projectMeta.ts`, since v3.21.0) |
 | `cinemaView.ts` | ~15 | `CINEMA_VIEW_DEFAULTS` (v3.20.11): the first-view CINEMA framing (focal 3840, zoom −2500, spacing 1.0, preset *forward*). Single source for `INIT_CINEMA_VIEW` (`ControlsV2`), the gaps `LOAD_PROJECT` fills and the save payload |
@@ -1248,9 +1249,15 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.24.1)
+## Appendix C: Changelog Highlights (1.7.3 → 3.24.2)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.24.2 — Tour por la interfaz en el modal de bienvenida
+
+**feat** — El enlace del modal pasa a ser el tour de la interfaz (1:50) según el idioma activo («Tour por la interfaz (2 min)» / «Interface tour (2 min)»), en su propia línea sobre `@dumaker · Ko-fi`: junto a ellos no cabe en los ~282 px útiles. Se elimina por completo el tutorial antiguo (desactualizado). Solo enlace `target="_blank"`, sin iframe ni embed: el modal no depende de la red.
+- **Sin analytics:** `welcome_modal` es un evento único por sesión (cargar ejemplo, restaurar, cerrar), no hay patrón de clic en enlaces.
+- **Files**: `constants/videos.ts` (nuevo), `WelcomeModalV2.tsx`, `i18n/dictionaries/en.ts` y `es.ts` (clave `modal.welcome.tutorial`), `version.ts`, `package.json`.
 
 ### 3.24.1 — Deshacer/rehacer ya no descoloca ocultas, fijadas ni foco
 

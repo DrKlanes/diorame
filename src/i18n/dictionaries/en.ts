@@ -542,7 +542,7 @@ export const en: Dictionary = {
 	// Welcome modal
 	'modal.welcome.logoAlt': 'Diorame logo',
 	'modal.welcome.tagline': 'Draw in 2D. And watch it come alive in 3D.',
-	'modal.welcome.tutorial': 'Watch tutorial',
+	'modal.welcome.tutorial': 'Interface tour (2 min)',
 	'modal.welcome.dumaker': 'by @dumaker',
 	'modal.welcome.kofi': 'Support on Ko-fi 💜',
 	'modal.welcome.graintouch': 'Inspired by Graintouch',

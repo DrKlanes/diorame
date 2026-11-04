@@ -315,7 +315,7 @@
 | brand | `"diorame™"` | `<span>` (TM como elemento inline) |
 | version | `"v{APP_VERSION}"` | `<span>` dynamic |
 | tagline | `"Draw in 2D. Watch it come alive in 3D."` | `<p>` |
-| link | `"Watch tutorial"` | `ResourceLink` |
+| link | `"Interface tour (2 min)"` | `ResourceLink` |
 | link | `"by @dumaker"` | `ResourceLink` |
 | link | `"Support on Ko-fi 🤍"` | `ResourceLink` |
 | link | `"Inspired by Graintouch"` | `ResourceLink mutedColor=` |

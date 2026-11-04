@@ -517,7 +517,7 @@ export const es: Dictionary = {
 
 	'modal.welcome.logoAlt': 'Logo de Diorame',
 	'modal.welcome.tagline': 'Dibuja en 2D. Y mira cómo cobra vida en 3D.',
-	'modal.welcome.tutorial': 'Ver tutorial',
+	'modal.welcome.tutorial': 'Tour por la interfaz (2 min)',
 	'modal.welcome.dumaker': 'por @dumaker',
 	'modal.welcome.kofi': 'Apóyame en Ko-fi 💜',
 	'modal.welcome.graintouch': 'Inspirado en Graintouch',

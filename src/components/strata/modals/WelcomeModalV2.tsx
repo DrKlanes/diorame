@@ -12,6 +12,7 @@ import { LanguageToggle } from '../../../design-system/LanguageToggle';
 import { useStrata } from '../StrataContext';
 import { useSaveLoad } from '../../../hooks/useSaveLoad';
 import { DIOR_ACCEPT } from '../../../utils/projectMeta';
+import { INTERFACE_TOUR_URL } from '../../../constants/videos';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ interface WelcomeModalV2Props {
 }
 
 export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAutosave, isMidSession }: WelcomeModalV2Props) {
-	const { t } = useTranslation();
+	const { t, language } = useTranslation();
 	const { state, dispatch } = useStrata();
 	const { handleLoadProject } = useSaveLoad();
 	const loadFileInputRef = useRef<HTMLInputElement>(null);
@@ -229,8 +230,9 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 						lineHeight: 1.5,
 					}}>
 						<div>
-							<ResourceLink href="https://www.youtube.com/watch?v=Ieb280ncEfA">{t('modal.welcome.tutorial')}</ResourceLink>
-							<span style={{ color: muted, margin: '0 6px' }}>·</span>
+							<ResourceLink href={INTERFACE_TOUR_URL[language]}>{t('modal.welcome.tutorial')}</ResourceLink>
+						</div>
+						<div>
 							<ResourceLink href="https://www.instagram.com/dumaker/">{t('modal.welcome.dumaker')}</ResourceLink>
 							<span style={{ color: muted, margin: '0 6px' }}>·</span>
 							<ResourceLink href="https://ko-fi.com/dumaker">{t('modal.welcome.kofi')}</ResourceLink>
