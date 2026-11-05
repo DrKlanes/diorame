@@ -93,6 +93,9 @@ export type DioramEventMap = {
   /** Cierre del modal de bienvenida, por cualquiera de sus tres salidas. */
   welcome_modal: { action: 'load_example' | 'restore_autosave' | 'dismissed' };
 
+  /** Modal del tour de la interfaz (solo primera vez): se mostró / se pulsó play. */
+  tour_video: { action: 'shown' | 'played' };
+
   /**
    * Se mostró el tooltip contextual de descubrimiento de capas (primera
    * sesión real, dibujando sin haber añadido capa). Cruzar con layer_added
@@ -407,6 +410,11 @@ export const analytics = {
     if (state.welcomeModalSent) return;
     state.welcomeModalSent = true;
     track('welcome_modal', { action });
+  },
+
+  /** Llamar al abrirse el modal del tour ('shown') y al pulsar play ('played'). */
+  tourVideo(action: DioramEventMap['tour_video']['action']): void {
+    track('tour_video', { action });
   },
 
   /** Llamar cuando se muestra el tooltip de descubrimiento de capas. */

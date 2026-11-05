@@ -44,10 +44,12 @@ interface WelcomeModalV2Props {
 	onLoadExample:      () => Promise<void>;
 	dark:               boolean;
 	onRestoreAutosave?: () => void;
+	/** "Start drawing" (first-run tour hook); falls back to onClose. */
+	onStart?:           () => void;
 	isMidSession?:      boolean;
 }
 
-export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAutosave, isMidSession }: WelcomeModalV2Props) {
+export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAutosave, onStart, isMidSession }: WelcomeModalV2Props) {
 	const { t, language } = useTranslation();
 	const { state, dispatch } = useStrata();
 	const { handleLoadProject } = useSaveLoad();
@@ -192,11 +194,11 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 									</DiModal.PrimaryActionLg>
 								)}
 								{onRestoreAutosave ? (
-									<DiModal.SecondaryActionLg onClick={onClose}>
+									<DiModal.SecondaryActionLg onClick={onStart ?? onClose}>
 										{t('modal.welcome.cta.primary')}
 									</DiModal.SecondaryActionLg>
 								) : (
-									<DiModal.PrimaryActionLg onClick={onClose}>
+									<DiModal.PrimaryActionLg onClick={onStart ?? onClose}>
 										{t('modal.welcome.cta.primary')}
 									</DiModal.PrimaryActionLg>
 								)}

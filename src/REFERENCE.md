@@ -397,7 +397,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `fx/superRisoFields.tsx` | `Field`, `segmentWrap`, `pct`, `labelStyle`, `Divider`: shared by `SuperRisoBlock`, `XeroxControls` and `StencilControls` |
 | `fx/StencilControls.tsx` | Stencil controls (v3.20.0), the visible part, same anatomy as `XeroxControls`: **Plantillas** (Tones / Drawing colours · number of layers 1–4, «Colours (+ black)» 1–3 · Darkness · Simplify the cut (shows the mm) · Bridges No/Yes) · **Spray** (Paint load · Lifted stencil · Overspray · Drips · Splatter) · **Colours** (Sprays / From the drawing · one row per layer + «Cloud» when it is coloured, read from `xeroxPalette.ts` (`getStencilPalette`); a click opens the 18 SPRAYS and only that row changes · Colour accent No/Yes, tones only · Background cloud none/white/colour). Support, its texture, droplet size, sloppiness and resolution live in the shared print settings |
 
-**Modals (`modals/`):** ClearCanvasAlertV2, SaveDialogsV2 (v3.21.0: empty-canvas and name questions of the save flow, mounted once in `ControlsV2`), ComplexSceneModalV2, WelcomeModalV2, OnboardingOverlayV2, ExportProgressV2, MobileBlockScreenV2 + shared DiModal primitives
+**Modals (`modals/`):** ClearCanvasAlertV2, SaveDialogsV2 (v3.21.0: empty-canvas and name questions of the save flow, mounted once in `ControlsV2`), ComplexSceneModalV2, WelcomeModalV2, TourModalV2 (v3.25.0: first-run video facade), OnboardingOverlayV2, ExportProgressV2, MobileBlockScreenV2 + shared DiModal primitives
 
 **Popovers (`popovers/`):** DiSelectorPopover + DiSelectorOption
 
@@ -510,6 +510,7 @@ Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"
 | `textMetrics.ts` | ~55 | `measureTextBlock(shape)`: measures a text shape with Canvas over the SAME `layoutText` the renderer paints with → `block` (widest advance × total height) and `ink` (union of every line's `actualBoundingBox*`, no leading or side bearings), anchor-local, before the text's matrix. `boxCorners(box, anchor, matrix)`. Shared measuring context. Needs the fonts loaded, like painting. Used by the Move gizmo (`transformUtils.ts`) CINEMA picking (`pickLayerAtPoint.ts`) and the SVG frame (`svgText.ts` `textCorners`) |
 | `textTransform.ts` | ~65 | A text's geometry beyond its layout: `textMatrix(shape)` (2×2, canvas order, local frame → world around the anchor; falls back to `R(rotation)` for every text without one — all files before v3.17.56 — so they render byte-identical). **Single reader**: render, gizmo, picking and SVG export never read `rotation`. `bakeTextTransform` (TRANSFORM_LAYER + live preview: a uniform transform of a matrix-less text keeps the legacy fontSize × scale / rotation + delta bake; a stretch composes S·R·M — a stretch of rotated text is a shear, which only a full 2×2 holds), `flipTextProps` (true reflection F·M, alignment untouched; old flipped texts are just data and open unchanged). Writes `rotation = atan2(b, a)` next to the matrix as a hint for a cached older app, never read |
 | `animationFrames.ts` | ~80 | `getAnimationFrames`, `isLayerEmpty`, `getOnionGhostZs` — animation frame logic shared by the render pipeline, playback, onion skin, and exports |
+| `tourFirstRun.ts` | ~45 | v3.25.0: `claimTourFirstRun(hasAutosave)` (flag `diorame-tour-seen`, marked on open; previous-visit signs read once at module load), `setTourOpen` / `useTourOpen` (open state outside the reducer, so `OnboardingOverlayConnected` waits for the tour) |
 | `remapViewLayers.ts` | ~55 | v3.24.1: `remapLayerIndices` (UNDO/REDO: hidden/pinned layers follow their content by shape id), `remapFocusLayer`, `shiftFocusLayer` (ADD/DUPLICATE/DELETE shift the pinned DoF layer like they shift hidden/locked) |
 | `mergeLayers.ts` | ~125 | `MERGE_LAYER_DOWN` as a pure function (v3.24.0, §6): `mergeLayerDown(state, pushStep)`, `canMergeDown` (guards shared by button, shortcut and reducer), `mergeChangesGradient` (toast condition) |
 | `cinematic.ts` | ~10 | `flToMm`, `mmToFl` — focal-length conversion helpers (FL raw ↔ mm); extracted from legacy ControlsCinematic |
@@ -543,7 +544,7 @@ Primitives are documented in CLAUDE.md («Design System»); only the ones with n
 | `superRiso.ts` | ~70 | Super Riso panel data: `SUPER_RISO_PANEL_DEFAULTS`, `SUPER_RISO_STYLES` (Taller limpio · Fanzine · Lo-fi · Cuatricromía), `SUPER_RISO_DEFAULTS` (technique `'riso'` + `XEROX_DEFAULTS` + `STENCIL_DEFAULTS`), `sanitizeSuperRiso` (clamp + enums, for `.dior`; also `technique` and `xerox` via `sanitizeXerox`), `patchSuperRiso` (`SET_SUPER_RISO`: `xerox` merged field by field), `applySuperRisoStyle` (routes by technique: the style ids overlap), `SUPER_RISO_PAPERS`, `SUPER_RISO_REPRINT_FPS` |
 | `superRisoXerox.ts` | ~110 | Fotocopia panel data (v3.19.0), from the lab: `XEROX_PAPERS` (7 copy papers), `XEROX_MARKERS` (16 markers, names in i18n), `XEROX_FILL_DEFAULT`, `XEROX_STYLES` (8 XSTYLES, with their `fine` overrides), `XEROX_FINE_RANGES` (lab XFINE: the only valid `fine` values), `XEROX_DEFAULTS` (lab `st.x`), `sanitizeXerox`, `applyXeroxStyle` (lab `applyXStyle`: fine cleared + toner .75, then the style), `xeroxStyleMatches` (chip lit while controls and fine still match) |
 | `superRisoStencil.ts` | ~100 | Stencil panel data (v3.20.0), from the lab: `STENCIL_SPRAYS` (18 cans, names in i18n), `STENCIL_TONES`, `STENCIL_SUPPORTS` (7: colour, generator type, default texture), `STENCIL_STYLES` (8 SSTYLES), `STENCIL_DEFAULTS` (lab `st.s` + `supTex`, `dropSize`), `supTexSlider`, `sanitizeStencil`, `applyStencilStyle` (lab `applySStyle`: manual cleared, sprays; the support fixes colour, type and texture), `stencilStyleMatches` |
-| `videos.ts` | ~12 | `INTERFACE_TOUR_URL` and `PRESENTATION_URL` (v3.24.2): public YouTube videos keyed by app language (`es`/`en`). The Welcome modal links the interface tour; the presentation has no screen yet (no About/Help) and is only declared |
+| `videos.ts` | ~30 | `INTERFACE_TOUR_ID/URL/COVER` and `PRESENTATION_ID/URL`, keyed by language (`es`/`en`). Tour: link in the Welcome modal (v3.24.2) and video in `TourModalV2` (v3.25.0); the presentation has no screen yet (no About/Help) and is only declared |
 | `version.ts` | ~5 | `APP_VERSION` — single source of truth for the current release version |
 | `project.ts` | ~30 | `UNTITLED_PROJECT_SENTINEL` (`'__UNTITLED__'`) + `getFilenameBase()` — NFD-normalized filename sanitizer for exports (the `.dior` uses `projectFileStem`, `utils/projectMeta.ts`, since v3.21.0) |
 | `cinemaView.ts` | ~15 | `CINEMA_VIEW_DEFAULTS` (v3.20.11): the first-view CINEMA framing (focal 3840, zoom −2500, spacing 1.0, preset *forward*). Single source for `INIT_CINEMA_VIEW` (`ControlsV2`), the gaps `LOAD_PROJECT` fills and the save payload |
@@ -1249,9 +1250,20 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.24.2)
+## Appendix C: Changelog Highlights (1.7.3 → 3.25.0)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.25.0 — Modal del tour en vídeo para el usuario nuevo
+
+**feat** — La primera vez que un usuario nuevo pulsa «Empezar a dibujar» sale `TourModalV2` (`modals/`): portada local y, solo al pulsar play, un iframe `youtube-nocookie.com` (autoplay, `rel=0`, `playsinline`). Cierra con X, Esc o clic fuera; el iframe se desmonta y el foco vuelve al canvas. El modal de capas/onboarding espera a que cierre (`useTourOpen`).
+- **Primera vez (`utils/tourFirstRun.ts`):** flag `diorame-tour-seen`, marcado al ABRIR (no al reproducir). Es usuario previo (se marca sin mostrar) si existe `diorame-visited`, `diorame-layers-tooltip-seen` o `diorame-onboarding-seen` (leídos UNA vez al cargar el módulo: la app escribe `visited` en el primer trazo), si hay autosave o si `localStorage` falla. Restaurar autosave, abrir un `.dior` y cargar el ejemplo usan otras salidas y no lo abren (`WelcomeModalV2` recibe `onStart` solo para «Empezar a dibujar»).
+- **Facade:** nada de YouTube se pide antes de play (comprobado: 0 peticiones). Portadas `public/tour/tour-{es,en}.webp` (960×540, ~37 KB, del `maxresdefault` de cada ID), precacheadas con `tour/*.webp` en `globPatterns`. Sin red (`navigator.onLine`, evento `offline` o 12 s sin `load`): mensaje corto + enlace a YouTube.
+- **Service worker:** sin regla para `youtube-nocookie.com`: el iframe es navegación de otro origen, fuera del alcance del SW (no se intercepta ni se cachea). No hay CSP ni cabeceras en el repo.
+- **Límite:** con el foco dentro del iframe, Esc no llega a la página; X y clic fuera siguen cerrando.
+- **Analytics:** `tour_video` (`shown` / `played`), `docs/analytics.md`.
+- **[POR CONFIRMAR]:** autoplay y pantalla completa del iframe en la PWA de iPad (no probado en dispositivo).
+- **Files**: `utils/tourFirstRun.ts`, `modals/TourModalV2.tsx`, `public/tour/*` (nuevos), `constants/videos.ts`, `App.tsx`, `WelcomeModalV2.tsx`, `OnboardingOverlayConnected.tsx`, `analytics.ts`, `i18n/dictionaries/en.ts` y `es.ts` (`modal.tour.*`), `vite.config.ts`, `version.ts`, `package.json`.
 
 ### 3.24.2 — Tour por la interfaz en el modal de bienvenida
 

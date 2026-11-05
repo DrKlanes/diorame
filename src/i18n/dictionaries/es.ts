@@ -534,6 +534,12 @@ export const es: Dictionary = {
 	'modal.welcome.sounds.creditPrefix': 'Sonidos por',
 	'modal.welcome.sounds.creditSuffix': '(Pixabay)',
 
+	'modal.tour.title': 'Así es Diorame por dentro (2 min)',
+	'modal.tour.play': 'Reproducir vídeo',
+	'modal.tour.iframeTitle': 'Tour por la interfaz de Diorame',
+	'modal.tour.start': 'Empezar a dibujar',
+	'modal.tour.fallback': 'No se pudo cargar el vídeo.',
+	'modal.tour.fallbackLink': 'Verlo en YouTube',
 	'modal.welcome.bugReport.subject': 'Reporte de error en Diorame — v{version}',
 	'modal.welcome.bugReport.body': 'Qué esperaba:\n\n\nQué ocurrió:\n\n\nPasos para reproducirlo:\n\n\n---\nNavegador:\nSO:',
 

@@ -11,6 +11,7 @@
 export type { DiModalVariant } from './DiModalContext';
 export { useModalBehavior } from './useModalBehavior';
 export { WelcomeModalV2 } from './WelcomeModalV2';
+export { TourModalV2 } from './TourModalV2';
 export { getWelcomeIllustration } from './welcomeIllustrations';
 export { ClearCanvasAlertV2 } from './ClearCanvasAlertV2';
 export { ComplexSceneModalV2 } from './ComplexSceneModalV2';

@@ -5,7 +5,7 @@ import { StrataCanvas } from './components/strata/StrataCanvas';
 import { ControlsV2 } from './components/strata/ControlsV2';
 import { useIsMobile } from './hooks/useIsMobile';
 import { useLoadExampleScene } from './hooks/useLoadExampleScene';
-import { MobileBlockScreenV2, ExportProgressV2, WelcomeModalV2 } from './components/strata/modals';
+import { MobileBlockScreenV2, ExportProgressV2, WelcomeModalV2, TourModalV2 } from './components/strata/modals';
 import { ToastProvider } from './components/ui/toast-provider';
 import { PwaUpdatePrompt } from './components/PwaUpdatePrompt';
 import { PreviewPage } from './preview/PreviewPage';
@@ -15,12 +15,14 @@ import { analytics } from './analytics/analytics';
 import { useIsStandalone } from './hooks/useIsStandalone';
 import { useSaveLoad } from './hooks/useSaveLoad';
 import { onLaunchedFile } from './utils/projectFile';
+import { claimTourFirstRun, setTourOpen, useTourOpen } from './utils/tourFirstRun';
 
 function AppContent() {
   const { state, dispatch } = useStrata();
   const loadExampleScene = useLoadExampleScene();
   const isStandalone = useIsStandalone();
   const [autosaveData, setAutosaveData] = useState<any>(null);
+  const tourOpen = useTourOpen();
 
   // Leer autosave al montar (si existe)
   useEffect(() => {
@@ -103,6 +105,24 @@ function AppContent() {
     setAutosaveData(null);
   };
 
+  const handleCloseWelcome = () => {
+    handleDismissAutosave();
+    dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
+    analytics.welcomeModal('dismissed');
+  };
+
+  // "Start drawing" of a first-time user: tour video. Never for restore, .dior or example (they use other exits).
+  const handleStart = () => {
+    const hadAutosave = autosaveData !== null;
+    handleCloseWelcome();
+    if (claimTourFirstRun(hadAutosave)) setTourOpen(true);
+  };
+
+  const handleCloseTour = () => {
+    setTourOpen(false);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('canvas[data-drawing-canvas]')?.focus());
+  };
+
   return (
     <div className={`app-root ${isStandalone ? 'app-root--standalone' : 'app-root--browser'} relative w-full overflow-hidden font-manrope select-none transition-colors duration-200 bg-slate-50 text-[#353535]`}>
       {/* Global interaction lock */}
@@ -114,16 +134,14 @@ function AppContent() {
       <ControlsV2 />
       <WelcomeModalV2
         open={state.isWelcomeModalOpen}
-        onClose={() => {
-          handleDismissAutosave();
-          dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
-          analytics.welcomeModal('dismissed');
-        }}
+        onClose={handleCloseWelcome}
+        onStart={handleStart}
         onLoadExample={handleLoadExample}
         onRestoreAutosave={autosaveData ? handleRestoreAutosave : undefined}
         isMidSession={state.shapes.length > 0}
         dark={state.isDarkMode}
       />
+      <TourModalV2 open={tourOpen} onClose={handleCloseTour} dark={state.isDarkMode} />
       <ExportProgressV2
         open={state.isExporting}
         exportType={state.exportRequest ?? 'png'}

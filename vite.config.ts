@@ -19,7 +19,7 @@
           // App-shell + iconos + manifest + fuentes. PNG incluido por los iconos; las
           // texturas grandes (>2 MiB) las excluye el cap default, y además globIgnores
           // explícito. woff2: fuentes self-hosted (@fontsource) → precache para offline.
-          globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
+          globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}', 'tour/*.webp'],  // covers of the tour modal (offline)
           globIgnores: ['**/welcome-videos/**', '**/texture-*.png', '**/textures/superRiso/**'],
           navigateFallback: '/index.html',   // SPA offline
           navigateFallbackDenylist: [/\/welcome-videos\//],  // los .mp4 NUNCA caen al fallback HTML

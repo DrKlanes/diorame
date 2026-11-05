@@ -37,6 +37,7 @@ disparador salvo `stroke_milestone` (automático: 10/50/200 trazos),
 | `project_saved` | `src/hooks/useSaveLoad.ts:51` | **No** (a propósito) | Guardado `.dior` completado con éxito |
 | `project_loaded` | `src/hooks/useSaveLoad.ts:78` | **No** (a propósito) | Carga de `.dior` con éxito. Única señal de retorno real que existe hoy |
 | `welcome_modal` | `src/App.tsx:53` / `:74` / `:98` | Propio | Cómo sale la gente del modal de bienvenida |
+| `tour_video` | `src/components/strata/modals/TourModalV2.tsx` (`shown` al abrir, `played` al pulsar play) | Propio | Solo usuario nuevo, una vez en la vida. `shown` sin `played` = cierre sin ver el vídeo |
 | `session_depth` | `visibilitychange` + `pagehide`, registrados por `installAnalytics()` en `src/main.tsx` | Propio (`depthSent`) | Resumen de sesión al salir |
 
 ### `artwork_exported` — valores de `format`

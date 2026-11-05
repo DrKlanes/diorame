@@ -560,6 +560,12 @@ export const en: Dictionary = {
 	'modal.welcome.sounds.creditSuffix': '(Pixabay)',
 
 	// Bug report email (dinámico)
+	'modal.tour.title': 'Diorame inside out (2 min)',
+	'modal.tour.play': 'Play video',
+	'modal.tour.iframeTitle': 'Diorame interface tour',
+	'modal.tour.start': 'Start drawing',
+	'modal.tour.fallback': 'The video could not load.',
+	'modal.tour.fallbackLink': 'Watch on YouTube',
 	'modal.welcome.bugReport.subject': 'Diorame bug report — v{version}',
 	'modal.welcome.bugReport.body': 'What I expected:\n\n\nWhat happened instead:\n\n\nSteps to reproduce:\n\n\n---\nBrowser:\nOS:',
 

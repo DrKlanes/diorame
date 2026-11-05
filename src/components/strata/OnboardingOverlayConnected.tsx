@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useStrata } from './StrataContext';
 import { useLoadExampleScene } from '../../hooks/useLoadExampleScene';
 import { OnboardingOverlayV2 } from './modals/OnboardingOverlayV2';
+import { useTourOpen } from '../../utils/tourFirstRun';
 
 const ONBOARDING_SEEN_KEY = 'diorame-onboarding-seen';
 
@@ -16,6 +17,7 @@ const ONBOARDING_SEEN_KEY = 'diorame-onboarding-seen';
 export function OnboardingOverlayConnected() {
 	const { state, dispatch } = useStrata();
 	const loadExampleScene = useLoadExampleScene();
+	const tourOpen = useTourOpen();
 
 	// Dismiss onboarding if it was already seen in a previous session
 	useEffect(() => {
@@ -27,6 +29,7 @@ export function OnboardingOverlayConnected() {
 
 	const isOpen =
 		!state.isWelcomeModalOpen &&
+		!tourOpen &&
 		state.isOnboardingVisible &&
 		state.shapes.length === 0 &&
 		state.mode === 'drawing';
