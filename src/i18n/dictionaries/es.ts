@@ -561,6 +561,11 @@ export const es: Dictionary = {
 	'modal.emptySave.body': 'Todavía no hay nada dibujado.',
 	'modal.emptySave.confirm': 'Guardar igualmente',
 	'modal.emptySave.cancel': 'Cancelar',
+	'modal.openUnsaved.title': 'Cambios sin guardar',
+	'modal.openUnsaved.body': 'Abrir este archivo sustituirá tu dibujo actual.',
+	'modal.openUnsaved.saveFirst': 'Guardar antes',
+	'modal.openUnsaved.anyway': 'Abrir igualmente',
+	'modal.openUnsaved.cancel': 'Cancelar',
 
 	'modal.complexScene.title': 'Escena compleja detectada',
 	'modal.complexScene.body': 'Tu dibujo contiene {shapeCount} formas. El renderizado puede ser lento o fallar.',

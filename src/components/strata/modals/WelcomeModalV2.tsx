@@ -212,7 +212,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 									style={{ display: 'none' }}
 									onChange={e => {
 										const f = e.target.files?.[0];
-										if (f) { handleLoadProject(f); onClose(); }
+										if (f) handleLoadProject(f, null, onClose);
 										if (loadFileInputRef.current) loadFileInputRef.current.value = '';
 									}}
 								/>

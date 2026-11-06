@@ -65,8 +65,9 @@ function AppContent() {
   useEffect(() => {
     onLaunchedFile(async handle => {
       const { handleLoadProject, welcomeOpen } = launchRef.current;
-      handleLoadProject(await handle.getFile(), handle);
-      if (welcomeOpen) dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
+      handleLoadProject(await handle.getFile(), handle, () => {
+        if (launchRef.current.welcomeOpen) dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
+      });
     });
   }, []);
 

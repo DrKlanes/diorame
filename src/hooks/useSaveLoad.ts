@@ -16,12 +16,15 @@ import {
 } from '../utils/projectFile';
 import { renderProjectThumbnail } from '../components/strata/canvas/projectThumbnail';
 import { setSavePrompt, type SaveIntent } from './useSavePrompt';
+import { setOpenPrompt, getOpenPrompt, setAfterSave, takeAfterSave } from './useOpenPrompt';
 import type { ProjectMeta } from '../types/strataTypes';
 
 export function useSaveLoad() {
 	const { state, dispatch } = useStrata();
 	const { t } = useTranslation();
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const stateRef = useRef(state);
+	stateRef.current = state;
 
 	// Writes the file. Chromium desktop: over the file this drawing is linked to ("Guardar" with the name it was
 	// linked with), or a new one chosen in the save dialog ("Guardar como…", first save, or "Guardar" after a
@@ -39,7 +42,7 @@ export function useSaveLoad() {
 					? overwrite
 					: await pickSaveFile(`${projectFileStem(name)}.dior`, link?.handle);
 			} catch (err) {
-				if (isAbortError(err)) return;
+				if (isAbortError(err)) { setAfterSave(null); return; }
 				console.warn('[save] file dialog failed, downloading instead:', err);
 				handle = null;
 			}
@@ -73,8 +76,10 @@ export function useSaveLoad() {
 			dispatch({ type: 'PROJECT_SAVED', payload: nextMeta });
 			del(AUTOSAVE_KEY).catch(() => {});
 			analytics.projectSaved();
+			takeAfterSave()?.();
 		} catch (err) {
 			console.warn('[save] failed:', err);
+			setAfterSave(null);
 			if (handle) setProjectFileLink(meta.projectId, null);
 			toast.error(t('toast.save.errorTitle'), { description: t('common.pleaseRetry') });
 		}
@@ -109,8 +114,26 @@ export function useSaveLoad() {
 		void performSave(intent, name);
 	}, [dispatch, performSave, t]);
 
+	const applyProject = useCallback((json: any, handle: ProjectFileHandle | null, onLoaded?: () => void) => {
+		try {
+			// Decided here, not in the reducer, so the linked file knows its projectId.
+			const meta = readProjectMeta(json.meta) ?? createProjectMeta();
+			dispatch({ type: 'LOAD_PROJECT', payload: { ...json, meta } });
+			const loadedName = typeof json.projectName === 'string' ? json.projectName.slice(0, 100) : '';
+			setProjectFileLink(meta.projectId, handle && isDiorFile(handle.name) ? handle : null, loadedName === 'Untitled Project' ? UNTITLED_PROJECT_SENTINEL : loadedName);
+			const n = json.shapes.length;
+			const desc = n === 1 ? t('toast.load.successDescOne', { n }) : t('toast.load.successDesc', { n });
+			toast.success(t('toast.load.successTitle'), { description: desc, duration: 2000 });
+			analytics.projectLoaded();
+			onLoaded?.();
+		} catch (err) {
+			toast.error(t('toast.load.errorTitle'), { description: err instanceof Error ? err.message : t('toast.load.errorDescGeneric') });
+		}
+	}, [dispatch, t]);
+
 	// `handle`: the file on disk (Chromium open dialog, or the OS through launchQueue). A real .dior stays
-	// linked, so "Guardar" writes over it; any other load unlinks.
+	// linked, so "Guardar" writes over it; any other load unlinks. Open, OS launch and drop all end here: the file is
+	// validated FIRST (an invalid one never asks anything); then, with unsaved changes, the user decides (v3.25.3).
 	const handleLoadProject = useCallback((file: File, handle: ProjectFileHandle | null = null, onLoaded?: () => void) => {
 		if (file.size > 50 * 1024 * 1024) {
 			toast.error(t('toast.load.errorDescFile'), { description: t('toast.load.errorDescSize') });
@@ -128,24 +151,26 @@ export function useSaveLoad() {
 				toast.error(t('toast.load.notProject'));
 				return;
 			}
-			try {
-				// Decided here, not in the reducer, so the linked file knows its projectId.
-				const meta = readProjectMeta(json.meta) ?? createProjectMeta();
-				dispatch({ type: 'LOAD_PROJECT', payload: { ...json, meta } });
-				const loadedName = typeof json.projectName === 'string' ? json.projectName.slice(0, 100) : '';
-				setProjectFileLink(meta.projectId, handle && isDiorFile(handle.name) ? handle : null, loadedName === 'Untitled Project' ? UNTITLED_PROJECT_SENTINEL : loadedName);
-				const n = json.shapes.length;
-				const desc = n === 1 ? t('toast.load.successDescOne', { n }) : t('toast.load.successDesc', { n });
-				toast.success(t('toast.load.successTitle'), { description: desc, duration: 2000 });
-				analytics.projectLoaded();
-				onLoaded?.();
-			} catch (err) {
-				toast.error(t('toast.load.errorTitle'), { description: err instanceof Error ? err.message : t('toast.load.errorDescGeneric') });
-			}
+			const apply = () => applyProject(json, handle, onLoaded);
+			if (stateRef.current.isDirty) setOpenPrompt({ apply }); else apply();
 		};
 		reader.readAsText(file);
 		if (fileInputRef.current) fileInputRef.current.value = '';
-	}, [dispatch, t]);
+	}, [t, applyProject]);
+
+	// Answers from SaveDialogsV2. "Save first" waits for the write to succeed (performSave runs `afterSave`).
+	const confirmOpenAnyway = useCallback(() => {
+		const p = getOpenPrompt();
+		setOpenPrompt(null);
+		p?.apply();
+	}, []);
+	const confirmOpenSaveFirst = useCallback(() => {
+		const p = getOpenPrompt();
+		setOpenPrompt(null);
+		if (!p) return;
+		setAfterSave(p.apply);
+		startSave('save');
+	}, [startSave]);
 
 	const triggerFileSelect = useCallback(() => {
 		if (!canOverwriteFiles()) { fileInputRef.current?.click(); return; }
@@ -160,6 +185,6 @@ export function useSaveLoad() {
 
 	return {
 		handleSaveProject, handleSaveProjectAs, handleDuplicateProject, confirmEmptySave, confirmProjectName,
-		handleLoadProject, triggerFileSelect, fileInputRef,
+		handleLoadProject, confirmOpenAnyway, confirmOpenSaveFirst, triggerFileSelect, fileInputRef,
 	};
 }

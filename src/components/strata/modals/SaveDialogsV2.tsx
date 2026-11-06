@@ -5,6 +5,7 @@ import { useTranslation } from '../../../i18n';
 import { useStrata } from '../StrataContext';
 import { useSaveLoad } from '../../../hooks/useSaveLoad';
 import { useSavePrompt, setSavePrompt } from '../../../hooks/useSavePrompt';
+import { useOpenPrompt, setOpenPrompt, setAfterSave } from '../../../hooks/useOpenPrompt';
 import { UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 
 // The save flow's questions (v3.21.0): empty canvas, name of an untitled drawing, name of a duplicate.
@@ -12,7 +13,8 @@ import { UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 export function SaveDialogsV2({ dark }: { dark: boolean }) {
 	const { state } = useStrata();
 	const { t } = useTranslation();
-	const { confirmEmptySave, confirmProjectName } = useSaveLoad();
+	const { confirmEmptySave, confirmProjectName, confirmOpenAnyway, confirmOpenSaveFirst } = useSaveLoad();
+	const openPrompt = useOpenPrompt();
 	const prompt = useSavePrompt();
 	const [name, setName] = useState('');
 
@@ -26,12 +28,23 @@ export function SaveDialogsV2({ dark }: { dark: boolean }) {
 		setName(isDuplicate ? t('modal.duplicate.defaultName', { name: current }) : '');
 	}, [nameOpen, isDuplicate]);
 
-	const close = () => setSavePrompt(null);
+	const close = () => { setSavePrompt(null); setAfterSave(null); };
+	const closeOpen = () => setOpenPrompt(null);
 	const trimmed = name.trim().slice(0, 100);
 	const submitName = () => { if (prompt && trimmed) confirmProjectName(prompt.intent, trimmed); };
 
 	return (
 		<>
+			<DiModal open={openPrompt !== null} onClose={closeOpen} variant="alert" size="sm" dark={dark}>
+				<DiModal.Header title={t('modal.openUnsaved.title')} />
+				<DiModal.Body>{t('modal.openUnsaved.body')}</DiModal.Body>
+				<DiModal.Footer>
+					<DiModal.TertiaryAction onClick={closeOpen}>{t('modal.openUnsaved.cancel')}</DiModal.TertiaryAction>
+					<DiModal.SecondaryAction onClick={confirmOpenAnyway}>{t('modal.openUnsaved.anyway')}</DiModal.SecondaryAction>
+					<DiModal.PrimaryAction onClick={confirmOpenSaveFirst}>{t('modal.openUnsaved.saveFirst')}</DiModal.PrimaryAction>
+				</DiModal.Footer>
+			</DiModal>
+
 			<DiModal open={prompt?.step === 'empty'} onClose={close} variant="alert" size="sm" dark={dark}>
 				<DiModal.Header title={t('modal.emptySave.title')} />
 				<DiModal.Body>{t('modal.emptySave.body')}</DiModal.Body>

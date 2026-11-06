@@ -571,7 +571,8 @@ export function appReducer(state: AppState, action: Action): AppState {
         postProcessing: { ...state.postProcessing, focusTargetLayer: remapFocusLayer(state.postProcessing.focusTargetLayer, state.shapes, snapshot.shapes, snapshot.totalLayers) },
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
-        isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
+        isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false,
+        isDirty: true,
       };
     }
     case 'REDO': {
@@ -614,7 +615,8 @@ export function appReducer(state: AppState, action: Action): AppState {
         postProcessing: { ...state.postProcessing, focusTargetLayer: remapFocusLayer(state.postProcessing.focusTargetLayer, state.shapes, snapshot.shapes, snapshot.totalLayers) },
         historyIndex: newIndex,
         isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
-        isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false
+        isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false,
+        isDirty: true,
       };
     }
     case 'SET_MODE':

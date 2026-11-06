@@ -588,6 +588,11 @@ export const en: Dictionary = {
 	'modal.emptySave.body': 'Nothing has been drawn yet.',
 	'modal.emptySave.confirm': 'Save anyway',
 	'modal.emptySave.cancel': 'Cancel',
+	'modal.openUnsaved.title': 'Unsaved changes',
+	'modal.openUnsaved.body': 'Opening this file will replace your current drawing.',
+	'modal.openUnsaved.saveFirst': 'Save first',
+	'modal.openUnsaved.anyway': 'Open anyway',
+	'modal.openUnsaved.cancel': 'Cancel',
 
 	// Complex scene modal
 	'modal.complexScene.title': 'Complex scene detected',
