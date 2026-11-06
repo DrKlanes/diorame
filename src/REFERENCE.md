@@ -397,7 +397,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `fx/superRisoFields.tsx` | `Field`, `segmentWrap`, `pct`, `labelStyle`, `Divider`: shared by `SuperRisoBlock`, `XeroxControls` and `StencilControls` |
 | `fx/StencilControls.tsx` | Stencil controls (v3.20.0), the visible part, same anatomy as `XeroxControls`: **Plantillas** (Tones / Drawing colours · number of layers 1–4, «Colours (+ black)» 1–3 · Darkness · Simplify the cut (shows the mm) · Bridges No/Yes) · **Spray** (Paint load · Lifted stencil · Overspray · Drips · Splatter) · **Colours** (Sprays / From the drawing · one row per layer + «Cloud» when it is coloured, read from `xeroxPalette.ts` (`getStencilPalette`); a click opens the 18 SPRAYS and only that row changes · Colour accent No/Yes, tones only · Background cloud none/white/colour). Support, its texture, droplet size, sloppiness and resolution live in the shared print settings |
 
-**Modals (`modals/`):** ClearCanvasAlertV2, SaveDialogsV2 (v3.21.0: empty-canvas and name questions of the save flow, mounted once in `ControlsV2`), ComplexSceneModalV2, WelcomeModalV2, TourModalV2 (v3.25.0: first-run video facade), OnboardingOverlayV2, ExportProgressV2, MobileBlockScreenV2 + shared DiModal primitives
+**Modals (`modals/`):** ClearCanvasAlertV2, SaveDialogsV2 (v3.21.0: empty-canvas and name questions of the save flow, mounted once in `ControlsV2`), ComplexSceneModalV2, WelcomeModalV2, TourModalV2 (v3.25.0: first-run video facade), FileDropOverlay (v3.25.2: «drop to open» hint, pointer-events none), OnboardingOverlayV2, ExportProgressV2, MobileBlockScreenV2 + shared DiModal primitives
 
 **Popovers (`popovers/`):** DiSelectorPopover + DiSelectorOption
 
@@ -570,6 +570,7 @@ Primitives are documented in CLAUDE.md («Design System»); only the ones with n
 | `useMergeLayerDown.ts` | `{ canMerge, mergeDown }` for the layers panel button and Shift+M (v3.24.0): same guards, same toast |
 | `useSaveLoad.ts` | Save/load projects as `.dior` files (format v2, v3.21.0 — see §8): save flow (empty-canvas and name questions → overwrite through the linked file handle on Chromium, or a dated download elsewhere), `meta` + thumbnail, «Guardar como…», «Duplicar como nuevo dibujo»; `FileReader` + `JSON.parse` on load (meta decided before `LOAD_PROJECT` so the linked file knows its `projectId`). **Not IndexedDB** — that is `useAutoSave.ts`. Fires `project_saved` / `project_loaded` at the confirmed-success point inside each `try` |
 | `useSuperRisoExport.ts` | «Export › Super Riso ↗» (v3.23.0, §8): builds the `.dior` in memory (`buildDiorData` + thumbnail, no file, no version bump), checks it with `frameOf` on the serialized copy, sends it with the DRAW `drawView`; toasts for opened / empty / failed (with «Descargar .dior») |
+| `useFileDrop.ts` | ~55 | v3.25.2: window-level file drop → Open. Reacts only to drags whose `dataTransfer.types` has `"Files"` (dnd-kit drags are pointer-based, so internal drags never trigger it); `preventDefault` on every file drag so a missed drop never navigates away; counter for dragenter/leave; Escape/dragend hides; `canDrop()` is read at drag time. First file only, no MIME filter (empty on iOS). Wired in `App.tsx`, not in StrataCanvas |
 | `useSavePrompt.ts` | Shared state of the save flow's questions (`{ step: 'empty' or 'name', intent: 'save', 'saveAs' or 'duplicate' }`, `useSyncExternalStore`): `useSaveLoad` runs in several components, the dialogs are mounted once (v3.21.0) |
 
 ### Analytics (`src/analytics/`)
@@ -1251,9 +1252,19 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.25.1)
+## Appendix C: Changelog Highlights (1.7.3 → 3.25.2)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.25.2 — Arrastrar y soltar un .dior para abrirlo
+
+**feat(open)** — Soltar un archivo sobre la ventana lo abre por el mismo camino que Abrir (`useSaveLoad.handleLoadProject`): mismo `FileReader`, misma validación por contenido (`toast.load.notProject`, proyecto intacto) y mismos `.dior` / `.dior.json` / `.json`. **Abrir no tiene confirmación de cambios sin guardar** (ni el botón ni el arranque desde el sistema), así que el drop tampoco: abrir sustituye el proyecto, el autoguardado cubre el resto.
+- **`hooks/useFileDrop.ts`** (nuevo, nivel ventana, fuera de StrataCanvas y del pipeline): solo reacciona si `dataTransfer.types` incluye `"Files"`; los drags internos (capas, paleta: dnd-kit, por pointer events) no llevan `Files` y ni se tocan. `preventDefault` siempre en dragover/drop de archivos (si no, el navegador navega al archivo y se pierde el trabajo). Sin filtro por MIME (en iOS llega vacío); primer archivo, el resto se ignoran. Contador de dragenter/dragleave contra el parpadeo sobre hijos; Escape y `dragend` ocultan.
+- **`modals/FileDropOverlay.tsx`** (nuevo): pantalla completa, tokens del design system claro/oscuro, `pointer-events: none` (no interfiere con el dibujo), texto `drop.openProject` EN/ES.
+- **Puerta:** `canDrop()` bloquea con cualquier `[aria-modal="true"]` abierto salvo el Welcome (donde soltar también carga y lo cierra) y durante un export; fuera, el drop sigue con `preventDefault` y `dropEffect = 'none'`. `handleLoadProject` gana un 3.er parámetro opcional `onLoaded` para cerrar el Welcome solo si el archivo era válido.
+- **Verificado en navegador (eventos sintéticos):** `.dior` v2 y `.dior.json` sin tipo cargan; un PNG da el toast y el Welcome sigue abierto; varios archivos usan el primero; texto arrastrado y diálogo abierto no muestran overlay; Escape lo oculta; drawing intacto. tsc y build en verde.
+- **[POR CONFIRMAR] en iPad real (Moisés):** ver nota de cierre.
+- **Files**: `hooks/useFileDrop.ts`, `modals/FileDropOverlay.tsx` (nuevos), `App.tsx`, `hooks/useSaveLoad.ts`, `i18n/dictionaries/{es,en}.ts`, `docs/ux-debt.md`, `REFERENCE.md`, `version.ts`, `package.json`. **REFERENCE.md §10 sync: updated.**
 
 ### 3.25.1 — Abrir .dior en iPad (sin `accept` en Apple táctil)
 
@@ -1261,7 +1272,7 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 - **`utils/appleTouch.ts`:** `isAppleTouchWebKit()` (`/iPad|iPhone|iPod/` o Macintosh con `maxTouchPoints > 1`) y `diorAccept()`: `undefined` en Apple táctil, `DIOR_ACCEPT` en el resto (escritorio sin cambios). Lo usan los dos `<input type="file">` que abren proyectos: `DocumentPill` (Abrir) y `WelcomeModalV2` («Cargar archivo»). En Chromium de escritorio manda `showOpenFilePicker` (`pickOpenFile`), el input es solo fallback.
 - **Validación por contenido** (`useSaveLoad.handleLoadProject`): sin `accept` llega cualquier archivo; si no es JSON con `shapes[]` sale el toast `toast.load.notProject` («This file isn't a Diorame project» / «Este archivo no es un proyecto de Diorame») y el proyecto actual queda intacto. Siguen válidos `.dior`, `.dior.json` y `.json`. Un fallo posterior (reducer) mantiene el toast genérico.
 - **iOS/iPadOS no soporta `file_handlers`:** «Abrir con Diorame» desde Archivos es imposible allí; la vía es Abrir dentro de la app.
-- **Arrastrar y soltar:** NO existe (ningún `drop`/`dataTransfer` en `src/`). Solo informado, no implementado.
+- **Arrastrar y soltar:** no existía; implementado en 3.25.2.
 - **[POR CONFIRMAR]:** en el iPad real (lo valida Moisés tras el push, pestaña privada para saltarse el SW).
 - **Files**: `utils/appleTouch.ts` (nuevo), `DocumentPill.tsx`, `WelcomeModalV2.tsx`, `hooks/useSaveLoad.ts`, `i18n/dictionaries/en.ts` y `es.ts`, `version.ts`, `package.json`.
 

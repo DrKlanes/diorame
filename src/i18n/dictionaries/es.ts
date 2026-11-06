@@ -520,6 +520,7 @@ export const es: Dictionary = {
 	'modal.welcome.tutorial': 'Tour por la interfaz (2 min)',
 	'modal.welcome.dumaker': 'por @dumaker',
 	'modal.welcome.kofi': 'Apóyame en Ko-fi 💜',
+	'drop.openProject': 'Suelta para abrir el proyecto',
 	'modal.welcome.graintouch': 'Inspirado en Graintouch',
 	'modal.welcome.bugReport.link': '¿Encontraste un error? Escríbeme.',
 	'modal.welcome.shortcuts': 'Atajos de teclado',

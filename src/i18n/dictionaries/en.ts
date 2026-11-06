@@ -545,6 +545,7 @@ export const en: Dictionary = {
 	'modal.welcome.tutorial': 'Interface tour (2 min)',
 	'modal.welcome.dumaker': 'by @dumaker',
 	'modal.welcome.kofi': 'Support on Ko-fi 💜',
+	'drop.openProject': 'Drop to open project',
 	'modal.welcome.graintouch': 'Inspired by Graintouch',
 	'modal.welcome.bugReport.link': 'Found a bug? Email me.',
 	'modal.welcome.shortcuts': 'Keyboard shortcuts',

@@ -111,7 +111,7 @@ export function useSaveLoad() {
 
 	// `handle`: the file on disk (Chromium open dialog, or the OS through launchQueue). A real .dior stays
 	// linked, so "Guardar" writes over it; any other load unlinks.
-	const handleLoadProject = useCallback((file: File, handle: ProjectFileHandle | null = null) => {
+	const handleLoadProject = useCallback((file: File, handle: ProjectFileHandle | null = null, onLoaded?: () => void) => {
 		if (file.size > 50 * 1024 * 1024) {
 			toast.error(t('toast.load.errorDescFile'), { description: t('toast.load.errorDescSize') });
 			if (fileInputRef.current) fileInputRef.current.value = '';
@@ -138,6 +138,7 @@ export function useSaveLoad() {
 				const desc = n === 1 ? t('toast.load.successDescOne', { n }) : t('toast.load.successDesc', { n });
 				toast.success(t('toast.load.successTitle'), { description: desc, duration: 2000 });
 				analytics.projectLoaded();
+				onLoaded?.();
 			} catch (err) {
 				toast.error(t('toast.load.errorTitle'), { description: err instanceof Error ? err.message : t('toast.load.errorDescGeneric') });
 			}

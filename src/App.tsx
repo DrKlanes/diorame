@@ -15,6 +15,8 @@ import { analytics } from './analytics/analytics';
 import { useIsStandalone } from './hooks/useIsStandalone';
 import { useSaveLoad } from './hooks/useSaveLoad';
 import { onLaunchedFile } from './utils/projectFile';
+import { useFileDrop } from './hooks/useFileDrop';
+import { FileDropOverlay } from './components/strata/modals/FileDropOverlay';
 import { claimTourFirstRun, setTourOpen, useTourOpen } from './utils/tourFirstRun';
 
 function AppContent() {
@@ -67,6 +69,20 @@ function AppContent() {
       if (welcomeOpen) dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
     });
   }, []);
+
+  // Arrastrar un archivo a la ventana = Abrir (mismo cargador, misma validación por contenido). Solo con el welcome
+  // como único diálogo abierto, y nunca durante un export.
+  const dropRef = useRef({ exporting: state.isExporting, welcomeOpen: state.isWelcomeModalOpen });
+  dropRef.current = { exporting: state.isExporting, welcomeOpen: state.isWelcomeModalOpen };
+  const fileDragging = useFileDrop(
+    file => {
+      launchRef.current.handleLoadProject(file, null, () => {
+        if (dropRef.current.welcomeOpen) dispatch({ type: 'TOGGLE_WELCOME_MODAL' });
+      });
+    },
+    () => !dropRef.current.exporting
+      && document.querySelectorAll('[aria-modal="true"]').length <= (dropRef.current.welcomeOpen ? 1 : 0),
+  );
 
   // Mantener el autosave actualizado cada 30s cuando isDirty
   const { suspendAutosave, resumeAutosave } = useAutoSave();
@@ -142,6 +158,7 @@ function AppContent() {
         dark={state.isDarkMode}
       />
       <TourModalV2 open={tourOpen} onClose={handleCloseTour} dark={state.isDarkMode} />
+      <FileDropOverlay open={fileDragging} dark={state.isDarkMode} />
       <ExportProgressV2
         open={state.isExporting}
         exportType={state.exportRequest ?? 'png'}
