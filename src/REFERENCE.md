@@ -272,7 +272,7 @@ Two distinct actions create layers — they are **not** interchangeable:
   - **New name = new file (v3.22.1)**: the link stores the `projectName` it was made with (`ProjectFileLink.name`, not the file's name: that may carry a date or be someone else's). «Guardar» with `state.projectName` ≠ that name behaves as «Guardar como…»: `showSaveFilePicker` with `suggestedName = <name>.dior` (`projectFileStem`, no date) and `startIn` = the linked handle (same folder); on confirm the new handle is linked and later saves overwrite it. The original is never touched (no `move()`, no deletes). Cancelling the picker saves nothing and keeps the name in the field. Without File System Access the download always uses the field's name. Tooltip of Save by state: «Guardar en "X.dior"» / «Guardar como "Y.dior" (el original no se toca)» / «Guardar (descarga una copia)».
   - **Split button + menu** (`DocumentPill`): Save and the chevron are one control (one container, thin separator). Menu: Guardar (Ctrl+S) · Guardar como… (Ctrl+Shift+S, Chromium only; the shortcut is a no-op elsewhere) · Duplicar como nuevo dibujo. Previously: chevron next to Save: «Guardar como…» (Chromium only) and «Duplicar como nuevo dibujo» (asks the copy's name, default «<name> (copia)»; it does not save — the next save creates its file).
 - **Open from the OS (desktop PWA)**: `manifest.webmanifest` declares `file_handlers` for `.dior` (`application/x-diorame`, with the app icon at 48/96/192/256/512 as the file icon since v3.22.0 — Chromium on Windows may still show the app's icon instead; that is the browser's, nothing to fix here); `App.tsx` consumes `launchQueue` (`onLaunchedFile`): the file loads and stays linked for overwriting; the welcome modal closes without deleting the pending autosave. Only in the PWA installed from Chromium on desktop (the PWA must be reinstalled/updated to register the handler). [POR CONFIRMAR: not tested with an installed PWA]
-- **Load**: Reads the file via `FileReader`, validates structure (`shapes` array), and dispatches `LOAD_PROJECT`
+- **Load**: Reads the file via `FileReader`, validates structure (`shapes` array; if not, localized toast «not a Diorame project» and the project is untouched), and dispatches `LOAD_PROJECT`. On iPad/iPhone the open inputs carry no `accept` (v3.25.1); `file_handlers` is unsupported on iOS/iPadOS, so «Open with Diorame» from Files is impossible there
   - File size guard: rejects files larger than 50 MB
   - Triggers fit-to-view on successful load
 - **Saved data** (besides `meta`): shapes, palette, layers, dark mode, post-processing settings (v3.20.5: also the FX master switch `fxMasterEnabled` and the OFF-snapshot `postProcessingSnapshot`: with the master off every flag is false and the look that was on is the snapshot, which `LOAD_PROJECT` restores only with the master off and sanitised to one boolean per known FX), hidden/locked layers, project name, per-layer render modes, gradient params, brush settings, line mode, active palette ID, CINEMA view, point of interest
@@ -518,6 +518,7 @@ Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"
 | `browserCapabilities.ts` | ~55 | `supportsCanvasFilter()` — cached functional detection for `ctx.filter` support (Safari/WebKit silently ignores filter). Consumed by `postProcessing.ts` to route Glow/DoF to `blurCompat` |
 | `panelLayout.ts` | ~25 | `rightPanelInsets(bottomBarHeight, isStandalone)` → `{ top, bottom }` CSS for a wrapper that spans the free band on the right edge (below the TopBar pills, above the bottom bar, safe-area included); `CAMERA_BAR_HEIGHT` (40 wide · 88 compact). The panel is centred in the band and never taller than it (`maxHeight: 100%`, inner scroll). First user: `FXPanel` (v3.20.3); the DRAW inspector will reuse it |
 | `downloadBlob.ts` | ~25 | `downloadBlob(blob, filename)` — Blob download via hidden appended anchor + deferred cleanup/revoke (iPadOS WebKit drops detached-anchor clicks and sync-revoked URLs); shared by PNG/SVG/MP4/GIF/ZIP export sinks and, since v3.21.0, the `.dior` download |
+| `appleTouch.ts` | ~15 | v3.25.1: `isAppleTouchWebKit()`, `diorAccept()` (`accept` of the open inputs; `undefined` on iPad/iPhone, where `.dior` has no UTI and greys out) |
 | `projectMeta.ts` | ~50 | `.dior` format v2 (v3.21.0): `DIOR_FORMAT_VERSION`, `DIOR_MIME` (`application/octet-stream`), `DIOR_ACCEPT`, `DiorFileMeta`, `createProjectMeta(derivedFrom?)`, `readProjectMeta(raw)` (field by field, null without a valid `projectId`), `projectFileStem(name, date?)` (sanitized name + ` (YYYY-MM-DD HH-mm)`), `diorNameFromFile(filename)` (inverse: strips `.dior` and the date suffix) |
 | `diorPayload.ts` | ~30 | `buildDiorData(state, name, fileMeta)` (v3.23.0): the JSON a `.dior` holds, out of `useSaveLoad` so «Save» and «Super Riso ↗» write the same file |
 | `superRisoBridge.ts` | ~95 | «Super Riso ↗» (v3.23.0, §8): `launchSuperRiso(prepare)` (window opened inside the gesture, `ready`/`image`/`received` with the Lab's exact origin, 8 s answer timer, probe for a reused tab), `visibleDrawView(state, w, h)`, `closeSuperRisoWindow`; Lab URL from `VITE_SUPER_RISO_LAB_URL` or `https://super-riso.dumaker.com` |
@@ -1250,9 +1251,19 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.25.0)
+## Appendix C: Changelog Highlights (1.7.3 → 3.25.1)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.25.1 — Abrir .dior en iPad (sin `accept` en Apple táctil)
+
+**fix** — En Safari/PWA de iPadOS los `.dior` salían en gris en el selector de Abrir: iOS WebKit traduce `accept` a UTIs, `.dior` no tiene UTI y, junto a `.json`, solo `.json` queda seleccionable (renombrar a `.json` funcionaba). `"*/*"` no vale: en iOS deja todo en gris.
+- **`utils/appleTouch.ts`:** `isAppleTouchWebKit()` (`/iPad|iPhone|iPod/` o Macintosh con `maxTouchPoints > 1`) y `diorAccept()`: `undefined` en Apple táctil, `DIOR_ACCEPT` en el resto (escritorio sin cambios). Lo usan los dos `<input type="file">` que abren proyectos: `DocumentPill` (Abrir) y `WelcomeModalV2` («Cargar archivo»). En Chromium de escritorio manda `showOpenFilePicker` (`pickOpenFile`), el input es solo fallback.
+- **Validación por contenido** (`useSaveLoad.handleLoadProject`): sin `accept` llega cualquier archivo; si no es JSON con `shapes[]` sale el toast `toast.load.notProject` («This file isn't a Diorame project» / «Este archivo no es un proyecto de Diorame») y el proyecto actual queda intacto. Siguen válidos `.dior`, `.dior.json` y `.json`. Un fallo posterior (reducer) mantiene el toast genérico.
+- **iOS/iPadOS no soporta `file_handlers`:** «Abrir con Diorame» desde Archivos es imposible allí; la vía es Abrir dentro de la app.
+- **Arrastrar y soltar:** NO existe (ningún `drop`/`dataTransfer` en `src/`). Solo informado, no implementado.
+- **[POR CONFIRMAR]:** en el iPad real (lo valida Moisés tras el push, pestaña privada para saltarse el SW).
+- **Files**: `utils/appleTouch.ts` (nuevo), `DocumentPill.tsx`, `WelcomeModalV2.tsx`, `hooks/useSaveLoad.ts`, `i18n/dictionaries/en.ts` y `es.ts`, `version.ts`, `package.json`.
 
 ### 3.25.0 — Modal del tour en vídeo para el usuario nuevo
 

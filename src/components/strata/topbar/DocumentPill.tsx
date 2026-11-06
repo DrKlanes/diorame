@@ -8,7 +8,7 @@ import { UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import { ClearCanvasAlertV2 } from '../modals/ClearCanvasAlertV2';
 import { InfoButton } from './InfoButton';
 import { DiSelectorPopover, DiSelectorOption } from '../popovers';
-import { DIOR_ACCEPT } from '../../../utils/projectMeta';
+import { diorAccept } from '../../../utils/appleTouch';
 import { canOverwriteFiles, getProjectFileLink } from '../../../utils/projectFile';
 import { projectFileStem } from '../../../utils/projectMeta';
 import { ProjectNameButton } from './ProjectNameButton';
@@ -53,7 +53,7 @@ export function DocumentPill({ dark }: DocumentPillProps) {
 			<input
 				ref={fileInputRef}
 				type="file"
-				accept={DIOR_ACCEPT}
+				accept={diorAccept()}
 				style={{ display: 'none' }}
 				onChange={e => { const f = e.target.files?.[0]; if (f) handleLoadProject(f); }}
 			/>

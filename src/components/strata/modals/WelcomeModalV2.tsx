@@ -11,7 +11,7 @@ import { useTranslation } from '../../../i18n';
 import { LanguageToggle } from '../../../design-system/LanguageToggle';
 import { useStrata } from '../StrataContext';
 import { useSaveLoad } from '../../../hooks/useSaveLoad';
-import { DIOR_ACCEPT } from '../../../utils/projectMeta';
+import { diorAccept } from '../../../utils/appleTouch';
 import { INTERFACE_TOUR_URL } from '../../../constants/videos';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
@@ -208,7 +208,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 								<input
 									ref={loadFileInputRef}
 									type="file"
-									accept={DIOR_ACCEPT}
+									accept={diorAccept()}
 									style={{ display: 'none' }}
 									onChange={e => {
 										const f = e.target.files?.[0];

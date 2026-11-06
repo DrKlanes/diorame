@@ -652,6 +652,7 @@ export const es: Dictionary = {
 	'toast.load.errorDescFile': 'Archivo demasiado grande',
 	'toast.load.errorDescSize': 'El tamaño máximo es 50 MB',
 	'toast.load.errorDescGeneric': 'Comprueba que el archivo es válido',
+	'toast.load.notProject': 'Este archivo no es un proyecto de Diorame',
 
 	'toast.example.errorTitle': 'Error al cargar el ejemplo',
 	'toast.example.errorDesc': 'Comprueba tu conexión',

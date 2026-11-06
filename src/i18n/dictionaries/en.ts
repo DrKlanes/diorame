@@ -689,6 +689,7 @@ export const en: Dictionary = {
 	'toast.load.errorDescFile': 'File too large',
 	'toast.load.errorDescSize': 'Maximum file size is 50 MB',
 	'toast.load.errorDescGeneric': 'Check file validity',
+	'toast.load.notProject': "This file isn't a Diorame project",
 
 	// Example scene
 	'toast.example.errorTitle': 'Failed to load example',

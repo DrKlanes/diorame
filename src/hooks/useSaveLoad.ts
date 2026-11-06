@@ -119,9 +119,16 @@ export function useSaveLoad() {
 		}
 		const reader = new FileReader();
 		reader.onload = (ev) => {
+			// Content decides, not the extension: with no `accept` (iPad) any file can arrive. Not a project → current one untouched.
+			let json: any;
 			try {
-				const json = JSON.parse(ev.target?.result as string);
+				json = JSON.parse(ev.target?.result as string);
 				if (!json || typeof json !== 'object' || !Array.isArray(json.shapes)) throw new Error('Invalid project format');
+			} catch {
+				toast.error(t('toast.load.notProject'));
+				return;
+			}
+			try {
 				// Decided here, not in the reducer, so the linked file knows its projectId.
 				const meta = readProjectMeta(json.meta) ?? createProjectMeta();
 				dispatch({ type: 'LOAD_PROJECT', payload: { ...json, meta } });
