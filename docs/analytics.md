@@ -34,8 +34,8 @@ disparador salvo `stroke_milestone` (automático: 10/50/200 trazos),
 | `camera_preset_used` | `CameraPresetsZone.tsx:34` | No | Descubrimiento del 3D |
 | `filter_applied` | `FXPanel.tsx:121` (helper `toggleFx`) | No | Uso de FX |
 | `artwork_exported` | 5 puntos, uno por formato (ver abajo) | No | **Valor entregado.** Export con éxito |
-| `project_saved` | `src/hooks/useSaveLoad.ts:51` | **No** (a propósito) | Guardado `.dior` completado con éxito |
-| `project_loaded` | `src/hooks/useSaveLoad.ts:78` | **No** (a propósito) | Carga de `.dior` con éxito. Única señal de retorno real que existe hoy |
+| `project_saved` | `src/hooks/useSaveLoad.ts:78` | **No** (a propósito) | Guardado `.dior` completado con éxito |
+| `project_loaded` | `src/hooks/useSaveLoad.ts:127` | **No** (a propósito) | Carga de `.dior` con éxito. Única señal de retorno real que existe hoy |
 | `welcome_modal` | `src/App.tsx:53` / `:74` / `:98` | Propio | Cómo sale la gente del modal de bienvenida |
 | `tour_video` | `src/components/strata/modals/TourModalV2.tsx` (`shown` al abrir, `played` al pulsar play) | Propio | Solo usuario nuevo, una vez en la vida. `shown` sin `played` = cierre sin ver el vídeo |
 | `session_depth` | `visibilitychange` + `pagehide`, registrados por `installAnalytics()` en `src/main.tsx` | Propio (`depthSent`) | Resumen de sesión al salir |
@@ -107,9 +107,9 @@ primer render.
 
 | Valor | Salida del modal |
 |---|---|
-| `load_example` | "Cargar escena de ejemplo" (`App.tsx:53`) |
-| `restore_autosave` | "Continuar trabajo anterior" (`App.tsx:74`) |
-| `dismissed` | Cierre normal: "Empezar a dibujar", X, o clic fuera (`App.tsx:98`) |
+| `load_example` | "Cargar escena de ejemplo" (`App.tsx:95`) |
+| `restore_autosave` | "Continuar trabajo anterior" (`App.tsx:116`) |
+| `dismissed` | Cierre normal: "Empezar a dibujar", X, o clic fuera (`App.tsx:128`) |
 
 ---
 
