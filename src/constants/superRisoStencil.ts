@@ -1,5 +1,5 @@
 // Super Riso · Stencil (plantilla + spray) — panel data, styles, defaults and sanitising.
-// Ported from the lab v14 (diorame-riso-lab/tools/studio/ui.src.html: SPRAYS, TONES, SUPPORTS, SSTYLES, st.s, applySStyle).
+// Ported from the lab v14 (lab/tools/studio/ui.src.html: SPRAYS, TONES, SUPPORTS, SSTYLES, st.s, applySStyle).
 // Pure data, shared by the reducer (state, .dior), the panel and the engine mapping (canvas/superRiso/stencilParams.ts).
 
 import type { StencilSettings, StencilStyle, StencilSupport } from '../types/strataTypes';

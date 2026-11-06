@@ -1,5 +1,5 @@
 // Super Riso — separation shaders: LUT 33³ of coverages, prep (bilateral + paper balance), per-pixel separation (trilinear LUT read), overprint fill, plate warp, blur.
-// Copied VERBATIM from diorame-riso-lab/lab/dist/superRiso.engine.js (laboratorio v0.3); synced with lab v21
+// Copied VERBATIM from lab/lab/dist/superRiso.engine.js (laboratorio v0.3); synced with lab v21
 // (tools/studio/shaders.studio.js: optical-density LUT and trilinear SEP0, FILL only under solid darker ink).
 // Do not reformat the GLSL: it is the lab's engine, byte for byte.
 import { HEAD, MRT } from './shadersCommon';

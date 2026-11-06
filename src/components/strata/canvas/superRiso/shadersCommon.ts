@@ -1,5 +1,5 @@
 // Super Riso — shared GLSL: vertex shader, header (hash/noise/sRGB), ink-thickness textures, OKLab, MRT helpers.
-// Copied VERBATIM from diorame-riso-lab/lab/dist/superRiso.engine.js (laboratorio v0.3).
+// Copied VERBATIM from lab/lab/dist/superRiso.engine.js (laboratorio v0.3).
 // Do not reformat the GLSL: it is the lab's engine, byte for byte.
 
 // Pixels per mm of the ink-thickness textures (exBlack / exRed).

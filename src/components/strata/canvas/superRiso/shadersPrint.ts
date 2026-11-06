@@ -1,5 +1,5 @@
 // Super Riso — print shaders: screening (FM/AM), ink spread, compose on paper, scanner.
-// Copied VERBATIM from diorame-riso-lab/lab/dist/superRiso.engine.js (laboratorio v0.3); synced with lab v21
+// Copied VERBATIM from lab/lab/dist/superRiso.engine.js (laboratorio v0.3); synced with lab v21
 // (tools/studio/shaders.studio.js: continuous close to solid in SCREEN and SPREAD).
 // Do not reformat the GLSL: it is the lab's engine, byte for byte.
 import { HEAD, EXF, MRT } from './shadersCommon';

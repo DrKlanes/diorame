@@ -1,7 +1,7 @@
 // Super Riso · Stencil (plantilla + spray) — shaders.
-// Copied VERBATIM from diorame-riso-lab/tools/studio/shaders.stencil.js (the lab v14 validated by Moisés; synced with lab v15:
+// Copied VERBATIM from lab/tools/studio/shaders.stencil.js (the lab v14 validated by Moisés; synced with lab v15:
 // pores() as round specks on 3 rotated grids, wall grain with vnoise, pore coverage that depends on the load).
-// Do not reformat or "simplify" the GLSL. Anatomy: diorame-riso-lab/research/stencil-anatomia.md.
+// Do not reformat or "simplify" the GLSL. Anatomy: lab/research/stencil-anatomia.md.
 // Layers in painting order (light to dark; the accent last). Kinds: 0 tone (darkness threshold, cumulative),
 // 1 colour zone of the original, 2 black (threshold), 3 accent.
 // GPU traps already paid in the lab (they broke on real GPUs, not in the software renderer): every uniform of each pass

@@ -1,5 +1,5 @@
 // Super Riso · Fotocopia (copy art / xerox) — shaders.
-// Copied VERBATIM from diorame-riso-lab/tools/studio/shaders.xerox.js (the lab validated by Moisés; synced with lab v15:
+// Copied VERBATIM from lab/tools/studio/shaders.xerox.js (the lab validated by Moisés; synced with lab v15:
 // organic specks with no grid in XGEN, XDIRT and XCOMP).
 // Do not reformat or "simplify" the GLSL: it is the lab's engine, byte for byte.
 // Model: the copier is a dirty threshold. Toner (opaque black) + colour added by hand afterwards (marker or watercolour)

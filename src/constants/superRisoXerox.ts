@@ -1,5 +1,5 @@
 // Super Riso · Fotocopia (copy art / xerox) — panel data, styles, defaults and sanitising.
-// Ported from the lab (diorame-riso-lab/tools/studio/ui.src.html: XPAPERS, MARKERS, XSTYLES, XFINE, st.x).
+// Ported from the lab (lab/tools/studio/ui.src.html: XPAPERS, MARKERS, XSTYLES, XFINE, st.x).
 // Pure data, shared by the reducer (state, .dior), the panel and the engine mapping (canvas/superRiso/xeroxParams.ts).
 
 import type { XeroxSettings, XeroxStyle, XeroxPaper, XeroxMarkerId, XeroxFineKey } from '../types/strataTypes';
