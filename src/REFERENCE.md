@@ -1177,7 +1177,7 @@ Every item cost a bug. They are the checklist for porting or touching any Super 
 
 ### Super Riso · provenance: the Lab is the canonical source
 
-The **Super Riso Lab** (`C:\Users\Usuario\Desktop\diorame-riso-lab`, outside the repo, private) is the visual and code reference of the three techniques: `tools\studio\` (`shaders.studio.js` Riso, `shaders.xerox.js`, `shaders.stencil.js`, `engine.studio.js`, `ui.src.html`), `research\` (`riso-anatomia.md`, `xerox-anatomia.md`, `stencil-anatomia.md`, `PLAN-super-riso.md`), `lab\` (published versions `super-riso-lab-vN.html`). Its `tools\README.md` carries the list of sources and the Lab ↔ Diorame table.
+The **Super Riso Lab** (`C:\Users\Usuario\Desktop\Diorame\lab`, outside the repo, private) is the visual and code reference of the three techniques: `tools\studio\` (`shaders.studio.js` Riso, `shaders.xerox.js`, `shaders.stencil.js`, `engine.studio.js`, `ui.src.html`), `research\` (`riso-anatomia.md`, `xerox-anatomia.md`, `stencil-anatomia.md`, `PLAN-super-riso.md`), `lab\` (published versions `super-riso-lab-vN.html`). Its `tools\README.md` carries the list of sources and the Lab ↔ Diorame table.
 
 **Synced with Lab v22.8** (v3.22.0: the six `FS_X*` bodies checked against the published v22 page, ignoring whitespace. v3.20.13: the Riso shader bodies are byte-identical to `shaders.studio.js` apart from the tile coordinates and the flipped SCAN; the `FS_X*` and `FS_S*` bodies are byte-identical to `shaders.xerox.js` / `shaders.stencil.js`, checked in the v3.20.1 audit; v17 changed nothing that Diorame uses — `.dior` work in the lab's UI, not ported; v19–v20 are intermediate steps folded into v21's diff).
 

@@ -177,7 +177,7 @@ Las 4 texturas de `public/textures/superRiso/` son propias:
 
 ## Dónde viven las herramientas
 
-**Fuera del repo**, en `C:\Users\Usuario\Desktop\diorame-riso-lab` (privado: `tools/textures/data/` sale de
+**Fuera del repo**, en `C:\Users\Usuario\Desktop\Diorame\lab` (privado: `tools/textures/data/` sale de
 escaneos de terceros). Es la fuente canónica de las tres técnicas: `tools/studio/` (shaders y motor por técnica,
 interfaz), `research/` (anatomías y plan, `PLAN-super-riso.md` §1–§16), `lab/` (versiones publicadas del
 laboratorio) y `renders/`. Su `tools/README.md` lista las fuentes y la tabla Lab ↔ versión de Diorame (la
