@@ -613,3 +613,7 @@ Plan, decisiones, inventario y fases F1–F6 en `docs/fx-in-draw.md`. La deuda d
 ## El gizmo de Move se queda corto en trazos uniformes
 
 El gizmo de Move / `getLayerBoundingBox` se queda hasta 10 px corto en trazos uniformes. Aparece también sin grupos, así que no es del acoplado (v3.24.0). Sin comprobar en main anterior a 3.24.0.
+
+## Arrastrar y soltar un `.dior` sobre la app para abrirlo
+
+Arrastrar un `.dior` sobre la app para abrirlo (escritorio + iPad en Split View desde Archivos). Hoy no existe ningún handler de `drop` en `src/`. Es lo más parecido a «Abrir con» en iPadOS, donde `file_handlers` no está soportado. Reutilizar la misma carga y validación por contenido que Abrir (`handleLoadProject`, v3.25.1). Pequeño, Sonnet medium.
