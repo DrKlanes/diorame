@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { T, TYPE, dk } from '../../../design-system/tokens';
+import { isKeyboardFocus } from '../../../utils/inputModality';
 
 // ── Internal context — provided by DiSelectorPopover, consumed here ──────────
 export type DiSelectorContextValue = {
@@ -62,7 +63,8 @@ export function DiSelectorOption({
 			onKeyDown={handleKeyDown}
 			onMouseEnter={() => { if (!disabled) setHovered(true); }}
 			onMouseLeave={() => setHovered(false)}
-			onFocus={() => { if (!disabled) setFocused(true); }}
+			// Keyboard focus only (:focus-visible): the popover's programmatic first focus on a mouse/touch open must not highlight a row.
+			onFocus={e => { if (!disabled) setFocused(isKeyboardFocus(e.currentTarget)); }}
 			onBlur={() => setFocused(false)}
 			style={{
 				padding: '8px 10px',

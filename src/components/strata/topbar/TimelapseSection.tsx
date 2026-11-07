@@ -109,7 +109,6 @@ export function TimelapseSection({ dark, open, framing, onFraming, close }: Time
 			<div style={helper}>{t('topbar.timelapse.hint')}</div>
 			{segment(t('topbar.timelapse.duration'), TIMELAPSE_DURATIONS.map(d => ({ value: d, label: t('topbar.timelapse.seconds', { n: d }) })), prefs.duration, d => update({ duration: d }))}
 			{segment(t('topbar.timelapse.rate'), TIMELAPSE_RATES.map(f => ({ value: f, label: t('topbar.timelapse.fps', { n: f }) })), prefs.fps, f => update({ fps: f }))}
-			{segment(t('topbar.timelapse.size'), TIMELAPSE_LONG_SIDES.map(l => ({ value: l, label: `${l} px` })), prefs.long, l => update({ long: l }))}
 			{segment<TimelapseBackground>(t('topbar.snapshot.background'), [
 				{ value: 'paper', label: t('topbar.snapshot.bg.paper') },
 				{ value: 'solid', label: t('topbar.snapshot.bg.solid') },
@@ -119,6 +118,7 @@ export function TimelapseSection({ dark, open, framing, onFraming, close }: Time
 				{ value: 'view', label: t('topbar.snapshot.framing.view') },
 				{ value: 'drawing', label: t('topbar.snapshot.framing.drawing') },
 			], framing, onFraming)}
+			{segment(t('topbar.timelapse.size'), TIMELAPSE_LONG_SIDES.map(l => ({ value: l, label: `${l} px` })), prefs.long, l => update({ long: l }))}
 			{!rect && <div style={helper}>{t('topbar.snapshot.drawingEmpty')}</div>}
 			<ExportPrimary
 				label={t('topbar.export.video')}

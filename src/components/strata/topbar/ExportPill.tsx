@@ -164,6 +164,7 @@ export function ExportPill({ dark }: ExportPillProps) {
 							</>
 						)}
 
+						<ExportSeparator dark={dark} />
 						<DiSelectorOption
 							title={t('topbar.export.superRiso')}
 							description={t('topbar.export.superRisoDesc')}

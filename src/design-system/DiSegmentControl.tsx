@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { T, TYPE, RADIUS, dk } from './tokens';
+import { isKeyboardFocus } from '../utils/inputModality';
 import { EnhancedTooltip } from '../components/ui/enhanced-tooltip';
 
 /**
@@ -93,7 +94,7 @@ function SegmentItem({ label, tooltip, active, disabled, small, dark, onClick }:
 				onClick();
 			}}
 			// Focus style only for keyboard navigation (:focus-visible); hover only for a mouse (no sticky hover on touch).
-			onFocus={e => setKbFocus(!disabled && e.currentTarget.matches(':focus-visible'))}
+			onFocus={e => setKbFocus(!disabled && isKeyboardFocus(e.currentTarget))}
 			onBlur={() => setKbFocus(false)}
 			onPointerEnter={e => { if (e.pointerType === 'mouse') setHov(true); }}
 			onPointerLeave={() => setHov(false)}

@@ -543,6 +543,7 @@ Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"
 | `projectMeta.ts` | ~50 | `.dior` format v2 (v3.21.0): `DIOR_FORMAT_VERSION`, `DIOR_MIME` (`application/octet-stream`), `DIOR_ACCEPT`, `DiorFileMeta`, `createProjectMeta(derivedFrom?)`, `readProjectMeta(raw)` (field by field, null without a valid `projectId`), `projectFileStem(name, date?)` (sanitized name + ` (YYYY-MM-DD HH-mm)`), `diorNameFromFile(filename)` (inverse: strips `.dior` and the date suffix) |
 | `formatFrame.ts` | ~105 | DRAW format guide maths (v3.25.5): `formatAspect`, `orientationFor` (4:5 and 1:1 store portrait), `visibleWorldRect`, `newFormat` (88 % of the view), `reshapeFormat` (same centre, sized at 88 % of the current view — v3.25.7), `fitViewToRect` (6 % margin, zoom 0.5–3, centre clamped to ±1500 world), `sanitizeFormat` (whitelist, finite, sides 16–20 000, |x|,|y| ≤ 20 000, h re-derived from w). The frame is on the active layer's plane (DRAW scale 1 there): world = (screen − size/2 − pan) / zoom |
 | `formatExport.ts` | ~60 | (v3.25.7) `formatPresets(type, orientation)`: A → A4 150/300 ppp, A3 200/300 ppp (mm → px); 16:9 → Full HD, 4K; 4:3 (v3.25.8) → 1600×1200, 2732×2048 (iPad native), 4096×3072 (over the touch cap: desktop only); 4:5 → 1080×1350, 2160×2700; 1:1 → 1080, 2048, 4096; landscape swaps sides. `maxExportArea()`: 18 MP desktop (A3 300 = 17,4 MP), 9 MP on touch devices (`maxTouchPoints > 0`: iPad gets A4 300 / A3 200) — the re-render keeps ~4 canvases of the output size alive. `presetFits`, `canvasFits(w,h)` (probe: a too-big canvas draws nothing) v3.25.9: `DRAWING_LONG_SIDES` (2048 · 3000 · 4096) and `sizeForLongSide(rect, long)` for «Dibujo completo»; `presetFits` takes any `{width, height}`. |
+| `inputModality.ts` | ~15 | (v3.25.23) Last input device, tracked once on `document` (capture `keydown` / `pointerdown`). `isKeyboardFocus(el)` = last input was a key AND `el.matches(':focus-visible')`. `:focus-visible` alone is not enough: Chrome counts the popover's scripted first focus after a click as keyboard focus. Used by `DiSelectorOption`, `ExportSizeList` rows and `DiSegmentControl`. |
 | `diorPayload.ts` | ~30 | `buildDiorData(state, name, fileMeta)` (v3.23.0): the JSON a `.dior` holds, out of `useSaveLoad` so «Save» and «Super Riso ↗» write the same file |
 | `superRisoBridge.ts` | ~95 | «Super Riso ↗» (v3.23.0, §8): `launchSuperRiso(prepare)` (window opened inside the gesture, `ready`/`image`/`received` with the Lab's exact origin, 8 s answer timer, probe for a reused tab), `visibleDrawView(state, w, h)`, `closeSuperRisoWindow`; Lab URL from `VITE_SUPER_RISO_LAB_URL` or `https://super-riso.dumaker.com` |
 | `projectFile.ts` | ~85 | File System Access API (v3.21.0, Chromium desktop): `canOverwriteFiles`, the linked file per `projectId` + the project name it was linked with (`get/setProjectFileLink`), `pickSaveFile(name, startIn?)` / `pickOpenFile`, `hasWritePermission`, `writeProjectFile`, `onLaunchedFile` (`launchQueue`), `isDiorFile`, `isAbortError` |
@@ -1280,9 +1281,18 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.25.22)
+## Appendix C: Changelog Highlights (1.7.3 → 3.25.23)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.25.23 — Menú de exportación: foco de teclado en todo el menú, orden único, separador
+
+**fix(ux)** — Revisión visual de v3.25.22 (en un commit nuevo: v3.25.22 ya estaba subida y no se reescribe historia publicada).
+- **Foco solo de teclado en toda la fila del menú** (también «SVG» al abrir): `DiSelectorOption` (compartido por todos los popovers) usa `isKeyboardFocus`. **Hallazgo:** `matches(':focus-visible')` por sí solo no basta: tras abrir con un clic, Chrome da `:focus-visible = true` al foco que el popover mueve por script, y la fila «SVG» salía resaltada. Nuevo `utils/inputModality.ts` (último dispositivo de entrada) y la condición es «última entrada = tecla Y `:focus-visible`». Comprobado en el navegador: tras clic de ratón, `focus()` sobre la primera fila con `:focus-visible` verdadero → fondo `transparent`; tras una tecla → fondo morado. Ctrl+E (teclado) sí resalta; el ratón y el táctil no.
+- **Mismo orden de ajustes en todas las salidas:** lo propio de la salida primero (Timelapse: Duración, Ritmo), luego siempre Fondo → Encuadre → Tamaño, justo encima del botón (el tamaño depende del encuadre). PNG y Capas ya iban así; Timelapse tenía Tamaño antes de Fondo.
+- **Separador** (`ExportSeparator`, el existente) antes de «Super Riso ↗» en DRAW.
+- **Sin cambios** en handlers ni en archivos de salida (solo orden de JSX, foco y un separador).
+- **Files**: `utils/inputModality.ts` (nuevo), `popovers/DiSelectorOption.tsx`, `topbar/exportConfigParts.tsx`, `design-system/DiSegmentControl.tsx`, `topbar/TimelapseSection.tsx`, `topbar/ExportPill.tsx`, `REFERENCE.md`, `version.ts`, `package.json`, `package-lock.json`. **REFERENCE.md §10 sync: updated (añadido inputModality).**
 
 ### 3.25.22 — Menú de exportación: foco solo con teclado, px reales en Vista
 

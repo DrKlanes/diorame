@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DiButton } from '../../../design-system';
 import { T, TYPE, dk } from '../../../design-system/tokens';
+import { isKeyboardFocus } from '../../../utils/inputModality';
 
 // Pieces of the DRAW «Captura» configuration (v3.25.21): inside a section with settings everything is a setting, and
 // one primary button at the end starts the export, with a summary line under it.
@@ -82,7 +83,7 @@ function SizeRow({ item, selected, onSelect, dark }: { item: SizeItem; selected:
 				e.stopPropagation();
 				onSelect();
 			}}
-			onFocus={e => setKbFocus(!item.disabled && e.currentTarget.matches(':focus-visible'))}
+			onFocus={e => setKbFocus(!item.disabled && isKeyboardFocus(e.currentTarget))}
 			onBlur={() => setKbFocus(false)}
 			onPointerEnter={e => { if (e.pointerType === 'mouse') setHovered(true); }}
 			onPointerLeave={() => setHovered(false)}
