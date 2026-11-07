@@ -99,6 +99,24 @@
 		return s;
 	};
 
+	// Three layers, shapes WITHOUT t (an old file), drawn interleaved: c1(L2) b1(L1) a1(L0) c2(L2) b2(L1) a2(L0); then merge 1→0
+	// (layer 2 untouched, becomes layer 1) and one new shape on it, which gets a real t. The merge stamps a synthetic negative t on
+	// EVERY untimed shape of the project (global index), so the timelapse order stays the drawing order: c1 b1 a1 c2 b2 a2 new.
+	const threeLayerScene = async (C) => {
+		const R = C.appReducer; let s = C.initialState;
+		const blob = (id, x, y, r, color) => ({ id, color: s.palette[color], zIndex: s.currentLayerIndex * -150,
+			points: Array.from({ length: 24 }, (_, i) => ({ x: x + Math.cos(i / 24 * Math.PI * 2) * r, y: y + Math.sin(i / 24 * Math.PI * 2) * r })) });
+		const add = (id, layer, x, y, r, color) => { s = R(s, { type: 'SET_CURRENT_LAYER', payload: layer }); s = R(s, { type: 'ADD_SHAPE', payload: blob(id, x, y, r, color) }); };
+		s = R(s, { type: 'NEXT_LAYER' }); s = R(s, { type: 'NEXT_LAYER' });
+		add('c1', 2, -80, -60, 50, 3); add('b1', 1, -40, 0, 70, 8); add('a1', 0, 0, 0, 90, 14);
+		add('c2', 2, 60, 40, 50, 5); add('b2', 1, 40, 30, 60, 18); add('a2', 0, -60, 60, 60, 11);
+		s = { ...s, shapes: s.shapes.map(({ t, ...x }) => x) };      // an old file: no t anywhere
+		s = R(s, { type: 'SET_CURRENT_LAYER', payload: 1 });
+		s = R(s, { type: 'MERGE_LAYER_DOWN' });
+		add('new', 1, 90, -70, 40, 1);                                // layer 2 is now layer 1
+		return s;
+	};
+
 	window.__tlDebug = { mod, options, lastFrameVsPng, load, pixels, diff: (a, b) => [diff(a, b), maxErr] };
 
 	window.__timelapseCheck = async () => {
@@ -150,11 +168,27 @@
 		const f2 = pixels(fl.render(full));
 		fl.release();
 		out.merged.stability_unseededRerender_diffPx = diff(f1, f2);
+		// Three layers, untimed shapes: the merge stamps ALL of them, not only the merged layers'.
+		{
+			const s3 = await threeLayerScene(m.C);
+			const order = (shapes) => { const { rank } = m.S.appearanceRanks(shapes, () => true); return shapes.map((x, i) => [rank[i], x.id]).sort((a, b) => a[0] - b[0]).map(p => p[1]).join(' '); };
+			// Self-check (must DIFFER): stamping restricted to the merged layers leaves layer 1's (the old layer 2) untimed → they rank first.
+			const restricted = s3.shapes.map(({ t, ...x }) => (x.zIndex === -150 && x.id !== 'new' ? x : { ...x, t }));
+			out.merged.threeLayer = {
+				arrayOrder: s3.shapes.map(x => x.id).join(' '), appearanceOrder: order(s3.shapes),
+				untimedLeft: s3.shapes.filter(x => x.t === undefined).length, syntheticOnAll: s3.shapes.filter(x => x.id !== 'new').every(x => x.t < 0),
+				layersAtEnd: new Set(s3.shapes.map(x => x.zIndex)).size,
+				selfCheck_restrictedStampingOrder: order(restricted),
+			};
+		}
 		out.pass = Object.entries(out).every(([k, v]) => k.startsWith('info_') || typeof v !== 'object' || (v.diffPx ?? v.lastFrameVsPng_diffPx) === 0)
 			&& out.merged.selfCheck_tOrderPainting_diffPx > 0
 			&& out.merged.stability_unseededRerender_diffPx === 0
 			&& out.merged.appearanceOrder === 'B1 A1 A2 A3 B2 C1 C2 D1'
-			&& out.merged.paintedAtK4 === 'B1 A1 A2 A3';
+			&& out.merged.paintedAtK4 === 'B1 A1 A2 A3'
+			&& out.merged.threeLayer.appearanceOrder === 'c1 b1 a1 c2 b2 a2 new'
+			&& out.merged.threeLayer.untimedLeft === 0 && out.merged.threeLayer.syntheticOnAll && out.merged.threeLayer.layersAtEnd === 2
+			&& out.merged.threeLayer.selfCheck_restrictedStampingOrder !== 'c1 b1 a1 c2 b2 a2 new';
 		return out;
 	};
 
