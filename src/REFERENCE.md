@@ -1268,9 +1268,15 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.25.13)
+## Appendix C: Changelog Highlights (1.7.3 → 3.25.14)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.25.14 — Export: la ayuda de «Capas (ZIP)» como línea de ayuda
+
+**fix(ui)** — Con «Salida: Capas (ZIP)», la explicación bajo el selector usaba el estilo de etiqueta de sección (mayúsculas, espaciado). Ahora usa los mismos tokens que la línea de ayuda de «Super Riso ↗» (la descripción de `DiSelectorOption`: `TYPE.numericValue` + `dk(dark, T.muted, T.textDarkMuted)`, interlineado 1.4); no se crea ningún token nuevo. Texto: «Un PNG transparente por capa · numerados de abajo arriba» / «One transparent PNG per layer · numbered bottom to top» (también el tooltip de la opción).
+- **Verificado** en el navegador: estilo calculado de la ayuda = el de la línea de Super Riso, en claro (Sora 10 px, 600, rgb(140,140,140), sin mayúsculas) y en oscuro (rgba(255,255,255,0.4)).
+- **Files**: `topbar/DrawCaptureSection.tsx`, `i18n/dictionaries/{es,en}.ts`, `REFERENCE.md`, `version.ts`, `package.json`. **REFERENCE.md §10 sync: N/A (sin archivos nuevos ni cambio de rol).**
 
 ### 3.25.13 — Refactor: renderLayerBody por debajo de 400 líneas
 

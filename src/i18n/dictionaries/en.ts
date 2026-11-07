@@ -50,7 +50,7 @@ export const en: Dictionary = {
 	'topbar.snapshot.output': 'Output',
 	'topbar.snapshot.output.png': 'PNG',
 	'topbar.snapshot.output.layers': 'Layers (ZIP)',
-	'topbar.snapshot.layersHint': 'One transparent PNG per visible layer, numbered bottom to top',
+	'topbar.snapshot.layersHint': 'One transparent PNG per layer · numbered bottom to top',
 	'topbar.snapshot.layersZipSuffix': 'layers',
 	'toast.export.layersZip.successTitle': 'Layers exported',
 	'toast.export.layersZip.successDesc': '{n} PNGs in a ZIP',

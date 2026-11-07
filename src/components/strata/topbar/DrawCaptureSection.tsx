@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { DiSegmentControl } from '../../../design-system';
+import { T, TYPE, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
 import { DiSelectorOption } from '../popovers';
 import { setNextPNGQuality, setNextPNGBackground, setNextPNGFormatSize, setNextPNGDrawingLongSide, setNextPNGLayersZip } from '../canvas/exportHandlers';
@@ -102,7 +103,17 @@ export function DrawCaptureSection({
 					small
 				/>
 			</div>
-			{layers && <ExportGroupHeader label={t('topbar.snapshot.layersHint')} dark={dark} />}
+			{/* Helper line: the same tokens as DiSelectorOption's description (e.g. «Super Riso ↗»), not a section label. */}
+			{layers && <div style={{
+				padding: '0 10px 6px',
+				fontFamily: TYPE.numericValue.family,
+				fontWeight: TYPE.numericValue.weight,
+				fontSize: TYPE.numericValue.size,
+				color: dk(dark, T.muted, T.textDarkMuted),
+				lineHeight: 1.4,
+			}}>
+				{t('topbar.snapshot.layersHint')}
+			</div>}
 			{!layers && <ExportGroupHeader label={t('topbar.snapshot.background')} dark={dark} />}
 			{!layers && <div style={{ padding: '2px 10px 6px' }}>
 				<DiSegmentControl<ExportBackground>

@@ -46,7 +46,7 @@ export const es: Dictionary = {
 	'topbar.snapshot.output': 'Salida',
 	'topbar.snapshot.output.png': 'PNG',
 	'topbar.snapshot.output.layers': 'Capas (ZIP)',
-	'topbar.snapshot.layersHint': 'Un PNG transparente por capa visible, numerados de abajo arriba',
+	'topbar.snapshot.layersHint': 'Un PNG transparente por capa · numerados de abajo arriba',
 	'topbar.snapshot.layersZipSuffix': 'capas',
 	'toast.export.layersZip.successTitle': 'Capas exportadas',
 	'toast.export.layersZip.successDesc': '{n} PNG en un ZIP',
