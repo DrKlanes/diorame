@@ -34,8 +34,9 @@
 	const videoMeta = (blob) => new Promise((res) => { const v = document.createElement('video'); v.muted = true; v.preload = 'metadata'; v.onloadedmetadata = () => { res({ w: v.videoWidth, h: v.videoHeight, s: +v.duration.toFixed(3) }); URL.revokeObjectURL(v.src); }; v.onerror = () => res({ error: true }); v.src = URL.createObjectURL(blob); });
 	const load = async (C, url) => C.appReducer(C.initialState, { type: 'LOAD_PROJECT', payload: await (await fetch(url)).json() });
 
-	// The last encoded frame against the PNG export of the same framing, size and seed (renderRectSnapshot).
-	// Also frame 30 (mid drawing) against the PNG of ITS scene: the texture holds along the whole video, not only at the end.
+	// Sampled frames (v3.25.20): first, 25 / 50 / 75 % and last of a 4 s video at 15 fps (60 drawing frames + 38 of hold), with
+	// the per-layer cache AND with the full re-render (layerCache: false, the v3.25.17 path), each against the other and against
+	// the PNG export of that frame's scene with the same seed (renderRectSnapshot).
 	// Forces every 2D context created meanwhile onto the CPU rasterizer (willReadFrequently), engine and PNG alike. Chrome picks GPU
 	// or CPU per canvas by its own state (memory pressure after loading big scenes); a long-lived session canvas and a later
 	// one-shot PNG can land on different backends, whose antialiasing differs (measured up to 61 levels). Same backend = the logic.
@@ -44,18 +45,35 @@
 		P.getContext = function (type, attrs) { return type === '2d' ? real.call(this, type, { ...(attrs || {}), willReadFrequently: true }) : real.call(this, type, attrs); };
 		try { return await fn(); } finally { P.getContext = real; }
 	};
+	const SAMPLE = { duration: 4, fps: 15 };
 	const lastFrameVsPng = (m, o, rect, size, background, extra = {}) => onCpu(() => lastFrameVsPngAnyBackend(m, o, rect, size, background, extra));
 	const lastFrameVsPngAnyBackend = async (m, o, rect, size, background, extra = {}) => {
-		let last = null, mid = null;
-		const r = await m.T.renderTimelapse(o, { rect, ...size, background, duration: 2, seed: 4242, inspect: (i, cv) => { const px = new Uint8ClampedArray(pixels(cv)); last = px; if (i === 30) mid = px; }, ...extra });
-		const png = (scene) => { const real = Math.random; Math.random = seeded(4242); try { return pixels(m.F.renderRectSnapshot({ ...o, ...scene }, rect, size.width, size.height, background)); } finally { Math.random = real; } };
-		const ref = png({});
 		const { rank, count } = m.S.appearanceRanks(o.state.shapes, m.S.paintsLayer(o.state));
-		const midRef = png(m.S.sceneAt(o.state.shapes, rank, m.S.shapesAtFrame(30, count, 60)));
+		const drawFrames = SAMPLE.duration * SAMPLE.fps, total = drawFrames + Math.round(2.5 * SAMPLE.fps);
+		// First frame, 25 / 50 / 75 % of the DRAWING phase (the hold repeats the last), and the very last frame.
+		const frames = [...[0, 0.25, 0.5, 0.75].map(f => Math.round(f * (drawFrames - 1))), total - 1];
+		const ks = frames.map(i => m.S.shapesAtFrame(i, count, drawFrames));
+		const capture = async (layerCache) => {
+			const want = new Set(ks), got = new Map();
+			const t0 = performance.now();
+			const r = await m.T.renderTimelapse(o, { rect, ...size, background, ...SAMPLE, seed: 4242, layerCache, ...extra,
+				inspect: (i, cv) => { const k = m.S.shapesAtFrame(i, count, drawFrames); if (want.has(k)) got.set(k, new Uint8ClampedArray(pixels(cv))); } });
+			return { r, got, s: (performance.now() - t0) / 1000 };
+		};
+		const cached = await capture(true), full = await capture(false);
+		const png = (scene) => { const real = Math.random; Math.random = seeded(4242); try { return new Uint8ClampedArray(pixels(m.F.renderRectSnapshot({ ...o, ...scene }, rect, size.width, size.height, background))); } finally { Math.random = real; } };
+		let diffPx = 0;
+		const samples = frames.map((i, j) => {
+			const k = ks[j], c = cached.got.get(k), f = full.got.get(k), ref = png(m.S.sceneAt(o.state.shapes, rank, k));
+			const vsFull = diff(c, f), e1 = maxErr, vsPng = diff(c, ref), e2 = maxErr;
+			diffPx += vsFull + vsPng;
+			return `f${i}/k${k}: cache≠full ${vsFull}${e1 ? ` (max ${e1})` : ''}, cache≠png ${vsPng}${e2 ? ` (max ${e2})` : ''}`;
+		});
+		const last = cached.got.get(ks[4]), ref = png({});
 		const lastDiffPx = diff(last, ref), lastMaxErr = maxErr;
-		const midDiffPx = mid ? diff(mid, midRef) : -1, midMaxErr = maxErr;
-		return { size: `${size.width}x${size.height}`, frames: r.frames, repaints: r.repaints, codec: r.codec, mb: +(r.blob.size / 1e6).toFixed(2), video: await videoMeta(r.blob),
-			diffPx: lastDiffPx + midDiffPx, lastDiffPx, lastMaxErr, midDiffPx, midMaxErr, hash: await hash(last), pngHash: await hash(ref), last, ref };
+		return { size: `${size.width}x${size.height}`, frames: cached.r.frames, repaints: cached.r.repaints, codec: cached.r.codec, mb: +(cached.r.blob.size / 1e6).toFixed(2),
+			video: await videoMeta(cached.r.blob), samples, diffPx, lastDiffPx, lastMaxErr, work: { cache: cached.r.work, full: full.r.work },
+			hash: await hash(last), pngHash: await hash(ref), last, ref };
 	};
 
 	// Merged layer: B (layer 0) gets strokes; A (layer 1) gets strokes + an eraser + a drawInside → merge down (isolated group, A's
@@ -76,6 +94,8 @@
 		s = R(s, { type: 'MERGE_LAYER_DOWN' });
 		await add(blob('C1', -20, 60, 70, 11));        // after the merge
 		await add(blob('C2', 90, 50, 50, 1, { isDrawInside: true }));
+		s = R(s, { type: 'NEXT_LAYER' });
+		await add(blob('D1', -150, -120, 50, 20));     // a new layer above the merged one, off the B2 / A overlap (the self-check below needs it visible)
 		return s;
 	};
 
@@ -107,6 +127,7 @@
 		const { rank } = m.S.appearanceRanks(ms.shapes, m.S.paintsLayer(o.state));
 		const appearance = [...ids].sort((a, b) => rank[ids.indexOf(a)] - rank[ids.indexOf(b)]);
 		const at4 = m.S.sceneAt(ms.shapes, rank, 4).shapesByZ.get(0).map(x => x.id);
+		const layersAtEnd = new Set(ms.shapes.map(x => x.zIndex)).size;
 		const rect = m.T.timelapseRect(o.state, 'drawing', { w: 1366, h: 1024 });
 		const size = m.T.timelapseSize(rect, 1080);
 		const r = await lastFrameVsPng(m, o, rect, size, 'solid');
@@ -118,7 +139,7 @@
 		out.merged = {
 			arrayOrder: ids.join(' '), appearanceOrder: appearance.join(' '), paintedAtK4: at4.join(' '),
 			groupOnA: ms.shapes.filter(x => x.group).map(x => x.id).join(' '),
-			lastFrameVsPng_diffPx: r.diffPx, video: r.video, frames: r.frames,
+			lastFrameVsPng_diffPx: r.diffPx, samples: r.samples, layersAtEnd, video: r.video, frames: r.frames,
 			selfCheck_tOrderPainting_diffPx: diff(wrong, r.ref),
 		};
 		// Stability (v3.25.18): two renders of the same scene in one session WITHOUT any seed are identical — the ink texture
@@ -132,26 +153,36 @@
 		out.pass = Object.entries(out).every(([k, v]) => k.startsWith('info_') || typeof v !== 'object' || (v.diffPx ?? v.lastFrameVsPng_diffPx) === 0)
 			&& out.merged.selfCheck_tOrderPainting_diffPx > 0
 			&& out.merged.stability_unseededRerender_diffPx === 0
-			&& out.merged.appearanceOrder === 'B1 A1 A2 A3 B2 C1 C2'
+			&& out.merged.appearanceOrder === 'B1 A1 A2 A3 B2 C1 C2 D1'
 			&& out.merged.paintedAtK4 === 'B1 A1 A2 A3';
 		return out;
 	};
 
-	window.__timelapseTiming = async (files = ['stress-500-1L', 'stress-2000-6L', 'example']) => {
+	// Per-layer cache vs the full re-render (v3.25.20), same video: 60 s at 15 fps, long side 1920 (the iPad case that took ~420 s).
+	window.__timelapseTiming = async (files = ['stress-500-1L', 'stress-2000-6L', 'example'], { duration = 60, fps = 15, long = 1920 } = {}) => {
 		const m = await mod();
 		const out = {};
 		for (const f of files) {
 			const st = await load(m.C, f === 'example' ? '/examples/diorame_onboarding.dior' : `/tools/draw-stress/out/${f}.dior`);
 			const o = await options(st, f === 'example' ? 3 : 0);
 			const rect = m.T.timelapseRect(o.state, 'drawing', { w: 1366, h: 1024 });
-			const r = await m.T.renderTimelapse(o, { rect, width: 1080, height: 1920, background: 'paper', duration: 30 });
-			out[f] = { shapes: r.shapes, frames: r.frames, repaints: r.repaints, totalS: +(r.ms / 1000).toFixed(1), renderS: +(r.renderMs / 1000).toFixed(1),
-				encodeWaitS: +(r.encodeMs / 1000).toFixed(1), msPerFrame: +(r.ms / r.frames).toFixed(1), mb: +(r.blob.size / 1e6).toFixed(1), codec: r.codec, video: await videoMeta(r.blob) };
+			const size = m.T.timelapseSize(rect, long);
+			const row = { size: `${size.width}x${size.height}`, layers: new Set(st.shapes.map(s => s.zIndex)).size };
+			for (const layerCache of [false, true]) {
+				const eta = [], t0 = performance.now();
+				const r = await m.T.renderTimelapse(o, { rect, ...size, background: 'paper', duration, fps, layerCache,
+					onProgress: (p) => { for (const q of [0.1, 0.5, 0.9]) if (p.fraction >= q && p.etaMs !== null && !eta.some(e => e.at === q)) eta.push({ at: q, frame: p.done, predictedS: +(p.etaMs / 1000).toFixed(1), elapsed: performance.now() - t0 }); } });
+				const totalMs = performance.now() - t0;
+				for (const e of eta) { e.actualS = +((totalMs - e.elapsed) / 1000).toFixed(1); delete e.elapsed; }
+				row[layerCache ? 'cache' : 'full'] = { totalS: +(r.ms / 1000).toFixed(1), renderS: +(r.renderMs / 1000).toFixed(1), encodeS: +(r.encodeMs / 1000).toFixed(1), frames: r.frames, repaints: r.repaints, work: r.work, mb: +(r.blob.size / 1e6).toFixed(1), eta };
+			}
+			row.speedup = +(row.full.totalS / row.cache.totalS).toFixed(2);
+			out[f] = row;
 		}
 		return out;
 	};
 
-	window.__timelapse = async ({ source = 'autosave', framing, long = 1080, duration = 15, background = 'paper', layer, download = true } = {}) => {
+	window.__timelapse = async ({ source = 'autosave', framing, long = 1080, duration = 15, fps = 15, background = 'paper', layer, download = true } = {}) => {
 		const m = await mod();
 		let payload;
 		if (source === 'autosave') {
@@ -167,7 +198,7 @@
 		const size = m.T.timelapseSize(rect, long);
 		console.log(`[timelapse] ${st.shapes.length} shapes (${st.shapes.filter(s => s.t !== undefined).length} with t) · ${fr} · ${size.width}×${size.height} · ${duration}+2.5 s · ${background}`);
 		let shown = 0;
-		const r = await m.T.renderTimelapse(o, { rect, ...size, background, duration, onProgress: (d, t) => { const p = Math.floor(d / t * 10); if (p > shown) { shown = p; console.log(`[timelapse] ${p * 10} %`); } } });
+		const r = await m.T.renderTimelapse(o, { rect, ...size, background, duration, fps, onProgress: (q) => { const p = Math.floor(q.fraction * 10); if (p > shown) { shown = p; console.log(`[timelapse] ${p * 10} %` + (q.etaMs !== null ? ` · ~${Math.ceil(q.etaMs / 1000)} s` : '')); } } });
 		const url = URL.createObjectURL(r.blob);
 		if (download) { const a = document.createElement('a'); a.href = url; a.download = `${st.projectName || 'diorame'} timelapse.mp4`.replace(/[\\/:*?"<>|]/g, ''); document.body.appendChild(a); a.click(); a.remove(); }
 		const box = document.createElement('div');

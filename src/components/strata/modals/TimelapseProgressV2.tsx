@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import React, { useSyncExternalStore } from 'react';
 import { DiModal } from './index';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { Ico } from '../../../design-system';
@@ -6,7 +6,7 @@ import { useTranslation } from '../../../i18n';
 import { timelapseProgress } from '../canvas/timelapseProgress';
 
 // ── TimelapseProgressV2 (v3.25.19) ────────────────────────────────────────────
-// Real progress of «Timelapse (vídeo)»: frames done / total, time left, and Cancel (a visible button: on a tablet
+// Real progress of «Timelapse (vídeo)»: work done (%), frames done / total, time left, and Cancel (a visible button: on a tablet
 // there is no Esc). The backdrop does not close it and Esc does nothing: an accidental tap must not throw away a
 // minute of encoding.
 
@@ -18,19 +18,11 @@ interface TimelapseProgressV2Props {
 export function TimelapseProgressV2({ open, dark }: TimelapseProgressV2Props) {
 	const { t } = useTranslation();
 	const progress = useSyncExternalStore(timelapseProgress.subscribe, timelapseProgress.get);
-	// Re-render once a second so the time left keeps moving between frame updates.
-	const [, tick] = useState(0);
-	useEffect(() => {
-		if (!open) return;
-		const id = setInterval(() => tick(n => n + 1), 1000);
-		return () => clearInterval(id);
-	}, [open]);
-
 	const done = progress?.done ?? 0;
 	const total = progress?.total ?? 0;
-	const pct = total > 0 ? Math.floor(done / total * 100) : 0;
-	const elapsed = progress ? performance.now() - progress.startedAt : 0;
-	const leftS = done > 0 && total > done ? Math.ceil(elapsed / done * (total - done) / 1000) : null;
+	// v3.25.20: bar and time left from the engine's work model (shapes rendered), not from the frame count.
+	const pct = Math.floor((progress?.fraction ?? 0) * 100);
+	const leftS = progress?.etaMs != null && done < total ? Math.max(1, Math.ceil(progress.etaMs / 1000)) : null;
 	const muted = dk(dark, T.muted, T.textDarkMuted) as string;
 	const labelColor = dk(dark, T.dark, T.textDark) as string;
 	const trackColor = dk(dark, T.border, T.borderDark) as string;

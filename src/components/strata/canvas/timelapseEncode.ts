@@ -1,7 +1,8 @@
 // Timelapse video encoding (v3.25.17): WebCodecs H.264 through Mediabunny's MP4 muxer. Mediabunny is imported on
 // demand (its own chunk), never at app start. No H.264 encoder → no timelapse (no VP9/WebM fallback in v1).
 
-export const TIMELAPSE_FPS = 30;
+// Default rate (v3.25.20): 15 fps, Diorame's stepped look; 30 is the other choice (TIMELAPSE_RATES).
+export const TIMELAPSE_FPS = 15;
 
 // H.264 levels ≥ 4.0 (byte of the codec string, max macroblocks per frame, max macroblocks per second).
 const LEVELS: readonly [string, number, number][] = [

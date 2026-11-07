@@ -12,7 +12,7 @@ import type { TranslationParams } from '../../../i18n';
 type TFunction = (key: string, params?: TranslationParams) => string;
 
 /** What the menu chose (TimelapseSection): set before REQUEST_EXPORT 'timelapse', consumed by the export. */
-export type TimelapseRequest = { framing: TimelapseFraming; duration: number; long: number; background: TimelapseBackground };
+export type TimelapseRequest = { framing: TimelapseFraming; duration: number; long: number; background: TimelapseBackground; fps: number };
 
 let _next: TimelapseRequest | null = null;
 
@@ -61,8 +61,9 @@ export async function exportAsTimelapse(
 			...size,
 			background: request.background,
 			duration: request.duration,
+			fps: request.fps,
 			signal: controller.signal,
-			onProgress: (done, total) => timelapseProgress.update(done, total),
+			onProgress: info => timelapseProgress.update(info),
 		});
 		const displayName = projectName === UNTITLED_PROJECT_SENTINEL ? t('topbar.file.untitledProject') : projectName;
 		downloadBlob(result.blob, `${projectFileStem(displayName)} timelapse.mp4`);

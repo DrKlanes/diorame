@@ -6,21 +6,27 @@ import { DiSelectorOption } from '../popovers';
 import { ExportGroupHeader } from './exportMenuParts';
 import { useTranslation } from '../../../i18n';
 import { setNextTimelapse } from '../canvas/timelapseExport';
-import { timelapseRect, timelapseSize, TIMELAPSE_DURATIONS, TIMELAPSE_HOLD_S, TIMELAPSE_LONG_SIDES, type TimelapseBackground } from '../canvas/timelapse';
-import { timelapseCodec } from '../canvas/timelapseEncode';
+import { timelapseRect, timelapseSize, TIMELAPSE_DURATIONS, TIMELAPSE_HOLD_S, TIMELAPSE_LONG_SIDES, TIMELAPSE_RATES, type TimelapseBackground } from '../canvas/timelapse';
+import { timelapseCodec, TIMELAPSE_FPS } from '../canvas/timelapseEncode';
+import { isTouchDevice } from '../../../utils/formatExport';
 import type { DrawFraming } from './DrawCaptureSection';
 
-// Duration and background are remembered between exports (per-viewer convenience, like the PNG background).
+// The choices are remembered between exports (per-viewer convenience, like the PNG background).
 const PREFS_KEY = 'diorame-timelapse-prefs';
-type Prefs = { duration: number; background: TimelapseBackground };
+type Prefs = { duration: number; background: TimelapseBackground; fps: number; long: number };
+// v3.25.20: 15 fps (Diorame's stepped look); long side 1080 on touch devices (an iPad encodes 1920 several times slower), 1920 elsewhere.
+const defaults = (): Prefs => ({ duration: TIMELAPSE_DURATIONS[0], background: 'paper', fps: TIMELAPSE_FPS, long: isTouchDevice() ? 1080 : 1920 });
 const readPrefs = (): Prefs => {
+	const d = defaults();
 	try {
 		const p = JSON.parse(window.localStorage.getItem(PREFS_KEY) || '{}');
 		return {
-			duration: TIMELAPSE_DURATIONS.includes(p.duration) ? p.duration : TIMELAPSE_DURATIONS[0],
+			duration: TIMELAPSE_DURATIONS.includes(p.duration) ? p.duration : d.duration,
 			background: p.background === 'solid' ? 'solid' : 'paper',
+			fps: TIMELAPSE_RATES.includes(p.fps) ? p.fps : d.fps,
+			long: TIMELAPSE_LONG_SIDES.includes(p.long) ? p.long : d.long,
 		};
-	} catch (_) { return { duration: TIMELAPSE_DURATIONS[0], background: 'paper' }; }
+	} catch (_) { return d; }
 };
 const savePrefs = (p: Prefs) => { try { window.localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch (_) { /* not remembered */ } };
 
@@ -34,9 +40,10 @@ interface TimelapseSectionProps {
 }
 
 /**
- * «Timelapse (vídeo)» in the DRAW Captura block (v3.25.19): duration, framing, background, and one row per size
- * (long side 1080 / 1920, aspect kept). Each row is probed with VideoEncoder.isConfigSupported (H.264): with no size
- * encodable the options are replaced by a short note.
+ * «Timelapse (vídeo)» in the DRAW Captura block (v3.25.19; Ritmo and Tamaño segments v3.25.20): duration, rate,
+ * size (long side, aspect kept), background, framing, and one row that starts the export with its real size. Sizes are
+ * probed with VideoEncoder.isConfigSupported (H.264) at the chosen rate: with none encodable the options are replaced
+ * by a short note.
  */
 export function TimelapseSection({ dark, open, framing, onFraming, close }: TimelapseSectionProps) {
 	const { state, dispatch } = useStrata();
@@ -52,20 +59,21 @@ export function TimelapseSection({ dark, open, framing, onFraming, close }: Time
 	);
 	const sizes = useMemo(() => (rect ? TIMELAPSE_LONG_SIDES.map(long => ({ long, ...timelapseSize(rect, long) })) : []), [rect]);
 
-	// H.264 support per size (null while probing).
+	// H.264 support per size and rate (undefined while probing).
 	const [support, setSupport] = useState<Record<string, boolean>>({});
-	const key = (s: { width: number; height: number }) => `${s.width}x${s.height}`;
+	const key = (s: { width: number; height: number }, fps: number) => `${s.width}x${s.height}@${fps}`;
 	useEffect(() => {
 		let alive = true;
 		for (const s of sizes) {
-			if (support[key(s)] !== undefined) continue;
-			timelapseCodec(s.width, s.height).then(codec => { if (alive) setSupport(prev => ({ ...prev, [key(s)]: codec !== null })); });
+			const k = key(s, prefs.fps);
+			if (support[k] !== undefined) continue;
+			timelapseCodec(s.width, s.height, prefs.fps).then(codec => { if (alive) setSupport(prev => ({ ...prev, [k]: codec !== null })); });
 		}
 		return () => { alive = false; };
-	}, [sizes]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [sizes, prefs.fps]); // eslint-disable-line react-hooks/exhaustive-deps
 
-	const probed = sizes.length > 0 && sizes.every(s => support[key(s)] !== undefined);
-	const unsupported = typeof VideoEncoder === 'undefined' || (probed && sizes.every(s => !support[key(s)]));
+	const probed = sizes.length > 0 && sizes.every(s => support[key(s, prefs.fps)] !== undefined);
+	const unsupported = typeof VideoEncoder === 'undefined' || (probed && sizes.every(s => !support[key(s, prefs.fps)]));
 
 	const helper: React.CSSProperties = {
 		padding: '0 10px 6px',
@@ -78,69 +86,49 @@ export function TimelapseSection({ dark, open, framing, onFraming, close }: Time
 
 	if (unsupported) return <div style={helper}>{t('topbar.timelapse.unsupported')}</div>;
 
-	const start = (long: number) => {
-		setNextTimelapse({ framing, duration: prefs.duration, long, background: prefs.background });
+	const segment = <V extends string | number,>(label: string, options: { value: V; label: string }[], value: V, onChange: (v: V) => void) => (
+		<>
+			<ExportGroupHeader label={label} dark={dark} />
+			<div style={{ padding: '2px 10px 6px' }}>
+				<DiSegmentControl<V> options={options} value={value} onChange={onChange} dark={dark} small />
+			</div>
+		</>
+	);
+	const chosen = sizes.find(s => s.long === prefs.long);
+	const ok = chosen ? support[key(chosen, prefs.fps)] : false;
+	const seconds = (prefs.duration + TIMELAPSE_HOLD_S).toLocaleString(undefined, { maximumFractionDigits: 1 });
+	const sizeText = chosen ? `${chosen.width} × ${chosen.height} px` : '';
+	const start = () => {
+		setNextTimelapse({ framing, duration: prefs.duration, long: prefs.long, background: prefs.background, fps: prefs.fps });
 		dispatch({ type: 'REQUEST_EXPORT', payload: 'timelapse' });
 		close();
 	};
-	const seconds = (prefs.duration + TIMELAPSE_HOLD_S).toLocaleString(undefined, { maximumFractionDigits: 1 });
 
 	return (
 		<>
 			<div style={helper}>{t('topbar.timelapse.hint')}</div>
-			<ExportGroupHeader label={t('topbar.timelapse.duration')} dark={dark} />
-			<div style={{ padding: '2px 10px 6px' }}>
-				<DiSegmentControl<number>
-					options={TIMELAPSE_DURATIONS.map(d => ({ value: d, label: t('topbar.timelapse.seconds', { n: d }) }))}
-					value={prefs.duration}
-					onChange={d => update({ duration: d })}
-					dark={dark}
-					small
-				/>
-			</div>
-			<ExportGroupHeader label={t('topbar.snapshot.background')} dark={dark} />
-			<div style={{ padding: '2px 10px 6px' }}>
-				<DiSegmentControl<TimelapseBackground>
-					options={[
-						{ value: 'paper', label: t('topbar.snapshot.bg.paper') },
-						{ value: 'solid', label: t('topbar.snapshot.bg.solid') },
-					]}
-					value={prefs.background}
-					onChange={b => update({ background: b })}
-					dark={dark}
-					small
-				/>
-			</div>
-			<ExportGroupHeader label={t('topbar.snapshot.framing')} dark={dark} />
-			<div style={{ padding: '2px 10px 6px' }}>
-				<DiSegmentControl<DrawFraming>
-					options={[
-						...(state.format ? [{ value: 'format' as const, label: t('topbar.snapshot.framing.format') }] : []),
-						{ value: 'view', label: t('topbar.snapshot.framing.view') },
-						{ value: 'drawing', label: t('topbar.snapshot.framing.drawing') },
-					]}
-					value={framing}
-					onChange={onFraming}
-					dark={dark}
-					small
-				/>
-			</div>
-			{!rect && <DiSelectorOption title={t('topbar.snapshot.drawingEmpty')} disabled onSelect={() => {}} />}
-			{sizes.map(s => {
-				const ok = support[key(s)];
-				const size = `${s.width} × ${s.height} px`;
-				return (
-					<DiSelectorOption
-						key={s.long}
-						title={`${s.long} px`}
-						description={ok === undefined ? `${size} · ${t('topbar.timelapse.checking')}`
-							: ok ? t('topbar.timelapse.rowDesc', { size, secs: seconds })
-							: `${size} · ${t('topbar.timelapse.sizeUnsupported')}`}
-						disabled={!ok}
-						onSelect={() => start(s.long)}
-					/>
-				);
-			})}
+			{segment(t('topbar.timelapse.duration'), TIMELAPSE_DURATIONS.map(d => ({ value: d, label: t('topbar.timelapse.seconds', { n: d }) })), prefs.duration, d => update({ duration: d }))}
+			{segment(t('topbar.timelapse.rate'), TIMELAPSE_RATES.map(f => ({ value: f, label: t('topbar.timelapse.fps', { n: f }) })), prefs.fps, f => update({ fps: f }))}
+			{segment(t('topbar.timelapse.size'), TIMELAPSE_LONG_SIDES.map(l => ({ value: l, label: `${l} px` })), prefs.long, l => update({ long: l }))}
+			{segment<TimelapseBackground>(t('topbar.snapshot.background'), [
+				{ value: 'paper', label: t('topbar.snapshot.bg.paper') },
+				{ value: 'solid', label: t('topbar.snapshot.bg.solid') },
+			], prefs.background, b => update({ background: b }))}
+			{segment<DrawFraming>(t('topbar.snapshot.framing'), [
+				...(state.format ? [{ value: 'format' as const, label: t('topbar.snapshot.framing.format') }] : []),
+				{ value: 'view', label: t('topbar.snapshot.framing.view') },
+				{ value: 'drawing', label: t('topbar.snapshot.framing.drawing') },
+			], framing, onFraming)}
+			{!rect
+				? <DiSelectorOption title={t('topbar.snapshot.drawingEmpty')} disabled onSelect={() => {}} />
+				: <DiSelectorOption
+					title={t('topbar.timelapse.export')}
+					description={ok === undefined ? `${sizeText} · ${t('topbar.timelapse.checking')}`
+						: ok ? t('topbar.timelapse.rowDesc', { size: sizeText, fps: prefs.fps, secs: seconds })
+						: `${sizeText} · ${t('topbar.timelapse.sizeUnsupported')}`}
+					disabled={!ok}
+					onSelect={start}
+				/>}
 		</>
 	);
 }
