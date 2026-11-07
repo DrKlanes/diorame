@@ -632,5 +632,3 @@ DRAW repinta todas las formas de todas las capas visibles en cada rAF: no hay ca
 ### Un `.dior` de sesión larga puede pasar del límite de apertura
 Con contornos en float completo, 5 000 trazos de pincel sintéticos pesaban ~66 MB; abrir rechaza > 50 MB. [POR CONFIRMAR con un archivo real.]
 
-### `renderLayerBody.ts` pasa de 400 líneas
-~458 tras 3.25.6 (ya estaba en ~435). Regla dorada 2: partirlo antes de la próxima adición.

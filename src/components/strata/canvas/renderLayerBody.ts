@@ -1,13 +1,12 @@
 import { BASE_DEPTH_STEP } from '../StrataContext';
 import { CINEMATIC_DEPTH_MULTIPLIER } from './cinematicCamera';
 import { DRAW_FOCAL_LENGTH, NEAR_CLIP } from '../../../constants/renderConstants';
-import { createTransformPoint, createProjectInto, type LayerProjectionParams, type FrameProjectionParams, type Projection } from './transformPoint';
+import { createTransformPoint, createProjectInto, type LayerProjectionParams, type FrameProjectionParams } from './transformPoint';
 import { renderParticles } from './renderParticles';
 import { renderTextShape } from './renderTextShape';
-import { bakeTextTransform } from '../../../utils/textTransform';
-import { renderUniformLineShape } from './renderUniformLineShape';
-import { renderEraserShape } from './renderEraserShape';
-import { renderRegularFillShape } from './renderRegularFillShape';
+import { renderPathShape, type PathShapeParams } from './renderPathShape';
+import { shapeWiggle } from './shapeWiggle';
+import { moveTransformPreview } from './moveTransformPreview';
 import { renderLiveStroke } from './renderLiveStroke';
 import { composeLayer } from './composeLayer';
 import { paintShapeRun } from './renderShapeRun';
@@ -30,12 +29,8 @@ const ensureCanvas = (
 	return ref.current;
 };
 
-// Shape outline projection without an object per point (v3.25.6): one scratch projection, a pool of point
-// objects that only grows, and the array handed to the painters, holding references into the pool. Painting
-// is synchronous and one shape at a time (paintShapeRun never re-enters a shape), so one set is enough.
-const proj: Projection = { x: 0, y: 0, scale: 0, opacity: 0 };
-const pointPool: { x: number; y: number }[] = [];
-const projectedPoints: { x: number; y: number }[] = [];
+// Wiggle offset of the shape being painted (written by shapeWiggle; one object, reused).
+const wiggle = { x: 0, y: 0 };
 
 /**
  * Renders one layer of the layer loop (the callback of renderZs.forEach
@@ -188,55 +183,36 @@ export function renderLayer(
 		if (particlesHadContent) hasContent = true;
 	}
 
-	// Draw Shapes
+	// Draw Shapes — the per-shape work lives in pure modules (v3.25.13): shapeWiggle, moveTransformPreview,
+	// renderTextShape, renderPathShape. This loop only orchestrates them.
+	const pathParams: PathShapeParams = {
+		isPixelArt,
+		pSize,
+		S,
+		viewZoom,
+		pixelArtSize: currentState.postProcessing.pixelArtSize,
+		layerRenderModes: currentState.layerRenderModes,
+		layerGradParams: currentState.layerGradParams,
+	};
+	const wiggleOn = fxEnabled && currentState.postProcessingEnabled.wiggle;
+	const isMovePreview = currentState.mode === 'drawing' && currentState.tool === 'move' && rc.transformState.isActive;
+	const activeLayerZ = currentState.currentLayerIndex * -BASE_DEPTH_STEP;
 	paintShapeRun(layerCtx, shapes, (layerCtx, shape) => {
 		if (shape.points.length === 0) return;
 		let wiggleX = 0, wiggleY = 0;
-		if (fxEnabled && currentState.postProcessingEnabled.wiggle) {
-			const seed = shape.id.charCodeAt(0) + (shape.id.charCodeAt(1) || 0);
-			const noiseValX = Math.sin(seed + wiggleFrame * 12.9898) * 43758.5453;
-			const noiseValY = Math.cos(seed + wiggleFrame * 78.233) * 43758.5453;
-			// Amplitude in device px: ·S (renderScale) keeps the wobble the same relative size in an HQ export.
-			const amp = (currentState.postProcessing.wiggle <= 0.2 ? 2 : (currentState.postProcessing.wiggle >= 0.8 ? 8 : 4)) * S;
-			wiggleX = (noiseValX - Math.floor(noiseValX)) * amp - amp/2;
-			wiggleY = (noiseValY - Math.floor(noiseValY)) * amp - amp/2;
-
-			if (isPixelArt) {
-				wiggleX = Math.round(wiggleX / pSize) * pSize;
-				wiggleY = Math.round(wiggleY / pSize) * pSize;
-			}
+		if (wiggleOn) {
+			shapeWiggle(shape.id, wiggleFrame, currentState.postProcessing.wiggle, S, isPixelArt, pSize, wiggle);
+			wiggleX = wiggle.x;
+			wiggleY = wiggle.y;
 		}
 
-		// Transform Preview
+		// Transform Preview — extracted to canvas/moveTransformPreview.ts
 		let currentPoints = shape.points;
 		let previewShape = shape;
-		if (currentState.mode === 'drawing' && currentState.tool === 'move' && rc.transformState.isActive && shape.zIndex === currentState.currentLayerIndex * -BASE_DEPTH_STEP) {
-			 const t = rc.transformState.currentTransform;
-			 const cx = rc.transformState.centerX;
-			 const cy = rc.transformState.centerY;
-			 const sin = Math.sin(t.rotation);
-			 const cos = Math.cos(t.rotation);
-			 // Mirror the TRANSFORM_LAYER reducer's per-axis bake so the live preview
-			 // matches the committed result exactly (no jump on release). Text deforms too
-			 // (v3.17.56), through the same bakeTextTransform the reducer commits.
-			 const hasNonUniform = t.scaleX !== undefined || t.scaleY !== undefined;
-			 const sx = hasNonUniform ? Math.max(0.01, t.scaleX ?? t.scale) : t.scale;
-			 const sy = hasNonUniform ? Math.max(0.01, t.scaleY ?? t.scale) : t.scale;
-			 if (shape.type === 'text') {
-				 previewShape = { ...shape, ...bakeTextTransform(shape, { rotation: t.rotation, scale: t.scale, sx, sy, nonUniform: hasNonUniform }) };
-			 }
-
-			 currentPoints = currentPoints.map(p => {
-				 const ox = p.x - cx;
-				 const oy = p.y - cy;
-				 const rx = (ox * cos - oy * sin) * sx;
-				 const ry = (ox * sin + oy * cos) * sy;
-				 return {
-					 ...p,
-					 x: rx + cx + t.x,
-					 y: ry + cy + t.y
-				 };
-			 });
+		if (isMovePreview && shape.zIndex === activeLayerZ) {
+			const preview = moveTransformPreview(shape, rc.transformState);
+			currentPoints = preview.points;
+			previewShape = preview.previewShape;
 		}
 
 		// Text Handling — extracted to canvas/renderTextShape.ts
@@ -257,140 +233,8 @@ export function renderLayer(
 			return; // Sale del forEach callback al siguiente shape (NO cambia comportamiento)
 		}
 
-		// Path Handling (v3.25.6: no object per point). The projected points live in a pool reused across
-		// shapes and frames; `projectedPoints` holds references to the first n of them. Uniform lines paint
-		// their spine (renderUniformLineShape) and only ever read the outline's length and opacity, so the
-		// outline is not projected for them: opacity is the layer's, the same at every point.
-		const isUniformLine = shape.originalPoints && shape.originalPoints.length > 0 && shape.brushMode === 'uniform';
-		const n = currentPoints.length;
-		let minOp = 1;
-		if (isUniformLine) {
-			if (n > 0) {
-				projectInto(currentPoints[0].x, currentPoints[0].y, proj);
-				if (proj.opacity < minOp) minOp = proj.opacity;
-			}
-			projectedPoints.length = 0;
-		} else {
-			for (let i = 0; i < n; i++) {
-				const pt = currentPoints[i];
-				projectInto(pt.x, pt.y, proj);
-				const p = pointPool[i] ??= { x: 0, y: 0 };
-				p.x = proj.x + wiggleX;
-				p.y = proj.y + wiggleY;
-				projectedPoints[i] = p;
-				if (proj.opacity < minOp) minOp = proj.opacity;
-			}
-			projectedPoints.length = n;
-		}
-
-		if (n > 1 && minOp > 0.01) {
-			hasContent = true;
-			layerCtx.globalAlpha = minOp;
-
-			// Pixel Art Refinement: Snap Points & Use Straight Lines
-			let renderPoints = projectedPoints;
-			let useStraightLines = false;
-			const isBrushTap = isPixelArt && !isUniformLine && !shape.isEraser && shape.points.length <= 3 && projectedPoints.length > 0;
-			// Tap de brush tapered: originalPoints casi coincidentes → polígono de área cero (invisible).
-			// generateTaperedStroke con 2 puntos da halfWidth=0 (sin(0)=sin(π)=0). Lo renderizamos como
-			// punto redondeado del grosor máximo, idéntico al isDot de renderUniformLineShape.
-			// Solo tapered: ink ya es visible (blob orgánico), uniform tiene su propio isDot.
-			const isTaperedDot = shape.brushMode === 'tapered' && !shape.isEraser
-				&& shape.originalPoints != null && shape.originalPoints.length >= 2
-				&& Math.hypot(
-					shape.originalPoints[0].x - shape.originalPoints[shape.originalPoints.length - 1].x,
-					shape.originalPoints[0].y - shape.originalPoints[shape.originalPoints.length - 1].y
-				) < 0.15;
-
-			if (isPixelArt) {
-				useStraightLines = true;
-				const pSize = Math.max(2, currentState.postProcessing.pixelArtSize || 4) * S;
-
-				if (isBrushTap) {
-					 return; // Option A: Skip tap strokes entirely in Pixel Art View Mode to avoid artifacts
-				}
-
-				renderPoints = projectedPoints.map(p => ({
-					x: Math.round(p.x / pSize) * pSize,
-					y: Math.round(p.y / pSize) * pSize
-				}));
-				// Remove duplicate adjacent points
-				renderPoints = renderPoints.filter((p, i) =>
-					i === 0 || (p.x !== renderPoints[i-1].x || p.y !== renderPoints[i-1].y)
-				);
-
-				// Ensure at least 2 points
-				if (renderPoints.length < 2 && projectedPoints.length >= 2) {
-					 renderPoints = [
-						 { x: Math.round(projectedPoints[0].x/pSize)*pSize, y: Math.round(projectedPoints[0].y/pSize)*pSize },
-						 { x: Math.round(projectedPoints[projectedPoints.length-1].x/pSize)*pSize, y: Math.round(projectedPoints[projectedPoints.length-1].y/pSize)*pSize }
-					 ];
-				}
-			}
-
-			if (isUniformLine) {
-				// Extracted to canvas/renderUniformLineShape.ts
-				renderUniformLineShape(
-					layerCtx,
-					shape,
-					transformPoint,
-					useStraightLines,
-					wiggleX,
-					wiggleY,
-					pSize,
-					isPixelArt,
-					viewZoom,
-					{
-						layerRenderModes: currentState.layerRenderModes,
-						layerGradParams: currentState.layerGradParams,
-						pixelArtSize: currentState.postProcessing.pixelArtSize,
-					},
-				);
-			} else if (shape.isEraser) {
-				// Extracted to canvas/renderEraserShape.ts
-				renderEraserShape(layerCtx, renderPoints, useStraightLines);
-			} else if (isTaperedDot) {
-				// Tapered tap: render as round dot — zero-length stroke with lineCap='round'.
-				// Same mechanism as renderUniformLineShape's isDot branch.
-				const proj = transformPoint(shape.originalPoints![0].x, shape.originalPoints![0].y);
-				let px = proj.x + wiggleX;
-				let py = proj.y + wiggleY;
-				if (isPixelArt) {
-					px = Math.round(px / pSize) * pSize;
-					py = Math.round(py / pSize) * pSize;
-				}
-				if (shape.isDrawBehind) layerCtx.globalCompositeOperation = 'destination-over';
-				else layerCtx.globalCompositeOperation = shape.isDrawInside ? 'source-atop' : 'source-over';
-				const size = isPixelArt
-					? Math.max(pSize, Math.round(((shape.brushThickness || 20) * proj.scale) / pSize) * pSize)
-					: (shape.brushThickness || 20) * proj.scale;
-				layerCtx.strokeStyle = shape.color;
-				layerCtx.lineWidth = size;
-				layerCtx.lineCap = 'round';
-				layerCtx.beginPath();
-				layerCtx.moveTo(px, py);
-				layerCtx.lineTo(px, py);
-				layerCtx.stroke();
-			} else {
-				// Extracted to canvas/renderRegularFillShape.ts
-				renderRegularFillShape(
-					layerCtx,
-					shape,
-					projectedPoints,
-					renderPoints,
-					useStraightLines,
-					{
-						layerRenderModes: currentState.layerRenderModes,
-						layerGradParams: currentState.layerGradParams,
-					},
-				);
-			}
-
-			layerCtx.globalCompositeOperation = 'source-over';
-			layerCtx.globalAlpha = 1.0;
-		}
-
-
+		// Path Handling — extracted to canvas/renderPathShape.ts
+		if (renderPathShape(layerCtx, shape, currentPoints, projectInto, transformPoint, wiggleX, wiggleY, pathParams)) hasContent = true;
 	});
 
 	// Draw Current Stroke — extracted to canvas/renderLiveStroke.ts
