@@ -14,31 +14,48 @@
 	});
 	const seeded = (seed) => { let s = seed | 0; return () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
 	const paper = new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = '/src/assets/texture-paper.png'; });
-	const options = async (st, layer) => {
+	// A flat paper (v3.25.18): the paper code path (main canvas, background, multiply transfer) with an image whose resampling is
+	// exact. The real 5000 × 3333 texture is NOT a pixel oracle in Chrome: two one-shot PNG renders of the same scene and seed,
+	// before and after another export, differed by up to 61 levels on 557 000 px (the browser's decode/raster state of a scaled
+	// image). It is reported, never judged.
+	const flatPaper = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); x.fillStyle = '#efe6d2'; x.fillRect(0, 0, 64, 64); return c; })();
+	const options = async (st, layer, paperImg) => {
 		const L = layer ?? st.currentLayerIndex;
 		const camera = { x: 0, y: 0, z: L * -150, rotation: 0 };
 		const byZ = new Map();
 		for (const s of st.shapes) { if (!byZ.has(s.zIndex)) byZ.set(s.zIndex, []); byZ.get(s.zIndex).push(s); }
 		return { state: { ...st, mode: 'drawing', currentLayerIndex: L, camera }, shapesByZ: byZ, sortedZs: [...byZ.keys()].sort((a, b) => b - a), waypoints: [], camera,
-			w: 1366, h: 1024, paperImg: await paper, risoGrain: null, grungeImg: null, particles: [], noiseCanvas: null, shapePattern: null, getActiveZ: (i) => i * -150 };
+			w: 1366, h: 1024, paperImg: paperImg === undefined ? await paper : paperImg, risoGrain: null, grungeImg: null, particles: [], noiseCanvas: null, shapePattern: null, getActiveZ: (i) => i * -150 };
 	};
 	const pixels = (cv) => cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
 	const hash = async (px) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', px))].slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
-	const diff = (a, b) => { if (a.length !== b.length) return -1; let d = 0; for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3]) d++; return d; };
+	let maxErr = 0; // largest channel difference of the last diff() call
+	const diff = (a, b) => { if (a.length !== b.length) return -1; let d = 0; maxErr = 0; for (let i = 0; i < a.length; i += 4) { const e = Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2]), Math.abs(a[i + 3] - b[i + 3])); if (e) { d++; if (e > maxErr) maxErr = e; } } return d; };
 	const videoMeta = (blob) => new Promise((res) => { const v = document.createElement('video'); v.muted = true; v.preload = 'metadata'; v.onloadedmetadata = () => { res({ w: v.videoWidth, h: v.videoHeight, s: +v.duration.toFixed(3) }); URL.revokeObjectURL(v.src); }; v.onerror = () => res({ error: true }); v.src = URL.createObjectURL(blob); });
 	const load = async (C, url) => C.appReducer(C.initialState, { type: 'LOAD_PROJECT', payload: await (await fetch(url)).json() });
 
 	// The last encoded frame against the PNG export of the same framing, size and seed (renderRectSnapshot).
 	// Also frame 30 (mid drawing) against the PNG of ITS scene: the texture holds along the whole video, not only at the end.
-	const lastFrameVsPng = async (m, o, rect, size, background, extra = {}) => {
+	// Forces every 2D context created meanwhile onto the CPU rasterizer (willReadFrequently), engine and PNG alike. Chrome picks GPU
+	// or CPU per canvas by its own state (memory pressure after loading big scenes); a long-lived session canvas and a later
+	// one-shot PNG can land on different backends, whose antialiasing differs (measured up to 61 levels). Same backend = the logic.
+	const onCpu = async (fn) => {
+		const P = HTMLCanvasElement.prototype, real = P.getContext;
+		P.getContext = function (type, attrs) { return type === '2d' ? real.call(this, type, { ...(attrs || {}), willReadFrequently: true }) : real.call(this, type, attrs); };
+		try { return await fn(); } finally { P.getContext = real; }
+	};
+	const lastFrameVsPng = (m, o, rect, size, background, extra = {}) => onCpu(() => lastFrameVsPngAnyBackend(m, o, rect, size, background, extra));
+	const lastFrameVsPngAnyBackend = async (m, o, rect, size, background, extra = {}) => {
 		let last = null, mid = null;
 		const r = await m.T.renderTimelapse(o, { rect, ...size, background, duration: 2, seed: 4242, inspect: (i, cv) => { const px = new Uint8ClampedArray(pixels(cv)); last = px; if (i === 30) mid = px; }, ...extra });
 		const png = (scene) => { const real = Math.random; Math.random = seeded(4242); try { return pixels(m.F.renderRectSnapshot({ ...o, ...scene }, rect, size.width, size.height, background)); } finally { Math.random = real; } };
 		const ref = png({});
 		const { rank, count } = m.S.appearanceRanks(o.state.shapes, m.S.paintsLayer(o.state));
 		const midRef = png(m.S.sceneAt(o.state.shapes, rank, m.S.shapesAtFrame(30, count, 60)));
+		const lastDiffPx = diff(last, ref), lastMaxErr = maxErr;
+		const midDiffPx = mid ? diff(mid, midRef) : -1, midMaxErr = maxErr;
 		return { size: `${size.width}x${size.height}`, frames: r.frames, repaints: r.repaints, codec: r.codec, mb: +(r.blob.size / 1e6).toFixed(2), video: await videoMeta(r.blob),
-			diffPx: diff(last, ref) + (mid ? diff(mid, midRef) : -1), lastDiffPx: diff(last, ref), midDiffPx: mid ? diff(mid, midRef) : 'no frame 30', hash: await hash(last), pngHash: await hash(ref), last, ref };
+			diffPx: lastDiffPx + midDiffPx, lastDiffPx, lastMaxErr, midDiffPx, midMaxErr, hash: await hash(last), pngHash: await hash(ref), last, ref };
 	};
 
 	// Merged layer: B (layer 0) gets strokes; A (layer 1) gets strokes + an eraser + a drawInside → merge down (isolated group, A's
@@ -62,17 +79,26 @@
 		return s;
 	};
 
+	window.__tlDebug = { mod, options, lastFrameVsPng, load, pixels, diff: (a, b) => [diff(a, b), maxErr] };
+
 	window.__timelapseCheck = async () => {
 		const m = await mod();
 		const out = {};
 		const ex = await load(m.C, '/examples/diorame_onboarding.dior');
 		const s2000 = await load(m.C, '/tools/draw-stress/out/stress-2000-6L.dior');
-		for (const [name, st, L, bg] of [['example-L3-solid', ex, 3, 'solid'], ['example-L3-paper', ex, 3, 'paper'], ['s2000x6-L2-solid', s2000, 2, 'solid']]) {
-			const o = await options(st, L);
+		for (const [name, st, L, bg, paperImg] of [['example-L3-solid', ex, 3, 'solid'], ['example-L3-paper-flat', ex, 3, 'paper', flatPaper], ['s2000x6-L2-solid', s2000, 2, 'solid']]) {
+			const o = await options(st, L, paperImg);
 			const rect = m.T.timelapseRect(o.state, 'drawing', { w: 1366, h: 1024 });
 			const r = await lastFrameVsPng(m, o, rect, m.T.timelapseSize(rect, 1080), bg);
 			delete r.last; delete r.ref;
 			out[name] = r;
+		}
+		// The real paper texture: informative only (see flatPaper). Expect small or zero differences, browser-dependent.
+		{
+			const o = await options(ex, 3);
+			const rect = m.T.timelapseRect(o.state, 'drawing', { w: 1366, h: 1024 });
+			const r = await lastFrameVsPngAnyBackend(m, o, rect, m.T.timelapseSize(rect, 1080), 'paper');
+			out.info_realPaperTexture = { lastDiffPx: r.lastDiffPx, lastMaxErr: r.lastMaxErr, midDiffPx: r.midDiffPx, midMaxErr: r.midMaxErr, note: 'default (GPU) backend, real texture: informative, not judged' };
 		}
 		// Merged layer: t decides when, the array decides how.
 		const ms = await mergedScene(m.C);
@@ -88,24 +114,24 @@
 		const byT = { ...ms, shapes: appearance.map(id => ms.shapes[ids.indexOf(id)]) };
 		const oT = await options(byT, 0);
 		const real = Math.random; Math.random = seeded(4242);
-		let wrong; try { wrong = pixels(m.F.renderRectSnapshot(oT, rect, size.width, size.height, 'solid')); } finally { Math.random = real; }
+		let wrong; try { wrong = await onCpu(() => new Uint8ClampedArray(pixels(m.F.renderRectSnapshot(oT, rect, size.width, size.height, 'solid')))); } finally { Math.random = real; }
 		out.merged = {
 			arrayOrder: ids.join(' '), appearanceOrder: appearance.join(' '), paintedAtK4: at4.join(' '),
 			groupOnA: ms.shapes.filter(x => x.group).map(x => x.id).join(' '),
 			lastFrameVsPng_diffPx: r.diffPx, video: r.video, frames: r.frames,
 			selfCheck_tOrderPainting_diffPx: diff(wrong, r.ref),
 		};
-		// Self-check (must FAIL): two renders of the same scene in one session WITHOUT the per-render seed differ — the
-		// half-pixel rect re-creates the ink texture on every render. This is the flicker the engine's seed prevents.
+		// Stability (v3.25.18): two renders of the same scene in one session WITHOUT any seed are identical — the ink texture
+		// is made once. Before v3.25.18 the half-pixel rect re-created it on every render (~199 000 px apart: flicker).
 		const fl = m.F.createRectSession(o, rect, size.width, size.height, 'solid');
 		const full = m.S.sceneAt(ms.shapes, rank, ms.shapes.length);
 		const f1 = new Uint8ClampedArray(pixels(fl.render(full)));
 		const f2 = pixels(fl.render(full));
 		fl.release();
-		out.merged.selfCheck_unseededRerender_diffPx = diff(f1, f2);
-		out.pass = Object.values(out).every(v => typeof v !== 'object' || (v.diffPx ?? v.lastFrameVsPng_diffPx) === 0)
+		out.merged.stability_unseededRerender_diffPx = diff(f1, f2);
+		out.pass = Object.entries(out).every(([k, v]) => k.startsWith('info_') || typeof v !== 'object' || (v.diffPx ?? v.lastFrameVsPng_diffPx) === 0)
 			&& out.merged.selfCheck_tOrderPainting_diffPx > 0
-			&& out.merged.selfCheck_unseededRerender_diffPx > 0
+			&& out.merged.stability_unseededRerender_diffPx === 0
 			&& out.merged.appearanceOrder === 'B1 A1 A2 A3 B2 C1 C2'
 			&& out.merged.paintedAtK4 === 'B1 A1 A2 A3';
 		return out;

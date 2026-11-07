@@ -29,10 +29,9 @@ export type SnapshotSession = {
  * texture (`shapePattern`, Math.random). renderScale=S makes the pipeline dimension the raster to S·w × S·h while
  * keeping the framing identical.
  *
- * A session keeps its canvases and refs between renders (v3.25.17, timelapse). When w·S is an integer the resize
- * branch fires only on the first render, and later ones reuse that texture. When it is fractional (renderRectSnapshot's
- * half pixel) the branch fires on EVERY render and re-creates the texture with Math.random: a caller that renders a
- * sequence must seed Math.random identically for each render (timelapse.ts), or the texture changes every frame.
+ * A session keeps its canvases and refs between renders (v3.25.17, timelapse): the resize branch fires on the first
+ * render only, and later ones reuse its texture and buffers. Since v3.25.18 also with a fractional w·S
+ * (renderRectSnapshot's half pixel): before, that branch fired on every render and re-created the texture.
  * One render of a fresh session is exactly what renderSnapshot always did.
  */
 export const createSnapshotSession = (

@@ -48,8 +48,8 @@ export type TimelapseOptions = {
 	onProgress?: (done: number, total: number) => void;
 	/** The export's seed (random when absent): a reproducible video. */
 	seed?: number;
-	/** Called after each repaint with the frame index and the canvas the encoder reads (verification). */
-	inspect?: (frame: number, canvas: HTMLCanvasElement) => void;
+	/** Called after each repaint with the frame index, the canvas the encoder reads and the session canvas it copies (verification). */
+	inspect?: (frame: number, canvas: HTMLCanvasElement, source: HTMLCanvasElement) => void;
 };
 
 export type TimelapseResult = {
@@ -95,10 +95,9 @@ export async function renderTimelapse(options: AnimationExportRenderOptions, o: 
 	const total = drawFrames + Math.round((o.holdSeconds ?? TIMELAPSE_HOLD_S) * fps);
 
 	const session = createRectSession(options, o.rect, o.width, o.height, o.background);
-	// One seed for every frame. renderRectSnapshot's logical size carries half a pixel (so the raster truncates to
-	// exactly W × H), which keeps renderFrame's resize branch firing on EVERY render of the session: it re-creates the
-	// ink texture with Math.random each time. Seeded identically, that texture is the same on every frame (no flicker)
-	// and each frame is exactly the PNG export of its scene with this seed — as «Capas (ZIP)» does across its layers.
+	// One seed for the export: the first render makes the ink texture with it, and since v3.25.18 later renders reuse it
+	// (before, renderRectSnapshot's half-pixel size re-created it on every render: flicker). Seeding each render keeps
+	// every frame exactly the PNG export of its scene with this seed — as «Capas (ZIP)» does across its layers.
 	const seed = o.seed ?? Math.floor(Math.random() * 2 ** 31);
 	const paint = (k: number): HTMLCanvasElement => {
 		const real = Math.random;
@@ -120,9 +119,10 @@ export async function renderTimelapse(options: AnimationExportRenderOptions, o: 
 	let renderMs = 0, encodeMs = 0, repaints = 0, lastYield = performance.now();
 	try {
 		let k = shapesAtFrame(0, count, drawFrames);
-		feedCtx.drawImage(paint(k), 0, 0);
+		let source = paint(k);
+		feedCtx.drawImage(source, 0, 0);
 		repaints++;
-		o.inspect?.(0, feed);
+		o.inspect?.(0, feed, source);
 		writer = await createMp4Writer(feed, codec, fps);
 
 		for (let i = 0; i < total; i++) {
@@ -131,10 +131,11 @@ export async function renderTimelapse(options: AnimationExportRenderOptions, o: 
 			if (next !== k) {
 				const r0 = performance.now();
 				k = next;
-				feedCtx.drawImage(paint(k), 0, 0);
+				source = paint(k);
+				feedCtx.drawImage(source, 0, 0);
 				renderMs += performance.now() - r0;
 				repaints++;
-				o.inspect?.(i, feed);
+				o.inspect?.(i, feed, source);
 			}
 			const e0 = performance.now();
 			await writer.add(i);

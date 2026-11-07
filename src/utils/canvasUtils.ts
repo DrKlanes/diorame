@@ -17,7 +17,16 @@ export const createNoise = (w: number, h: number, alpha = 100, scale = 2, densit
 	return up;
 };
 
-export const drawSmoothLine = (context: CanvasRenderingContext2D, points: { x: number, y: number }[]) => {
+// The Math.random draws createNoise(w, h, …, scale) would make, without its canvases (v3.25.18): when nothing uses the
+// grain, the render skips the noise but leaves Math.random exactly where it was, so everything drawn after it (the ink
+// texture) is byte-identical under a seed.
+export const consumeNoiseRandoms = (w: number, h: number, scale = 2): void => {
+	if (w <= 0 || h <= 0) return;
+	const n = Math.ceil(w / scale) * Math.ceil(h / scale);
+	for (let i = 0; i < n; i++) Math.random();
+};
+
+export const drawSmoothLine =(context: CanvasRenderingContext2D, points: { x: number, y: number }[]) => {
 	if (points.length < 2) return;
 	context.beginPath();
 	context.moveTo(points[0].x, points[0].y);

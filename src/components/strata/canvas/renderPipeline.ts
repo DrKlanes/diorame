@@ -1,7 +1,7 @@
 import React from 'react';
 import { BASE_DEPTH_STEP } from '../StrataContext';
 import { RENDER_THROTTLE_MS, NEAR_CLIP } from '../../../constants/renderConstants';
-import { createNoise } from '../../../utils/canvasUtils';
+import { createNoise, consumeNoiseRandoms } from '../../../utils/canvasUtils';
 import type { AppState, Shape, Point, Waypoint } from '../../../types/strataTypes';
 import type { Particle } from './renderParticles';
 import type { GizmoHandles } from './drawGizmo';
@@ -266,7 +266,8 @@ const ensureCanvas = (
 	h: number,
 ): HTMLCanvasElement => {
 	if (!ref.current) ref.current = document.createElement('canvas');
-	if (ref.current.width !== w || ref.current.height !== h) {
+	// A canvas truncates a fractional size: compare with what it can hold, or a fractional w resets it every frame (v3.25.18).
+	if (ref.current.width !== Math.floor(w) || ref.current.height !== Math.floor(h)) {
 		ref.current.width = w; ref.current.height = h;
 	}
 	return ref.current;
@@ -406,11 +407,23 @@ export function renderFrame(
 	const logicalH = rc.h || canvas.height;
 	const w = logicalW * S;
 	const h = logicalH * S;
-	if (canvas.width !== w || canvas.height !== h) {
+	// The grain noise's only reader is applyGrain (phase 3), under exactly this condition.
+	const grainUsed = fxEnabled && currentState.postProcessingEnabled.grain && currentState.postProcessing.grain > 0.01;
+	// Compared with the size the canvas can hold (it truncates): with a fractional w·S (renderRectSnapshot's half pixel)
+	// the old `!== w` was true on every render, so a canvas rendered repeatedly re-created its noise and ink texture
+	// each time (v3.25.18). A fresh canvas and an integer size take this branch exactly as before.
+	if (canvas.width !== Math.floor(w) || canvas.height !== Math.floor(h)) {
 		canvas.width = w; canvas.height = h;
-		// Re-init noise
-		const nc = createNoise(logicalW, logicalH, 100, 2, 0.45, S);
-		if (nc) rc.noiseCanvasRef.current = nc;
+		// Re-init noise — only when the grain is drawn (v3.25.18). Otherwise the same Math.random draws are made
+		// without its canvases (logical size: tens of MP in a «Dibujo completo» export), so the ink texture below
+		// comes out byte-identical under a seed.
+		if (grainUsed) {
+			const nc = createNoise(logicalW, logicalH, 100, 2, 0.45, S);
+			if (nc) rc.noiseCanvasRef.current = nc;
+		} else {
+			consumeNoiseRandoms(logicalW, logicalH, 2);
+			rc.noiseCanvasRef.current = null;
+		}
 
 		const patC = createNoise(256, 256, 15, 1, 0.3, S);
 		if (patC) rc.shapePatternRef.current = ctx.createPattern(patC, 'repeat');
@@ -424,7 +437,7 @@ export function renderFrame(
 	ensureCanvas(rc.tempCanvasRef, w, h);
 	ensureCanvas(rc.pixelCanvasRef, Math.ceil(w / 4), Math.ceil(h / 4)); // Init small, resize later if needed
 
-	if (!rc.noiseCanvasRef.current) rc.noiseCanvasRef.current = createNoise(logicalW, logicalH, 100, 2, 0.45, S);
+	if (grainUsed && !rc.noiseCanvasRef.current) rc.noiseCanvasRef.current = createNoise(logicalW, logicalH, 100, 2, 0.45, S);
 	if (!rc.shapePatternRef.current) {
 		const patC = createNoise(256, 256, 15, 1, 0.3, S);
 		if (patC) rc.shapePatternRef.current = ctx.createPattern(patC, 'repeat');

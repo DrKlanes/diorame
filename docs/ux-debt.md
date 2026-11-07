@@ -635,7 +635,9 @@ Con contornos en float completo, 5 000 trazos de pincel sintéticos pesaban ~66 
 
 ---
 
-## Timelapse de DRAW (C1, v3.25.17): coste por frame de la rama de *resize* — GO pendiente
+## Timelapse de DRAW (C1, v3.25.17): coste por frame de la rama de *resize* — RESUELTO en v3.25.18
+
+**Resuelto (v3.25.18, GO de Moisés):** comparación contra el tamaño truncado + grano solo cuando se dibuja. Timelapse 30 s: ejemplo 129,9 → 4,6 s; 2000×6 57,7 → 13,3 s. Detalle en el changelog de REFERENCE.md. Lo de abajo queda como historia del diagnóstico.
 
 **Medido** (escritorio, panel visible, 30 s = 975 frames a 1080×1920, papel): 500 trazos 20,6 s (21 ms/frame); 2000×6 capas 57,7 s (59 ms/frame); ejemplo (2369 formas, Dibujo completo) **129,9 s (133 ms/frame)**.
 
