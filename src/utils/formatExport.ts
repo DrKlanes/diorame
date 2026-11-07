@@ -22,6 +22,7 @@ const PRINT: readonly [string, number, number, number][] = [
 ];
 const SCREEN: Readonly<Record<Exclude<FormatType, 'A'>, readonly [string, number, number][]>> = {
 	'16:9': [['Full HD', 1080, 1920], ['4K', 2160, 3840]],
+	'4:3': [['1600 px', 1200, 1600], ['iPad · 2732 px', 2048, 2732], ['4096 px', 3072, 4096]],
 	'4:5': [['1080 × 1350', 1080, 1350], ['2160 × 2700', 2160, 2700]],
 	'1:1': [['1080', 1080, 1080], ['2048', 2048, 2048], ['4096', 4096, 4096]],
 };

@@ -8,7 +8,7 @@ import type { DrawFormat, FormatOrientation, FormatType } from '../types/strataT
 
 export type Rect = { x: number; y: number; w: number; h: number };
 
-export const FORMAT_TYPES: readonly FormatType[] = ['A', '16:9', '4:5', '1:1'] as const;
+export const FORMAT_TYPES: readonly FormatType[] = ['A', '16:9', '4:3', '4:5', '1:1'] as const;
 
 // Same limits as the DRAW zoom and the world-space pan clamp (StrataCanvas: |pan| ≤ MAX_PAN · zoom).
 export const MIN_DRAW_ZOOM = 0.5;
@@ -29,7 +29,7 @@ export function orientationFor(type: FormatType, orientation: FormatOrientation)
 /** width / height of the frame. */
 export function formatAspect(type: FormatType, orientation: FormatOrientation): number {
 	const o = orientationFor(type, orientation);
-	const long = type === 'A' ? Math.SQRT2 : type === '16:9' ? 16 / 9 : type === '4:5' ? 5 / 4 : 1;
+	const long = type === 'A' ? Math.SQRT2 : type === '16:9' ? 16 / 9 : type === '4:3' ? 4 / 3 : type === '4:5' ? 5 / 4 : 1;
 	return o === 'landscape' ? long : 1 / long;
 }
 

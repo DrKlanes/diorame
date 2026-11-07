@@ -12,7 +12,7 @@ type Choice = FormatType | 'free';
 
 /**
  * FormatPill — DRAW format guide (v3.25.5): button in the bottom-left ViewPills + its menu.
- * Libre (no frame) · A · 16:9 · 4:5 · 1:1, orientation, «Ajustar a la vista» (re-places the frame at ~88 % of
+ * Libre (no frame) · A · 16:9 · 4:3 · 4:5 · 1:1, orientation, «Ajustar a la vista» (re-places the frame at ~88 % of
  * what is on screen) and «Quitar». A new frame is fitted to the current view; changing type or orientation keeps
  * the centre and is sized for the current view. Every change is a SET_FORMAT (view state, dirties the project, never in undo).
  */
@@ -37,7 +37,7 @@ export function FormatPill() {
 		if (format && format.orientation !== o) dispatch({ type: 'SET_FORMAT', payload: reshapeFormat(format, format.type, o, view()) });
 	};
 
-	const hasOrientation = !!format && (format.type === 'A' || format.type === '16:9');
+	const hasOrientation = !!format && (format.type === 'A' || format.type === '16:9' || format.type === '4:3');
 
 	return (
 		<>
@@ -61,6 +61,7 @@ export function FormatPill() {
 							{ value: 'free', label: t('viewport.format.free') },
 							{ value: 'A', label: 'A', tooltip: t('viewport.format.aTooltip') },
 							{ value: '16:9', label: '16:9' },
+							{ value: '4:3', label: '4:3', tooltip: t('viewport.format.fourThreeTooltip') },
 							{ value: '4:5', label: '4:5' },
 							{ value: '1:1', label: '1:1' },
 						]}

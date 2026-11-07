@@ -536,6 +536,7 @@ export const en: Dictionary = {
 	'viewport.format.header': 'Format',
 	'viewport.format.free': 'Free',
 	'viewport.format.aTooltip': 'A series (A4, A3…): √2 ratio',
+	'viewport.format.fourThreeTooltip': '4:3 landscape · 3:4 portrait (iPad screen)',
 	'viewport.format.orientation': 'Orientation',
 	'viewport.format.portrait': 'Portrait',
 	'viewport.format.landscape': 'Landscape',

@@ -512,6 +512,7 @@ export const es: Dictionary = {
 	'viewport.format.header': 'Formato',
 	'viewport.format.free': 'Libre',
 	'viewport.format.aTooltip': 'Serie A (A4, A3…): proporción √2',
+	'viewport.format.fourThreeTooltip': '4:3 horizontal · 3:4 vertical (pantalla del iPad)',
 	'viewport.format.orientation': 'Orientación',
 	'viewport.format.portrait': 'Vertical',
 	'viewport.format.landscape': 'Horizontal',

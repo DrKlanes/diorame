@@ -31,8 +31,8 @@ export type AppMode = 'drawing' | 'cinematic';
 // Background of a DRAW PNG export: the paper as seen on screen, a plain white/black, or none (alpha).
 export type ExportBackground = 'paper' | 'solid' | 'transparent';
 // DRAW format guide (v3.25.5): a frame on the active layer's plane (scale 1 there), in world units.
-// 'A' = ISO 216 (√2). 1:1 ignores the orientation; 4:5 is portrait only.
-export type FormatType = 'A' | '16:9' | '4:5' | '1:1';
+// 'A' = ISO 216 (√2). A, 16:9 and 4:3 (v3.25.8) have an orientation; 1:1 ignores it; 4:5 is portrait only.
+export type FormatType = 'A' | '16:9' | '4:3' | '4:5' | '1:1';
 export type FormatOrientation = 'portrait' | 'landscape';
 export type DrawFormat = { type: FormatType; orientation: FormatOrientation; rect: { x: number; y: number; w: number; h: number } };
 export type ToolType = 'blob' | 'eraser' | 'text' | 'move' | 'brush';
