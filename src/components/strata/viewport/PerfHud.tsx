@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStrata } from '../StrataContext';
 import { AUTOSAVE_KEY } from '../../../hooks/useAutoSave';
+import { renderStats, IDLE_SKIP_ENABLED } from '../canvas/idleGuard';
 
 /**
  * ?perf=1 only (tools/draw-stress/README.md): frame cadence and autosave cost, readable on the iPad.
@@ -35,13 +36,15 @@ function wrapPut(shapeCount: () => number) {
 	};
 }
 
-type Stats = { fps: number | null; p95: number | null; gaps: number; worst: number };
+type Stats = { fps: number | null; p95: number | null; gaps: number; worst: number; rps: number | null };
 
 export function PerfHud() {
 	const { state } = useStrata();
 	const shapesRef = useRef(state.shapes.length);
 	shapesRef.current = state.shapes.length;
-	const [stats, setStats] = useState<Stats>({ fps: null, p95: null, gaps: 0, worst: 0 });
+	const [stats, setStats] = useState<Stats>({ fps: null, p95: null, gaps: 0, worst: 0, rps: null });
+	// renders/s (v3.25.10): renderFrame calls per second, from idleGuard's counter. ~0 at rest in DRAW with idle-skip.
+	const renders = useRef<{ t: number; n: number }[]>([]);
 	const samples = useRef<{ t: number; dt: number }[]>([]);
 	const gaps = useRef({ count: 0, worst: 0 });
 
@@ -59,11 +62,16 @@ export function PerfHud() {
 			last = t;
 			const s = samples.current;
 			while (s.length && s[0].t < t - WINDOW_MS) s.shift();
+			const r = renders.current;
+			r.push({ t, n: renderStats.count });
+			while (r.length > 1 && r[0].t < t - WINDOW_MS) r.shift();
 			if (t - lastUi > 500 && s.length) {
 				lastUi = t;
+				const span = r.length > 1 ? (r[r.length - 1].t - r[0].t) / 1000 : 0;
+				const rps = span > 0 ? (r[r.length - 1].n - r[0].n) / span : null;
 				const mean = s.reduce((a, x) => a + x.dt, 0) / s.length;
 				const sorted = s.map(x => x.dt).sort((a, b) => a - b);
-				setStats({ fps: 1000 / mean, p95: sorted[Math.min(sorted.length - 1, Math.floor(0.95 * sorted.length))], gaps: gaps.current.count, worst: gaps.current.worst });
+				setStats({ fps: 1000 / mean, p95: sorted[Math.min(sorted.length - 1, Math.floor(0.95 * sorted.length))], gaps: gaps.current.count, worst: gaps.current.worst, rps });
 			}
 			id = requestAnimationFrame(tick);
 		};
@@ -75,7 +83,8 @@ export function PerfHud() {
 		samples.current = [];
 		gaps.current = { count: 0, worst: 0 };
 		autosave.last = null; autosave.max = 0; autosave.count = 0;
-		setStats({ fps: null, p95: null, gaps: 0, worst: 0 });
+		renders.current = [];
+		setStats({ fps: null, p95: null, gaps: 0, worst: 0, rps: null });
 	};
 
 	const f = (v: number | null, d = 1) => v === null ? '–' : v.toFixed(d);
@@ -87,6 +96,7 @@ export function PerfHud() {
 			padding: '8px 10px', borderRadius: 8, pointerEvents: 'auto', minWidth: 190,
 		}}>
 			<div>fps {f(stats.fps)} · p95 {f(stats.p95)} ms</div>
+			<div>renders/s {f(stats.rps)} · idle-skip {IDLE_SKIP_ENABLED ? 'on' : 'OFF'}</div>
 			<div>gaps &gt;{GAP_MS} ms: {stats.gaps} (peor {f(stats.worst || null, 0)} ms)</div>
 			<div>formas {state.shapes.length} · {state.mode === 'drawing' ? 'DRAW' : 'CINEMA'}</div>
 			<div>autosave {f(autosave.last)} ms (máx {f(autosave.max || null)}, n {autosave.count})</div>

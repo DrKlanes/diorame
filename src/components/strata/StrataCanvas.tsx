@@ -26,6 +26,7 @@ import { getAnimationFrames, isLayerEmpty } from '../../utils/animationFrames';
 import { unprojectCinematicPoint, referencePlaneZ } from './canvas/unprojectPoint';
 import { pickLayerAtPoint } from './canvas/pickLayerAtPoint';
 import { renderFrame, type RenderContext, type TransformRefState, type DrawnFrameOptics } from './canvas/renderPipeline';
+import { createIdleGuard, renderStats } from './canvas/idleGuard';
 import { CINEMATIC_DEPTH_MULTIPLIER } from './canvas/cinematicCamera';
 
 export const StrataCanvas = () => {
@@ -1729,7 +1730,11 @@ export const StrataCanvas = () => {
       });
     };
 
+    // Idle-skip (v3.25.10, canvas/idleGuard.ts): DRAW repaints only when something changed in the last ~500 ms.
+    const idle = createIdleGuard();
+
     const handleContextRestored = () => {
+      idle.markDirty();
       console.warn(`[Diorame] Canvas 2D context restored at ${new Date().toISOString()}`);
       toast.success('Canvas context restored', {
         duration: 2000,
@@ -1780,7 +1785,11 @@ export const StrataCanvas = () => {
 
     const render = () => {
       try {
-        renderFrame(ctx, buildRenderContext());
+        const rc = buildRenderContext();
+        if (idle.shouldRender(rc)) {
+          renderStats.count++;
+          renderFrame(ctx, rc);
+        }
       } catch (e) {
         console.error('Render loop error', e);
       }
@@ -1790,6 +1799,7 @@ export const StrataCanvas = () => {
     animationFrameId = requestAnimationFrame(render);
     return () => {
       cancelAnimationFrame(animationFrameId);
+      idle.dispose();
       canvas.removeEventListener('contextlost', handleContextLost);
       canvas.removeEventListener('contextrestored', handleContextRestored);
     };

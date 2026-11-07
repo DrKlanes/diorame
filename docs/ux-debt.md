@@ -627,7 +627,7 @@ El SVG exporta coordenadas crudas por capa, **sin paralaje**, con el bbox de tod
 Graba el canvas vivo (`captureStream`); el marco se oculta mientras se exporta, así que sale la vista entera.
 
 ### Rendimiento en sesiones largas (medido v3.25.4–3.25.6)
-DRAW repinta todas las formas de todas las capas visibles en cada rAF: no hay caché por capa ni salto en reposo. El coste va con los **puntos** (≈ 80 ns/punto en escritorio antes de 3.25.6; −30–40 % después). Con trazos de pincel sintéticos (~235 puntos) 2 000 trazos no llegan a 50 fps ni en escritorio. Salidas, ambas núcleo (GO explícito): **caché de capas no activas** en bitmap (al dibujar solo se repinta la activa; pan/zoom invalidan) y **no repintar en reposo** (batería y calor en horas de evento; no ayuda al dibujar). Pendiente: números del iPad con `?perf=1` y un dibujo real.
+DRAW repinta todas las formas de todas las capas visibles en cada rAF: no hay caché por capa ni salto en reposo. El coste va con los **puntos** (≈ 80 ns/punto en escritorio antes de 3.25.6; −30–40 % después). Con trazos de pincel sintéticos (~235 puntos) 2 000 trazos no llegan a 50 fps ni en escritorio. Queda una salida, núcleo (GO explícito): **caché de capas no activas** en bitmap (al dibujar solo se repinta la activa; pan/zoom invalidan). «No repintar en reposo» está hecho desde v3.25.10 (`idleGuard.ts`): ahorra batería y calor en reposo, no acelera el dibujo. Pendiente: números del iPad con `?perf=1` y un dibujo real.
 
 ### Un `.dior` de sesión larga puede pasar del límite de apertura
 Con contornos en float completo, 5 000 trazos de pincel sintéticos pesaban ~66 MB; abrir rechaza > 50 MB. [POR CONFIRMAR con un archivo real.]
