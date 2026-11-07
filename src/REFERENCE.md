@@ -389,6 +389,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `colorpalette/ColorPalette.tsx` | Palette panel: header + gradient controls + swatch grid |
 | `drawing/ToolOptionsPanel.tsx` | Line thickness + mode overlay (line tool only) |
 | `viewport/ResetViewPill.tsx` | Reset drawingZoom/Pan to defaults (draw mode) |
+| `viewport/PerfHud.tsx` | ~100 · `?perf=1` only (v3.25.4, `tools/draw-stress`): DOM box with avg fps + p95 frame interval over 5 s, gaps > 50 ms since Reset, shape count, and the autosave's synchronous clone (timed by wrapping `IDBObjectStore.put` for `AUTOSAVE_KEY`, also logged as `[perf] autosave clone`). Its own `requestAnimationFrame`, never the StrataCanvas loop. Mounted by `ControlsV2` outside the hidden-UI block |
 | `text/TextSessionPanel.tsx` | Text input overlay: fonts, textarea, align, confirm/cancel |
 | `fx/FXPanel.tsx` | FX panel (VIEW mode): 12 effects in 3 groups + the Super Riso group (v3.18.0, fourth, `SuperRisoBlock`); toggling Super Riso on without WebGL2 shows a toast and does nothing, master toggle FXMasterBtn, snapshot/restore. The expanded panel sits in a wrapper that spans the band between the TopBar and the camera bar (`utils/panelLayout.ts`, v3.20.3; before: `maxHeight: vh − 80`, which at 1180×820 covered the export pill and the camera bar). All effects work on every browser since 3.12.0 (no capability gate). The collapsed pill duplicates the catalog by hand — a new FX must be added in both places |
 | `fx/FXRow.tsx` | Per-effect row: toggle + slider/discrete/composite control |
@@ -611,6 +612,7 @@ APIs they import change.
 | `text-check/checks.ts` | ~95 | 1 · gizmo box (`getLayerBoundingBox`) vs painted ink — 5 fonts × plain + deformed by the reducer + stroke+text + eraser; 2 · CINEMA picking as a black box, asked about every painted pixel (2 px tolerance: rotated antialias fringe). Each with a self-test that must fail (box shrunk 3 px; picking a text 10 % smaller) |
 | `text-check/pipeline.ts` | ~160 | Through `renderFrame` (svg-diff's `renderReference`): 3 · drawInside fits inside a stretched/mirrored text (after-render = image of before-render under the transform; the pre-v3.17.56 control must misfit); 4 · live Move preview = committed result (0 px); 5 · SHA-256 fingerprints of the legacy fixture loaded by `LOAD_PROJECT`, against a reference fixed in this browser's localStorage (self-tests: two passes agree, +0.001 rad changes one) |
 | `text-check/main.ts` | ~55 | Runs the sections, renders the tables, publishes `window.__textCheck`; «Fijar referencia» stores section 5's fingerprints |
+| `draw-stress/generate.mjs` + `scene.ts` | ~30 + ~75 | (v3.25.4) `node tools/draw-stress/generate.mjs` writes ten synthetic `.dior` to `tools/draw-stress/out/` (git-ignored): 500/1 000/2 000/3 500/5 000 brush strokes, in 1 layer and in 6. Strokes through the real `strokeGenerators.ts` (70 % tapered / 30 % uniform, 60–150-point spines, thickness 6–40, primary inks), fixed seed; `scene.ts` is bundled in memory with esbuild. ~235 outline points per stroke (6× the example scene's blobs); outlines rounded to 0.01 px so the 5 000 file (40 MB) stays under the 50 MB open limit. Procedure and thresholds (≥ 50 fps @ 2 000, ≥ 30 @ 5 000) in `draw-stress/README.md`, read with the `?perf=1` HUD |
 | `svg-diff/fixtures/text-legacy-v3.17.55.dior` | — | Real `.dior` saved by v3.17.55 (before `textMatrix`): 30 texts, 5 fonts, rotations, 3 alignments, multi-line, grad mode, uniform scale, and layers flipped the OLD way (rotation negated + align swapped). Regression fixture: it must open and render byte-identical (seeded SHA-256 per shape and per layer — method in the v3.17.56 commit); loadable in svg-diff with the file input |
 
 ### Render Pipeline Architecture
@@ -1253,9 +1255,18 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.25.3)
+## Appendix C: Changelog Highlights (1.7.3 → 3.25.4)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.25.4 — Herramienta de estrés de DRAW (`?perf=1`)
+
+**chore(perf)** — Antes de construir el Formato de DRAW para una grabación gráfica en directo, medir si DRAW aguanta sesiones largas.
+- **Escenas:** `tools/draw-stress/generate.mjs` (ver §10 Dev Tools). Se generan en local; no van a `public/`.
+- **HUD `?perf=1`** (`viewport/PerfHud.tsx`): fps medio y p95 del intervalo (5 s), huecos > 50 ms, formas, clon del autoguardado. rAF propio: el bucle de StrataCanvas no se toca.
+- **Por qué importa:** DRAW repinta todas las formas de todas las capas visibles en cada rAF, sin caché por capa ni salto en reposo, y el clon del autoguardado es síncrono y lineal en formas. Umbrales: ≥ 50 fps con 2 000 trazos, ≥ 30 con 5 000. Si fallan, las salidas (caché de capas, no repintar en reposo) son núcleo: GO explícito.
+- **Hallazgo:** con contornos en float completo (como guarda la app) 5 000 trazos de pincel pesan ~66 MB: un `.dior` así no se podría abrir (límite 50 MB). [POR CONFIRMAR con un archivo real de sesión larga.]
+- **Files**: `viewport/PerfHud.tsx` (nuevo), `ControlsV2.tsx`, `tools/draw-stress/*` (nuevo), `.gitignore`, `REFERENCE.md`, `version.ts`, `package.json`. **REFERENCE.md §10 sync: updated (añadidos PerfHud y draw-stress).**
 
 ### 3.25.3 — Aviso de cambios sin guardar al abrir un archivo
 
