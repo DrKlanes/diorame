@@ -79,7 +79,11 @@ export const mergeLayerDown = (
 	const a = state.currentLayerIndex, b = a - 1;
 	const camZ = zOf(b);
 
-	const upper = state.shapes.filter(s => layerOf(s) === a);
+	// The merge moves A's shapes to the end of the array, which loses the order they were drawn in. Shapes from before
+	// the creation time (v3.25.16) have none: give them a negative one that keeps their current array order, so the
+	// timelapse still shows them in it (it ranks by `t`) and they stay before every real timestamp.
+	const all = state.shapes.map((s, i) => (s.t === undefined ? { ...s, t: i - state.shapes.length } : s));
+	const upper = all.filter(s => layerOf(s) === a);
 	const needsGroup = upper.some(s => s.isEraser || s.isDrawInside || s.isDrawBehind);
 	const groupId = `g${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 	const kA = planeScale(zOf(a), zOf(b), camZ);
@@ -87,7 +91,7 @@ export const mergeLayerDown = (
 		const placed = onPlane(s, zOf(b), kA);
 		return needsGroup ? { ...placed, group: [groupId, ...(s.group ?? [])] } : placed;
 	});
-	const rest = state.shapes.flatMap(s => {
+	const rest = all.flatMap(s => {
 		const i = layerOf(s);
 		if (i === a) return [];
 		return i < a ? [s] : [onPlane(s, zOf(i - 1), planeScale(zOf(i), zOf(i - 1), camZ))];
