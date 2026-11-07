@@ -9,12 +9,9 @@ import type { TranslationParams } from '../../../i18n';
 import { renderSnapshot, renderDrawSnapshot } from './drawSnapshot';
 import { renderFormatSnapshot, renderRectSnapshot } from './formatSnapshot';
 import { drawingBounds } from './drawingBounds';
-import { canvasFits, sizeForLongSide } from '../../../utils/formatExport';
+import { canvasFits, sizeForLongSide, viewScale, MAX_DIMENSION } from '../../../utils/formatExport';
 import type { AnimationExportRenderOptions } from './animationExportRender';
 import type { AppMode, ExportBackground } from '../../../types/strataTypes';
-
-// Max physical dimension for any exported PNG (prevents monster canvases).
-const MAX_DIMENSION = 8192;
 
 // ─── PNG Export quality singleton ────────────────────────────────────────────────────────
 // Set from UI before triggering REQUEST_EXPORT. Reset to 'device' after each export.
@@ -70,13 +67,7 @@ const renderSnapshotAtScale = (
 ): HTMLCanvasElement => renderSnapshot(options, scale).canvas;
 
 // 2× clamped so the physical size never exceeds MAX_DIMENSION.
-const hqScale = (options: AnimationExportRenderOptions): number => {
-	const maxByDim = Math.min(
-		MAX_DIMENSION / Math.max(1, options.w),
-		MAX_DIMENSION / Math.max(1, options.h),
-	);
-	return Math.min(2, maxByDim);
-};
+const hqScale = (options: AnimationExportRenderOptions): number => viewScale(options.w, options.h, 'hq');
 
 // renderDrawSnapshot — extracted to drawSnapshot.ts
 

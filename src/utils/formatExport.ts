@@ -74,3 +74,16 @@ export function canvasFits(w: number, h: number): boolean {
 	c.width = c.height = 0;
 	return ok;
 }
+
+/** Largest side of a snapshot canvas the exporter will ask for (exportHandlers). */
+export const MAX_DIMENSION = 8192;
+
+/** «Vista» scale of the DRAW PNG: 1 = screen resolution, «Alta calidad» = 2× clamped to MAX_DIMENSION (the exporter's own formula). */
+export const viewScale = (w: number, h: number, quality: 'device' | 'hq'): number =>
+	quality === 'hq' ? Math.min(2, MAX_DIMENSION / Math.max(1, w), MAX_DIMENSION / Math.max(1, h)) : 1;
+
+/** Pixels the «Vista» PNG will have: renderFrame sizes its canvas to floor(w·S) × floor(h·S). */
+export const viewSnapshotSize = (v: { w: number; h: number }, quality: 'device' | 'hq'): { width: number; height: number } => {
+	const s = viewScale(v.w, v.h, quality);
+	return { width: Math.floor(v.w * s), height: Math.floor(v.h * s) };
+};

@@ -67,7 +67,8 @@ export function ExportSizeList({ items, value, onChange, dark }: { items: SizeIt
 
 function SizeRow({ item, selected, onSelect, dark }: { item: SizeItem; selected: boolean; onSelect: () => void; dark: boolean }) {
 	const [hovered, setHovered] = useState(false);
-	const hi = (hovered && !item.disabled) || selected;
+	const [kbFocus, setKbFocus] = useState(false);
+	const hi = (hovered && !item.disabled) || kbFocus;
 	return (
 		<div
 			role="option"
@@ -81,8 +82,10 @@ function SizeRow({ item, selected, onSelect, dark }: { item: SizeItem; selected:
 				e.stopPropagation();
 				onSelect();
 			}}
-			onMouseEnter={() => setHovered(true)}
-			onMouseLeave={() => setHovered(false)}
+			onFocus={e => setKbFocus(!item.disabled && e.currentTarget.matches(':focus-visible'))}
+			onBlur={() => setKbFocus(false)}
+			onPointerEnter={e => { if (e.pointerType === 'mouse') setHovered(true); }}
+			onPointerLeave={() => setHovered(false)}
 			style={{
 				display: 'flex', alignItems: 'center', gap: 8,
 				padding: '6px 10px', borderRadius: 12, outline: 'none', userSelect: 'none',

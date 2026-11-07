@@ -1280,9 +1280,17 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.25.21)
+## Appendix C: Changelog Highlights (1.7.3 → 3.25.22)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.25.22 — Menú de exportación: foco solo con teclado, px reales en Vista
+
+**fix(ux)** — Tres seguimientos de v3.25.21.
+- **Foco solo con `:focus-visible`** (lista de tamaños y segmentos): la fila seleccionada ya no lleva el fondo morado (selección = punto radio / segmento activo, nada más); el fondo y el contorno morado aparecen solo con foco de teclado (`onFocus` + `matches(':focus-visible')`: el foco programático que el popover da al abrir con ratón/táctil no lo enciende) y el hover solo con ratón (`pointerType === 'mouse'`, sin hover pegado en táctil). `DiSegmentControl`: segmentos ahora `role="radio"` con `tabIndex`, Enter/Espacio y contorno de foco-visible; **corrige también** que en v3.25.21 la opción `disabled` no atenuaba ni cambiaba el cursor (solo bloqueaba el clic). **Límite conocido:** la navegación Tab/flechas del popover solo cicla por `role="option"`, así que los segmentos siguen sin alcanzarse con teclado desde ahí (ya era así).
+- **Vista con píxeles reales**: `viewSnapshotSize(state.viewportSize, 'device' | 'hq')` en `utils/formatExport.ts` (`floor(w·S) × floor(h·S)`, S = 1 o `min(2, 8192/w, 8192/h)`; `hqScale` de `exportHandlers.ts` pasa a usar la misma `viewScale`, `MAX_DIMENSION` vive ahora en `formatExport.ts`). Resumen «1024 × 768 px · PNG · papel». **Comprobado contra el PNG descargado** (viewport 1024×768): Resolución de pantalla → resumen y PNG 1024 × 768; Alta calidad → resumen y PNG 2048 × 1536.
+- **Salidas idénticas a v3.25.20** (`exportcap.js`, `Math.random` sembrado, misma escena de ejemplo, mismo viewport; v3.25.20 servida desde un worktree del tag en otro puerto): PNG Dibujo completo 2048 liso `68c5b6170f299d91` (1 814 705 B) = idéntico; Capas ZIP, 7 PNG por contenido (hashes de cada entrada) = idénticos; PNG Vista papel `c269bed01f78f4cc` (1 358 419 B) = idéntico, estable en dos exportaciones seguidas en cada versión. **Hallazgo:** la primera tirada de la v3.25.20 (servidor recién arrancado, compilando en frío) dio `10fd5738…` en Vista papel; repetida en página recargada dio `c269…` igual que la nueva: es el estado de carga/rasterizado del papel en una primera página fría (ya visto en v3.25.18/20), no el código.
+- **Files**: `design-system/DiSegmentControl.tsx`, `topbar/exportConfigParts.tsx`, `topbar/DrawCaptureSection.tsx`, `utils/formatExport.ts`, `canvas/exportHandlers.ts`, `REFERENCE.md`, `version.ts`, `package.json`, `package-lock.json`. **REFERENCE.md §10 sync: N/A (sin archivos .ts/.tsx nuevos ni renombrados).**
 
 ### 3.25.21 — Menú de exportación de DRAW: configuración + un solo botón
 

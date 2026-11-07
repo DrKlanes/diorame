@@ -3,7 +3,7 @@ import { DiSegmentControl } from '../../../design-system';
 import { useStrata } from '../StrataContext';
 import { setNextPNGQuality, setNextPNGBackground, setNextPNGFormatSize, setNextPNGDrawingLongSide, setNextPNGLayersZip } from '../canvas/exportHandlers';
 import { drawingBounds } from '../canvas/drawingBounds';
-import { formatPresets, presetFits, sizeForLongSide, DRAWING_LONG_SIDES, type FormatPreset } from '../../../utils/formatExport';
+import { formatPresets, presetFits, sizeForLongSide, viewSnapshotSize, DRAWING_LONG_SIDES, type FormatPreset } from '../../../utils/formatExport';
 import type { ExportBackground } from '../../../types/strataTypes';
 import { useTranslation } from '../../../i18n';
 import { ExportGroupHeader } from './exportMenuParts';
@@ -166,11 +166,12 @@ export function DrawCaptureSection({
 	} else if (mode === 'view') {
 		for (const q of ['device', 'hq'] as const) {
 			const label = t(q === 'device' ? 'topbar.snapshot.deviceSize' : 'topbar.snapshot.highQuality');
-			options.push({ id: q, label, size: null, disabled: false, title: label, description: '', run: () => onViewCapture(q) });
+			const vs = viewSnapshotSize(state.viewportSize, q);
+			options.push({ id: q, label, size: `${vs.width} × ${vs.height} px`, disabled: false, title: label, description: '', run: () => onViewCapture(q) });
 		}
 	}
 	const chosen = options.find(o => o.id === sizePrefs[sizeKey] && !o.disabled) ?? options.find(o => !o.disabled) ?? null;
-	const sizeText = chosen ? (chosen.size ?? chosen.label) : '';
+	const sizeText = chosen?.size ?? '';
 	const bgText = t(`topbar.snapshot.bg.${background}`).toLowerCase();
 	const summary = !chosen ? '' : layers
 		? (layerCount === 1 ? t('topbar.snapshot.summaryLayer', { size: sizeText }) : t('topbar.snapshot.summaryLayers', { n: layerCount, size: sizeText }))

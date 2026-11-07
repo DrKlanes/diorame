@@ -77,12 +77,26 @@ interface SegmentItemProps {
 
 function SegmentItem({ label, tooltip, active, disabled, small, dark, onClick }: SegmentItemProps) {
 	const [hov, setHov] = useState(false);
+	const [kbFocus, setKbFocus] = useState(false);
 
 	const item = (
 		<div
+			role="radio"
+			aria-checked={active}
+			aria-disabled={disabled}
+			tabIndex={disabled ? -1 : 0}
 			onClick={onClick}
-			onMouseEnter={() => setHov(true)}
-			onMouseLeave={() => setHov(false)}
+			onKeyDown={e => {
+				if (disabled || (e.key !== 'Enter' && e.key !== ' ')) return;
+				e.preventDefault();
+				e.stopPropagation();
+				onClick();
+			}}
+			// Focus style only for keyboard navigation (:focus-visible); hover only for a mouse (no sticky hover on touch).
+			onFocus={e => setKbFocus(!disabled && e.currentTarget.matches(':focus-visible'))}
+			onBlur={() => setKbFocus(false)}
+			onPointerEnter={e => { if (e.pointerType === 'mouse') setHov(true); }}
+			onPointerLeave={() => setHov(false)}
 			style={{
 				flex: 1,
 				height: small ? 18 : 22,
@@ -90,11 +104,14 @@ function SegmentItem({ label, tooltip, active, disabled, small, dark, onClick }:
 				display: 'flex',
 				alignItems: 'center',
 				justifyContent: 'center',
-				cursor: 'pointer',
+				cursor: disabled ? 'not-allowed' : 'pointer',
+				opacity: disabled ? 0.4 : 1,
+				outline: kbFocus ? `2px solid ${T.purple}` : 'none',
+				outlineOffset: -2,
 				userSelect: 'none',
 				backgroundColor: active
 					? dk(dark, 'rgba(154,15,249,0.12)', 'rgba(154,15,249,0.25)')
-					: hov
+					: hov && !disabled
 						? dk(dark, 'rgba(0,0,0,0.04)', 'rgba(255,255,255,0.04)')
 						: 'transparent',
 				transition: 'background 0.1s',
