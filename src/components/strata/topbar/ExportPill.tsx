@@ -6,7 +6,8 @@ import { useExportFlow } from '../../../hooks/useExportFlow';
 import { useSuperRisoExport } from '../../../hooks/useSuperRisoExport';
 import { DiSelectorPopover, DiSelectorOption } from '../popovers';
 import { ComplexSceneModalV2 } from '../modals/ComplexSceneModalV2';
-import { setNextPNGQuality, setNextPNGBackground } from '../canvas/exportHandlers';
+import { setNextPNGQuality, setNextPNGBackground, setNextPNGFormatSize } from '../canvas/exportHandlers';
+import { formatPresets, presetFits, type FormatPreset } from '../../../utils/formatExport';
 import type { ExportBackground } from '../../../types/strataTypes';
 import { useTranslation } from '../../../i18n';
 
@@ -135,6 +136,8 @@ export function ExportPill({ dark }: ExportPillProps) {
 	const [sub, setSub] = useState<'capture' | 'video' | 'gif' | null>(null);
 	const exportBtnRef = useRef<HTMLDivElement>(null);
 	const [pngBackground, setPngBackground] = useState<ExportBackground>(readPngBackground);
+	// «Encuadre» (v3.25.7): Formato by default whenever the menu opens with a frame on the canvas.
+	const [framing, setFraming] = useState<'format' | 'view'>('format');
 
 	const isCinematic = state.mode === 'cinematic';
 	const isAnim = state.isAnimationMode;
@@ -151,10 +154,22 @@ export function ExportPill({ dark }: ExportPillProps) {
 	// Snapshot: dispatch quality (+ DRAW background) then REQUEST_EXPORT png
 	const handleCapture = (quality: 'device' | 'hq') => {
 		setNextPNGQuality(quality);
+		setNextPNGFormatSize(null);
 		if (!isCinematic) setNextPNGBackground(pngBackground);
 		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
 		close();
 	};
+
+	// DRAW PNG of the format frame at a preset size
+	const handleFormatCapture = (p: FormatPreset) => {
+		setNextPNGQuality('device');
+		setNextPNGFormatSize({ width: p.width, height: p.height });
+		setNextPNGBackground(pngBackground);
+		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
+		close();
+	};
+	const format = !isCinematic ? state.format : null;
+	const useFormat = !!format && framing === 'format';
 
 	// Video (CINEMA, no anim): direct MP4
 	const handleVideoDirect = () => {
@@ -198,7 +213,7 @@ export function ExportPill({ dark }: ExportPillProps) {
 				<div ref={exportBtnRef}>
 					<DiActionButton
 						name="export"
-						onClick={() => { setOpen(v => !v); setSub(null); }}
+						onClick={() => { setOpen(v => !v); setSub(null); setFraming('format'); }}
 						dark={dark}
 						active={open}
 						activeStyle="wash"
@@ -254,8 +269,41 @@ export function ExportPill({ dark }: ExportPillProps) {
 										small
 									/>
 								</div>
-								<DiSelectorOption title={t('topbar.snapshot.deviceSize')} onSelect={() => handleCapture('device')} />
-								<DiSelectorOption title={t('topbar.snapshot.highQuality')} onSelect={() => handleCapture('hq')} />
+								{format && (
+									<>
+										<ExportGroupHeader label={t('topbar.snapshot.framing')} dark={dark} />
+										<div style={{ padding: '2px 10px 6px' }}>
+											<DiSegmentControl<'format' | 'view'>
+												options={[
+													{ value: 'format', label: t('topbar.snapshot.framing.format') },
+													{ value: 'view', label: t('topbar.snapshot.framing.view') },
+												]}
+												value={framing}
+												onChange={setFraming}
+												dark={dark}
+												small
+											/>
+										</div>
+									</>
+								)}
+								{useFormat && format ? formatPresets(format.type, format.orientation).map(p => {
+									const fits = presetFits(p);
+									const size = `${p.width} × ${p.height} px`;
+									return (
+										<DiSelectorOption
+											key={p.id}
+											title={p.ppi ? `${p.name} · ${t('topbar.snapshot.ppi', { n: p.ppi })}` : p.name}
+											description={fits ? size : `${size} · ${t('topbar.snapshot.tooBig')}`}
+											disabled={!fits}
+											onSelect={() => handleFormatCapture(p)}
+										/>
+									);
+								}) : (
+									<>
+										<DiSelectorOption title={t('topbar.snapshot.deviceSize')} onSelect={() => handleCapture('device')} />
+										<DiSelectorOption title={t('topbar.snapshot.highQuality')} onSelect={() => handleCapture('hq')} />
+									</>
+								)}
 							</>
 						)}
 

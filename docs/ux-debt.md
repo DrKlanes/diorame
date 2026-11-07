@@ -613,3 +613,27 @@ Plan, decisiones, inventario y fases F1–F6 en `docs/fx-in-draw.md`. La deuda d
 ## El gizmo de Move se queda corto en trazos uniformes
 
 El gizmo de Move / `getLayerBoundingBox` se queda hasta 10 px corto en trazos uniformes. Aparece también sin grupos, así que no es del acoplado (v3.24.0). Sin comprobar en main anterior a 3.24.0.
+
+---
+
+## Formato en DRAW (v3.25.5–3.25.7): aplazado hasta después del evento
+
+Decidido por Moisés: se entrega solo el PNG del marco y el puente a Super Riso. Lo de abajo está diseñado o medido, no programado.
+
+### SVG «Formato»
+El SVG exporta coordenadas crudas por capa, **sin paralaje**, con el bbox de todas las formas (`svgExport.ts`). Recortar al marco con un `viewBox` solo casaría con la capa activa: hace falta además un `<g transform="scale(k)">` por capa (k = escala DRAW de esa capa frente a la activa) para que coincida con el PNG. La ruta actual debe quedar byte-idéntica: pasar `tools/svg-diff` antes y después. Ojo: `exportAsSVG` recibe `state.shapes` entero y no filtra `hiddenLayers` [leído en el código, no probado].
+
+### «Dibujo completo» en el PNG
+No existe: hoy Formato o Vista. Sería el bbox de la tinta de las capas visibles × su escala DRAW con la proyección viva + margen (4 %, mín. 32 px como `frameOf`), en un util propio: `frameOf` (`dior-render.js`) es contrato con el Lab y usa la cámara a 0.
+
+### El MP4 de DRAW no recorta al marco
+Graba el canvas vivo (`captureStream`); el marco se oculta mientras se exporta, así que sale la vista entera.
+
+### Rendimiento en sesiones largas (medido v3.25.4–3.25.6)
+DRAW repinta todas las formas de todas las capas visibles en cada rAF: no hay caché por capa ni salto en reposo. El coste va con los **puntos** (≈ 80 ns/punto en escritorio antes de 3.25.6; −30–40 % después). Con trazos de pincel sintéticos (~235 puntos) 2 000 trazos no llegan a 50 fps ni en escritorio. Salidas, ambas núcleo (GO explícito): **caché de capas no activas** en bitmap (al dibujar solo se repinta la activa; pan/zoom invalidan) y **no repintar en reposo** (batería y calor en horas de evento; no ayuda al dibujar). Pendiente: números del iPad con `?perf=1` y un dibujo real.
+
+### Un `.dior` de sesión larga puede pasar del límite de apertura
+Con contornos en float completo, 5 000 trazos de pincel sintéticos pesaban ~66 MB; abrir rechaza > 50 MB. [POR CONFIRMAR con un archivo real.]
+
+### `renderLayerBody.ts` pasa de 400 líneas
+~458 tras 3.25.6 (ya estaba en ~435). Regla dorada 2: partirlo antes de la próxima adición.

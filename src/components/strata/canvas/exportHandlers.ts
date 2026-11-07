@@ -5,6 +5,8 @@ import { analytics } from '../../../analytics/analytics';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
 import { renderSnapshot, renderDrawSnapshot } from './drawSnapshot';
+import { renderFormatSnapshot } from './formatSnapshot';
+import { canvasFits } from '../../../utils/formatExport';
 import type { AnimationExportRenderOptions } from './animationExportRender';
 import type { AppMode, ExportBackground } from '../../../types/strataTypes';
 
@@ -25,6 +27,14 @@ let _nextPNGBackground: ExportBackground = 'paper';
 
 export function setNextPNGBackground(background: ExportBackground): void {
 	_nextPNGBackground = background;
+}
+
+// DRAW only, v3.25.7: «Encuadre: Formato» — the PNG is the format frame at this size (px). null = the view
+// (device / HQ as before). Set from the UI before REQUEST_EXPORT; reset after each export.
+let _nextPNGFormatSize: { width: number; height: number } | null = null;
+
+export function setNextPNGFormatSize(size: { width: number; height: number } | null): void {
+	_nextPNGFormatSize = size;
 }
 
 /**
@@ -72,10 +82,17 @@ export const exportAsPNG = (
 	_nextPNGQuality = 'device';
 	const background = _nextPNGBackground;
 	_nextPNGBackground = 'paper';
+	const formatSize = _nextPNGFormatSize;
+	_nextPNGFormatSize = null;
 	const isDraw = options.state.mode === 'drawing';
+	const format = isDraw && formatSize ? options.state.format : null;
 	try {
 		let src: HTMLCanvasElement;
-		if (isDraw) {
+		if (format && formatSize) {
+			// The device may refuse a canvas this big (it comes back blank): say so instead of saving an empty PNG.
+			if (!canvasFits(formatSize.width, formatSize.height)) throw new Error(`canvas ${formatSize.width}×${formatSize.height} too big for this device`);
+			src = renderFormatSnapshot(options, format, formatSize.width, formatSize.height, background);
+		} else if (isDraw) {
 			src = renderDrawSnapshot(options, quality === 'hq' ? hqScale(options) : 1, background);
 		} else if (quality === 'hq') {
 			// True 2× re-render. Clamp so the physical size never exceeds MAX_DIMENSION.
@@ -123,7 +140,7 @@ export const exportAsPNG = (
 				duration: 2000,
 			});
 			playSound('success');
-			analytics.exported(quality === 'hq' ? 'png_hq' : 'png', options.state.mode, isDraw ? background : undefined);
+			analytics.exported(format ? 'png_format' : quality === 'hq' ? 'png_hq' : 'png', options.state.mode, isDraw ? background : undefined);
 			onFinish();
 		}, 'image/png');
 	} catch (e) {

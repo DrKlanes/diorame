@@ -14,7 +14,7 @@ type Choice = FormatType | 'free';
  * FormatPill — DRAW format guide (v3.25.5): button in the bottom-left ViewPills + its menu.
  * Libre (no frame) · A · 16:9 · 4:5 · 1:1, orientation, «Ajustar a la vista» (re-places the frame at ~88 % of
  * what is on screen) and «Quitar». A new frame is fitted to the current view; changing type or orientation keeps
- * the centre and the long side. Every change is a SET_FORMAT (view state, dirties the project, never in undo).
+ * the centre and is sized for the current view. Every change is a SET_FORMAT (view state, dirties the project, never in undo).
  */
 export function FormatPill() {
 	const { state, dispatch } = useStrata();
@@ -30,11 +30,11 @@ export function FormatPill() {
 	const choose = (choice: Choice) => {
 		if (choice === 'free') { if (format) dispatch({ type: 'SET_FORMAT', payload: null }); return; }
 		if (format?.type === choice) return;
-		dispatch({ type: 'SET_FORMAT', payload: format ? reshapeFormat(format, choice, orientation) : newFormat(choice, orientation, view()) });
+		dispatch({ type: 'SET_FORMAT', payload: format ? reshapeFormat(format, choice, orientation, view()) : newFormat(choice, orientation, view()) });
 	};
 
 	const orient = (o: FormatOrientation) => {
-		if (format && format.orientation !== o) dispatch({ type: 'SET_FORMAT', payload: reshapeFormat(format, format.type, o) });
+		if (format && format.orientation !== o) dispatch({ type: 'SET_FORMAT', payload: reshapeFormat(format, format.type, o, view()) });
 	};
 
 	const hasOrientation = !!format && (format.type === 'A' || format.type === '16:9');

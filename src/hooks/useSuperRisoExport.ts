@@ -37,7 +37,9 @@ export function useSuperRisoExport() {
 			// frameOf's coordinates are those of the file as the Lab reads it: measure the serialized copy, not the live state.
 			const { frameOf } = await import('../components/strata/canvas/diorRender');
 			try { frameOf(JSON.parse(await blob.text())); } catch (err) { empty = true; throw err; }
-			return { blob, name: filename, drawView: visibleDrawView(state, w, h) };
+			// With a format frame (v3.25.7) the Lab opens on the frame: same coordinates as the view (both are the
+			// active layer's plane at zoom 1), so the protocol does not change.
+			return { blob, name: filename, drawView: state.format ? { ...state.format.rect } : visibleDrawView(state, w, h) };
 		}).then(({ ok, payload }) => {
 			if (ok) { toast.success(t('toast.superRiso.opened'), { duration: 2000 }); return; }
 			if (empty) { closeSuperRisoWindow(); emptyToast(); return; }

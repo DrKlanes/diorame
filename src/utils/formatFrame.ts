@@ -52,13 +52,11 @@ export function newFormat(type: FormatType, orientation: FormatOrientation, view
 	return { type, orientation: o, rect: rectIn(view, formatAspect(type, o)) };
 }
 
-/** Another type or orientation for an existing frame: same centre, same long side. */
-export function reshapeFormat(format: DrawFormat, type: FormatType, orientation: FormatOrientation): DrawFormat {
+/** Another type or orientation for an existing frame: same centre, sized like a new frame for the current view
+ *  (keeping the long side turned a landscape A into a portrait taller than the screen). */
+export function reshapeFormat(format: DrawFormat, type: FormatType, orientation: FormatOrientation, view: Rect): DrawFormat {
 	const o = orientationFor(type, orientation);
-	const aspect = formatAspect(type, o);
-	const long = Math.max(format.rect.w, format.rect.h);
-	const w = aspect >= 1 ? long : long * aspect;
-	const h = w / aspect;
+	const { w, h } = rectIn(view, formatAspect(type, o));
 	const cx = format.rect.x + format.rect.w / 2, cy = format.rect.y + format.rect.h / 2;
 	return { type, orientation: o, rect: { x: cx - w / 2, y: cy - h / 2, w, h } };
 }
