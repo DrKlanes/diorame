@@ -1,119 +1,16 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { DiPill, DiActionButton, DiSegmentControl } from '../../../design-system';
-import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
+import React, { useRef, useState } from 'react';
+import { DiPill, DiActionButton } from '../../../design-system';
 import { useStrata } from '../StrataContext';
 import { useExportFlow } from '../../../hooks/useExportFlow';
 import { useSuperRisoExport } from '../../../hooks/useSuperRisoExport';
 import { DiSelectorPopover, DiSelectorOption } from '../popovers';
 import { ComplexSceneModalV2 } from '../modals/ComplexSceneModalV2';
 import { setNextPNGQuality, setNextPNGBackground, setNextPNGFormatSize, setNextPNGDrawingLongSide, setNextPNGLayersZip } from '../canvas/exportHandlers';
-import { drawingBounds } from '../canvas/drawingBounds';
-import { formatPresets, presetFits, sizeForLongSide, DRAWING_LONG_SIDES, type FormatPreset } from '../../../utils/formatExport';
 import type { ExportBackground } from '../../../types/strataTypes';
 import { useTranslation } from '../../../i18n';
-
-// ── Group header — non-interactive section label inside the popover ────────────
-
-function ExportGroupHeader({ label, dark }: { label: string; dark: boolean }) {
-	return (
-		<div style={{
-			padding: '6px 10px 2px',
-			fontFamily: TYPE.panelHeader.family,
-			fontSize: TYPE.panelHeader.size,
-			fontWeight: TYPE.panelHeader.weight,
-			letterSpacing: TYPE.panelHeader.letterSpacing,
-			textTransform: TYPE.panelHeader.textTransform,
-			color: dk(dark, T.muted, T.textDarkMuted) as string,
-			userSelect: 'none',
-		}}>
-			{label}
-		</div>
-	);
-}
-
-// ── Group row — expands/collapses sub-options inline; does NOT close popover ──
-
-interface ExportGroupRowProps {
-	title: string;
-	dark: boolean;
-	expanded: boolean;
-	onToggle: () => void;
-}
-
-function ExportGroupRow({ title, dark, expanded, onToggle }: ExportGroupRowProps) {
-	const [hovered, setHovered] = useState(false);
-	const highlighted = hovered;
-
-	return (
-		<div
-			role="button"
-			tabIndex={0}
-			onClick={onToggle}
-			onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
-			onMouseEnter={() => setHovered(true)}
-			onMouseLeave={() => setHovered(false)}
-			style={{
-				padding: '8px 10px',
-				borderRadius: RADIUS.iconBtn,
-				cursor: 'pointer',
-				background: highlighted || expanded ? dk(dark, T.purple10, T.purple20) : 'transparent',
-				transition: 'background 0.1s ease',
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'space-between',
-				outline: 'none',
-				userSelect: 'none',
-			}}
-		>
-			<span style={{
-				fontFamily: TYPE.controlLabel.family,
-				fontWeight: TYPE.controlLabel.weight,
-				fontSize: TYPE.controlLabel.size,
-				color: highlighted || expanded ? T.purple : dk(dark, T.dark, T.textDark),
-				transition: 'color 0.1s ease',
-			}}>
-				{title}
-			</span>
-			{/* Chevron */}
-			<svg
-				width={12} height={12}
-				viewBox="0 0 12 12"
-				fill="none"
-				stroke={highlighted || expanded ? T.purple : dk(dark, T.muted, T.textDarkMuted) as string}
-				strokeWidth={1.5}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-				style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease', flexShrink: 0 }}
-			>
-				<path d="M4.5 3L7.5 6L4.5 9" />
-			</svg>
-		</div>
-	);
-}
-
-// ── Thin visual separator inside the popover ─────────────────────────────────
-
-function ExportSeparator({ dark }: { dark: boolean }) {
-	return (
-		<div style={{
-			height: 1,
-			margin: '4px 10px',
-			backgroundColor: dk(dark, T.border, T.borderDark) as string,
-		}} />
-	);
-}
-
-// ── DRAW PNG background: remembered between exports (per-user convenience) ─────
-
-const PNG_BG_KEY = 'diorame-png-background';
-
-const readPngBackground = (): ExportBackground => {
-	try {
-		const v = window.localStorage.getItem(PNG_BG_KEY);
-		if (v === 'paper' || v === 'solid' || v === 'transparent') return v;
-	} catch (_) { /* private mode / storage blocked: just the default */ }
-	return 'paper';
-};
+// v3.25.12: the popover pieces and the DRAW «Captura» block live in their own files (no behaviour change).
+import { ExportGroupHeader, ExportGroupRow, ExportSeparator } from './exportMenuParts';
+import { DrawCaptureSection, readPngBackground, savePngBackground, type DrawFraming, type DrawOutput } from './DrawCaptureSection';
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -138,7 +35,7 @@ export function ExportPill({ dark }: ExportPillProps) {
 	const exportBtnRef = useRef<HTMLDivElement>(null);
 	const [pngBackground, setPngBackground] = useState<ExportBackground>(readPngBackground);
 	// «Encuadre» (v3.25.7): Formato by default whenever the menu opens with a frame on the canvas.
-	const [framing, setFraming] = useState<'format' | 'view' | 'drawing'>('format');
+	const [framing, setFraming] = useState<DrawFraming>('format');
 
 	const isCinematic = state.mode === 'cinematic';
 	const isAnim = state.isAnimationMode;
@@ -148,13 +45,13 @@ export function ExportPill({ dark }: ExportPillProps) {
 		setSub(s => s === key ? null : key);
 
 	// «Salida» (v3.25.11, DRAW): one PNG, or «Capas (ZIP)» = one transparent PNG per layer, same framing and size.
-	const [output, setOutput] = useState<'png' | 'layers'>('png');
+	const [output, setOutput] = useState<DrawOutput>('png');
 	const layers = !isCinematic && output === 'layers';
 	const drawBackground = (): ExportBackground => (layers ? 'transparent' : pngBackground);
 
 	const handleBackground = (bg: ExportBackground) => {
 		setPngBackground(bg);
-		try { window.localStorage.setItem(PNG_BG_KEY, bg); } catch (_) { /* not remembered this time */ }
+		savePngBackground(bg);
 	};
 
 	// Snapshot: dispatch quality (+ DRAW background) then REQUEST_EXPORT png
@@ -164,37 +61,6 @@ export function ExportPill({ dark }: ExportPillProps) {
 		setNextPNGDrawingLongSide(null);
 		setNextPNGLayersZip(layers);
 		if (!isCinematic) setNextPNGBackground(drawBackground());
-		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
-		close();
-	};
-
-	// DRAW PNG of the format frame at a preset size
-	const handleFormatCapture = (p: FormatPreset) => {
-		setNextPNGQuality('device');
-		setNextPNGFormatSize({ width: p.width, height: p.height });
-		setNextPNGDrawingLongSide(null);
-		setNextPNGLayersZip(layers);
-		setNextPNGBackground(drawBackground());
-		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
-		close();
-	};
-	const format = !isCinematic ? state.format : null;
-	// Formato exists only with a frame: without one the menu's default ('format') reads as Vista.
-	const mode = framing === 'format' && !format ? 'view' : framing;
-
-	// «Dibujo completo» (v3.25.9): the box of the visible ink in the live projection, measured only while that
-	// mode is on screen (getLayerBoundingBox paints each layer to measure its ink).
-	const drawingBox = useMemo(
-		() => (open && sub === 'capture' && mode === 'drawing' ? drawingBounds(state) : null),
-		[open, sub, mode, state.shapes, state.hiddenLayers, state.camera.z, state.currentLayerIndex,
-			state.layerSpacingFactor, state.isAnimationMode, state.locked3DLayers],
-	);
-	const handleDrawingCapture = (long: number) => {
-		setNextPNGQuality('device');
-		setNextPNGFormatSize(null);
-		setNextPNGDrawingLongSide(long);
-		setNextPNGLayersZip(layers);
-		setNextPNGBackground(drawBackground());
 		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
 		close();
 	};
@@ -283,83 +149,18 @@ export function ExportPill({ dark }: ExportPillProps) {
 						/>
 						{sub === 'capture' && (
 							<>
-								<ExportGroupHeader label={t('topbar.snapshot.output')} dark={dark} />
-								<div style={{ padding: '2px 10px 6px' }}>
-									<DiSegmentControl<'png' | 'layers'>
-										options={[
-											{ value: 'png', label: t('topbar.snapshot.output.png') },
-											{ value: 'layers', label: t('topbar.snapshot.output.layers'), tooltip: t('topbar.snapshot.layersHint') },
-										]}
-										value={output}
-										onChange={setOutput}
-										dark={dark}
-										small
-									/>
-								</div>
-								{layers && <ExportGroupHeader label={t('topbar.snapshot.layersHint')} dark={dark} />}
-								{!layers && <ExportGroupHeader label={t('topbar.snapshot.background')} dark={dark} />}
-								{!layers && <div style={{ padding: '2px 10px 6px' }}>
-									<DiSegmentControl<ExportBackground>
-										options={[
-											{ value: 'paper', label: t('topbar.snapshot.bg.paper') },
-											{ value: 'solid', label: t('topbar.snapshot.bg.solid') },
-											{ value: 'transparent', label: t('topbar.snapshot.bg.transparent') },
-										]}
-										value={pngBackground}
-										onChange={handleBackground}
-										dark={dark}
-										small
-									/>
-								</div>}
-								<ExportGroupHeader label={t('topbar.snapshot.framing')} dark={dark} />
-								<div style={{ padding: '2px 10px 6px' }}>
-									<DiSegmentControl<'format' | 'view' | 'drawing'>
-										options={[
-											...(format ? [{ value: 'format' as const, label: t('topbar.snapshot.framing.format') }] : []),
-											{ value: 'view', label: t('topbar.snapshot.framing.view') },
-											{ value: 'drawing', label: t('topbar.snapshot.framing.drawing') },
-										]}
-										value={mode}
-										onChange={setFraming}
-										dark={dark}
-										small
-									/>
-								</div>
-								{mode === 'format' && format && formatPresets(format.type, format.orientation).map(p => {
-									const fits = presetFits(p);
-									const size = `${p.width} × ${p.height} px`;
-									return (
-										<DiSelectorOption
-											key={p.id}
-											title={p.ppi ? `${p.name} · ${t('topbar.snapshot.ppi', { n: p.ppi })}` : p.name}
-											description={fits ? size : `${size} · ${t('topbar.snapshot.tooBig')}`}
-											disabled={!fits}
-											onSelect={() => handleFormatCapture(p)}
-										/>
-									);
-								})}
-								{mode === 'drawing' && (drawingBox ? DRAWING_LONG_SIDES.map(long => {
-									const sz = sizeForLongSide(drawingBox, long);
-									const fits = presetFits(sz);
-									const size = `${sz.width} × ${sz.height} px`;
-									return (
-										<DiSelectorOption
-											key={long}
-											title={`${long} px`}
-											description={fits ? size : `${size} · ${t('topbar.snapshot.tooBig')}`}
-											disabled={!fits}
-											onSelect={() => handleDrawingCapture(long)}
-										/>
-									);
-								}) : (
-									<DiSelectorOption title={t('topbar.snapshot.drawingEmpty')} disabled onSelect={() => {}} />
-								))}
-								{mode === 'view' && (
-									<>
-										<DiSelectorOption title={t('topbar.snapshot.deviceSize')} onSelect={() => handleCapture('device')} />
-										<DiSelectorOption title={t('topbar.snapshot.highQuality')} onSelect={() => handleCapture('hq')} />
-									</>
-								)}
+								<DrawCaptureSection
+									dark={dark}
+									open={open}
+									output={output}
+									onOutput={setOutput}
+									background={pngBackground}
+									onBackground={handleBackground}
+									framing={framing}
+									onFraming={setFraming}
+									onViewCapture={handleCapture}
+									close={close}
+								/>
 							</>
 						)}
 
