@@ -1,4 +1,4 @@
-import { renderDrawSnapshot } from './drawSnapshot';
+import { createDrawSnapshotSession, type DrawSnapshotSession } from './drawSnapshot';
 import type { AnimationExportRenderOptions } from './animationExportRender';
 import type { DrawFormat, ExportBackground } from '../../../types/strataTypes';
 import type { Rect } from '../../../utils/formatFrame';
@@ -27,11 +27,20 @@ export const renderRectSnapshot = (
 	width: number,
 	height: number,
 	background: ExportBackground,
-): HTMLCanvasElement => {
+): HTMLCanvasElement => createRectSession(options, r, width, height, background).render();
+
+/** The same rectangle rendered many times into the same canvases (v3.25.17, timelapse). */
+export const createRectSession = (
+	options: AnimationExportRenderOptions,
+	r: Rect,
+	width: number,
+	height: number,
+	background: ExportBackground,
+): DrawSnapshotSession => {
 	const S = width / r.w;
 	const w = (width + 0.5) / S;
 	const h = (height + 0.5) / S;
-	return renderDrawSnapshot({
+	return createDrawSnapshotSession({
 		...options,
 		w, h,
 		state: { ...options.state, drawingZoom: 1, drawingPan: { x: -w / 2 - r.x, y: -h / 2 - r.y } },

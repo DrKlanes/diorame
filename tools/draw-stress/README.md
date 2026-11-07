@@ -52,6 +52,18 @@ Se inyectan en la página de desarrollo (`npm run dev` → `localhost:3000/?perf
 - `pixcheck.js` → `await __pixcheck('before')` antes de tocar el render, `await __pixcheck('after')` después: 7 casos DRAW (escena de ejemplo y estrés), 0 px y mismo SHA-256, más CPU antes/después. Necesita las escenas de `generate.mjs`.
 - `pixcheck2.js` → igual con `__pixcheck2` (CINEMA wiggle y pixel art, vista previa del Move, texto). Hacer una pasada de calentamiento antes (carga de fuentes).
 - `alphaleak.js` → `await __alphaLeakCheck()`: autocontenido, sin referencia. Debe dar `pass: true` (fuga de `globalAlpha` del toque en pixel art, v3.25.15).
+- `timelapse.js` (v3.25.17) → `await __timelapseCheck()`: debe dar `pass: true` (último frame y frame 30 = PNG de su escena con la misma semilla, 0 px, en ejemplo sólido/papel y 2000×6; capa acoplada: aparición por `t`, pintado por array; dos autocomprobaciones que deben fallar). `await __timelapseTiming()`: 30 s a 1080×1920 de 500×1, 2000×6 y el ejemplo (~3,5 min; con el panel del navegador visible). `await __timelapse()`: tu dibujo en MP4 (ver abajo). La primera llamada tras instalar `mediabunny` puede recargar la página una vez (Vite optimiza la dependencia): volver a inyectar y repetir.
+
+### Ver un timelapse de tu dibujo
+
+En `localhost:3000`, con el dibujo abierto y algún cambio hecho (el comando lee el **autoguardado**), en la consola:
+
+```js
+await new Promise(r => { const s = document.createElement('script'); s.src = '/tools/draw-stress/harness/timelapse.js'; s.onload = r; document.head.appendChild(s); });
+await __timelapse({ duration: 15, long: 1080, background: 'paper' });
+```
+
+Opciones: `framing: 'format' | 'drawing'` (por defecto el marco si hay, si no el dibujo completo), `long: 1080 | 1920`, `duration: 15 | 30 | 60`, `background: 'paper' | 'solid'`, `layer` (capa activa de la proyección; por defecto la del archivo), `source: '/ruta/archivo.dior'` en lugar del autoguardado, `download: false` para solo verlo. Descarga el MP4 y lo reproduce encima de la app (clic fuera del vídeo para cerrar).
 
 La CPU solo se compara en A/B alternado en las mismas condiciones: entre sesiones el equipo puede ir el doble de lento.
 

@@ -632,3 +632,15 @@ DRAW repinta todas las formas de todas las capas visibles en cada rAF: no hay ca
 ### Un `.dior` de sesión larga puede pasar del límite de apertura
 Con contornos en float completo, 5 000 trazos de pincel sintéticos pesaban ~66 MB; abrir rechaza > 50 MB. [POR CONFIRMAR con un archivo real.]
 
+
+---
+
+## Timelapse de DRAW (C1, v3.25.17): coste por frame de la rama de *resize* — GO pendiente
+
+**Medido** (escritorio, panel visible, 30 s = 975 frames a 1080×1920, papel): 500 trazos 20,6 s (21 ms/frame); 2000×6 capas 57,7 s (59 ms/frame); ejemplo (2369 formas, Dibujo completo) **129,9 s (133 ms/frame)**.
+
+**Causa (medida, no supuesta):** la receta del PNG por rectángulo (`renderRectSnapshot`) usa un tamaño lógico con medio píxel (`(W + 0,5) / S`) para que el raster trunque a W exacto. Así `canvas.width` (entero) nunca iguala `w·S` (fraccionario) y la rama de *resize* de `renderFrame` (`renderPipeline.ts`, ~línea 409) se dispara en **cada** render de una sesión: reasigna los 5 lienzos y regenera el ruido de grano **a tamaño lógico** más el patrón de tinta. En Dibujo completo de un dibujo grande S ≈ 0,25: 14,6 MP lógicos a 1080 de lado largo (40 ms), 33,5 MP a 1080×1920 (92 ms de los 133). En DRAW ese grano ni se usa (es FX de CINEMA). En el iPad un lienzo de decenas de MP por frame es riesgo de cierre por memoria. El motor sigue siendo correcto (semilla por render: cada frame = PNG de su escena, 0 px).
+
+**Arreglo propuesto (núcleo del pipeline → GO de Moisés):** comparar la rama de *resize* y `ensureCanvas` contra el tamaño que el lienzo puede tener (`Math.floor(w)`), no contra el fraccionario. Un render suelto (PNG, HQ, miniatura, `dior-render`) parte de un lienzo nuevo y entra en la rama igual que hoy → byte-idéntico (probar con pixcheck/pixcheck2); el bucle vivo tiene `w` entero → sin cambio. Solo cambian los renders repetidos con `w` fraccionario: la sesión del timelapse deja de regenerar. Esperado: ~40 ms/frame en el ejemplo. Alternativa sin tocar el pipeline: tamaño lógico exacto solo en la sesión → el vídeo queda 0,25 px desplazado respecto al PNG (deja de ser idéntico).
+
+**De paso (existente, no del timelapse):** el PNG «Dibujo completo» paga una vez ese mismo ruido a tamaño lógico (14–33 MP: 40–90 ms y su memoria). [POR CONFIRMAR en iPad.]
