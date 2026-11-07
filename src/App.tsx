@@ -6,6 +6,7 @@ import { ControlsV2 } from './components/strata/ControlsV2';
 import { useIsMobile } from './hooks/useIsMobile';
 import { useLoadExampleScene } from './hooks/useLoadExampleScene';
 import { MobileBlockScreenV2, ExportProgressV2, WelcomeModalV2, TourModalV2 } from './components/strata/modals';
+import { TimelapseProgressV2 } from './components/strata/modals/TimelapseProgressV2';
 import { ToastProvider } from './components/ui/toast-provider';
 import { PwaUpdatePrompt } from './components/PwaUpdatePrompt';
 import { PreviewPage } from './preview/PreviewPage';
@@ -161,10 +162,11 @@ function AppContent() {
       <TourModalV2 open={tourOpen} onClose={handleCloseTour} dark={state.isDarkMode} />
       <FileDropOverlay open={fileDragging} dark={state.isDarkMode} />
       <ExportProgressV2
-        open={state.isExporting}
+        open={state.isExporting && state.exportRequest !== 'timelapse'}
         exportType={state.exportRequest ?? 'png'}
         dark={state.isDarkMode}
       />
+      <TimelapseProgressV2 open={state.exportRequest === 'timelapse'} dark={state.isDarkMode} />
     </div>
   );
 }

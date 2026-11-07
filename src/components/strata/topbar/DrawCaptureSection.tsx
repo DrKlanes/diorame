@@ -9,6 +9,7 @@ import { formatPresets, presetFits, sizeForLongSide, DRAWING_LONG_SIDES, type Fo
 import type { ExportBackground } from '../../../types/strataTypes';
 import { useTranslation } from '../../../i18n';
 import { ExportGroupHeader } from './exportMenuParts';
+import { TimelapseSection } from './TimelapseSection';
 
 // ── DRAW PNG background: remembered between exports (per-user convenience) ─────
 
@@ -27,7 +28,7 @@ export const savePngBackground = (bg: ExportBackground): void => {
 };
 
 export type DrawFraming = 'format' | 'view' | 'drawing';
-export type DrawOutput = 'png' | 'layers';
+export type DrawOutput = 'png' | 'layers' | 'timelapse';
 
 interface DrawCaptureSectionProps {
 	dark: boolean;
@@ -55,6 +56,7 @@ export function DrawCaptureSection({
 	const { state, dispatch } = useStrata();
 	const { t } = useTranslation();
 	const layers = output === 'layers';
+	const timelapse = output === 'timelapse';
 	const drawBackground = (): ExportBackground => (layers ? 'transparent' : background);
 
 	// DRAW PNG of the format frame at a preset size
@@ -74,9 +76,9 @@ export function DrawCaptureSection({
 	// «Dibujo completo» (v3.25.9): the box of the visible ink in the live projection, measured only while that
 	// mode is on screen (getLayerBoundingBox paints each layer to measure its ink).
 	const drawingBox = useMemo(
-		() => (open && mode === 'drawing' ? drawingBounds(state) : null),
+		() => (open && mode === 'drawing' && !timelapse ? drawingBounds(state) : null),
 		[open, mode, state.shapes, state.hiddenLayers, state.camera.z, state.currentLayerIndex,
-			state.layerSpacingFactor, state.isAnimationMode, state.locked3DLayers],
+			state.layerSpacingFactor, state.isAnimationMode, state.locked3DLayers, timelapse],
 	);
 	const handleDrawingCapture = (long: number) => {
 		setNextPNGQuality('device');
@@ -88,7 +90,7 @@ export function DrawCaptureSection({
 		close();
 	};
 
-	return (
+	const outputControl = (
 		<>
 			<ExportGroupHeader label={t('topbar.snapshot.output')} dark={dark} />
 			<div style={{ padding: '2px 10px 6px' }}>
@@ -96,6 +98,7 @@ export function DrawCaptureSection({
 					options={[
 						{ value: 'png', label: t('topbar.snapshot.output.png') },
 						{ value: 'layers', label: t('topbar.snapshot.output.layers'), tooltip: t('topbar.snapshot.layersHint') },
+						{ value: 'timelapse', label: t('topbar.snapshot.output.timelapse'), tooltip: t('topbar.timelapse.hint') },
 					]}
 					value={output}
 					onChange={onOutput}
@@ -103,6 +106,22 @@ export function DrawCaptureSection({
 					small
 				/>
 			</div>
+		</>
+	);
+
+	// «Timelapse (vídeo)» (v3.25.19): its own options and sizes (TimelapseSection); the framing is shared with the PNG.
+	if (timelapse) {
+		return (
+			<>
+				{outputControl}
+				<TimelapseSection dark={dark} open={open} framing={mode} onFraming={onFraming} close={close} />
+			</>
+		);
+	}
+
+	return (
+		<>
+			{outputControl}
 			{/* Helper line: the same tokens as DiSelectorOption's description (e.g. «Super Riso ↗»), not a section label. */}
 			{layers && <div style={{
 				padding: '0 10px 6px',

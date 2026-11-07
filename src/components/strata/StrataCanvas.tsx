@@ -11,6 +11,7 @@ import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOve
 import { generateRisoGrain } from './canvas/postProcessing';
 import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS, DOUBLE_CLICK_DELAY, DOUBLE_CLICK_MAX_DISTANCE } from '../../constants/renderConstants';
 import { exportAsPNG, exportAsMP4 } from './canvas/exportHandlers';
+import { exportAsTimelapse } from './canvas/timelapseExport';
 import { registerThumbnailSource } from './canvas/projectThumbnail';
 import { exportAsSVG } from './canvas/svgExport';
 import { analytics } from '../../analytics/analytics';
@@ -488,6 +489,24 @@ export const StrataCanvas = () => {
               getActiveZ,
           };
           exportAsPNG(canvas, pngOptions, state.projectName, onFinish, t);
+      }
+      if (state.exportRequest === 'timelapse') {
+          // Same snapshot as the PNG; the video is rendered off the live loop (canvas/timelapseExport.ts, v3.25.19).
+          exportAsTimelapse({
+              state: stateRef.current,
+              shapesByZ: shapesByZRef.current,
+              sortedZs: sortedZsRef.current,
+              camera: { ...cameraRef.current },
+              w: containerRef.current?.clientWidth ?? canvas.width,
+              h: containerRef.current?.clientHeight ?? canvas.height,
+              paperImg: paperImgRef.current,
+              risoGrain: risoGrainRef.current,
+              grungeImg: grungeImgRef.current,
+              particles: particlesRef.current,
+              noiseCanvas: noiseCanvasRef.current,
+              shapePattern: shapePatternRef.current,
+              getActiveZ,
+          }, state.projectName, onFinish, t);
       }
       if (state.exportRequest === 'svg' || state.exportRequest === 'svgz') {
           exportAsSVG(state.exportRequest, state.shapes, state.projectName, onFinish, t, state.mode);

@@ -13,7 +13,7 @@ import type { RenderContext } from './renderPipeline';
  *   - any input happened (pointer, touch, wheel, key): the live stroke and the Move preview live in refs;
  *   - the live stroke grew, or a drawing gesture is on;
  *   - the page came back (visibilitychange, pageshow) or the 2D context was restored;
- * and always while exporting, while the flipbook plays, and in CINEMA.
+ * and always while exporting (except the timelapse, v3.25.19), while the flipbook plays, and in CINEMA.
  * The grace keeps painting ~500 ms past the last change, so nothing is cut mid-transition, and a change newer
  * than the last painted tick always paints at least once (frames slower than the grace included).
  *
@@ -78,7 +78,11 @@ export function createIdleGuard() {
 				: '';
 			prev = snap;
 			if (changed) { lastChange = now; wake = changed; }
-			if (!IDLE_SKIP_ENABLED || s.mode !== 'drawing' || s.isExporting || s.exportRequest || (s.isAnimationMode && s.isAnimationPlaying)) {
+			// Exporting repaints every tick (the MP4 of DRAW records this live canvas) — except the timelapse (v3.25.19,
+			// GO Moisés): it renders off the loop into its own canvases, so the live canvas stays idle while it encodes
+			// (one repaint on REQUEST_EXPORT and one on FINISH_EXPORT, both state changes).
+			const exporting = (s.isExporting || s.exportRequest) && s.exportRequest !== 'timelapse';
+			if (!IDLE_SKIP_ENABLED || s.mode !== 'drawing' || exporting || (s.isAnimationMode && s.isAnimationPlaying)) {
 				renderStats.reason = 'always';
 				return true;
 			}

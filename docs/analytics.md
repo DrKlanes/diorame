@@ -57,6 +57,7 @@ si alguien llega al export de animación.
 | `mp4_animation` | Vídeo grabado desde modo ANIMACIÓN | `canvas/exportHandlers.ts:572` |
 | `gif` | GIF animado | `canvas/gifHandler.ts:128` |
 | `png_sequence` | ZIP con la secuencia de frames | `canvas/pngSequenceHandler.ts:89` |
+| `timelapse` | Timelapse de DRAW en MP4 (v3.25.19), con `background` `paper`/`solid` | `canvas/timelapseExport.ts` |
 
 Los nombres salen del propio código, no de una convención inventada:
 `_nextPNGQuality` es `'device' | 'hq'` (`exportHandlers.ts:17`) y la variante de

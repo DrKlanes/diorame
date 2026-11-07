@@ -16,6 +16,8 @@ const EXPORT_CONFIG: Record<ExportType, { icon: string; labelKey: string }> = {
 	svgz:         { icon: 'export',  labelKey: 'modal.export.vector'       },
 	'png-sequence': { icon: 'film',  labelKey: 'modal.export.pngSequence'  },
 	'gif':          { icon: 'bounce', labelKey: 'modal.export.gif'         },
+	// Never shown: the timelapse has its own modal with real progress and Cancel (TimelapseProgressV2, App.tsx).
+	'timelapse':    { icon: 'record', labelKey: 'modal.timelapse.title'    },
 };
 
 // ── ExportProgressV2 ──────────────────────────────────────────────────────────

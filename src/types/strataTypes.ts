@@ -43,7 +43,7 @@ export type CinematicType = 'forward' | 'spiral' | 'yoyo' | 'pulse' | 'twist' | 
 // x,y = average of a layer's shape points; z = layer depth in cinematic space;
 // radius = half the larger bbox side of those points (cheap size for adaptive zoom).
 export type Waypoint = { x: number; y: number; z: number; layerIndex: number; radius: number };
-export type ExportType = 'png' | 'mp4' | 'svg' | 'svgz' | 'png-sequence' | 'gif';
+export type ExportType = 'png' | 'mp4' | 'svg' | 'svgz' | 'png-sequence' | 'gif' | 'timelapse';
 export type BrushMode = 'tapered' | 'uniform' | 'ink';
 
 export type LayerGradParams = {
