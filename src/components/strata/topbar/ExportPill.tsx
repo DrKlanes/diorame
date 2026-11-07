@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { DiPill, DiActionButton, DiSegmentControl } from '../../../design-system';
 import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
@@ -6,8 +6,9 @@ import { useExportFlow } from '../../../hooks/useExportFlow';
 import { useSuperRisoExport } from '../../../hooks/useSuperRisoExport';
 import { DiSelectorPopover, DiSelectorOption } from '../popovers';
 import { ComplexSceneModalV2 } from '../modals/ComplexSceneModalV2';
-import { setNextPNGQuality, setNextPNGBackground, setNextPNGFormatSize } from '../canvas/exportHandlers';
-import { formatPresets, presetFits, type FormatPreset } from '../../../utils/formatExport';
+import { setNextPNGQuality, setNextPNGBackground, setNextPNGFormatSize, setNextPNGDrawingLongSide } from '../canvas/exportHandlers';
+import { drawingBounds } from '../canvas/drawingBounds';
+import { formatPresets, presetFits, sizeForLongSide, DRAWING_LONG_SIDES, type FormatPreset } from '../../../utils/formatExport';
 import type { ExportBackground } from '../../../types/strataTypes';
 import { useTranslation } from '../../../i18n';
 
@@ -137,7 +138,7 @@ export function ExportPill({ dark }: ExportPillProps) {
 	const exportBtnRef = useRef<HTMLDivElement>(null);
 	const [pngBackground, setPngBackground] = useState<ExportBackground>(readPngBackground);
 	// «Encuadre» (v3.25.7): Formato by default whenever the menu opens with a frame on the canvas.
-	const [framing, setFraming] = useState<'format' | 'view'>('format');
+	const [framing, setFraming] = useState<'format' | 'view' | 'drawing'>('format');
 
 	const isCinematic = state.mode === 'cinematic';
 	const isAnim = state.isAnimationMode;
@@ -155,6 +156,7 @@ export function ExportPill({ dark }: ExportPillProps) {
 	const handleCapture = (quality: 'device' | 'hq') => {
 		setNextPNGQuality(quality);
 		setNextPNGFormatSize(null);
+		setNextPNGDrawingLongSide(null);
 		if (!isCinematic) setNextPNGBackground(pngBackground);
 		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
 		close();
@@ -164,12 +166,30 @@ export function ExportPill({ dark }: ExportPillProps) {
 	const handleFormatCapture = (p: FormatPreset) => {
 		setNextPNGQuality('device');
 		setNextPNGFormatSize({ width: p.width, height: p.height });
+		setNextPNGDrawingLongSide(null);
 		setNextPNGBackground(pngBackground);
 		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
 		close();
 	};
 	const format = !isCinematic ? state.format : null;
-	const useFormat = !!format && framing === 'format';
+	// Formato exists only with a frame: without one the menu's default ('format') reads as Vista.
+	const mode = framing === 'format' && !format ? 'view' : framing;
+
+	// «Dibujo completo» (v3.25.9): the box of the visible ink in the live projection, measured only while that
+	// mode is on screen (getLayerBoundingBox paints each layer to measure its ink).
+	const drawingBox = useMemo(
+		() => (open && sub === 'capture' && mode === 'drawing' ? drawingBounds(state) : null),
+		[open, sub, mode, state.shapes, state.hiddenLayers, state.camera.z, state.currentLayerIndex,
+			state.layerSpacingFactor, state.isAnimationMode, state.locked3DLayers],
+	);
+	const handleDrawingCapture = (long: number) => {
+		setNextPNGQuality('device');
+		setNextPNGFormatSize(null);
+		setNextPNGDrawingLongSide(long);
+		setNextPNGBackground(pngBackground);
+		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
+		close();
+	};
 
 	// Video (CINEMA, no anim): direct MP4
 	const handleVideoDirect = () => {
@@ -269,24 +289,21 @@ export function ExportPill({ dark }: ExportPillProps) {
 										small
 									/>
 								</div>
-								{format && (
-									<>
-										<ExportGroupHeader label={t('topbar.snapshot.framing')} dark={dark} />
-										<div style={{ padding: '2px 10px 6px' }}>
-											<DiSegmentControl<'format' | 'view'>
-												options={[
-													{ value: 'format', label: t('topbar.snapshot.framing.format') },
-													{ value: 'view', label: t('topbar.snapshot.framing.view') },
-												]}
-												value={framing}
-												onChange={setFraming}
-												dark={dark}
-												small
-											/>
-										</div>
-									</>
-								)}
-								{useFormat && format ? formatPresets(format.type, format.orientation).map(p => {
+								<ExportGroupHeader label={t('topbar.snapshot.framing')} dark={dark} />
+								<div style={{ padding: '2px 10px 6px' }}>
+									<DiSegmentControl<'format' | 'view' | 'drawing'>
+										options={[
+											...(format ? [{ value: 'format' as const, label: t('topbar.snapshot.framing.format') }] : []),
+											{ value: 'view', label: t('topbar.snapshot.framing.view') },
+											{ value: 'drawing', label: t('topbar.snapshot.framing.drawing') },
+										]}
+										value={mode}
+										onChange={setFraming}
+										dark={dark}
+										small
+									/>
+								</div>
+								{mode === 'format' && format && formatPresets(format.type, format.orientation).map(p => {
 									const fits = presetFits(p);
 									const size = `${p.width} × ${p.height} px`;
 									return (
@@ -298,7 +315,24 @@ export function ExportPill({ dark }: ExportPillProps) {
 											onSelect={() => handleFormatCapture(p)}
 										/>
 									);
+								})}
+								{mode === 'drawing' && (drawingBox ? DRAWING_LONG_SIDES.map(long => {
+									const sz = sizeForLongSide(drawingBox, long);
+									const fits = presetFits(sz);
+									const size = `${sz.width} × ${sz.height} px`;
+									return (
+										<DiSelectorOption
+											key={long}
+											title={`${long} px`}
+											description={fits ? size : `${size} · ${t('topbar.snapshot.tooBig')}`}
+											disabled={!fits}
+											onSelect={() => handleDrawingCapture(long)}
+										/>
+									);
 								}) : (
+									<DiSelectorOption title={t('topbar.snapshot.drawingEmpty')} disabled onSelect={() => {}} />
+								))}
+								{mode === 'view' && (
 									<>
 										<DiSelectorOption title={t('topbar.snapshot.deviceSize')} onSelect={() => handleCapture('device')} />
 										<DiSelectorOption title={t('topbar.snapshot.highQuality')} onSelect={() => handleCapture('hq')} />

@@ -623,9 +623,6 @@ Decidido por Moisés: se entrega solo el PNG del marco y el puente a Super Riso.
 ### SVG «Formato»
 El SVG exporta coordenadas crudas por capa, **sin paralaje**, con el bbox de todas las formas (`svgExport.ts`). Recortar al marco con un `viewBox` solo casaría con la capa activa: hace falta además un `<g transform="scale(k)">` por capa (k = escala DRAW de esa capa frente a la activa) para que coincida con el PNG. La ruta actual debe quedar byte-idéntica: pasar `tools/svg-diff` antes y después. Ojo: `exportAsSVG` recibe `state.shapes` entero y no filtra `hiddenLayers` [leído en el código, no probado].
 
-### «Dibujo completo» en el PNG
-No existe: hoy Formato o Vista. Sería el bbox de la tinta de las capas visibles × su escala DRAW con la proyección viva + margen (4 %, mín. 32 px como `frameOf`), en un util propio: `frameOf` (`dior-render.js`) es contrato con el Lab y usa la cámara a 0.
-
 ### El MP4 de DRAW no recorta al marco
 Graba el canvas vivo (`captureStream`); el marco se oculta mientras se exporta, así que sale la vista entera.
 

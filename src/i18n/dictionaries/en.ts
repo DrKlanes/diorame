@@ -46,6 +46,8 @@ export const en: Dictionary = {
 	'topbar.snapshot.framing': 'Framing',
 	'topbar.snapshot.framing.format': 'Format',
 	'topbar.snapshot.framing.view': 'View',
+	'topbar.snapshot.framing.drawing': 'Whole drawing',
+	'topbar.snapshot.drawingEmpty': 'Nothing visible to export',
 	'topbar.snapshot.ppi': '{n} ppi',
 	'topbar.snapshot.tooBig': 'too large for this device',
 	'topbar.record.start': 'Record MP4',

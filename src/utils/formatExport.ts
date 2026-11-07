@@ -36,6 +36,15 @@ export function formatPresets(type: FormatType, orientation: FormatOrientation):
 	return SCREEN[type].map(([name, s, l]) => make(name, name, s, l));
 }
 
+// «Dibujo completo» (v3.25.9): output sizes by long side; the short side follows the box's own aspect.
+export const DRAWING_LONG_SIDES: readonly number[] = [2048, 3000, 4096];
+
+export function sizeForLongSide(rect: { w: number; h: number }, long: number): { width: number; height: number } {
+	return rect.w >= rect.h
+		? { width: long, height: Math.max(1, Math.round(long * rect.h / rect.w)) }
+		: { width: Math.max(1, Math.round(long * rect.w / rect.h)), height: long };
+}
+
 // The export re-renders through renderFrame, which keeps ~4 canvases of the output size alive at once
 // (offscreen, helper, composition, temp) plus the result: at A3 300 ppp (17,4 MP) that is ~350 MB. iPadOS
 // WebKit caps canvas memory well below a desktop browser, so a touch device gets A4 300 / A3 200 at most.
@@ -48,7 +57,7 @@ export function maxExportArea(): number {
 	return isTouchDevice() ? AREA_TOUCH : AREA_DESKTOP;
 }
 
-export function presetFits(p: FormatPreset): boolean {
+export function presetFits(p: { width: number; height: number }): boolean {
 	return p.width * p.height <= maxExportArea();
 }
 

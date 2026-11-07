@@ -5,8 +5,9 @@ import { analytics } from '../../../analytics/analytics';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
 import type { TranslationParams } from '../../../i18n';
 import { renderSnapshot, renderDrawSnapshot } from './drawSnapshot';
-import { renderFormatSnapshot } from './formatSnapshot';
-import { canvasFits } from '../../../utils/formatExport';
+import { renderFormatSnapshot, renderRectSnapshot } from './formatSnapshot';
+import { drawingBounds } from './drawingBounds';
+import { canvasFits, sizeForLongSide } from '../../../utils/formatExport';
 import type { AnimationExportRenderOptions } from './animationExportRender';
 import type { AppMode, ExportBackground } from '../../../types/strataTypes';
 
@@ -35,6 +36,14 @@ let _nextPNGFormatSize: { width: number; height: number } | null = null;
 
 export function setNextPNGFormatSize(size: { width: number; height: number } | null): void {
 	_nextPNGFormatSize = size;
+}
+
+// DRAW only, v3.25.9: «Encuadre: Dibujo completo» — the PNG is the box of all the visible ink (drawingBounds) with
+// this long side (px). null = not this mode. Set from the UI before REQUEST_EXPORT; reset after each export.
+let _nextPNGDrawingLongSide: number | null = null;
+
+export function setNextPNGDrawingLongSide(long: number | null): void {
+	_nextPNGDrawingLongSide = long;
 }
 
 /**
@@ -84,11 +93,20 @@ export const exportAsPNG = (
 	_nextPNGBackground = 'paper';
 	const formatSize = _nextPNGFormatSize;
 	_nextPNGFormatSize = null;
+	const drawingLong = _nextPNGDrawingLongSide;
+	_nextPNGDrawingLongSide = null;
 	const isDraw = options.state.mode === 'drawing';
 	const format = isDraw && formatSize ? options.state.format : null;
 	try {
 		let src: HTMLCanvasElement;
-		if (format && formatSize) {
+		if (isDraw && drawingLong) {
+			// Measured again here, from the same state the menu measured: the export never trusts a stale box.
+			const box = drawingBounds(options.state);
+			if (!box) throw new Error('nothing to frame: the visible layers are empty');
+			const size = sizeForLongSide(box, drawingLong);
+			if (!canvasFits(size.width, size.height)) throw new Error(`canvas ${size.width}×${size.height} too big for this device`);
+			src = renderRectSnapshot(options, box, size.width, size.height, background);
+		} else if (format && formatSize) {
 			// The device may refuse a canvas this big (it comes back blank): say so instead of saving an empty PNG.
 			if (!canvasFits(formatSize.width, formatSize.height)) throw new Error(`canvas ${formatSize.width}×${formatSize.height} too big for this device`);
 			src = renderFormatSnapshot(options, format, formatSize.width, formatSize.height, background);
@@ -140,7 +158,7 @@ export const exportAsPNG = (
 				duration: 2000,
 			});
 			playSound('success');
-			analytics.exported(format ? 'png_format' : quality === 'hq' ? 'png_hq' : 'png', options.state.mode, isDraw ? background : undefined);
+			analytics.exported(isDraw && drawingLong ? 'png_drawing' : format ? 'png_format' : quality === 'hq' ? 'png_hq' : 'png', options.state.mode, isDraw ? background : undefined);
 			onFinish();
 		}, 'image/png');
 	} catch (e) {

@@ -1,6 +1,7 @@
 import { renderDrawSnapshot } from './drawSnapshot';
 import type { AnimationExportRenderOptions } from './animationExportRender';
 import type { DrawFormat, ExportBackground } from '../../../types/strataTypes';
+import type { Rect } from '../../../utils/formatFrame';
 
 /**
  * DRAW PNG of the format frame (v3.25.7): exactly `format.rect` at width × height px, with the LIVE projection —
@@ -17,8 +18,16 @@ export const renderFormatSnapshot = (
 	width: number,
 	height: number,
 	background: ExportBackground,
+): HTMLCanvasElement => renderRectSnapshot(options, format.rect, width, height, background);
+
+/** Any rectangle of the active layer's plane (the format frame, or «Dibujo completo»'s box, v3.25.9). */
+export const renderRectSnapshot = (
+	options: AnimationExportRenderOptions,
+	r: Rect,
+	width: number,
+	height: number,
+	background: ExportBackground,
 ): HTMLCanvasElement => {
-	const r = format.rect;
 	const S = width / r.w;
 	const w = (width + 0.5) / S;
 	const h = (height + 0.5) / S;
