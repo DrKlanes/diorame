@@ -25,5 +25,7 @@ export function buildDiorData(state: AppState, name: string, fileMeta: DiorFileM
 		// work now that the picking is accurate (v3.17.17-25), and losing it on
 		// reload was real pain, not a theoretical one.
 		pointOfInterest: state.pointOfInterest,
+		// DRAW format guide (v3.25.5): optional, null = no frame. Older apps ignore it.
+		format: state.format,
 	};
 }

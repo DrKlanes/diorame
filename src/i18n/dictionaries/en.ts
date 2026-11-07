@@ -526,6 +526,17 @@ export const en: Dictionary = {
 	// ═══════════════════════════════════════════════
 
 	'viewport.resetView': 'Reset view',
+	'viewport.resetViewFormat': 'Center on the format',
+	'viewport.format.tooltip': 'Format',
+	'viewport.format.header': 'Format',
+	'viewport.format.free': 'Free',
+	'viewport.format.aTooltip': 'A series (A4, A3…): √2 ratio',
+	'viewport.format.orientation': 'Orientation',
+	'viewport.format.portrait': 'Portrait',
+	'viewport.format.landscape': 'Landscape',
+	'viewport.format.fitToView': 'Fit to view',
+	'viewport.format.fitToViewDesc': 'Re-places the frame on what you see now',
+	'viewport.format.remove': 'Remove',
 	'viewport.compositionGuide': 'Composition guide',
 	'viewport.showUi': 'Show UI',
 	'viewport.flipHorizontal': 'Flip Horizontal',

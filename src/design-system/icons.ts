@@ -278,6 +278,10 @@ export const ICONS: Record<string, string> = {
 		`<circle cx="6" cy="18" r="1" fill="currentColor"/>` +
 		`<circle cx="12" cy="18" r="1" fill="currentColor"/>` +
 		`<circle cx="18" cy="18" r="1" fill="currentColor"/>`,
+	// DRAW format guide (v3.25.5): an A-proportioned sheet with crop marks at its corners.
+	'format-frame':
+		`<rect x="7.5" y="5" width="9" height="14" rx="0.5"/>` +
+		`<path d="M3 5H5M7.5 1V2.5M16.5 1V2.5M19 5H21M3 19H5M7.5 21.5V23M16.5 21.5V23M19 19H21"/>`,
 	'info':
 		`<circle cx="12" cy="12" r="10"/>` +
 		`<path d="M12 16v-4"/><path d="M12 8h.01"/>`,
@@ -371,7 +375,7 @@ export const ICON_SECTIONS: Record<string, string[]> = {
 	'Drawing Tools':       ['brush', 'eraser', 'blob', 'text', 'move', 'symmetry', 'smooth', 'organic', 'draw-behind', 'draw-inside', 'rotate', 'pen', 'line-tapered', 'line-uniform', 'line-ink'],
 	'File Operations':     ['new', 'open', 'save', 'export', 'undo', 'redo'],
 	'Layer Panel':         ['eye', 'eye-off', 'layers', 'duplicate', 'merge-down', 'trash', 'arrow-up', 'arrow-down', 'opacity', 'plus-layer', 'drag', 'blend-normal'],
-	'Custom Additions':    ['align-left', 'align-center', 'align-right', 'lock', 'unlock', 'pin', 'pin-off', 'flip-horizontal', 'maximize', 'minimize', 'cloud-fog', 'globe', 'scan-line', 'zoom-in', 'target', 'loader', 'monitor', 'tablet', 'sparkles', 'guide', 'info', 'check', 'x', 'plus', 'hand', 'move-vertical', 'move-horizontal', 'aperture', 'wand', 'tornado', 'image'],
+	'Custom Additions':    ['align-left', 'align-center', 'align-right', 'lock', 'unlock', 'pin', 'pin-off', 'flip-horizontal', 'maximize', 'minimize', 'cloud-fog', 'globe', 'scan-line', 'zoom-in', 'target', 'loader', 'monitor', 'tablet', 'sparkles', 'guide', 'format-frame', 'info', 'check', 'x', 'plus', 'hand', 'move-vertical', 'move-horizontal', 'aperture', 'wand', 'tornado', 'image'],
 	'Animation':           ['play', 'pause', 'film', 'bounce', 'frame-back', 'frame-fwd', 'anim-loop', 'anim-pingpong', 'onion'],
 	'Depth':               ['depth-on', 'depth-off'],
 };

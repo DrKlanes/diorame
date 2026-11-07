@@ -107,6 +107,7 @@ export function useAutoSave() {
 			paletteApplyToAllActive: currentState.paletteApplyToAllActive,
 			paletteApplyToAllSnapshot: currentState.paletteApplyToAllSnapshot,
 			pointOfInterest: currentState.pointOfInterest,
+			format: currentState.format,
 		};
 
 		try {

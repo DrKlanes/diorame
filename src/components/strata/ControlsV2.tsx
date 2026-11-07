@@ -12,6 +12,7 @@ import { LayersPanel } from './layers/LayersPanel';
 import { ColorPalette } from './colorpalette/ColorPalette';
 import { ResetViewPill } from './viewport/ResetViewPill';
 import { GridTogglePill } from './viewport/GridTogglePill';
+import { FormatPill } from './viewport/FormatPill';
 import { FXPanel } from './fx/FXPanel';
 import { ToolOptionsPanel } from './drawing/ToolOptionsPanel';
 import { TextSessionPanel } from './text/TextSessionPanel';
@@ -84,6 +85,18 @@ export function ControlsV2() {
 		}
 	}, [state.mode, state.currentLayerIndex, dispatch]);
 
+	// Side-effect 4: the drawing canvas size in the state (v3.25.5), so RESET_DRAWING_VIEW can fit the format
+	// frame from any caller (pill, Space tap, after a load). The canvas is mounted before ControlsV2 (App.tsx).
+	useEffect(() => {
+		const el = document.querySelector<HTMLElement>('[data-drawing-canvas]');
+		if (!el) return;
+		const report = () => dispatch({ type: 'SET_VIEWPORT_SIZE', payload: { w: el.clientWidth, h: el.clientHeight } });
+		report();
+		const observer = new ResizeObserver(report);
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [dispatch]);
+
 	return (
 		<>
 			{/* All UI atoms — hidden together when isUIHidden is true */}
@@ -103,7 +116,7 @@ export function ControlsV2() {
 					<ColorPalette />
 
 
-					{/* ViewPills — fixed left-8 bottom-8, drawing mode only. Single DiPill: GridToggle (left) + ResetView (right) */}
+					{/* ViewPills — fixed left-8 bottom-8, drawing mode only. Single DiPill: GridToggle · Format · ResetView */}
 					{state.mode === 'drawing' && (
 						<div style={{
 							position: 'fixed',
@@ -113,6 +126,7 @@ export function ControlsV2() {
 						}}>
 							<DiPill dark={dark} padding="5px">
 								<GridTogglePill />
+								<FormatPill />
 								<ResetViewPill />
 							</DiPill>
 						</div>

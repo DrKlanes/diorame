@@ -292,11 +292,12 @@ export const StrataCanvas = () => {
           let newPanX = screenX - ((screenX - currentPan.x) / currentZoom) * newZoom;
           let newPanY = screenY - ((screenY - currentPan.y) / currentZoom) * newZoom;
           
-          newPanX = Math.max(-MAX_PAN, Math.min(MAX_PAN, newPanX));
-          newPanY = Math.max(-MAX_PAN, Math.min(MAX_PAN, newPanY));
+          // World-space clamp (v3.25.5): the view centre stays within ±MAX_PAN world units at any zoom.
+          newPanX = Math.max(-MAX_PAN * newZoom, Math.min(MAX_PAN * newZoom, newPanX));
+          newPanY = Math.max(-MAX_PAN * newZoom, Math.min(MAX_PAN * newZoom, newPanY));
 
-          dispatch({ 
-              type: 'SET_DRAWING_ZOOM', 
+          dispatch({
+              type: 'SET_DRAWING_ZOOM',
               payload: { zoom: newZoom, pan: { x: newPanX, y: newPanY } } 
           });
       };
@@ -721,10 +722,11 @@ export const StrataCanvas = () => {
                   let newPanX = currScreenX - (worldX * newZoom);
                   let newPanY = currScreenY - (worldY * newZoom);
                   
-                  newPanX = Math.max(-MAX_PAN, Math.min(MAX_PAN, newPanX));
-                  newPanY = Math.max(-MAX_PAN, Math.min(MAX_PAN, newPanY));
+                  // World-space clamp (v3.25.5), same as the wheel.
+                  newPanX = Math.max(-MAX_PAN * newZoom, Math.min(MAX_PAN * newZoom, newPanX));
+                  newPanY = Math.max(-MAX_PAN * newZoom, Math.min(MAX_PAN * newZoom, newPanY));
 
-                  dispatch({ 
+                  dispatch({
                       type: 'SET_DRAWING_ZOOM', 
                       payload: { zoom: newZoom, pan: { x: newPanX, y: newPanY } } 
                   });
@@ -1214,8 +1216,10 @@ export const StrataCanvas = () => {
         }
         
         // Drawing mode: pan
-        let newPanX = Math.max(-MAX_PAN, Math.min(MAX_PAN, gestureRef.current.startPan.x + dx));
-        let newPanY = Math.max(-MAX_PAN, Math.min(MAX_PAN, gestureRef.current.startPan.y + dy));
+        // World-space clamp (v3.25.5), same as the wheel and the pinch.
+        const panLimit = MAX_PAN * (state.drawingZoom || 1);
+        let newPanX = Math.max(-panLimit, Math.min(panLimit, gestureRef.current.startPan.x + dx));
+        let newPanY = Math.max(-panLimit, Math.min(panLimit, gestureRef.current.startPan.y + dy));
         dispatch({ type: 'SET_DRAWING_ZOOM', payload: { zoom: state.drawingZoom, pan: { x: newPanX, y: newPanY } } });
         return;
     }

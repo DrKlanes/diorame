@@ -502,6 +502,17 @@ export const es: Dictionary = {
 	// ═══════════════════════════════════════════════
 
 	'viewport.resetView': 'Restablecer vista',
+	'viewport.resetViewFormat': 'Centrar en el formato',
+	'viewport.format.tooltip': 'Formato',
+	'viewport.format.header': 'Formato',
+	'viewport.format.free': 'Libre',
+	'viewport.format.aTooltip': 'Serie A (A4, A3…): proporción √2',
+	'viewport.format.orientation': 'Orientación',
+	'viewport.format.portrait': 'Vertical',
+	'viewport.format.landscape': 'Horizontal',
+	'viewport.format.fitToView': 'Ajustar a la vista',
+	'viewport.format.fitToViewDesc': 'Recoloca el marco en lo que ves ahora',
+	'viewport.format.remove': 'Quitar',
 	'viewport.compositionGuide': 'Guía de composición',
 	'viewport.showUi': 'Mostrar interfaz',
 	'viewport.flipHorizontal': 'Voltear horizontal',

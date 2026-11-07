@@ -30,6 +30,11 @@ export interface Shape {
 export type AppMode = 'drawing' | 'cinematic';
 // Background of a DRAW PNG export: the paper as seen on screen, a plain white/black, or none (alpha).
 export type ExportBackground = 'paper' | 'solid' | 'transparent';
+// DRAW format guide (v3.25.5): a frame on the active layer's plane (scale 1 there), in world units.
+// 'A' = ISO 216 (√2). 1:1 ignores the orientation; 4:5 is portrait only.
+export type FormatType = 'A' | '16:9' | '4:5' | '1:1';
+export type FormatOrientation = 'portrait' | 'landscape';
+export type DrawFormat = { type: FormatType; orientation: FormatOrientation; rect: { x: number; y: number; w: number; h: number } };
 export type ToolType = 'blob' | 'eraser' | 'text' | 'move' | 'brush';
 export type CinematicType = 'forward' | 'spiral' | 'yoyo' | 'pulse' | 'twist' | 'arc' | 'crane' | 'truck' | 'orbit' | 'zoom' | 'storytelling';
 
@@ -317,6 +322,8 @@ export interface AppState {
   } | null; // Transient: snapshot for apply-to-all restore
   layerBrushSettings: Record<number, { thickness: number; mode: BrushMode }>; // New: Per-layer brush settings
   pointOfInterest: { x: number; y: number; z: number } | null; // New: Point of Interest for camera focus
+  format: DrawFormat | null; // DRAW format guide (v3.25.5). View state: never in HistorySnapshot; saved in .dior and autosave
+  viewportSize: { w: number; h: number }; // Drawing canvas size in CSS px (ControlsV2's ResizeObserver). Transient, NOT serialized
   cinematicSpeed: number; // New: Speed multiplier for cinematic moves (0.1 to 1.0)
   isDrawBehind: boolean; // New: Draw Behind mode
   isDrawInside: boolean; // New: Draw Inside (Alpha Lock) mode

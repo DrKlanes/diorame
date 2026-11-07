@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import {
 	Point, Shape, AppMode, ToolType, CinematicType, ExportType, BrushMode,
 	PostProcessingSettings, PostProcessingEnabled, HandheldIntensity,
-	TextSession, HistorySnapshot, AppState, LayerGradParams, ProjectMeta,
+	TextSession, HistorySnapshot, AppState, LayerGradParams, ProjectMeta, DrawFormat,
 } from '../../types/strataTypes';
 import { UNTITLED_PROJECT_SENTINEL } from '../../constants/project';
 import { createProjectMeta, readProjectMeta } from '../../utils/projectMeta';
@@ -43,6 +43,7 @@ import {
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { bakeTextTransform, flipTextProps } from '../../utils/textTransform';
 import { mergeLayerDown } from '../../utils/mergeLayers';
+import { fitViewToRect, sanitizeFormat } from '../../utils/formatFrame';
 import { remapLayerIndices, remapFocusLayer, shiftFocusLayer } from '../../utils/remapViewLayers';
 
 export {
@@ -119,6 +120,8 @@ type Action =
   | { type: 'SET_PALETTE_GRADIENT_TYPE'; payload: 'solid' | 'fade' }
   | { type: 'COMMIT_PALETTE_GRADIENT' }
   | { type: 'RESET_DRAWING_VIEW' }
+  | { type: 'SET_FORMAT'; payload: DrawFormat | null }
+  | { type: 'SET_VIEWPORT_SIZE'; payload: { w: number; h: number } }
   | { type: 'DELETE_CURRENT_LAYER' }
   | { type: 'MERGE_LAYER_DOWN' }
   | { type: 'START_TEXT_SESSION'; payload: { x: number; y: number } }
@@ -259,6 +262,8 @@ export const initialState: AppState = {
   layerGradParams: {},
   layerBrushSettings: {},
   pointOfInterest: null,
+  format: null,
+  viewportSize: { w: 0, h: 0 },
   cinematicSpeed: 1.0, // Default Normal Speed
   isDrawBehind: false,
   isDrawInside: false,
@@ -503,8 +508,21 @@ export function appReducer(state: AppState, action: Action): AppState {
           history: patchCurrentSnapshot(state.history, state.historyIndex, { layerGradParams: state.layerGradParams })
       };
     }
-    case 'RESET_DRAWING_VIEW':
+    case 'RESET_DRAWING_VIEW': {
+      // With a format frame (v3.25.5), "Centrar vista" fits it; without one, zoom 1 at the origin as always.
+      const { w, h } = state.viewportSize;
+      if (state.format && w > 0 && h > 0) {
+          const fit = fitViewToRect(state.format.rect, w, h);
+          return { ...state, drawingZoom: fit.zoom, drawingPan: fit.pan };
+      }
       return { ...state, drawingZoom: 1, drawingPan: { x: 0, y: 0 } };
+    }
+    case 'SET_FORMAT':
+      // View state, outside undo; a user choice that is saved, so it dirties the project.
+      return { ...state, format: action.payload, isDirty: true };
+    case 'SET_VIEWPORT_SIZE':
+      if (state.viewportSize.w === action.payload.w && state.viewportSize.h === action.payload.h) return state;
+      return { ...state, viewportSize: action.payload };
     case 'ADD_SHAPE': {
       if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
       const newShapes = [...state.shapes, action.payload];
@@ -1034,6 +1052,7 @@ export function appReducer(state: AppState, action: Action): AppState {
           postProcessingSnapshot: null,
           paletteApplyToAllActive: false,
           paletteApplyToAllSnapshot: null,
+          format: null,
           isDirty: false,
       }
     case 'LOAD_PROJECT':
@@ -1219,6 +1238,8 @@ export function appReducer(state: AppState, action: Action): AppState {
           paletteApplyToAllActive: safePaletteApplyToAllActive,
           paletteApplyToAllSnapshot: safePaletteApplyToAllSnapshot,
           pointOfInterest: safePointOfInterest,
+          // Absent or malformed → no frame; never the previous project's.
+          format: sanitizeFormat((action.payload as any).format),
           isDirty: false,
           projectWasLoaded: true,
           // The file's view stands; its gaps were filled above with the defaults, never with the previous project's.
