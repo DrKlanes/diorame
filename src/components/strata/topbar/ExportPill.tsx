@@ -6,7 +6,7 @@ import { useExportFlow } from '../../../hooks/useExportFlow';
 import { useSuperRisoExport } from '../../../hooks/useSuperRisoExport';
 import { DiSelectorPopover, DiSelectorOption } from '../popovers';
 import { ComplexSceneModalV2 } from '../modals/ComplexSceneModalV2';
-import { setNextPNGQuality, setNextPNGBackground, setNextPNGFormatSize, setNextPNGDrawingLongSide } from '../canvas/exportHandlers';
+import { setNextPNGQuality, setNextPNGBackground, setNextPNGFormatSize, setNextPNGDrawingLongSide, setNextPNGLayersZip } from '../canvas/exportHandlers';
 import { drawingBounds } from '../canvas/drawingBounds';
 import { formatPresets, presetFits, sizeForLongSide, DRAWING_LONG_SIDES, type FormatPreset } from '../../../utils/formatExport';
 import type { ExportBackground } from '../../../types/strataTypes';
@@ -147,6 +147,11 @@ export function ExportPill({ dark }: ExportPillProps) {
 	const toggleSub = (key: 'capture' | 'video' | 'gif') =>
 		setSub(s => s === key ? null : key);
 
+	// «Salida» (v3.25.11, DRAW): one PNG, or «Capas (ZIP)» = one transparent PNG per layer, same framing and size.
+	const [output, setOutput] = useState<'png' | 'layers'>('png');
+	const layers = !isCinematic && output === 'layers';
+	const drawBackground = (): ExportBackground => (layers ? 'transparent' : pngBackground);
+
 	const handleBackground = (bg: ExportBackground) => {
 		setPngBackground(bg);
 		try { window.localStorage.setItem(PNG_BG_KEY, bg); } catch (_) { /* not remembered this time */ }
@@ -157,7 +162,8 @@ export function ExportPill({ dark }: ExportPillProps) {
 		setNextPNGQuality(quality);
 		setNextPNGFormatSize(null);
 		setNextPNGDrawingLongSide(null);
-		if (!isCinematic) setNextPNGBackground(pngBackground);
+		setNextPNGLayersZip(layers);
+		if (!isCinematic) setNextPNGBackground(drawBackground());
 		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
 		close();
 	};
@@ -167,7 +173,8 @@ export function ExportPill({ dark }: ExportPillProps) {
 		setNextPNGQuality('device');
 		setNextPNGFormatSize({ width: p.width, height: p.height });
 		setNextPNGDrawingLongSide(null);
-		setNextPNGBackground(pngBackground);
+		setNextPNGLayersZip(layers);
+		setNextPNGBackground(drawBackground());
 		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
 		close();
 	};
@@ -186,7 +193,8 @@ export function ExportPill({ dark }: ExportPillProps) {
 		setNextPNGQuality('device');
 		setNextPNGFormatSize(null);
 		setNextPNGDrawingLongSide(long);
-		setNextPNGBackground(pngBackground);
+		setNextPNGLayersZip(layers);
+		setNextPNGBackground(drawBackground());
 		dispatch({ type: 'REQUEST_EXPORT', payload: 'png' });
 		close();
 	};
@@ -275,8 +283,22 @@ export function ExportPill({ dark }: ExportPillProps) {
 						/>
 						{sub === 'capture' && (
 							<>
-								<ExportGroupHeader label={t('topbar.snapshot.background')} dark={dark} />
+								<ExportGroupHeader label={t('topbar.snapshot.output')} dark={dark} />
 								<div style={{ padding: '2px 10px 6px' }}>
+									<DiSegmentControl<'png' | 'layers'>
+										options={[
+											{ value: 'png', label: t('topbar.snapshot.output.png') },
+											{ value: 'layers', label: t('topbar.snapshot.output.layers'), tooltip: t('topbar.snapshot.layersHint') },
+										]}
+										value={output}
+										onChange={setOutput}
+										dark={dark}
+										small
+									/>
+								</div>
+								{layers && <ExportGroupHeader label={t('topbar.snapshot.layersHint')} dark={dark} />}
+								{!layers && <ExportGroupHeader label={t('topbar.snapshot.background')} dark={dark} />}
+								{!layers && <div style={{ padding: '2px 10px 6px' }}>
 									<DiSegmentControl<ExportBackground>
 										options={[
 											{ value: 'paper', label: t('topbar.snapshot.bg.paper') },
@@ -288,7 +310,7 @@ export function ExportPill({ dark }: ExportPillProps) {
 										dark={dark}
 										small
 									/>
-								</div>
+								</div>}
 								<ExportGroupHeader label={t('topbar.snapshot.framing')} dark={dark} />
 								<div style={{ padding: '2px 10px 6px' }}>
 									<DiSegmentControl<'format' | 'view' | 'drawing'>

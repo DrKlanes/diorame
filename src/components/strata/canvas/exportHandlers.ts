@@ -3,6 +3,8 @@ import { playSound } from '../../../utils/soundManager';
 import { downloadBlob } from '../../../utils/downloadBlob';
 import { analytics } from '../../../analytics/analytics';
 import { getFilenameBase, UNTITLED_PROJECT_SENTINEL } from '../../../constants/project';
+import { projectFileStem } from '../../../utils/projectMeta';
+import { exportLayersZip, type LayerRender } from './layersZip';
 import type { TranslationParams } from '../../../i18n';
 import { renderSnapshot, renderDrawSnapshot } from './drawSnapshot';
 import { renderFormatSnapshot, renderRectSnapshot } from './formatSnapshot';
@@ -44,6 +46,13 @@ let _nextPNGDrawingLongSide: number | null = null;
 
 export function setNextPNGDrawingLongSide(long: number | null): void {
 	_nextPNGDrawingLongSide = long;
+}
+
+// DRAW only, v3.25.11: «Capas (ZIP)» — the same framing and size, one transparent PNG per layer, zipped.
+let _nextPNGLayersZip = false;
+
+export function setNextPNGLayersZip(on: boolean): void {
+	_nextPNGLayersZip = on;
 }
 
 /**
@@ -95,23 +104,47 @@ export const exportAsPNG = (
 	_nextPNGFormatSize = null;
 	const drawingLong = _nextPNGDrawingLongSide;
 	_nextPNGDrawingLongSide = null;
+	const layersZip = _nextPNGLayersZip;
+	_nextPNGLayersZip = false;
 	const isDraw = options.state.mode === 'drawing';
 	const format = isDraw && formatSize ? options.state.format : null;
 	try {
 		let src: HTMLCanvasElement;
+		// DRAW: the framing resolved once into a render function — the single PNG calls it once; «Capas (ZIP)»
+		// calls it once per layer (v3.25.11), so both share framing, size and projection by construction.
+		let renderDraw: LayerRender | null = null;
 		if (isDraw && drawingLong) {
 			// Measured again here, from the same state the menu measured: the export never trusts a stale box.
 			const box = drawingBounds(options.state);
 			if (!box) throw new Error('nothing to frame: the visible layers are empty');
 			const size = sizeForLongSide(box, drawingLong);
 			if (!canvasFits(size.width, size.height)) throw new Error(`canvas ${size.width}×${size.height} too big for this device`);
-			src = renderRectSnapshot(options, box, size.width, size.height, background);
+			renderDraw = (o, bg) => renderRectSnapshot(o, box, size.width, size.height, bg);
 		} else if (format && formatSize) {
 			// The device may refuse a canvas this big (it comes back blank): say so instead of saving an empty PNG.
 			if (!canvasFits(formatSize.width, formatSize.height)) throw new Error(`canvas ${formatSize.width}×${formatSize.height} too big for this device`);
-			src = renderFormatSnapshot(options, format, formatSize.width, formatSize.height, background);
+			renderDraw = (o, bg) => renderFormatSnapshot(o, format, formatSize.width, formatSize.height, bg);
 		} else if (isDraw) {
-			src = renderDrawSnapshot(options, quality === 'hq' ? hqScale(options) : 1, background);
+			const scale = quality === 'hq' ? hqScale(options) : 1;
+			renderDraw = (o, bg) => renderDrawSnapshot(o, scale, bg);
+		}
+		const displayName = projectName === UNTITLED_PROJECT_SENTINEL
+			? t('topbar.file.untitledProject')
+			: projectName;
+		if (renderDraw && layersZip) {
+			const stem = projectFileStem(displayName);
+			exportLayersZip(options, renderDraw, stem, `${stem} ${t('topbar.snapshot.layersZipSuffix')}.zip`).then(n => {
+				toast.success(t('toast.export.layersZip.successTitle'), { description: t('toast.export.layersZip.successDesc', { n }), duration: 2500 });
+				playSound('success');
+				analytics.exported('png_layers_zip', options.state.mode, 'transparent');
+			}).catch(e => {
+				console.error('Export layers ZIP failed', e);
+				toast.error(t('toast.export.snapshot.errorTitle'), { description: t('common.pleaseRetry'), duration: 3000 });
+			}).finally(onFinish);
+			return;
+		}
+		if (renderDraw) {
+			src = renderDraw(options, background);
 		} else if (quality === 'hq') {
 			// True 2× re-render. Clamp so the physical size never exceeds MAX_DIMENSION.
 			let scale = 2;
@@ -136,9 +169,6 @@ export const exportAsPNG = (
 				src = canvas;
 			}
 		}
-		const displayName = projectName === UNTITLED_PROJECT_SENTINEL
-			? t('topbar.file.untitledProject')
-			: projectName;
 		const sanitizedName = getFilenameBase(displayName);
 		// toBlob (async) instead of toDataURL: iPadOS WebKit silently drops
 		// downloads of large data: URLs. Toasts and onFinish resolve in the callback.

@@ -632,5 +632,8 @@ DRAW repinta todas las formas de todas las capas visibles en cada rAF: no hay ca
 ### Un `.dior` de sesión larga puede pasar del límite de apertura
 Con contornos en float completo, 5 000 trazos de pincel sintéticos pesaban ~66 MB; abrir rechaza > 50 MB. [POR CONFIRMAR con un archivo real.]
 
+### `ExportPill.tsx` pasa de 400 líneas
+380 en v3.25.6 → 428 (v3.25.7, encuadre Formato) → 462 (v3.25.9, Dibujo completo) → ~484 (v3.25.11, Capas ZIP). Regla dorada 2: sacar el submenú de Captura de DRAW (salida, fondo, encuadre, tamaños) a su propio componente antes de la próxima adición.
+
 ### `renderLayerBody.ts` pasa de 400 líneas
 ~458 tras 3.25.6 (ya estaba en ~435). Regla dorada 2: partirlo antes de la próxima adición.
