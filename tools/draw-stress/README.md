@@ -44,3 +44,14 @@ dos dedos → anotar → Reset → dibujar 10 s con el Pencil → anotar (y el a
 
 Si fallan: parar y decidir. Las salidas (caché de capas por bitmap, no repintar en reposo) tocan el
 bucle RAF / el pipeline: núcleo, GO explícito.
+
+## 4. Arneses de píxel (`harness/`)
+
+Se inyectan en la página de desarrollo (`npm run dev` → `localhost:3000/?perf=1`) con un `<script src="/tools/draw-stress/harness/….js">` y se llaman desde la consola:
+
+- `pixcheck.js` → `await __pixcheck('before')` antes de tocar el render, `await __pixcheck('after')` después: 7 casos DRAW (escena de ejemplo y estrés), 0 px y mismo SHA-256, más CPU antes/después. Necesita las escenas de `generate.mjs`.
+- `pixcheck2.js` → igual con `__pixcheck2` (CINEMA wiggle y pixel art, vista previa del Move, texto). Hacer una pasada de calentamiento antes (carga de fuentes).
+- `alphaleak.js` → `await __alphaLeakCheck()`: autocontenido, sin referencia. Debe dar `pass: true` (fuga de `globalAlpha` del toque en pixel art, v3.25.15).
+
+La CPU solo se compara en A/B alternado en las mismas condiciones: entre sesiones el equipo puede ir el doble de lento.
+

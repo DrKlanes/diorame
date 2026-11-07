@@ -29,8 +29,7 @@ export type PathShapeParams = {
  * dispatches to the uniform-line / eraser / tapered-dot / regular-fill painters.
  *
  * Returns whether the shape counts as layer content (`hasContent`): true as soon as the outline has more than one
- * point and a visible opacity — also for a pixel-art brush tap, which is skipped right there and, as before the
- * extraction, leaves `globalAlpha` at the shape's opacity.
+ * point and a visible opacity — also for a pixel-art brush tap, which is skipped without touching the context.
  *
  * @param points  The shape's points (already moved by the Move preview, if any)
  */
@@ -75,12 +74,17 @@ export function renderPathShape(
 
 	if (!(n > 1 && minOp > 0.01)) return false;
 
+	// Option A: a brush tap is skipped entirely in Pixel Art View Mode (avoids artifacts). Decided BEFORE touching
+	// the context (v3.25.15): it used to return after setting globalAlpha = minOp, which then leaked into the layer's
+	// pixel-art copy, the next layer and the next frame. It still counts as layer content, as before.
+	const isBrushTap = isPixelArt && !isUniformLine && !shape.isEraser && shape.points.length <= 3 && projectedPoints.length > 0;
+	if (isBrushTap) return true;
+
 	layerCtx.globalAlpha = minOp;
 
 	// Pixel Art Refinement: Snap Points & Use Straight Lines
 	let renderPoints = projectedPoints;
 	let useStraightLines = false;
-	const isBrushTap = isPixelArt && !isUniformLine && !shape.isEraser && shape.points.length <= 3 && projectedPoints.length > 0;
 	// Tap de brush tapered: originalPoints casi coincidentes → polígono de área cero (invisible).
 	// generateTaperedStroke con 2 puntos da halfWidth=0 (sin(0)=sin(π)=0). Lo renderizamos como
 	// punto redondeado del grosor máximo, idéntico al isDot de renderUniformLineShape.
@@ -95,10 +99,6 @@ export function renderPathShape(
 	if (isPixelArt) {
 		useStraightLines = true;
 		const pSize = Math.max(2, params.pixelArtSize || 4) * S;
-
-		if (isBrushTap) {
-			 return true; // Option A: Skip tap strokes entirely in Pixel Art View Mode to avoid artifacts
-		}
 
 		renderPoints = projectedPoints.map(p => ({
 			x: Math.round(p.x / pSize) * pSize,

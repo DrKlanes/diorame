@@ -133,6 +133,10 @@ export function renderLayer(
 
 	const layerCtx = rc.helperCanvasRef.current!.getContext('2d')!;
 	layerCtx.clearRect(0, 0, w, h);
+	// The aux canvas is shared by every layer and every frame: start each layer from a clean paint state, so a painter
+	// that leaves its alpha or blend behind can never reach the next layer or frame (v3.25.15).
+	layerCtx.globalAlpha = 1;
+	layerCtx.globalCompositeOperation = 'source-over';
 	let hasContent = false;
 	let layerAvgZ = dz;
 
