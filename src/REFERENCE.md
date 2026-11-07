@@ -275,7 +275,7 @@ Two distinct actions create layers — they are **not** interchangeable:
 - **Load**: Reads the file via `FileReader`, validates structure (`shapes` array; if not, localized toast «not a Diorame project» and the project is untouched), asks about unsaved changes when `isDirty` (v3.25.3: Save first / Open anyway / Cancel), and dispatches `LOAD_PROJECT`. On iPad/iPhone the open inputs carry no `accept` (v3.25.1); `file_handlers` is unsupported on iOS/iPadOS, so «Open with Diorame» from Files is impossible there
   - File size guard: rejects files larger than 50 MB
   - Triggers fit-to-view on successful load
-- **Saved data** (besides `meta`): shapes, palette, layers, dark mode, post-processing settings (v3.20.5: also the FX master switch `fxMasterEnabled` and the OFF-snapshot `postProcessingSnapshot`: with the master off every flag is false and the look that was on is the snapshot, which `LOAD_PROJECT` restores only with the master off and sanitised to one boolean per known FX), hidden/locked layers, project name, per-layer render modes, gradient params, brush settings, line mode, active palette ID, CINEMA view, point of interest
+- **Saved data** (besides `meta`): shapes (each with its creation time `t` since v3.25.16 — when the timelapse shows it, never its paint order), palette, layers, dark mode, post-processing settings (v3.20.5: also the FX master switch `fxMasterEnabled` and the OFF-snapshot `postProcessingSnapshot`: with the master off every flag is false and the look that was on is the snapshot, which `LOAD_PROJECT` restores only with the master off and sanitised to one boolean per known FX), hidden/locked layers, project name, per-layer render modes, gradient params, brush settings, line mode, active palette ID, CINEMA view, point of interest
 - **Project Name**: Editable via the UI; asked for at the first save of an untitled project
 
 ### Export Formats
@@ -1269,9 +1269,17 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.25.15)
+## Appendix C: Changelog Highlights (1.7.3 → 3.25.16)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.25.16 — Sello de creación de cada forma (`Shape.t`)
+
+**feat(data)** — Primera pieza del timelapse de DRAW: cada forma nueva guarda cuándo se creó, `t?: number` (`Date.now()`, ms). Lo pone el **reducer**, no los handlers de puntero: `ADD_SHAPE`, `ADD_SHAPES` (el par de simetría comparte `t`) y `COMMIT_TEXT_SESSION`. `DUPLICATE_LAYER`: los clones llevan un `t` nuevo (la copia es contenido creado al duplicar).
+- **Regla del timelapse:** `t` decide CUÁNDO aparece una forma; el orden de pintado dentro de cada capa es SIEMPRE el del array (borrador, drawInside/Behind y grupos dependen de él). Nunca se ordenan las formas por `t` para pintar. Motivo: Acoplar abajo (`[...rest, ...merged]`) y Duplicar dejan su contenido al final del array; con el orden del array como reloj aparecería de golpe al final.
+- **Se conserva** en mover, transformar, voltear, recolorear, regrosar, undo/redo (va en el snapshot), Acoplar abajo (`onPlane` copia la forma), `.dior` y autoguardado (las formas se guardan enteras). `LOAD_PROJECT` lo sanea: número finito o fuera. Un `.dior` antiguo no trae `t`: el timelapse usará el índice del array. `dior-render.js` sin cambios de contrato. ~15 bytes por forma en el `.dior`.
+- **Verificado** con el `appReducer` real en el navegador: alta, simetría (mismo `t`), texto; `t` intacto tras mover, transformar, cambiar paleta, 2 × undo + redo; duplicar → 3 clones con `t` posterior y originales intactos; acoplar el duplicado → originales intactos; guardar (`buildDiorData` → JSON) → cargar: mismos `t`; saneo (`'nope'`, `null`, `Infinity`, ausente → sin `t`; válido se queda); ejemplo antiguo (2369 formas) → ninguna con `t`.
+- **Files**: `types/strataTypes.ts`, `StrataContext.tsx`, `REFERENCE.md`, `version.ts`, `package.json`, `package-lock.json`. **REFERENCE.md §10 sync: N/A (sin archivos nuevos ni cambio de rol).**
 
 ### 3.25.15 — Pixel art: el toque de pincel ya no deja `globalAlpha` puesto
 

@@ -525,7 +525,8 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, viewportSize: action.payload };
     case 'ADD_SHAPE': {
       if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
-      const newShapes = [...state.shapes, action.payload];
+      // Creation time stamped here, not in the pointer handler (v3.25.16): the timelapse's clock.
+      const newShapes = [...state.shapes, { ...action.payload, t: Date.now() }];
       const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
       
       return {
@@ -538,7 +539,8 @@ export function appReducer(state: AppState, action: Action): AppState {
     }
     case 'ADD_SHAPES': {
         if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
-        const newShapes = [...state.shapes, ...action.payload];
+        const t = Date.now();
+        const newShapes = [...state.shapes, ...action.payload.map(s => ({ ...s, t }))];
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
         
         return {
@@ -1120,6 +1122,8 @@ export function appReducer(state: AppState, action: Action): AppState {
                   && Math.abs(m[0] * m[3] - m[1] * m[2]) > 1e-12;
               if (!ok) delete result.textMatrix;
           }
+          // Creation time (v3.25.16): a finite number or nothing (older files fall back to the array index).
+          if ('t' in result && !(typeof result.t === 'number' && Number.isFinite(result.t))) delete result.t;
           return result as Shape;
       });
       const safeTotalLayers = (typeof action.payload.totalLayers === 'number' && action.payload.totalLayers > 0)
@@ -1538,9 +1542,10 @@ export function appReducer(state: AppState, action: Action): AppState {
             fontSize: 40, // Base font size
             rotation: 0,
             isDrawInside: false,
-            isDrawBehind: false
+            isDrawBehind: false,
+            t: Date.now(),
         };
-        
+
         const shapesWithText = [...state.shapes, textShape];
         const { history: textHistory, index: textIndex } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: shapesWithText }));
         
@@ -1868,10 +1873,13 @@ export function appReducer(state: AppState, action: Action): AppState {
         
         // Clone shapes from source layer
         const sourceShapes = state.shapes.filter(s => s.zIndex === sourceZ);
+        // The copy is new content: it is created now (t = duplication time, v3.25.16).
+        const duplicatedAt = Date.now();
         const clonedShapes = sourceShapes.map(s => ({
             ...s,
             id: Date.now() + Math.random().toString(),
-            zIndex: newZ
+            zIndex: newZ,
+            t: duplicatedAt,
         }));
         
         // Update hidden/locked - Shift indices

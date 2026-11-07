@@ -25,6 +25,7 @@ export interface Shape {
   brushMode?: BrushMode; // Store brush mode (tapered or uniform)
   eraserPolygon?: Point[]; // Expanded polygon for SVG mask export
   group?: string[]; // Isolated group chain, outermost first (merged layers, v3.24.0); absent = top level
+  t?: number; // Creation time (Date.now() ms), stamped by the reducer (v3.25.16): WHEN the timelapse shows it, never paint order; absent = older file
 }
 
 export type AppMode = 'drawing' | 'cinematic';
