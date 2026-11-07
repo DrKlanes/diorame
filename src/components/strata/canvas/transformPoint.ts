@@ -79,19 +79,35 @@ export type Projection = {
 export const createTransformPoint = (
 	layer: LayerProjectionParams,
 	frame: FrameProjectionParams,
-) => (x: number, y: number): Projection => {
+) => {
+	const projectInto = createProjectInto(layer, frame);
+	return (x: number, y: number): Projection => {
+		const out: Projection = { x: 0, y: 0, scale: 0, opacity: 0 };
+		projectInto(x, y, out);
+		return out;
+	};
+};
+
+/**
+ * The same projection as createTransformPoint, written into `out` instead of a new object (v3.25.6): the
+ * layer loop projects every point of every shape every frame, and one object per point was pure garbage.
+ * The arithmetic is the original, expression for expression, so the result is bit-identical.
+ */
+export const createProjectInto = (
+	layer: LayerProjectionParams,
+	frame: FrameProjectionParams,
+) => (x: number, y: number, out: Projection): void => {
 	// Drawing Mode Parallax
 	if (!frame.isCinematic) {
 		const dDraw = layer.z - frame.camera.z;
 		const sDraw = DRAW_FOCAL_LENGTH / (DRAW_FOCAL_LENGTH + dDraw);
 		const sx = x * sDraw;
 		const sy = y * sDraw;
-		return {
-			x: frame.centerXScreen + (sx * frame.viewZoom) + frame.viewPan.x,
-			y: frame.centerYScreen + (sy * frame.viewZoom) + frame.viewPan.y,
-			scale: sDraw * frame.viewZoom,
-			opacity: 1,
-		};
+		out.x = frame.centerXScreen + (sx * frame.viewZoom) + frame.viewPan.x;
+		out.y = frame.centerYScreen + (sy * frame.viewZoom) + frame.viewPan.y;
+		out.scale = sDraw * frame.viewZoom;
+		out.opacity = 1;
+		return;
 	}
 
 	// Cinematic 3D
@@ -120,10 +136,8 @@ export const createTransformPoint = (
 		sx *= distFactor; sy *= distFactor;
 	}
 
-	return {
-		x: frame.centerXScreen + (sx * frame.viewZoom) + frame.viewPan.x,
-		y: frame.centerYScreen + (sy * frame.viewZoom) + frame.viewPan.y,
-		scale: layer.layerScale * frame.viewZoom,
-		opacity: layer.layerOpacity,
-	};
+	out.x = frame.centerXScreen + (sx * frame.viewZoom) + frame.viewPan.x;
+	out.y = frame.centerYScreen + (sy * frame.viewZoom) + frame.viewPan.y;
+	out.scale = layer.layerScale * frame.viewZoom;
+	out.opacity = layer.layerOpacity;
 };

@@ -1,7 +1,7 @@
 import { BASE_DEPTH_STEP } from '../StrataContext';
 import { CINEMATIC_DEPTH_MULTIPLIER } from './cinematicCamera';
 import { DRAW_FOCAL_LENGTH, NEAR_CLIP } from '../../../constants/renderConstants';
-import { createTransformPoint } from './transformPoint';
+import { createTransformPoint, createProjectInto, type LayerProjectionParams, type FrameProjectionParams, type Projection } from './transformPoint';
 import { renderParticles } from './renderParticles';
 import { renderTextShape } from './renderTextShape';
 import { bakeTextTransform } from '../../../utils/textTransform';
@@ -29,6 +29,13 @@ const ensureCanvas = (
 	}
 	return ref.current;
 };
+
+// Shape outline projection without an object per point (v3.25.6): one scratch projection, a pool of point
+// objects that only grows, and the array handed to the painters, holding references into the pool. Painting
+// is synchronous and one shape at a time (paintShapeRun never re-enters a shape), so one set is enough.
+const proj: Projection = { x: 0, y: 0, scale: 0, opacity: 0 };
+const pointPool: { x: number; y: number }[] = [];
+const projectedPoints: { x: number; y: number }[] = [];
 
 /**
  * Renders one layer of the layer loop (the callback of renderZs.forEach
@@ -135,36 +142,36 @@ export function renderLayer(
 	let layerAvgZ = dz;
 
 	// Transform Helper Function — extracted to canvas/transformPoint.ts
-	const transformPoint = createTransformPoint(
-		{
-			z,
-			isLocked3D,
-			camX,
-			camY,
-			layerScale,
-			layerOpacity,
-		},
-		{
-			isCinematic,
-			camera: currentCamera,
-			viewZoom,
-			viewPan,
-			centerXScreen,
-			centerYScreen,
-			distortCenterX: logicalCenterX,
-			distortCenterY: logicalCenterY,
-			camRot,
-			cosR,
-			sinR,
-			poiX,
-			poiY,
-			isArcOrOrbit,
-			arcPivotScale,
-			distortionK,
-			cinematicType: currentState.cinematicType,
-			shake: rc.lastShakeRef.current,
-		},
-	);
+	const layerProjection: LayerProjectionParams = {
+		z,
+		isLocked3D,
+		camX,
+		camY,
+		layerScale,
+		layerOpacity,
+	};
+	const frameProjection: FrameProjectionParams = {
+		isCinematic,
+		camera: currentCamera,
+		viewZoom,
+		viewPan,
+		centerXScreen,
+		centerYScreen,
+		distortCenterX: logicalCenterX,
+		distortCenterY: logicalCenterY,
+		camRot,
+		cosR,
+		sinR,
+		poiX,
+		poiY,
+		isArcOrOrbit,
+		arcPivotScale,
+		distortionK,
+		cinematicType: currentState.cinematicType,
+		shake: rc.lastShakeRef.current,
+	};
+	const transformPoint = createTransformPoint(layerProjection, frameProjection);
+	const projectInto = createProjectInto(layerProjection, frameProjection);
 
 	// Draw Particles — extracted to canvas/renderParticles.ts
 	if (fxEnabled && currentState.postProcessingEnabled.particles && currentState.postProcessing.particles > 0.01) {
@@ -250,25 +257,39 @@ export function renderLayer(
 			return; // Sale del forEach callback al siguiente shape (NO cambia comportamiento)
 		}
 
-		// Path Handling
-		const projectedPoints: {x:number, y:number}[] = [];
+		// Path Handling (v3.25.6: no object per point). The projected points live in a pool reused across
+		// shapes and frames; `projectedPoints` holds references to the first n of them. Uniform lines paint
+		// their spine (renderUniformLineShape) and only ever read the outline's length and opacity, so the
+		// outline is not projected for them: opacity is the layer's, the same at every point.
+		const isUniformLine = shape.originalPoints && shape.originalPoints.length > 0 && shape.brushMode === 'uniform';
+		const n = currentPoints.length;
 		let minOp = 1;
-		currentPoints.forEach(pt => {
-			const proj = transformPoint(pt.x, pt.y);
-			projectedPoints.push({ x: proj.x + wiggleX, y: proj.y + wiggleY });
-			if (proj.opacity < minOp) minOp = proj.opacity;
-		});
+		if (isUniformLine) {
+			if (n > 0) {
+				projectInto(currentPoints[0].x, currentPoints[0].y, proj);
+				if (proj.opacity < minOp) minOp = proj.opacity;
+			}
+			projectedPoints.length = 0;
+		} else {
+			for (let i = 0; i < n; i++) {
+				const pt = currentPoints[i];
+				projectInto(pt.x, pt.y, proj);
+				const p = pointPool[i] ??= { x: 0, y: 0 };
+				p.x = proj.x + wiggleX;
+				p.y = proj.y + wiggleY;
+				projectedPoints[i] = p;
+				if (proj.opacity < minOp) minOp = proj.opacity;
+			}
+			projectedPoints.length = n;
+		}
 
-		if (projectedPoints.length > 1 && minOp > 0.01) {
+		if (n > 1 && minOp > 0.01) {
 			hasContent = true;
 			layerCtx.globalAlpha = minOp;
 
 			// Pixel Art Refinement: Snap Points & Use Straight Lines
 			let renderPoints = projectedPoints;
 			let useStraightLines = false;
-
-			// Early detection of brush type to identify "taps"
-			const isUniformLine = shape.originalPoints && shape.originalPoints.length > 0 && shape.brushMode === 'uniform';
 			const isBrushTap = isPixelArt && !isUniformLine && !shape.isEraser && shape.points.length <= 3 && projectedPoints.length > 0;
 			// Tap de brush tapered: originalPoints casi coincidentes → polígono de área cero (invisible).
 			// generateTaperedStroke con 2 puntos da halfWidth=0 (sin(0)=sin(π)=0). Lo renderizamos como
