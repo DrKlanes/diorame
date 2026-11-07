@@ -23,6 +23,9 @@ Diorame is a free drawing tool for layered illustrations with real depth, a cine
 - **Super Riso:** every frame turned into a print: risograph, photocopy or stencil.
 - **Animation:** frame by frame, with onion skin.
 - **Export:** video, PNG, SVG and the `.dior` project file. Send any drawing to the Super Riso Lab to fine-tune inks, paper and screening for high-res print.
+- **Format:** a guide frame in Draw (A sizes, 16:9, 4:3, 4:5, 1:1) and PNG export of exactly that frame, at print or screen sizes.
+- **Layers ZIP:** one transparent PNG per layer, ready for other tools.
+- **Timelapse:** your drawing rebuilt stroke by stroke as an MP4, in the browser, offline.
 
 Installable as a PWA. Desktop and tablet only, by design. English and Spanish.
 

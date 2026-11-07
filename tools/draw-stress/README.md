@@ -63,7 +63,7 @@ await new Promise(r => { const s = document.createElement('script'); s.src = '/t
 await __timelapse({ duration: 15, fps: 15, long: 1080, background: 'paper' });
 ```
 
-Opciones: `framing: 'format' | 'drawing'` (por defecto el marco si hay, si no el dibujo completo), `long: 1080 | 1920`, `duration: 15 | 30 | 60`, `fps: 15 | 30` (por defecto 15), `background: 'paper' | 'solid'`, `layer` (capa activa de la proyección; por defecto la del archivo), `source: '/ruta/archivo.dior'` en lugar del autoguardado, `download: false` para solo verlo. Descarga el MP4 y lo reproduce encima de la app (clic fuera del vídeo para cerrar).
+Opciones: `framing: 'format' | 'view' | 'drawing'` (por defecto el marco si hay, si no el dibujo completo; `view` = la vista del navegador), `long: 1080 | 1920`, `duration: 15 | 30 | 60`, `fps: 15 | 30` (por defecto 15), `background: 'paper' | 'solid'`, `layer` (capa activa de la proyección; por defecto la del archivo), `source: '/ruta/archivo.dior'` en lugar del autoguardado, `download: false` para solo verlo. Descarga el MP4 y lo reproduce encima de la app (clic fuera del vídeo para cerrar).
 
 La CPU solo se compara en A/B alternado en las mismas condiciones: entre sesiones el equipo puede ir el doble de lento.
 

@@ -259,6 +259,13 @@ Lecciones de método (serie v3.20.2–3.20.8, medir sin molestar):
 - **Las pruebas en el navegador no pueden disparar descargas reales** (export PNG, guardar `.dior`): abren diálogos de guardado al usuario. Parchear `HTMLAnchorElement.prototype.click` para los `<a download>` y capturar el blob con `URL.createObjectURL`. Nunca aceptar un diálogo de descarga en nombre del usuario.
 - Para el HQ real hay que importar `exportHandlers.ts` con la URL exacta de `performance.getEntriesByType('resource')`; una ruta desnuda carga otra instancia y `setNextPNGQuality` no llega a la de la app. Una textura se mide con la diferencia «con efecto − sin efecto» del mismo render y su autocorrelación, y el HQ reducido ×2 debe parecerse a la vista. Método completo y trampas: `docs/fx-in-draw.md` §11.
 
+Lecciones de método (serie v3.25.x, DRAW: export, timelapse, render):
+- **Cambios de render o de export (pipeline, `drawSnapshot`, `renderLayerBody`, PNG / Capas ZIP / timelapse, idle-skip) → pasar los arneses de `tools/draw-stress/harness/` antes de cerrar:** `pixcheck` y `pixcheck2` (`'before'` antes de tocar, `'after'` después: 0 px y mismo SHA-256), `alphaleak` y `__timelapseCheck()` (`pass: true`). Uso y casos: `tools/draw-stress/README.md` §4.
+- **Los píxeles se comparan en el mismo backend de raster y en una página recién cargada.** Chrome elige GPU o CPU por lienzo y el antialiasing difiere (hasta 61 niveles): un lienzo de sesión largo y un PNG de una sola vez pueden caer en backends distintos. Forzar `willReadFrequently` en los dos lados (`onCpu` en `timelapse.js`); la textura de papel real no es un oráculo de píxel.
+- **Rendimiento en CPU: solo A/B alternado, viejo y nuevo en la MISMA sesión.** Entre sesiones el equipo puede ir el doble de lento; una medida de ayer no vale contra la de hoy.
+- **Medir con `rAF` exige el panel del navegador integrado visible** (oculto o estrecho congela el `rAF`).
+- **Historia ya subida no se reescribe:** una corrección va en un commit nuevo, nunca `--force` (precedente: v3.25.22 → v3.25.23).
+
 Lecciones de método (serie v3.17.43–48):
 - Un SVG que "se ve perfecto" no demuestra nada: hacen falta **dos fuentes distintas** (render de Canvas vs SVG rasterizado) **y la prueba en la herramienta de destino** (Illustrator: Ctrl+Y y Buscatrazos ignoran máscaras).
 - Las métricas globales diluyen fallos locales (un remate perdido entre 2 000 formas) → auditoría pieza a pieza.

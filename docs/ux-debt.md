@@ -616,9 +616,9 @@ El gizmo de Move / `getLayerBoundingBox` se queda hasta 10 px corto en trazos un
 
 ---
 
-## Formato en DRAW (v3.25.5–3.25.7): aplazado hasta después del evento
+## Formato, export y timelapse de DRAW (v3.25.5–3.25.24): pendientes abiertos
 
-Decidido por Moisés: se entrega solo el PNG del marco y el puente a Super Riso. Lo de abajo está diseñado o medido, no programado.
+Hecho y fuera de esta lista: marco de formato (A, 16:9, 4:3, 4:5, 1:1), PNG de Formato / Vista / Dibujo completo, Capas (ZIP), timelapse en MP4 con caché por capa, no repintar en reposo (`idleGuard.ts`, v3.25.10) y el coste de la rama de *resize* del timelapse (v3.25.18; diagnóstico en el changelog de REFERENCE.md). Lo de abajo está diseñado o medido, no programado.
 
 ### SVG «Formato»
 El SVG exporta coordenadas crudas por capa, **sin paralaje**, con el bbox de todas las formas (`svgExport.ts`). Recortar al marco con un `viewBox` solo casaría con la capa activa: hace falta además un `<g transform="scale(k)">` por capa (k = escala DRAW de esa capa frente a la activa) para que coincida con el PNG. La ruta actual debe quedar byte-idéntica: pasar `tools/svg-diff` antes y después. Ojo: `exportAsSVG` recibe `state.shapes` entero y no filtra `hiddenLayers` [leído en el código, no probado].
@@ -626,23 +626,20 @@ El SVG exporta coordenadas crudas por capa, **sin paralaje**, con el bbox de tod
 ### El MP4 de DRAW no recorta al marco
 Graba el canvas vivo (`captureStream`); el marco se oculta mientras se exporta, así que sale la vista entera.
 
-### Rendimiento en sesiones largas (medido v3.25.4–3.25.6)
-DRAW repinta todas las formas de todas las capas visibles en cada rAF: no hay caché por capa ni salto en reposo. El coste va con los **puntos** (≈ 80 ns/punto en escritorio antes de 3.25.6; −30–40 % después). Con trazos de pincel sintéticos (~235 puntos) 2 000 trazos no llegan a 50 fps ni en escritorio. Queda una salida, núcleo (GO explícito): **caché de capas no activas** en bitmap (al dibujar solo se repinta la activa; pan/zoom invalidan). «No repintar en reposo» está hecho desde v3.25.10 (`idleGuard.ts`): ahorra batería y calor en reposo, no acelera el dibujo. Pendiente: números del iPad con `?perf=1` y un dibujo real.
+### Formato en CINEMA
+El marco es solo de DRAW: en CINEMA se oculta y los exports de CINEMA no lo usan. Sin diseñar.
+
+### Caché de capas en el bucle vivo (núcleo, GO explícito)
+DRAW repinta todas las formas de todas las capas visibles en cada rAF que no esté en reposo. El coste va con los **puntos** (≈ 80 ns/punto en escritorio antes de 3.25.6; −30–40 % después). Con trazos de pincel sintéticos (~235 puntos) 2 000 trazos no llegan a 50 fps ni en escritorio. Queda una salida: **caché de capas no activas** en bitmap (al dibujar solo se repinta la activa; pan/zoom invalidan). El timelapse ya tiene su caché por capa, pero es del export, no del bucle vivo. Pendiente: números del iPad con `?perf=1` y un dibujo real.
 
 ### Un `.dior` de sesión larga puede pasar del límite de apertura
 Con contornos en float completo, 5 000 trazos de pincel sintéticos pesaban ~66 MB; abrir rechaza > 50 MB. [POR CONFIRMAR con un archivo real.]
 
+### El popover de exportación no se navega por teclado hasta los segmentos
+La navegación Tab/flechas del popover solo cicla por `role="option"`; los segmentos (`DiSegmentControl`, ya `role="radio"` y con foco visible desde v3.25.22) no se alcanzan desde ahí. Ya era así antes; el control es alcanzable con Tab fuera de esa navegación.
 
----
+### Timelapse v2: alcance sin definir
+La v1 es solo DRAW, duraciones fijas 15 / 30 / 60 s + 2,5 s de pausa, 15 o 30 fps, sin audio, H.264 únicamente (donde `VideoEncoder` no lo codifica, aviso en lugar de fallback). Qué entra en una v2 lo decide Moisés.
 
-## Timelapse de DRAW (C1, v3.25.17): coste por frame de la rama de *resize* — RESUELTO en v3.25.18
-
-**Resuelto (v3.25.18, GO de Moisés):** comparación contra el tamaño truncado + grano solo cuando se dibuja. Timelapse 30 s: ejemplo 129,9 → 4,6 s; 2000×6 57,7 → 13,3 s. Detalle en el changelog de REFERENCE.md. Lo de abajo queda como historia del diagnóstico.
-
-**Medido** (escritorio, panel visible, 30 s = 975 frames a 1080×1920, papel): 500 trazos 20,6 s (21 ms/frame); 2000×6 capas 57,7 s (59 ms/frame); ejemplo (2369 formas, Dibujo completo) **129,9 s (133 ms/frame)**.
-
-**Causa (medida, no supuesta):** la receta del PNG por rectángulo (`renderRectSnapshot`) usa un tamaño lógico con medio píxel (`(W + 0,5) / S`) para que el raster trunque a W exacto. Así `canvas.width` (entero) nunca iguala `w·S` (fraccionario) y la rama de *resize* de `renderFrame` (`renderPipeline.ts`, ~línea 409) se dispara en **cada** render de una sesión: reasigna los 5 lienzos y regenera el ruido de grano **a tamaño lógico** más el patrón de tinta. En Dibujo completo de un dibujo grande S ≈ 0,25: 14,6 MP lógicos a 1080 de lado largo (40 ms), 33,5 MP a 1080×1920 (92 ms de los 133). En DRAW ese grano ni se usa (es FX de CINEMA). En el iPad un lienzo de decenas de MP por frame es riesgo de cierre por memoria. El motor sigue siendo correcto (semilla por render: cada frame = PNG de su escena, 0 px).
-
-**Arreglo propuesto (núcleo del pipeline → GO de Moisés):** comparar la rama de *resize* y `ensureCanvas` contra el tamaño que el lienzo puede tener (`Math.floor(w)`), no contra el fraccionario. Un render suelto (PNG, HQ, miniatura, `dior-render`) parte de un lienzo nuevo y entra en la rama igual que hoy → byte-idéntico (probar con pixcheck/pixcheck2); el bucle vivo tiene `w` entero → sin cambio. Solo cambian los renders repetidos con `w` fraccionario: la sesión del timelapse deja de regenerar. Esperado: ~40 ms/frame en el ejemplo. Alternativa sin tocar el pipeline: tamaño lógico exacto solo en la sesión → el vídeo queda 0,25 px desplazado respecto al PNG (deja de ser idéntico).
-
-**De paso (existente, no del timelapse):** el PNG «Dibujo completo» paga una vez ese mismo ruido a tamaño lógico (14–33 MP: 40–90 ms y su memoria). [POR CONFIRMAR en iPad.]
+### Timelapse en iPad: sin medir
+H.264 en Safari iPadOS, Wake Lock, tiempo y memoria con 60 s a 1920 (antes de la caché por capa una pieza compleja tardaba ~420 s) y memoria de lienzos de los PNG grandes. [POR MEDIR; tras el push y con versión confirmada, ver CLAUDE.md «Caché del service worker en el iPad».]

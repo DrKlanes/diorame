@@ -3,7 +3,7 @@
 //   await __timelapseTiming()       → 30 s timelapse (975 frames, 1080 × 1920) of the stress scenes and the example: times.
 //   await __timelapse({ ... })      → YOUR drawing as an MP4 (downloads it and plays it on the page). Options:
 //        source: 'autosave' (default: the drawing open in the app, as last autosaved) or a .dior URL
-//        framing: 'format' (default when the drawing has a frame) | 'drawing'      long: 1080 (default) | 1920
+//        framing: 'format' (default when the drawing has a frame) | 'view' | 'drawing'      long: 1080 (default) | 1920
 //        duration: 15 (default) | 30 | 60      background: 'paper' (default) | 'solid'      layer: active layer (projection)
 (() => {
 	const mod = async () => ({

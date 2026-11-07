@@ -33,7 +33,7 @@ disparador salvo `stroke_milestone` (automático: 10/50/200 trazos),
 | `layer_added` | `LayersPanel.tsx:139` y `:196` | No | Descubrimiento del sistema de capas |
 | `camera_preset_used` | `CameraPresetsZone.tsx:34` | No | Descubrimiento del 3D |
 | `filter_applied` | `FXPanel.tsx:121` (helper `toggleFx`) | No | Uso de FX |
-| `artwork_exported` | 5 puntos, uno por formato (ver abajo) | No | **Valor entregado.** Export con éxito |
+| `artwork_exported` | un punto por handler de export (ver abajo) | No | **Valor entregado.** Export con éxito |
 | `project_saved` | `src/hooks/useSaveLoad.ts:78` | **No** (a propósito) | Guardado `.dior` completado con éxito |
 | `project_loaded` | `src/hooks/useSaveLoad.ts:127` | **No** (a propósito) | Carga de `.dior` con éxito. Única señal de retorno real que existe hoy |
 | `welcome_modal` | `src/App.tsx:53` / `:74` / `:98` | Propio | Cómo sale la gente del modal de bienvenida |
@@ -42,15 +42,18 @@ disparador salvo `stroke_milestone` (automático: 10/50/200 trazos),
 
 ### `artwork_exported` — valores de `format`
 
-Ocho valores, no cinco. **Las variantes se separan a propósito**: PNG y MP4
+Doce valores (v3.25.19). **Las variantes se separan a propósito**: PNG y MP4
 tienen cada uno dos formas de invocarse que colapsaban en la misma fila, y eso
 cegaba justo lo que más interesa saber — si alguien usa la súper resolución, y
 si alguien llega al export de animación.
 
 | `format` | Qué es | Punto |
 |---|---|---|
-| `png` | Captura a tamaño de pantalla (CINEMA: upscale a píxeles de dispositivo; DRAW desde v3.17.66: re-render del encuadre visible). Distinguir por `mode` | `canvas/exportHandlers.ts:181` |
+| `png` | Captura a tamaño de pantalla (CINEMA: upscale a píxeles de dispositivo; DRAW desde v3.17.66: re-render del encuadre visible, «Vista» desde v3.25.7). Distinguir por `mode` | `canvas/exportHandlers.ts:181` |
 | `png_hq` | **Súper resolución ×2**: re-render real de la escena por el pipeline (CINEMA y, desde v3.17.66, DRAW; ver `mode`) | `canvas/exportHandlers.ts:181` |
+| `png_format` | PNG de DRAW del marco de formato (A, 16:9, 4:3, 4:5, 1:1) a un tamaño de la lista, v3.25.7. Solo `mode: 'drawing'` | `canvas/exportHandlers.ts` |
+| `png_drawing` | PNG de DRAW «Dibujo completo» (la tinta de las capas visibles), v3.25.9. Solo `mode: 'drawing'` | `canvas/exportHandlers.ts` |
+| `png_layers_zip` | «Capas (ZIP)» de DRAW: un PNG transparente por capa, v3.25.11. `background` siempre `transparent` | `canvas/exportHandlers.ts` |
 | `svg` | Vector sin comprimir | `canvas/exportHandlers.ts:476` |
 | `svgz` | Vector comprimido | `canvas/exportHandlers.ts:476` |
 | `mp4` | Vídeo grabado desde modo CINEMA | `canvas/exportHandlers.ts:572` |
@@ -58,6 +61,8 @@ si alguien llega al export de animación.
 | `gif` | GIF animado | `canvas/gifHandler.ts:128` |
 | `png_sequence` | ZIP con la secuencia de frames | `canvas/pngSequenceHandler.ts:89` |
 | `timelapse` | Timelapse de DRAW en MP4 (v3.25.19), con `background` `paper`/`solid` | `canvas/timelapseExport.ts` |
+
+**El encuadre y la salida no son parámetros nuevos: van dentro de `format`.** En DRAW, `png` / `png_hq` = Vista, `png_format` = Formato, `png_drawing` = Dibujo completo, `png_layers_zip` = Capas ZIP. El tamaño elegido (preset, lado largo) y el encuadre del timelapse (Formato / Vista / Dibujo completo), su duración y su ritmo **no se miden**. Los eventos anteriores a v3.25.7 no traen estos valores.
 
 Los nombres salen del propio código, no de una convención inventada:
 `_nextPNGQuality` es `'device' | 'hq'` (`exportHandlers.ts:17`) y la variante de
@@ -79,8 +84,10 @@ sí solos no dicen de cuál. `artwork_exported` lleva por tanto:
 
 - `mode`: `'drawing'` | `'cinematic'`. Lo llevan **todos** los formatos (los cinco
   handlers lo reciben como parámetro; no se deduce de dónde se llame).
-- `background`: `'paper'` | `'solid'` | `'transparent'`. **Solo** el PNG de DRAW; en
-  el resto de exports el parámetro no viaja.
+- `background`: `'paper'` | `'solid'` | `'transparent'`. Solo los exports de DRAW que
+  lo eligen: los PNG de DRAW (`png`, `png_hq`, `png_format`, `png_drawing`),
+  `png_layers_zip` (siempre `transparent`) y `timelapse` (`paper` / `solid`); en el
+  resto de exports el parámetro no viaja.
 
 Los eventos anteriores a v3.17.66 no tienen `mode`, pero se deduce del formato:
 hasta entonces `svg`/`svgz` solo salían de DRAW y `png`, `png_hq`, `mp4`,
