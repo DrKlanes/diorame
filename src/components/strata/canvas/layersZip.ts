@@ -33,6 +33,20 @@ export function exportedLayers(options: AnimationExportRenderOptions): number[] 
 		.sort((a, b) => a - b);
 }
 
+/** How many layers «Capas (ZIP)» will write, from the live state (same filter as exportedLayers; for the menu's summary). */
+export function exportedLayerCount(s: { shapes: readonly { zIndex: number }[]; hiddenLayers: readonly number[]; isAnimationMode: boolean; currentLayerIndex: number; locked3DLayers: readonly number[] }): number {
+	const frameZ = s.currentLayerIndex * -BASE_DEPTH_STEP;
+	const pinned = new Set(s.locked3DLayers.map(i => i * -BASE_DEPTH_STEP));
+	const zs = new Set<number>();
+	for (const sh of s.shapes) zs.add(sh.zIndex);
+	let n = 0;
+	for (const z of zs) {
+		if (s.hiddenLayers.includes(Math.round(Math.abs(z / BASE_DEPTH_STEP))) || (s.isAnimationMode && z !== frameZ && !pinned.has(z))) continue;
+		n++;
+	}
+	return n;
+}
+
 const seeded = (seed: number) => {
 	let s = seed | 0;
 	return () => {

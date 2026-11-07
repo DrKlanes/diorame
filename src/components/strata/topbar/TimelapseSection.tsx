@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { DiSegmentControl } from '../../../design-system';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
-import { DiSelectorOption } from '../popovers';
+import { ExportPrimary } from './exportConfigParts';
 import { ExportGroupHeader } from './exportMenuParts';
 import { useTranslation } from '../../../i18n';
 import { setNextTimelapse } from '../canvas/timelapseExport';
@@ -41,7 +41,7 @@ interface TimelapseSectionProps {
 
 /**
  * «Timelapse (vídeo)» in the DRAW Captura block (v3.25.19; Ritmo and Tamaño segments v3.25.20): duration, rate,
- * size (long side, aspect kept), background, framing, and one row that starts the export with its real size. Sizes are
+ * size (long side, aspect kept), background, framing, and one primary button that starts the export, with the real size under it (v3.25.21). Sizes are
  * probed with VideoEncoder.isConfigSupported (H.264) at the chosen rate: with none encodable the options are replaced
  * by a short note.
  */
@@ -119,16 +119,16 @@ export function TimelapseSection({ dark, open, framing, onFraming, close }: Time
 				{ value: 'view', label: t('topbar.snapshot.framing.view') },
 				{ value: 'drawing', label: t('topbar.snapshot.framing.drawing') },
 			], framing, onFraming)}
-			{!rect
-				? <DiSelectorOption title={t('topbar.snapshot.drawingEmpty')} disabled onSelect={() => {}} />
-				: <DiSelectorOption
-					title={t('topbar.timelapse.export')}
-					description={ok === undefined ? `${sizeText} · ${t('topbar.timelapse.checking')}`
-						: ok ? t('topbar.timelapse.rowDesc', { size: sizeText, fps: prefs.fps, secs: seconds })
-						: `${sizeText} · ${t('topbar.timelapse.sizeUnsupported')}`}
-					disabled={!ok}
-					onSelect={start}
-				/>}
+			{!rect && <div style={helper}>{t('topbar.snapshot.drawingEmpty')}</div>}
+			<ExportPrimary
+				label={t('topbar.export.video')}
+				summary={ok === undefined ? `${sizeText} · ${t('topbar.timelapse.checking')}`
+					: ok ? t('topbar.timelapse.rowDesc', { size: sizeText, fps: prefs.fps, secs: seconds })
+					: `${sizeText} · ${t('topbar.timelapse.sizeUnsupported')}`}
+				disabled={!rect || !ok}
+				dark={dark}
+				onExport={start}
+			/>
 		</>
 	);
 }

@@ -1,8 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { DiSegmentControl } from '../../../design-system';
-import { T, TYPE, dk } from '../../../design-system/tokens';
 import { useStrata } from '../StrataContext';
-import { DiSelectorOption } from '../popovers';
 import { setNextPNGQuality, setNextPNGBackground, setNextPNGFormatSize, setNextPNGDrawingLongSide, setNextPNGLayersZip } from '../canvas/exportHandlers';
 import { drawingBounds } from '../canvas/drawingBounds';
 import { formatPresets, presetFits, sizeForLongSide, DRAWING_LONG_SIDES, type FormatPreset } from '../../../utils/formatExport';
@@ -10,6 +8,8 @@ import type { ExportBackground } from '../../../types/strataTypes';
 import { useTranslation } from '../../../i18n';
 import { ExportGroupHeader } from './exportMenuParts';
 import { TimelapseSection } from './TimelapseSection';
+import { ExportHelper, ExportPrimary, ExportSizeList, type SizeItem } from './exportConfigParts';
+import { exportedLayerCount } from '../canvas/layersZip';
 
 // ── DRAW PNG background: remembered between exports (per-user convenience) ─────
 
@@ -25,6 +25,13 @@ export const readPngBackground = (): ExportBackground => {
 
 export const savePngBackground = (bg: ExportBackground): void => {
 	try { window.localStorage.setItem(PNG_BG_KEY, bg); } catch (_) { /* not remembered this time */ }
+};
+
+// ── Remembered size per output and format (per-user convenience) ─────────────────
+
+const SIZE_KEY = 'diorame-png-size-prefs';
+const readSizes = (): Record<string, string> => {
+	try { return JSON.parse(window.localStorage.getItem(SIZE_KEY) || '{}') ?? {}; } catch (_) { return {}; }
 };
 
 export type DrawFraming = 'format' | 'view' | 'drawing';
@@ -80,6 +87,11 @@ export function DrawCaptureSection({
 		[open, mode, state.shapes, state.hiddenLayers, state.camera.z, state.currentLayerIndex,
 			state.layerSpacingFactor, state.isAnimationMode, state.locked3DLayers, timelapse],
 	);
+	// Hooks stay above the timelapse early return below.
+	const [sizePrefs, setSizePrefs] = useState<Record<string, string>>(readSizes);
+	const layerCount = useMemo(() => (layers && open ? exportedLayerCount(state) : 0), // eslint-disable-line react-hooks/exhaustive-deps
+		[layers, open, state.shapes, state.hiddenLayers, state.isAnimationMode, state.currentLayerIndex, state.locked3DLayers]);
+
 	const handleDrawingCapture = (long: number) => {
 		setNextPNGQuality('device');
 		setNextPNGFormatSize(null);
@@ -119,20 +131,57 @@ export function DrawCaptureSection({
 		);
 	}
 
+	// ── Size: a selectable control (segments up to three options, a radio list beyond), remembered per output/format ──
+	const sizeKey = `${output}:${mode}${mode === 'format' && format ? `:${format.type}` : ''}`;
+	const chooseSize = (id: string) => setSizePrefs(prev => {
+		const next = { ...prev, [sizeKey]: id };
+		try { window.localStorage.setItem(SIZE_KEY, JSON.stringify(next)); } catch (_) { /* not remembered */ }
+		return next;
+	});
+
+	type Option = SizeItem & { label: string; size: string | null; run: () => void };
+	const options: Option[] = [];
+	if (mode === 'format' && format) {
+		for (const p of formatPresets(format.type, format.orientation)) {
+			const fits = presetFits(p);
+			const size = `${p.width} × ${p.height} px`;
+			options.push({
+				id: p.id, label: p.name, size, disabled: !fits,
+				title: p.ppi ? `${p.name} · ${t('topbar.snapshot.ppi', { n: p.ppi })}` : p.name,
+				description: fits ? size : `${size} · ${t('topbar.snapshot.tooBig')}`,
+				run: () => handleFormatCapture(p),
+			});
+		}
+	} else if (mode === 'drawing' && drawingBox) {
+		for (const long of DRAWING_LONG_SIDES) {
+			const sz = sizeForLongSide(drawingBox, long);
+			const fits = presetFits(sz);
+			const size = `${sz.width} × ${sz.height} px`;
+			options.push({
+				id: String(long), label: `${long} px`, size, disabled: !fits,
+				title: `${long} px`, description: fits ? size : `${size} · ${t('topbar.snapshot.tooBig')}`,
+				run: () => handleDrawingCapture(long),
+			});
+		}
+	} else if (mode === 'view') {
+		for (const q of ['device', 'hq'] as const) {
+			const label = t(q === 'device' ? 'topbar.snapshot.deviceSize' : 'topbar.snapshot.highQuality');
+			options.push({ id: q, label, size: null, disabled: false, title: label, description: '', run: () => onViewCapture(q) });
+		}
+	}
+	const chosen = options.find(o => o.id === sizePrefs[sizeKey] && !o.disabled) ?? options.find(o => !o.disabled) ?? null;
+	const sizeText = chosen ? (chosen.size ?? chosen.label) : '';
+	const bgText = t(`topbar.snapshot.bg.${background}`).toLowerCase();
+	const summary = !chosen ? '' : layers
+		? (layerCount === 1 ? t('topbar.snapshot.summaryLayer', { size: sizeText }) : t('topbar.snapshot.summaryLayers', { n: layerCount, size: sizeText }))
+		: t('topbar.snapshot.summaryPng', { size: sizeText, bg: bgText });
+	const tooBigNotes = options.filter(o => o.disabled && o.size).map(o => t('topbar.snapshot.tooBigSize', { size: o.label }));
+
 	return (
 		<>
 			{outputControl}
 			{/* Helper line: the same tokens as DiSelectorOption's description (e.g. «Super Riso ↗»), not a section label. */}
-			{layers && <div style={{
-				padding: '0 10px 6px',
-				fontFamily: TYPE.numericValue.family,
-				fontWeight: TYPE.numericValue.weight,
-				fontSize: TYPE.numericValue.size,
-				color: dk(dark, T.muted, T.textDarkMuted),
-				lineHeight: 1.4,
-			}}>
-				{t('topbar.snapshot.layersHint')}
-			</div>}
+			{layers && <ExportHelper dark={dark}>{t('topbar.snapshot.layersHint')}</ExportHelper>}
 			{!layers && <ExportGroupHeader label={t('topbar.snapshot.background')} dark={dark} />}
 			{!layers && <div style={{ padding: '2px 10px 6px' }}>
 				<DiSegmentControl<ExportBackground>
@@ -161,41 +210,27 @@ export function DrawCaptureSection({
 					small
 				/>
 			</div>
-			{mode === 'format' && format && formatPresets(format.type, format.orientation).map(p => {
-				const fits = presetFits(p);
-				const size = `${p.width} × ${p.height} px`;
-				return (
-					<DiSelectorOption
-						key={p.id}
-						title={p.ppi ? `${p.name} · ${t('topbar.snapshot.ppi', { n: p.ppi })}` : p.name}
-						description={fits ? size : `${size} · ${t('topbar.snapshot.tooBig')}`}
-						disabled={!fits}
-						onSelect={() => handleFormatCapture(p)}
+			{options.length > 0 && <ExportGroupHeader label={t('topbar.snapshot.size')} dark={dark} />}
+			{options.length > 3
+				? <ExportSizeList items={options} value={chosen?.id ?? null} onChange={chooseSize} dark={dark} />
+				: options.length > 0 && <div style={{ padding: '2px 10px 6px' }}>
+					<DiSegmentControl<string>
+						options={options.map(o => ({ value: o.id, label: o.label, disabled: o.disabled }))}
+						value={chosen?.id ?? ''}
+						onChange={chooseSize}
+						dark={dark}
+						small
 					/>
-				);
-			})}
-			{mode === 'drawing' && (drawingBox ? DRAWING_LONG_SIDES.map(long => {
-				const sz = sizeForLongSide(drawingBox, long);
-				const fits = presetFits(sz);
-				const size = `${sz.width} × ${sz.height} px`;
-				return (
-					<DiSelectorOption
-						key={long}
-						title={`${long} px`}
-						description={fits ? size : `${size} · ${t('topbar.snapshot.tooBig')}`}
-						disabled={!fits}
-						onSelect={() => handleDrawingCapture(long)}
-					/>
-				);
-			}) : (
-				<DiSelectorOption title={t('topbar.snapshot.drawingEmpty')} disabled onSelect={() => {}} />
-			))}
-			{mode === 'view' && (
-				<>
-					<DiSelectorOption title={t('topbar.snapshot.deviceSize')} onSelect={() => onViewCapture('device')} />
-					<DiSelectorOption title={t('topbar.snapshot.highQuality')} onSelect={() => onViewCapture('hq')} />
-				</>
-			)}
+				</div>}
+			{tooBigNotes.map(n => <ExportHelper key={n} dark={dark}>{n}</ExportHelper>)}
+			{mode === 'drawing' && !drawingBox && <ExportHelper dark={dark}>{t('topbar.snapshot.drawingEmpty')}</ExportHelper>}
+			<ExportPrimary
+				label={t(layers ? 'topbar.export.layersZip' : 'topbar.export.png')}
+				summary={summary}
+				disabled={!chosen}
+				dark={dark}
+				onExport={() => chosen?.run()}
+			/>
 		</>
 	);
 }

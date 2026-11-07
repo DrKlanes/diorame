@@ -14,7 +14,7 @@ import { EnhancedTooltip } from '../components/ui/enhanced-tooltip';
  *
  * Soporta T number para casos donde el value semántico es numérico (e.g. discrete FX intensity).
  */
-export type SegmentOption<T extends string | number = string> = T | { value: T; label: string; tooltip?: string };
+export type SegmentOption<T extends string | number = string> = T | { value: T; label: string; tooltip?: string; disabled?: boolean };
 
 interface DiSegmentControlProps<T extends string | number = string> {
 	options: SegmentOption<T>[];
@@ -35,7 +35,7 @@ export function DiSegmentControl<T extends string | number = string>({
 	// Primitives (string or number) become { value: opt, label: String(opt) }.
 	// Explicit return type: `typeof opt` can't narrow a generic T, so without
 	// this annotation TS infers a union that still includes the primitive arm.
-	const normalized = options.map((opt): { value: T; label: string; tooltip?: string } => {
+	const normalized = options.map((opt): { value: T; label: string; tooltip?: string; disabled?: boolean } => {
 		if (typeof opt === 'string' || typeof opt === 'number') {
 			return { value: opt as T, label: String(opt) };
 		}
@@ -69,12 +69,13 @@ interface SegmentItemProps {
 	label: string;
 	tooltip?: string;
 	active: boolean;
+	disabled?: boolean;
 	small: boolean;
 	dark: boolean;
 	onClick: () => void;
 }
 
-function SegmentItem({ label, tooltip, active, small, dark, onClick }: SegmentItemProps) {
+function SegmentItem({ label, tooltip, active, disabled, small, dark, onClick }: SegmentItemProps) {
 	const [hov, setHov] = useState(false);
 
 	const item = (
