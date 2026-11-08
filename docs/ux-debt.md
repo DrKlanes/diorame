@@ -616,7 +616,7 @@ El gizmo de Move / `getLayerBoundingBox` se queda hasta 10 px corto en trazos un
 
 ---
 
-## Formato, export y timelapse de DRAW (v3.25.5–3.25.24): pendientes abiertos
+## Formato, export y timelapse de DRAW (v3.25.5–3.25.25): pendientes abiertos
 
 Hecho y fuera de esta lista: marco de formato (A, 16:9, 4:3, 4:5, 1:1), PNG de Formato / Vista / Dibujo completo, Capas (ZIP), timelapse en MP4 con caché por capa, no repintar en reposo (`idleGuard.ts`, v3.25.10) y el coste de la rama de *resize* del timelapse (v3.25.18; diagnóstico en el changelog de REFERENCE.md). Lo de abajo está diseñado o medido, no programado.
 
@@ -639,7 +639,10 @@ Con contornos en float completo, 5 000 trazos de pincel sintéticos pesaban ~66 
 La navegación Tab/flechas del popover solo cicla por `role="option"`; los segmentos (`DiSegmentControl`, ya `role="radio"` y con foco visible desde v3.25.22) no se alcanzan desde ahí. Ya era así antes; el control es alcanzable con Tab fuera de esa navegación.
 
 ### Timelapse v2: alcance sin definir
-La v1 es solo DRAW, duraciones fijas 15 / 30 / 60 s + 2,5 s de pausa, 15 o 30 fps, sin audio, H.264 únicamente (donde `VideoEncoder` no lo codifica, aviso en lugar de fallback). Qué entra en una v2 lo decide Moisés.
+La v1 es solo DRAW, duraciones fijas 15 / 30 / 60 s + 2,5 s de pausa, 15 o 30 fps, sin audio, H.264 únicamente (donde `VideoEncoder` no lo codifica, aviso en lugar de fallback). Qué entra en una v2 lo decide Moisés. El ritmo por tiempo real de dibujo ya está hecho (v3.25.25) y no cuenta como pendiente.
+
+### Idea aparcada (no es deuda): timelapse con trazo progresivo
+Mostrar cada trazo creciendo en vez de aparecer entero. Poca visibilidad: a las densidades típicas caen ~1–2 frames por trazo, así que apenas se notaría. Se retoma solo si cambia esa proporción.
 
 ### Timelapse en iPad: sin medir
 H.264 en Safari iPadOS, Wake Lock, tiempo y memoria con 60 s a 1920 (antes de la caché por capa una pieza compleja tardaba ~420 s) y memoria de lienzos de los PNG grandes. [POR MEDIR; tras el push y con versión confirmada, ver CLAUDE.md «Caché del service worker en el iPad».]

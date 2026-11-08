@@ -1,6 +1,6 @@
 import { createFullSource, createLayeredSource } from './timelapseSources';
 import { drawingBounds } from './drawingBounds';
-import { appearanceRanks, paintsLayer, shapesAtFrame } from './timelapseSchedule';
+import { appearanceRanks, frameShapeCounts, paintsLayer } from './timelapseSchedule';
 import { createMp4Writer, timelapseCodec, TIMELAPSE_FPS, type Mp4Writer } from './timelapseEncode';
 import { visibleWorldRect, type Rect } from '../../../utils/formatFrame';
 import type { AnimationExportRenderOptions } from './animationExportRender';
@@ -123,7 +123,7 @@ export async function renderTimelapse(options: AnimationExportRenderOptions, o: 
 	const { rank, count } = appearanceRanks(shapes, paintsLayer(options.state));
 	const drawFrames = Math.max(2, Math.round(o.duration * fps));
 	const total = drawFrames + Math.round((o.holdSeconds ?? TIMELAPSE_HOLD_S) * fps);
-	const ks = Array.from({ length: total }, (_, i) => shapesAtFrame(i, count, drawFrames));
+	const ks = Array.from(frameShapeCounts(shapes, rank, count, drawFrames, total));
 
 	// One seed for the export: the first render makes the ink texture with it and later renders reuse it, so every frame
 	// is exactly the PNG export of its scene with this seed — as «Capas (ZIP)» does across its layers.

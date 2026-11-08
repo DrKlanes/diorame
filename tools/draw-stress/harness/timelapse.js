@@ -52,12 +52,13 @@
 		const drawFrames = SAMPLE.duration * SAMPLE.fps, total = drawFrames + Math.round(2.5 * SAMPLE.fps);
 		// First frame, 25 / 50 / 75 % of the DRAWING phase (the hold repeats the last), and the very last frame.
 		const frames = [...[0, 0.25, 0.5, 0.75].map(f => Math.round(f * (drawFrames - 1))), total - 1];
-		const ks = frames.map(i => m.S.shapesAtFrame(i, count, drawFrames));
+		const all = m.S.frameShapeCounts(o.state.shapes, rank, count, drawFrames, total);
+		const ks = frames.map(i => all[i]);
 		const capture = async (layerCache) => {
 			const want = new Set(ks), got = new Map();
 			const t0 = performance.now();
 			const r = await m.T.renderTimelapse(o, { rect, ...size, background, ...SAMPLE, seed: 4242, layerCache, ...extra,
-				inspect: (i, cv) => { const k = m.S.shapesAtFrame(i, count, drawFrames); if (want.has(k)) got.set(k, new Uint8ClampedArray(pixels(cv))); } });
+				inspect: (i, cv) => { const k = all[i]; if (want.has(k)) got.set(k, new Uint8ClampedArray(pixels(cv))); } });
 			return { r, got, s: (performance.now() - t0) / 1000 };
 		};
 		const cached = await capture(true), full = await capture(false);
@@ -116,6 +117,22 @@
 		add('new', 1, 90, -70, 40, 1);                                // layer 2 is now layer 1
 		return s;
 	};
+
+	// Pacing by drawing time (v3.25.25). 60 shapes on one layer with FABRICATED t (ms): burst A (20 shapes, 40 ms apart), slow B (10, 800 ms),
+	// a 2 h pause, burst C (20, 40 ms), slow D (10, 800 ms). Compressed span: 760 + 9·800 + 800 (A→B) ... the pause counts 1000.
+	const PACED = { A: [0, 20], B: [20, 30], C: [30, 50], D: [50, 60], pauseAt: 30 };
+	const pacedScene = (C) => {
+		const R = C.appReducer; let s = C.initialState;
+		const blob = (id, x, y, r, color) => ({ id, color: s.palette[color], zIndex: 0,
+			points: Array.from({ length: 24 }, (_, i) => ({ x: x + Math.cos(i / 24 * Math.PI * 2) * r, y: y + Math.sin(i / 24 * Math.PI * 2) * r })) });
+		for (let i = 0; i < 60; i++) s = R(s, { type: 'ADD_SHAPE', payload: blob('p' + i, ((i * 37) % 300) - 150, ((i * 53) % 260) - 130, 30 + (i % 5) * 8, (i * 7) % 24) });
+		let t = 1.7e12;
+		s = { ...s, shapes: s.shapes.map((x, i) => { if (i > 0) t += i === PACED.pauseAt ? 7.2e6 : (i < 20 || (i >= 30 && i < 50)) ? 40 : 800; return { ...x, t }; }) };
+		return s;
+	};
+	// First drawing frame at which each shape (rank = array index here) is visible.
+	const appearFrames = (ks, n, drawFrames) => Array.from({ length: n }, (_, r) => { for (let i = 0; i < drawFrames; i++) if (ks[i] > r) return i; return drawFrames - 1; });
+	const framesPerShape = (af, [a, b]) => new Set(af.slice(a, b)).size / (b - a);
 
 	window.__tlDebug = { mod, options, lastFrameVsPng, load, pixels, diff: (a, b) => [diff(a, b), maxErr] };
 
@@ -181,6 +198,49 @@
 				selfCheck_restrictedStampingOrder: order(restricted),
 			};
 		}
+		// Pacing by drawing time (v3.25.25).
+		{
+			const D = SAMPLE.duration * SAMPLE.fps, total = D + Math.round(2.5 * SAMPLE.fps);
+			const sched = (st) => { const { rank, count } = m.S.appearanceRanks(st.shapes, () => true); return { count, ks: m.S.frameShapeCounts(st.shapes, rank, count, D, total) }; };
+			const uniform = (count) => Int32Array.from({ length: total }, (_, i) => m.S.shapesAtFrame(i, count, D));
+			const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+			const monotone = (a) => a.every((v, i) => i === 0 || v >= a[i - 1]);
+			const ps = pacedScene(m.C);
+			const o = await options(ps, 0);
+			const rect = m.T.timelapseRect(o.state, 'drawing', { w: 1366, h: 1024 });
+			const size = m.T.timelapseSize(rect, 1080);
+			const { count, ks } = sched(ps);
+			const uni = uniform(count);
+			const spanMs = ps.shapes.slice(1).reduce((a, x, i) => a + Math.min(x.t - ps.shapes[i].t, 1000), 0);
+			const msPerFrame = spanMs / (D - 1);
+			const judge = (kk) => {
+				const af = appearFrames(kk, count, D);
+				const j = { burstA: framesPerShape(af, PACED.A), slowB: framesPerShape(af, PACED.B), burstC: framesPerShape(af, PACED.C), slowD: framesPerShape(af, PACED.D), pauseFrames: af[PACED.pauseAt] - af[PACED.pauseAt - 1] };
+				j.pauseMsOfDrawing = Math.round(j.pauseFrames * msPerFrame);
+				j.ok = j.burstA < j.slowB && j.burstC < j.slowD && j.pauseFrames <= Math.ceil(1000 / msPerFrame) + 1
+					&& kk[0] === 0 && kk[D - 1] === count && kk[total - 1] === count && monotone(kk);
+				return j;
+			};
+			const r = await lastFrameVsPng(m, o, rect, size, 'solid');
+			delete r.last; delete r.ref;
+			const expectedRepaints = 1 + ks.reduce((a, k, i) => a + (i > 0 && k !== ks[i - 1] ? 1 : 0), 0);
+			// Mixed file: the first 10 shapes lose their t → they keep the uniform pacing at full rate, the rest are paced by time.
+			const mixed = { ...ps, shapes: ps.shapes.map((x, i) => { if (i >= 10) return x; const { t, ...y } = x; return y; }) };
+			const mx = sched(mixed), mu = uniform(mx.count);
+			const bMixed = mu.findIndex(k => k >= 10);
+			// Untimed files: the example and a stress scene must come out byte for byte as the uniform schedule.
+			const exS = sched(ex), s2S = sched(s2000);
+			const tl = sched(await threeLayerScene(m.C));
+			out.pacing = {
+				frames: total, drawFrames: D, spanMs, msPerFrame: +msPerFrame.toFixed(1),
+				paced: judge(ks), repaints: r.repaints, expectedRepaints, video: r.video, lastFrameVsPng_diffPx: r.diffPx, samples: r.samples,
+				selfCheck_uniformPacing: judge(uni),
+				mixed_headIsUniform: same(mx.ks.slice(0, bMixed + 1), mu.slice(0, bMixed + 1)), mixed_ok: monotone(mx.ks) && mx.ks[D - 1] === mx.count && mx.ks[bMixed] === 10 && !same(mx.ks, mu),
+				untimed_example_equalsUniform: same(exS.ks, uniform(exS.count)), untimed_stress_equalsUniform: same(s2S.ks, uniform(s2S.count)),
+				mergedNoSpan_equalsUniform: same(tl.ks, uniform(tl.count)),
+			};
+		}
+		const pc = out.pacing;
 		out.pass = Object.entries(out).every(([k, v]) => k.startsWith('info_') || typeof v !== 'object' || (v.diffPx ?? v.lastFrameVsPng_diffPx) === 0)
 			&& out.merged.selfCheck_tOrderPainting_diffPx > 0
 			&& out.merged.stability_unseededRerender_diffPx === 0
@@ -188,7 +248,9 @@
 			&& out.merged.paintedAtK4 === 'B1 A1 A2 A3'
 			&& out.merged.threeLayer.appearanceOrder === 'c1 b1 a1 c2 b2 a2 new'
 			&& out.merged.threeLayer.untimedLeft === 0 && out.merged.threeLayer.syntheticOnAll && out.merged.threeLayer.layersAtEnd === 2
-			&& out.merged.threeLayer.selfCheck_restrictedStampingOrder !== 'c1 b1 a1 c2 b2 a2 new';
+			&& out.merged.threeLayer.selfCheck_restrictedStampingOrder !== 'c1 b1 a1 c2 b2 a2 new'
+			&& pc.paced.ok && !pc.selfCheck_uniformPacing.ok && pc.lastFrameVsPng_diffPx === 0 && pc.repaints === pc.expectedRepaints
+			&& pc.mixed_headIsUniform && pc.mixed_ok && pc.untimed_example_equalsUniform && pc.untimed_stress_equalsUniform && pc.mergedNoSpan_equalsUniform;
 		return out;
 	};
 
