@@ -1,6 +1,7 @@
 // "Export › Super Riso ↗" (v3.23.0): hands the open drawing to the Super Riso Lab in another tab. Protocol (REFERENCE.md §8):
-// Lab → opener {type:'superriso:ready'}; Diorame → Lab {type:'superriso:image', data, mime, name, drawView}; Lab → Diorame
-// {type:'superriso:received'}. Every postMessage names the Lab's exact origin, never '*'.
+// Lab → opener {type:'superriso:ready'} (every load, and the answer to Diorame's {type:'superriso:ping'}, which does NOT reload
+// the tab); Diorame → Lab {type:'superriso:image', data, mime, name, drawView}; Lab → Diorame {type:'superriso:received'}.
+// Every postMessage names the Lab's exact origin, never '*'.
 import type { AppState } from '../types/strataTypes';
 
 // In development, VITE_SUPER_RISO_LAB_URL (.env.local) points at a Lab served locally; its query (?diorame=…) is kept.
@@ -8,7 +9,7 @@ const LAB_URL = new URL(import.meta.env.VITE_SUPER_RISO_LAB_URL || 'https://supe
 LAB_URL.searchParams.set('from', 'diorame');
 const WINDOW_NAME = 'superriso';
 const ANSWER_MS = 8000;  // for 'ready' after opening, then for 'received' after sending
-const PROBE_MS = 2500;   // a reused tab that does not reload never announces 'ready': send to it anyway once
+const PING_MS = 1000;    // a Lab tab that is already open answers the ping with 'ready' well within this; if not, navigate it
 
 export type DrawView = { x: number; y: number; w: number; h: number };
 export type SuperRisoPayload = { blob: Blob; name: string; drawView: DrawView };
@@ -30,8 +31,9 @@ let labWindow: Window | null = null;
  */
 export function launchSuperRiso(prepare: () => Promise<SuperRisoPayload>): Promise<{ ok: boolean; payload: SuperRisoPayload | null }> {
 	const origin = LAB_URL.origin;
-	const reused = !!labWindow && !labWindow.closed;
-	const win = window.open(LAB_URL.href, WINDOW_NAME);
+	// Never window.open(url, name) on a live Lab: it reloads the tab and the user loses the style and framing prepared there.
+	// A known live window, or the named one (window.open with no URL returns it without touching it), is pinged instead.
+	const win = labWindow && !labWindow.closed ? labWindow : window.open('', WINDOW_NAME);
 	if (!win) return Promise.resolve({ ok: false, payload: null });
 	labWindow = win;
 
@@ -40,7 +42,7 @@ export function launchSuperRiso(prepare: () => Promise<SuperRisoPayload>): Promi
 		let ready = false;
 		let done = false;
 		let answerTimer = 0;
-		let probeTimer = 0;
+		let pingTimer = 0;
 
 		const send = () => {
 			if (!payload) return;
@@ -49,24 +51,28 @@ export function launchSuperRiso(prepare: () => Promise<SuperRisoPayload>): Promi
 		const finish = (ok: boolean) => {
 			if (done) return;
 			done = true;
-			clearTimeout(answerTimer); clearTimeout(probeTimer);
+			clearTimeout(answerTimer); clearTimeout(pingTimer);
 			window.removeEventListener('message', onMessage);
 			resolve({ ok, payload });
 		};
 		const wait = () => { clearTimeout(answerTimer); answerTimer = window.setTimeout(() => finish(false), ANSWER_MS); };
 		const onMessage = (e: MessageEvent) => {
 			if (e.origin !== origin || e.source !== win || !e.data) return;
-			if (e.data.type === 'superriso:ready') { ready = true; wait(); send(); }
+			if (e.data.type === 'superriso:ready') { ready = true; clearTimeout(pingTimer); wait(); send(); }
 			else if (e.data.type === 'superriso:received') finish(true);
 		};
 
 		window.addEventListener('message', onMessage);
 		wait();
+		try { win.postMessage({ type: 'superriso:ping' }, origin); win.focus(); } catch (_) { /* cross-origin focus quirks: the timer decides */ }
+		// No answer: a blank window, a closed Lab or one older than v23.5. Load the Lab there; its first 'ready' continues the flow.
+		pingTimer = window.setTimeout(() => {
+			try { win.location.href = LAB_URL.href; } catch (_) { finish(false); }
+		}, PING_MS);
 		prepare().then(p => {
 			if (done) return;
 			payload = p;
 			if (ready) send();
-			else if (reused) probeTimer = window.setTimeout(send, PROBE_MS);
 		}).catch(err => {
 			console.warn('[superriso] could not prepare the file:', err);
 			finish(false);
