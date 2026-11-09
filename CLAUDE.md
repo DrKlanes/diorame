@@ -228,7 +228,7 @@ BASE_DEPTH_STEP     = 150        // Z-units por capa
 MAX_LAYERS          = 10
 MAX_HISTORY_STEPS   = 50
 RENDER_THROTTLE_MS  = ~8         // ~120 fps máx durante dibujo
-DRAW_FOCAL_LENGTH   = 5000       // focal length del canvas 2D en drawing mode
+DRAW_FOCAL_LENGTH   = 10000      // focal length del canvas 2D en drawing mode (~1,5 % por capa; 5000 hasta v3.25.28)
 FOG_DENSITY_FACTOR  = 0.0004     // densidad base de niebla cinemática
 NEAR_CLIP           = 50         // clipping mínimo de capa en proyección 3D
 ```

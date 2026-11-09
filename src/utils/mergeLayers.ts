@@ -35,10 +35,11 @@ export const mergeChangesGradient = (state: AppState): boolean => {
 };
 
 // A shape keeps its screen position across a change of plane only if its world coordinates absorb
-// the change: DRAW projects each layer at F / (F + z − camera.z) around the world origin, ~3 % per
-// layer. A plane change keeps the look exactly from ONE camera: since v3.25.28 it is A's, the one the
-// user drew with, so what was drawn touching B (or the format frame, on layer 0's plane) keeps
-// touching it. Until then it was B's (where DRAW opens after the merge): ~0.09 % off per merge.
+// the change: DRAW projects each layer at F / (F + z − camera.z) around the world origin, ~1.5 % per
+// layer (F = 10000 since v3.25.29; ~3 % at 5000). A plane change keeps the look exactly from ONE
+// camera: since v3.25.28 it is A's, the one the user drew with, so what was drawn touching B (or the
+// format frame, on layer 0's plane) keeps touching it. Until then it was B's (where DRAW opens after
+// the merge): ~0.09 % off per merge at F = 5000.
 const planeScale = (fromZ: number, toZ: number, cameraZ: number) =>
 	(DRAW_FOCAL_LENGTH + toZ - cameraZ) / (DRAW_FOCAL_LENGTH + fromZ - cameraZ);
 

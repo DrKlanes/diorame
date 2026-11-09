@@ -33,10 +33,12 @@ export const RENDER_THROTTLE_MS = 8;
 
 /**
  * Focal length used for the 2D drawing-mode projection (gizmo, layer
- * scale calc, etc.). Higher value = flatter perspective. 5000 is the
- * value originally hardcoded in StrataCanvas as a local constant.
+ * scale calc, etc.). Higher value = flatter perspective. One layer
+ * (150 z) apart: F / (F + 150) ≈ −1.5 % at 10000 (v3.25.29); until
+ * then 5000 (≈ −3 %, the value first hardcoded in StrataCanvas).
+ * CINEMA does not use it (its focal length is state.focalLength).
  */
-export const DRAW_FOCAL_LENGTH = 5000;
+export const DRAW_FOCAL_LENGTH = 10000;
 
 /** Near clipping plane distance — layers closer than this are invisible */
 export const NEAR_CLIP = 50;
