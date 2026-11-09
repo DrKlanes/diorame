@@ -1,16 +1,18 @@
 import { createDrawSnapshotSession, type DrawSnapshotSession } from './drawSnapshot';
 import type { AnimationExportRenderOptions } from './animationExportRender';
 import type { DrawFormat, ExportBackground } from '../../../types/strataTypes';
-import type { Rect } from '../../../utils/formatFrame';
+import { frameInView, type Rect } from '../../../utils/formatFrame';
 
 /**
- * DRAW PNG of the format frame (v3.25.7): exactly `format.rect` at width × height px, with the LIVE projection —
+ * DRAW PNG of the format frame (v3.25.7): exactly the frame at width × height px, with the LIVE projection —
  * the camera of the active layer travels in options.camera/state, so the other layers keep the parallax seen on
- * screen (option A, WYSIWYG for the active layer at export time).
+ * screen (WYSIWYG at export time).
  *
- * The frame is on the active layer's plane (DRAW scale 1), so it is the canvas at zoom 1 with the pan that puts
- * its corner at (0, 0), re-drawn at renderScale S = width / rect.w — the same recipe as renderDior (diorRender.ts).
- * The logical size carries half a pixel more so the physical raster, truncated by the canvas, is exactly W × H.
+ * `format.rect` is in layer 0's plane (v3.25.28): it is taken to the active layer's plane through the same camera
+ * (frameInView), so the frame always crops the same region of layer 0. That plane has DRAW scale 1, so it is the
+ * canvas at zoom 1 with the pan that puts its corner at (0, 0), re-drawn at renderScale S = width / rect.w — the
+ * same recipe as renderDior (diorRender.ts). The logical size carries half a pixel more so the physical raster,
+ * truncated by the canvas, is exactly W × H.
  */
 export const renderFormatSnapshot = (
 	options: AnimationExportRenderOptions,
@@ -18,9 +20,9 @@ export const renderFormatSnapshot = (
 	width: number,
 	height: number,
 	background: ExportBackground,
-): HTMLCanvasElement => renderRectSnapshot(options, format.rect, width, height, background);
+): HTMLCanvasElement => renderRectSnapshot(options, frameInView(format, options.camera.z, options.state.isAnimationMode), width, height, background);
 
-/** Any rectangle of the active layer's plane (the format frame, or «Dibujo completo»'s box, v3.25.9). */
+/** Any rectangle of the active layer's plane (the frame through frameInView, or «Dibujo completo»'s box, v3.25.9). */
 export const renderRectSnapshot = (
 	options: AnimationExportRenderOptions,
 	r: Rect,

@@ -1,12 +1,32 @@
+import { DRAW_FOCAL_LENGTH } from '../constants/renderConstants';
 import type { DrawFormat, FormatOrientation, FormatType } from '../types/strataTypes';
 
-// DRAW format guide (v3.25.5). The frame lives on the active layer's plane, where the DRAW projection has
-// scale 1 (camera.z follows the active layer), so world ⇄ screen is only zoom and pan:
+// DRAW format guide (v3.25.5). Since v3.25.28 `format.rect` is in LAYER 0's plane: the frame is drawn like layer-0
+// ink, so it shrinks slightly (parallax) while an upper layer is active, and ink merged down to layer 0 stays where
+// it was against it (merge down keeps relative alignment, mergeLayers.ts). The active layer's plane has DRAW scale 1
+// (camera.z follows the active layer), so there world ⇄ screen is only zoom and pan:
 //   screen = size/2 + world·zoom + pan        world = (screen − size/2 − pan) / zoom
-// Other layers drift ~3 % per layer around the world origin (parallax option A: the export uses the live
-// projection, WYSIWYG for the layer that is active when exporting).
+// The view, «Dibujo completo» and the export rectangles are in that active plane: frameInView() takes the frame
+// there (scaled around the world origin, like transformPoint.ts), toFramePlane() brings a view rectangle back.
+// DRAW animation keeps the frame on the active plane (scale 1): each frame of the flipbook is its own layer.
 
 export type Rect = { x: number; y: number; w: number; h: number };
+
+/** Scale at which a camera at `cameraZ` shows layer 0's plane in DRAW (transformPoint.ts, raw z = 0). */
+export const layer0Scale = (cameraZ: number): number => DRAW_FOCAL_LENGTH / (DRAW_FOCAL_LENGTH - cameraZ);
+
+/** Scale of the frame's plane seen from the camera: layer 0's, or 1 in animation. */
+export const framePlaneScale = (cameraZ: number, isAnimationMode: boolean): number => (isAnimationMode ? 1 : layer0Scale(cameraZ));
+
+export const scaleRect = (r: Rect, k: number): Rect => ({ x: r.x * k, y: r.y * k, w: r.w * k, h: r.h * k });
+
+/** The frame in the active layer's plane (what the live DRAW projection shows, at zoom 1 / pan 0). */
+export const frameInView = (format: DrawFormat, cameraZ: number, isAnimationMode: boolean): Rect =>
+	scaleRect(format.rect, framePlaneScale(cameraZ, isAnimationMode));
+
+/** A rectangle of the active layer's plane (e.g. the visible view) in the frame's plane. */
+export const toFramePlane = (r: Rect, cameraZ: number, isAnimationMode: boolean): Rect =>
+	scaleRect(r, 1 / framePlaneScale(cameraZ, isAnimationMode));
 
 export const FORMAT_TYPES: readonly FormatType[] = ['A', '16:9', '4:3', '4:5', '1:1'] as const;
 

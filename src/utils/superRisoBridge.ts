@@ -14,7 +14,8 @@ const PING_MS = 1000;    // a Lab tab that is already open answers the ping with
 export type DrawView = { x: number; y: number; w: number; h: number };
 export type SuperRisoPayload = { blob: Blob; name: string; drawView: DrawView };
 
-/** The world rectangle the DRAW canvas shows, in frameOf coordinates (DRAW projected at zoom 1). Inverse of the
+/** The world rectangle the DRAW canvas shows, in the active layer's plane at zoom 1 (useSuperRisoExport divides it by
+ *  layer 0's scale to reach frameOf coordinates, camera at 0 — the same thing with layer 0 active). Inverse of the
  *  screen projection of transformPoint.ts (x = w/2 + p·zoom + pan.x), which diorRender.ts inverts the other way. */
 export function visibleDrawView(state: Pick<AppState, 'drawingZoom' | 'drawingPan'>, w: number, h: number): DrawView {
 	const zoom = state.drawingZoom || 1;

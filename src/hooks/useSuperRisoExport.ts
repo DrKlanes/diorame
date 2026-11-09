@@ -6,6 +6,7 @@ import { useTranslation } from '../i18n';
 import { buildDiorData } from '../utils/diorPayload';
 import { DIOR_FORMAT_VERSION, DIOR_MIME, projectFileStem, type DiorFileMeta } from '../utils/projectMeta';
 import { downloadBlob } from '../utils/downloadBlob';
+import { frameInView, layer0Scale, scaleRect } from '../utils/formatFrame';
 import { closeSuperRisoWindow, launchSuperRiso, visibleDrawView } from '../utils/superRisoBridge';
 import { renderProjectThumbnail } from '../components/strata/canvas/projectThumbnail';
 
@@ -37,9 +38,11 @@ export function useSuperRisoExport() {
 			// frameOf's coordinates are those of the file as the Lab reads it: measure the serialized copy, not the live state.
 			const { frameOf } = await import('../components/strata/canvas/diorRender');
 			try { frameOf(JSON.parse(await blob.text())); } catch (err) { empty = true; throw err; }
-			// With a format frame (v3.25.7) the Lab opens on the frame: same coordinates as the view (both are the
-			// active layer's plane at zoom 1), so the protocol does not change.
-			return { blob, name: filename, drawView: state.format ? { ...state.format.rect } : visibleDrawView(state, w, h) };
+			// The Lab opens on the frame (v3.25.7) or on the view. The Lab renders with the camera at 0, so drawView is in
+			// layer 0's plane (v3.25.28): the rectangle seen from the active layer, divided by layer 0's scale from that
+			// camera. For the frame this is format.rect itself (outside animation); the protocol does not change.
+			const seen = state.format ? frameInView(state.format, state.camera.z, state.isAnimationMode) : visibleDrawView(state, w, h);
+			return { blob, name: filename, drawView: scaleRect(seen, 1 / layer0Scale(state.camera.z)) };
 		}).then(({ ok, payload }) => {
 			if (ok) { toast.success(t('toast.superRiso.opened'), { duration: 2000 }); return; }
 			if (empty) { closeSuperRisoWindow(); emptyToast(); return; }

@@ -2,7 +2,7 @@ import { createFullSource, createLayeredSource } from './timelapseSources';
 import { drawingBounds } from './drawingBounds';
 import { appearanceRanks, frameShapeCounts, paintsLayer } from './timelapseSchedule';
 import { createMp4Writer, timelapseCodec, TIMELAPSE_FPS, type Mp4Writer } from './timelapseEncode';
-import { visibleWorldRect, type Rect } from '../../../utils/formatFrame';
+import { frameInView, visibleWorldRect, type Rect } from '../../../utils/formatFrame';
 import type { AnimationExportRenderOptions } from './animationExportRender';
 import type { AppState } from '../../../types/strataTypes';
 
@@ -23,7 +23,7 @@ export type TimelapseBackground = 'paper' | 'solid';
 
 /** The rectangle of the active layer's plane a framing covers (the PNG's framings), or null if there is none. */
 export function timelapseRect(state: AppState, framing: TimelapseFraming, viewport: { w: number; h: number }): Rect | null {
-	if (framing === 'format') return state.format ? { ...state.format.rect } : null;
+	if (framing === 'format') return state.format ? frameInView(state.format, state.camera.z, state.isAnimationMode) : null;
 	if (framing === 'view') return visibleWorldRect(state.drawingZoom, state.drawingPan, viewport.w, viewport.h);
 	return drawingBounds(state);
 }

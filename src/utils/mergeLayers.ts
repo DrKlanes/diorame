@@ -36,7 +36,9 @@ export const mergeChangesGradient = (state: AppState): boolean => {
 
 // A shape keeps its screen position across a change of plane only if its world coordinates absorb
 // the change: DRAW projects each layer at F / (F + z − camera.z) around the world origin, ~3 % per
-// layer. Exact with the camera on the merged layer, where DRAW opens it after the merge.
+// layer. A plane change keeps the look exactly from ONE camera: since v3.25.28 it is A's, the one the
+// user drew with, so what was drawn touching B (or the format frame, on layer 0's plane) keeps
+// touching it. Until then it was B's (where DRAW opens after the merge): ~0.09 % off per merge.
 const planeScale = (fromZ: number, toZ: number, cameraZ: number) =>
 	(DRAW_FOCAL_LENGTH + toZ - cameraZ) / (DRAW_FOCAL_LENGTH + fromZ - cameraZ);
 
@@ -69,7 +71,7 @@ const shiftIndices = (list: number[], removed: number) => list.filter(i => i !==
  * with any of them goes into an isolated group (Shape.group, canvas/renderShapeRun.ts, svgGeometry.ts)
  * and keeps acting on A alone. Whatever is drawn later has no group and acts on the merged layer.
  * B's shapes stay untouched; A's go after them, in order. A and the layers above change plane, so
- * they are rescaled to stay where they are on screen (planeScale).
+ * they are rescaled to stay where they were on screen from A's camera (planeScale, viewZ).
  */
 export const mergeLayerDown = (
 	state: AppState,
@@ -78,6 +80,7 @@ export const mergeLayerDown = (
 	if (!canMergeDown(state)) return state;
 	const a = state.currentLayerIndex, b = a - 1;
 	const camZ = zOf(b);
+	const viewZ = zOf(a);   // the camera the merged and upper shapes keep their look from (planeScale)
 
 	// The merge moves A's shapes to the end of the array, which loses the order they were drawn in. Shapes from before
 	// the creation time (v3.25.16) have none: give them a negative one that keeps their current array order, so the
@@ -86,7 +89,7 @@ export const mergeLayerDown = (
 	const upper = all.filter(s => layerOf(s) === a);
 	const needsGroup = upper.some(s => s.isEraser || s.isDrawInside || s.isDrawBehind);
 	const groupId = `g${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-	const kA = planeScale(zOf(a), zOf(b), camZ);
+	const kA = planeScale(zOf(a), zOf(b), viewZ);
 	const merged = upper.map(s => {
 		const placed = onPlane(s, zOf(b), kA);
 		return needsGroup ? { ...placed, group: [groupId, ...(s.group ?? [])] } : placed;
@@ -94,7 +97,7 @@ export const mergeLayerDown = (
 	const rest = all.flatMap(s => {
 		const i = layerOf(s);
 		if (i === a) return [];
-		return i < a ? [s] : [onPlane(s, zOf(i - 1), planeScale(zOf(i), zOf(i - 1), camZ))];
+		return i < a ? [s] : [onPlane(s, zOf(i - 1), planeScale(zOf(i), zOf(i - 1), viewZ))];
 	});
 
 	const layerRenderModes = shiftRecord(state.layerRenderModes, a);

@@ -1,11 +1,12 @@
-import type { DrawFormat } from '../../../types/strataTypes';
+import type { Rect } from '../../../utils/formatFrame';
 
 /**
  * DRAW format guide (v3.25.5): dims what falls outside the frame and outlines it. Live overlay only —
  * renderFrame calls it inside the !skipCinematicOverlays block, so no export or re-render ever carries it.
  *
- * The frame is on the active layer's plane, where the DRAW projection has scale 1:
- *   screen = w/2 + world·zoom + pan   (utils/formatFrame.ts)
+ * `rect` is the frame already in the active layer's plane (frameInView, utils/formatFrame.ts), where the DRAW
+ * projection has scale 1:
+ *   screen = w/2 + world·zoom + pan
  *
  * Dim = ONE evenodd fill (canvas minus frame) washed with the paper colour at ~50 %, so the outside reads as
  * faded paper rather than a dark mask; the line is a 1 px stroke snapped to the pixel grid.
@@ -21,14 +22,14 @@ export const drawFormatFrame = (
 	h: number,
 	zoom: number,
 	pan: { x: number; y: number },
-	format: DrawFormat,
+	rect: Rect,
 	isDarkMode: boolean,
 ): void => {
 	const z = zoom || 1;
-	const x0 = w / 2 + format.rect.x * z + pan.x;
-	const y0 = h / 2 + format.rect.y * z + pan.y;
-	const x1 = x0 + format.rect.w * z;
-	const y1 = y0 + format.rect.h * z;
+	const x0 = w / 2 + rect.x * z + pan.x;
+	const y0 = h / 2 + rect.y * z + pan.y;
+	const x1 = x0 + rect.w * z;
+	const y1 = y0 + rect.h * z;
 
 	ctx.save();
 	ctx.setTransform(1, 0, 0, 1, 0, 0);

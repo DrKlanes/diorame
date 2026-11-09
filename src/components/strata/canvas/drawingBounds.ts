@@ -9,7 +9,7 @@ const MARGIN_MIN = 32;       // world units = px at zoom 1
 
 /**
  * «Dibujo completo» (v3.25.9): the ink of the visible layers in the LIVE DRAW projection, in the coordinates of the
- * active layer's plane (the format frame's: world = (screen − size/2 − pan) / zoom), plus 4 % of the long side
+ * active layer's plane (the view's: world = (screen − size/2 − pan) / zoom), plus 4 % of the long side
  * (minimum 32) each side. Null when there is nothing to frame (empty, or every layer with ink hidden).
  *
  * Mirrors the DRAW branch of transformPoint.ts, not frameOf (which is the Lab's contract and puts the camera at 0):

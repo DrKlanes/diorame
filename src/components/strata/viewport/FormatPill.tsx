@@ -5,7 +5,7 @@ import { useTheme } from '../../../design-system/useTheme';
 import { useTranslation } from '../../../i18n';
 import { DiSelectorPopover } from '../popovers/DiSelectorPopover';
 import { DiSelectorOption } from '../popovers/DiSelectorOption';
-import { newFormat, reshapeFormat, visibleWorldRect } from '../../../utils/formatFrame';
+import { newFormat, reshapeFormat, toFramePlane, visibleWorldRect } from '../../../utils/formatFrame';
 import type { FormatOrientation, FormatType } from '../../../types/strataTypes';
 
 type Choice = FormatType | 'free';
@@ -24,7 +24,9 @@ export function FormatPill() {
 	const anchorRef = useRef<HTMLDivElement>(null);
 	const format = state.format;
 
-	const view = () => visibleWorldRect(state.drawingZoom, state.drawingPan, state.viewportSize.w, state.viewportSize.h);
+	// The view in the frame's plane (layer 0's, v3.25.28): a new frame fills ~88 % of what is on screen from any layer.
+	const view = () => toFramePlane(visibleWorldRect(state.drawingZoom, state.drawingPan, state.viewportSize.w, state.viewportSize.h),
+		state.camera.z, state.isAnimationMode);
 	const orientation: FormatOrientation = format?.orientation ?? 'landscape';
 
 	const choose = (choice: Choice) => {

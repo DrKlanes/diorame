@@ -43,7 +43,7 @@ import {
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { bakeTextTransform, flipTextProps } from '../../utils/textTransform';
 import { mergeLayerDown } from '../../utils/mergeLayers';
-import { fitViewToRect, sanitizeFormat } from '../../utils/formatFrame';
+import { fitViewToRect, frameInView, sanitizeFormat } from '../../utils/formatFrame';
 import { remapLayerIndices, remapFocusLayer, shiftFocusLayer } from '../../utils/remapViewLayers';
 
 export {
@@ -509,10 +509,11 @@ export function appReducer(state: AppState, action: Action): AppState {
       };
     }
     case 'RESET_DRAWING_VIEW': {
-      // With a format frame (v3.25.5), "Centrar vista" fits it; without one, zoom 1 at the origin as always.
+      // With a format frame (v3.25.5), "Centrar vista" fits it as seen from the active layer (frameInView, v3.25.28);
+      // without one, zoom 1 at the origin as always.
       const { w, h } = state.viewportSize;
       if (state.format && w > 0 && h > 0) {
-          const fit = fitViewToRect(state.format.rect, w, h);
+          const fit = fitViewToRect(frameInView(state.format, state.camera.z, state.isAnimationMode), w, h);
           return { ...state, drawingZoom: fit.zoom, drawingPan: fit.pan };
       }
       return { ...state, drawingZoom: 1, drawingPan: { x: 0, y: 0 } };

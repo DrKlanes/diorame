@@ -14,6 +14,7 @@ import { createTransformPoint } from './transformPoint';
 import { drawSymmetryAxis } from './drawSymmetryAxis';
 import { drawCompositionGuide } from './drawCompositionGuide';
 import { drawFormatFrame } from './drawFormatFrame';
+import { frameInView } from '../../../utils/formatFrame';
 import { quantizePixelArtCamera } from './quantizePixelArtCamera';
 import {
 	applyRisoV2,
@@ -721,7 +722,8 @@ export function renderFrame(
 
 		// --- Format frame (DRAW only, v3.25.5) --- same gates as the guide: never in an export or the MP4 recording.
 		if (currentState.mode === 'drawing' && currentState.format && !currentState.isUIHidden && !currentState.isExporting) {
-			drawFormatFrame(ctx, w, h, currentState.drawingZoom || 1, currentState.drawingPan || { x: 0, y: 0 }, currentState.format, currentState.isDarkMode);
+			drawFormatFrame(ctx, w, h, currentState.drawingZoom || 1, currentState.drawingPan || { x: 0, y: 0 },
+				frameInView(currentState.format, currentCamera.z, currentState.isAnimationMode), currentState.isDarkMode);
 		}
 	}
 
