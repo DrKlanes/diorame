@@ -3,12 +3,21 @@ import logoImg from 'figma:asset/logo-symbol.png';
 import { toast } from 'sonner@2.0.3';
 import { Ico } from '../../../design-system';
 import { DiButton } from '../../../design-system/DiButton';
-import { T } from '../../../design-system/tokens';
+import { T, TYPE, RADIUS } from '../../../design-system/tokens';
 import { Wordmark } from '../../../design-system/Wordmark';
 import { useTranslation } from '../../../i18n';
 import type { Language } from '../../../i18n';
 import { analytics } from '../../../analytics/analytics';
 import { PRESENTATION_URL } from '../../../constants/videos';
+
+// Same pill geometry as the DiModal *ActionLg buttons (Welcome): RADIUS.pill, 44px, 18px padding, 13/600.
+// DiButton wraps shadcn's Button, whose base class is rounded-md, so the radius is set inline.
+const CTA_STYLE: React.CSSProperties = {
+	borderRadius: RADIUS.pill,
+	fontFamily:   TYPE.controlLabel.family,
+	fontWeight:   600,
+	fontSize:     13,
+};
 
 const LANDING_URL: Readonly<Record<Language, string>> = {
 	es: 'https://diorame.com/es/',
@@ -43,14 +52,16 @@ const THEME_CSS = `
 	--mbs-bg:    rgb(255, 255, 255);           /* T.white          */
 	--mbs-text:  rgb(26, 26, 26);              /* T.dark           */
 	--mbs-muted: rgb(140, 140, 140);           /* T.muted          */
-	--mbs-line:  rgba(26, 26, 26, 0.18);
+	--mbs-line:  rgb(212, 212, 212);           /* T.border         */
+	--mbs-hover: rgb(245, 245, 245);           /* T.light          */
 }
 @media (prefers-color-scheme: dark) {
 	:root {
 		--mbs-bg:    rgb(26, 26, 26);              /* T.dark           */
 		--mbs-text:  rgba(255, 255, 255, 0.85);    /* T.textDark       */
 		--mbs-muted: rgba(255, 255, 255, 0.40);    /* T.textDarkMuted  */
-		--mbs-line:  rgba(255, 255, 255, 0.22);
+		--mbs-line:  rgba(255, 255, 255, 0.10);    /* T.borderDark     */
+		--mbs-hover: rgba(255, 255, 255, 0.07);    /* T.hoverDark      */
 	}
 }
 .mbs-root  { background: var(--mbs-bg);   color: var(--mbs-text);  }
@@ -173,14 +184,14 @@ export function MobileBlockScreenV2() {
 
 					{/* Actions */}
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 320, marginTop: 28 }}>
-						<DiButton variant="brand" className="w-full h-12 scale-100 hover:scale-100 text-base" onClick={sendLink}>
+						<DiButton variant="brand" className="w-full h-11 px-[18px] has-[>svg]:px-[18px] scale-100 hover:scale-100 hover:bg-[#9a0ff9] hover:opacity-90" style={CTA_STYLE} onClick={sendLink}>
 							<Ico name="export" size={18} />
 							{t('modal.mobile.send')}
 						</DiButton>
 						<DiButton
 							variant="ghost"
-							className="w-full h-12 border"
-							style={{ color: 'var(--mbs-text)', borderColor: 'var(--mbs-line)' }}
+							className="w-full h-11 px-[18px] has-[>svg]:px-[18px] border hover:bg-[var(--mbs-hover)]"
+							style={{ ...CTA_STYLE, color: 'var(--mbs-text)', borderColor: 'var(--mbs-line)' }}
 							onClick={openVideo}
 						>
 							<Ico name="play" size={18} />
