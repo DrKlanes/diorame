@@ -52,6 +52,18 @@ export type DioramEventMap = {
    */
   mobile_blocked: { viewport_width: number };
 
+  /**
+   * Embudo de la pantalla de bloqueo móvil (v3.26.0). `lang` = idioma resuelto de la app.
+   * gate_shown: se mostró (una vez por sesión; `mobile_blocked` sigue siendo el paso 1 del
+   * embudo general). link_shared: el usuario completó el panel nativo de compartir.
+   * link_copied: el enlace acabó en el portapapeles. video_opened / landing_opened: salidas.
+   */
+  mobile_gate_shown: { lang: string };
+  mobile_link_shared: { lang: string };
+  mobile_link_copied: { lang: string };
+  mobile_video_opened: { lang: string };
+  mobile_landing_opened: { lang: string };
+
   /** Primer trazo de la sesión. EVENTO CLAVE: mide activación real. */
   first_stroke: { tool: string; seconds_to_first_stroke: number };
 
@@ -270,6 +282,8 @@ type SessionState = {
    * 'dismissed' falso.
    */
   welcomeModalSent: boolean;
+  /** La pantalla de bloqueo puede remontarse al cruzar los 768px: solo cuenta la primera vez. */
+  mobileGateShownSent: boolean;
 };
 
 const STROKE_MILESTONES = [10, 50, 200] as const;
@@ -284,6 +298,7 @@ const state: SessionState = {
   depthSent: false,
   entrySent: false,
   welcomeModalSent: false,
+  mobileGateShownSent: false,
 };
 
 const elapsedSeconds = () => Math.round((Date.now() - state.startedAt) / 1000);
@@ -311,6 +326,29 @@ export const analytics = {
     if (state.entrySent) return;
     state.entrySent = true;
     track('mobile_blocked', { viewport_width: viewportWidth });
+  },
+
+  /** Pantalla de bloqueo móvil mostrada. Una vez por sesión. */
+  mobileGateShown(lang: string): void {
+    if (state.mobileGateShownSent) return;
+    state.mobileGateShownSent = true;
+    track('mobile_gate_shown', { lang });
+  },
+
+  mobileLinkShared(lang: string): void {
+    track('mobile_link_shared', { lang });
+  },
+
+  mobileLinkCopied(lang: string): void {
+    track('mobile_link_copied', { lang });
+  },
+
+  mobileVideoOpened(lang: string): void {
+    track('mobile_video_opened', { lang });
+  },
+
+  mobileLandingOpened(lang: string): void {
+    track('mobile_landing_opened', { lang });
   },
 
   /**

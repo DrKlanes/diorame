@@ -38,6 +38,11 @@ disparador salvo `stroke_milestone` (automático: 10/50/200 trazos),
 | `project_loaded` | `src/hooks/useSaveLoad.ts:127` | **No** (a propósito) | Carga de `.dior` con éxito. Única señal de retorno real que existe hoy |
 | `welcome_modal` | `src/App.tsx:53` / `:74` / `:98` | Propio | Cómo sale la gente del modal de bienvenida |
 | `tour_video` | `src/components/strata/modals/TourModalV2.tsx` (`shown` al abrir, `played` al pulsar play) | Propio | Solo usuario nuevo, una vez en la vida. `shown` sin `played` = cierre sin ver el vídeo |
+| `mobile_gate_shown` | `MobileBlockScreenV2.tsx` (efecto de montaje) | Propio (`mobileGateShownSent`) | Pantalla de bloqueo móvil mostrada (v3.26.0). Param `lang`. `mobile_blocked` sigue siendo el paso 1 del embudo |
+| `mobile_link_shared` | `MobileBlockScreenV2.tsx` | No | «Envíame el enlace» con panel nativo de compartir completado (AbortError no cuenta) |
+| `mobile_link_copied` | `MobileBlockScreenV2.tsx` | No | Sin Web Share, o falló: el enlace acabó en el portapapeles |
+| `mobile_video_opened` | `MobileBlockScreenV2.tsx` | No | Pulsó «Ver cómo funciona» (vídeo de presentación en su idioma) |
+| `mobile_landing_opened` | `MobileBlockScreenV2.tsx` | No | Pulsó «Conocer Diorame» (diorame.com/es|en) |
 | `session_depth` | `visibilitychange` + `pagehide`, registrados por `installAnalytics()` en `src/main.tsx` | Propio (`depthSent`) | Resumen de sesión al salir |
 
 ### `artwork_exported` — valores de `format`

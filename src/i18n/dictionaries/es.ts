@@ -637,7 +637,12 @@ export const es: Dictionary = {
 
 	'modal.mobile.alt': 'Diorame',
 	'modal.mobile.primary': 'Diorame está diseñado para tablet y escritorio.',
-	'modal.mobile.secondary': 'Necesitas una pantalla más grande para dibujar, crear capas y ver tus escenas en movimiento.',
+	'modal.mobile.secondary': 'Guárdate el enlace y ábrelo en tu ordenador o tablet.',
+	'modal.mobile.send': 'Envíame el enlace',
+	'modal.mobile.shareText': 'Diorame: dibujo por capas con preview 3D. Ábrelo en tu ordenador o tablet.',
+	'modal.mobile.copied': 'Enlace copiado',
+	'modal.mobile.video': 'Ver cómo funciona (2 min)',
+	'modal.mobile.about': 'Conocer Diorame',
 
 	'modal.onboarding.header': 'Bienvenido a Diorame',
 	'modal.onboarding.tagline': 'Dibuja en 2D. Y mira cómo cobra vida en 3D.',

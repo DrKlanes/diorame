@@ -667,7 +667,12 @@ export const en: Dictionary = {
 	// Mobile block
 	'modal.mobile.alt': 'Diorame',
 	'modal.mobile.primary': 'Diorame is designed for tablet and desktop.',
-	'modal.mobile.secondary': 'You\'ll need a larger screen to draw, layer, and view your scenes in motion.',
+	'modal.mobile.secondary': 'Save the link and open it on your computer or tablet.',
+	'modal.mobile.send': 'Send me the link',
+	'modal.mobile.shareText': 'Diorame: layered drawing with a 3D preview. Open it on your computer or tablet.',
+	'modal.mobile.copied': 'Link copied',
+	'modal.mobile.video': 'See how it works (2 min)',
+	'modal.mobile.about': 'About Diorame',
 
 	// Onboarding overlay
 	'modal.onboarding.header': 'Welcome to Diorame',
