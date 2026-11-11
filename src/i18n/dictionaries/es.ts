@@ -20,7 +20,7 @@ export const es: Dictionary = {
 	'topbar.file.undo': 'Deshacer',
 	'topbar.file.redo': 'Rehacer',
 	'topbar.file.svg': 'SVG',
-	'topbar.file.svgCompressed': 'SVG (Comprimido)',
+	'topbar.file.svgCompressed': 'SVG (comprimido)',
 	'topbar.file.untitledProject': 'Proyecto sin título',
 
 	'topbar.mode.draw': 'Dibujar',

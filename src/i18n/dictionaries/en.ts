@@ -21,7 +21,7 @@ export const en: Dictionary = {
 	'topbar.file.undo': 'Undo',
 	'topbar.file.redo': 'Redo',
 	'topbar.file.svg': 'SVG',
-	'topbar.file.svgCompressed': 'SVG (Compressed)',
+	'topbar.file.svgCompressed': 'SVG (compressed)',
 	'topbar.file.untitledProject': 'Untitled Project',
 
 	// Mode switch
