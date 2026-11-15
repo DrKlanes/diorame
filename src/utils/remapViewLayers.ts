@@ -1,7 +1,5 @@
 import type { Shape } from '../types/strataTypes';
-
-// Mirror of StrataContext.BASE_DEPTH_STEP — kept local to avoid circular import (see mergeLayers.ts)
-const BASE_DEPTH_STEP = 150;
+import { BASE_DEPTH_STEP } from '../constants/layers';
 
 const layerOf = (shape: Shape) => Math.round(Math.abs(shape.zIndex) / BASE_DEPTH_STEP);
 

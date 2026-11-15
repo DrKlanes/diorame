@@ -1,7 +1,5 @@
 import type { BrushMode, HistorySnapshot, Shape } from '../types/strataTypes';
-
-// Mirror of StrataContext.BASE_DEPTH_STEP — kept local to avoid circular import (see animationFrames.ts)
-const BASE_DEPTH_STEP = 150;
+import { BASE_DEPTH_STEP } from '../constants/layers';
 
 export type LayerBrush = { thickness: number; mode: BrushMode };
 

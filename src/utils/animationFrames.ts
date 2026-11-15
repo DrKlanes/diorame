@@ -1,8 +1,5 @@
 import type { AppState } from '../types/strataTypes';
-
-// Mirror of StrataContext.BASE_DEPTH_STEP — kept local to avoid circular import
-// (StrataContext imports this module; this module cannot re-import StrataContext)
-const BASE_DEPTH_STEP = 150;
+import { BASE_DEPTH_STEP } from '../constants/layers';
 
 /**
  * Returns true when a layer has no drawable content.

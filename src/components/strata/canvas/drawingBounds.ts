@@ -2,8 +2,8 @@ import { getLayerBoundingBox } from './transformUtils';
 import { DRAW_FOCAL_LENGTH, NEAR_CLIP } from '../../../constants/renderConstants';
 import type { AppState, Shape } from '../../../types/strataTypes';
 import type { Rect } from '../../../utils/formatFrame';
+import { BASE_DEPTH_STEP } from '../../../constants/layers';
 
-const BASE_DEPTH_STEP = 150; // StrataContext's (not imported: this module must not pull the reducer)
 const MARGIN = 0.04;         // of the long side, each side (like frameOf)
 const MARGIN_MIN = 32;       // world units = px at zoom 1
 

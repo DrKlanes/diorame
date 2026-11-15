@@ -9,12 +9,11 @@
 // (srcPaper is white there), so it enters as the heaviest colour of the scene.
 
 import type { Shape, SuperRisoSettings } from '../../../../types/strataTypes';
+import { BASE_DEPTH_STEP } from '../../../../constants/layers';
 import { DIORAME_RISO, CMYK_RISO, MAXI, hex2rgb, oklab, dP, printedHex, opacityFor, nearestFrom, type InkEntry, type PickedInks, type RGB } from './inks';
 
 type Group = { hex: string; L: RGB; w: number };
 
-/** Mirror of StrataContext.BASE_DEPTH_STEP: a shape's zIndex is its layer index · −150. */
-const BASE_DEPTH_STEP = 150;
 /** Below this OKLab distance to srcPaper a colour prints as paper, not as an ink. */
 const PAPER_DIST = .06;
 

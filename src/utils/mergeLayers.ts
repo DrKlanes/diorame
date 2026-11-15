@@ -4,9 +4,7 @@ import { isLayerEmpty } from './animationFrames';
 import { bakeTextTransform } from './textTransform';
 import { resolveLayerBrush } from './layerBrush';
 import type { AppState, HistorySnapshot, LayerGradParams, Point, Shape } from '../types/strataTypes';
-
-// Mirror of StrataContext.BASE_DEPTH_STEP — kept local to avoid circular import (see animationFrames.ts)
-const BASE_DEPTH_STEP = 150;
+import { BASE_DEPTH_STEP } from '../constants/layers';
 
 const zOf = (layerIndex: number) => layerIndex * -BASE_DEPTH_STEP;
 const layerOf = (shape: Shape) => Math.round(shape.zIndex / -BASE_DEPTH_STEP);

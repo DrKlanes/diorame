@@ -17,10 +17,9 @@ export type {
 };
 
 // --- Constants ---
-export const BASE_DEPTH_STEP = 150;
-export const MAX_LAYERS = 10;
+import { BASE_DEPTH_STEP, MAX_LAYERS, MAX_HISTORY_STEPS } from '../../constants/layers';
+export { BASE_DEPTH_STEP, MAX_LAYERS, MAX_HISTORY_STEPS }; // Moved to constants/layers.ts
 export { APP_VERSION } from '../../constants/version'; // Moved to constants/version.ts
-export const MAX_HISTORY_STEPS = 50; // History limit
 
 import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS } from '../../constants/palette';
 import { SUPER_RISO_DEFAULTS, sanitizeSuperRiso, applySuperRisoStyle, patchSuperRiso, type SuperRisoPatch } from '../../constants/superRiso';

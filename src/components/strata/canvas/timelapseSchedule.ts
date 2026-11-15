@@ -1,7 +1,6 @@
 import type { AppState, Shape } from '../../../types/strataTypes';
 import type { SnapshotScene } from './drawSnapshot';
-
-const BASE_DEPTH_STEP = 150; // StrataContext's (not imported: this module must not pull the reducer)
+import { BASE_DEPTH_STEP } from '../../../constants/layers';
 
 /**
  * Timelapse schedule (v3.25.17). Two orders, never mixed:

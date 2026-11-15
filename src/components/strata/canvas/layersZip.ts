@@ -1,8 +1,7 @@
 import { downloadBlob } from '../../../utils/downloadBlob';
 import type { AnimationExportRenderOptions } from './animationExportRender';
 import type { ExportBackground } from '../../../types/strataTypes';
-
-const BASE_DEPTH_STEP = 150; // StrataContext's (not imported: keeps this module free of the reducer)
+import { BASE_DEPTH_STEP } from '../../../constants/layers';
 
 export type LayerRender = (options: AnimationExportRenderOptions, background: ExportBackground) => HTMLCanvasElement;
 
