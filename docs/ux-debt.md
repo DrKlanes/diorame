@@ -646,3 +646,25 @@ Mostrar cada trazo creciendo en vez de aparecer entero. Poca visibilidad: a las 
 
 ### Timelapse en iPad: sin medir
 H.264 en Safari iPadOS, Wake Lock, tiempo y memoria con 60 s a 1920 (antes de la caché por capa una pieza compleja tardaba ~420 s) y memoria de lienzos de los PNG grandes. [POR MEDIR; tras el push y con versión confirmada, ver CLAUDE.md «Caché del service worker en el iPad».]
+
+---
+
+## Grosor y trazos Ink (v3.26.3–3.26.4): pendientes y decisiones abiertas
+
+**Estado:** registrados al cerrar v3.26.4, sin programar. Los puntos 1 y 2 van juntos y están planificados tras la Fase 0 del refactor.
+
+### El slider de grosor no refleja el grosor visible de la capa
+
+Redimensionar trazos de brush cambia el grosor visible pero no el valor del slider; tras acoplar capas con grosores distintos el slider muestra el del último trazo. **Decisión de Moisés (15 nov 2026):** el slider mostrará el grosor visible y «Mixto» cuando la capa tenga varios; tocarlo unifica. Futuro: opción explícita de escalado proporcional de grosores mixtos. Planificado tras la Fase 0 del refactor.
+
+### Una capa vacía con grosor propio no lo persiste
+
+El grosor se deriva de los trazos (`resolveLayerBrush`, `utils/layerBrush.ts`), así que una capa sin trazos no escribe su par en el `.dior`: al reabrir vuelve al valor por defecto. Menor; abordar junto al punto anterior.
+
+### Los trazos Ink anteriores a v3.26.4 conservan facetas hasta regenerar su capa
+
+El contorno se hornea en `shape.points` al confirmar el trazo (REFERENCE.md §4), así que los trazos rápidos hechos antes de v3.26.4 siguen con facetas rectas hasta que su capa se regenera (cambiar el grosor la regenera). **Opción C descartada por ahora:** regenerar el contorno al pintar desde `originalPoints`, con caché; obligaría a migrar SVG, bbox y picking a la misma fuente.
+
+### La vista previa del trazo en vivo no coincide al 100 % con el trazo comprometido
+
+El trazo en vivo se pinta con ancho constante, sin vaivén ni variación de Ink; al soltar, el trazo comprometido lleva el estilo completo. Comportamiento conocido, no bug.
