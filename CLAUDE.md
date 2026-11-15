@@ -16,6 +16,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 | **Stack** | React 18 + TypeScript + Vite 6 + Tailwind CSS 4 + Canvas 2D API |
 | **Dev** | `npm run dev` → puerto 3000 |
 | **Build** | `npm run build` — siempre verificar antes de hacer commit |
+| **Tests** | `npm test` (Vitest, ~1,5 s) — reducer y generadores de trazo en Node; ver «Verificación» |
 
 ---
 
@@ -247,10 +248,19 @@ NEAR_CLIP           = 50         // clipping mínimo de capa en proyección 3D
 - Modificar eraser, Draw Inside/Behind, clipping, o `hiddenLayers` en undo/redo
 - Añadir paletas adicionales (máximo 2-3 total, diseño intencional)
 - Operaciones síncronas pesadas en el hilo principal (I/O, exports)
+- Modificar `tests/` en un commit de refactor, o regenerar una referencia golden para poner un test en verde — ver «Verificación · Tests»
 
 ---
 
 ## Verificación
+
+**Tests (`tests/`, Vitest, v3.26.7):** `npm test` antes de cerrar cualquier cambio en el reducer, en las utilidades de estado (`utils/layerBrush.ts`, `mergeLayers.ts`, `diorPayload.ts`…) o en `strokeGenerators.ts`. Ejecutan el reducer y los generadores REALES en Node; no cubren píxeles, WebGL ni gestos (eso siguen siendo los arneses de `tools/`). Qué cubre cada archivo: REFERENCE.md §10 «Tests».
+
+- **Regla dura — los tests de `tests/` no se modifican en un commit de refactor.** Un refactor mueve código sin cambiar comportamiento, así que la suite tiene que pasar tal cual estaba. **Si un refactor obliga a tocar un test, PARA y repórtalo:** o el refactor cambió comportamiento, o el test estaba atado a un detalle de implementación; decide Moisés, no el commit.
+- **Los tests solo cambian en commits de comportamiento** (fix o feature), junto al cambio de `src/` que los justifica, y el diff del test es parte de lo que se revisa.
+- **`[COMPORTAMIENTO ACTUAL · …]` en el nombre de un test** = fija lo que la app hace hoy, pendiente de la decisión o el arreglo que nombra la etiqueta. Se cambia únicamente en el commit que toma esa decisión. Arreglar un hallazgo es, entre otras cosas, borrarlo de la lista de excepciones del test (`isDirty.test.ts`) o invertir su expectativa: ese diff es la prueba visible del arreglo.
+- **Las referencias golden no se regeneran para poner un test en verde.** `DIORAME_WRITE_GOLDEN=1` reescribe `tests/fixtures/strokes.golden.json` y equivale a cambiar el estilo de los trazos: solo con decisión de Moisés. `ink-slow-pre-3.26.4.json` está congelada.
+- **Acción nueva en el reducer → entrada nueva en `tests/helpers/actions.ts`** (el test de humo falla si falta) y, si cambia algo que guarda el `.dior`, o marca `isDirty` o entra con motivo en la lista de excepciones.
 
 **Export SVG:** antes y después de tocar `exportAsSVG`, `svgExport.ts` o `svgGeometry.ts`, pasar la tabla de `tools/svg-diff` (`npm run dev` → `localhost:3000/tools/svg-diff/`; para escenas reales, cargar su `.dior`). Invariantes de `svgGeometry.ts` / `svgText.ts` en REFERENCE.md §10 — leerlos antes de "optimizar". Si se toca texto (render o export): la página también corre la **auditoría glifo a glifo** (columna «contorno MALO» debe ser 0), y cualquier cambio en `utils/textLayout.ts` o `renderTextShape.ts` exige demostrar 0 px de cambio en pantalla (huellas SHA-256 del render con `Math.random` sembrado: sección 5 de `tools/text-check`).
 
