@@ -4,10 +4,7 @@ import {
 	PostProcessingSettings, PostProcessingEnabled, HandheldIntensity,
 	TextSession, HistorySnapshot, AppState, LayerGradParams,
 } from '../../types/strataTypes';
-import { UNTITLED_PROJECT_SENTINEL } from '../../constants/project';
-import { createProjectMeta, readProjectMeta } from '../../utils/projectMeta';
-import { BRUSH_THICKNESS_MIN, BRUSH_THICKNESS_MAX } from '../../constants/brush';
-import { CINEMA_VIEW_DEFAULTS } from '../../constants/cinemaView';
+import { createProjectMeta } from '../../utils/projectMeta';
 import { resolveLayerBrush } from '../../utils/layerBrush';
 
 export type {
@@ -22,7 +19,7 @@ export { BASE_DEPTH_STEP, MAX_LAYERS, MAX_HISTORY_STEPS }; // Moved to constants
 export { APP_VERSION } from '../../constants/version'; // Moved to constants/version.ts
 
 import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS, FIXED_PALETTE, ALTERNATIVE_PALETTE } from '../../constants/palette';
-import { sanitizeSuperRiso, applySuperRisoStyle, patchSuperRiso } from '../../constants/superRiso';
+import { applySuperRisoStyle, patchSuperRiso } from '../../constants/superRiso';
 export type { PaletteColor } from '../../constants/palette';
 export { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS };
 
@@ -41,7 +38,7 @@ import {
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { bakeTextTransform, flipTextProps } from '../../utils/textTransform';
 import { mergeLayerDown } from '../../utils/mergeLayers';
-import { fitViewToRect, frameInView, sanitizeFormat } from '../../utils/formatFrame';
+import { fitViewToRect, frameInView } from '../../utils/formatFrame';
 import { shiftFocusLayer } from '../../utils/remapViewLayers';
 
 export {
@@ -58,6 +55,7 @@ import { initialState } from '../../constants/initialState';
 export { initialState }; // Moved to constants/initialState.ts
 
 import { pushHistory, createSnapshot, patchCurrentSnapshot, undo, redo } from '../../state/history'; // Moved to state/history.ts
+import { loadProject } from '../../state/loadProject';
 
 // --- Reducer ---
 
@@ -691,210 +689,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 				format: null,
 				isDirty: false,
 			}
-		case 'LOAD_PROJECT':
-			// Ensure we merge postProcessing settings correctly to avoid undefined values
-			// Legacy migration: drop risoInkBlend if present (was never in stable releases)
-			const incomingPostProcessing: any = action.payload.postProcessing || {};
-			const mergedPostProcessing = {
-				...initialState.postProcessing,
-				...incomingPostProcessing
-			};
-			delete (mergedPostProcessing as any).risoInkBlend;
-			// Super Riso (v3.17.74): nested object, merged and sanitised field by field (no allow-list
-			// here). Files from before it open with the defaults.
-			mergedPostProcessing.superRiso = sanitizeSuperRiso(incomingPostProcessing.superRiso);
-			// Legacy migration: grungeOverlay -> grunge
-			const incomingPostProcessingEnabled: any = action.payload.postProcessingEnabled || {};
-			const mergedPostProcessingEnabled = {
-				...initialState.postProcessingEnabled,
-				...incomingPostProcessingEnabled,
-				grunge: incomingPostProcessingEnabled.grunge ?? incomingPostProcessingEnabled.grungeOverlay ?? false
-			};
-			delete (mergedPostProcessingEnabled as any).grungeOverlay;
-			if (typeof mergedPostProcessingEnabled.superRiso !== 'boolean') mergedPostProcessingEnabled.superRiso = initialState.postProcessingEnabled.superRiso;
-			// The two risos exclude each other; a file with both on keeps Super Riso.
-			if (mergedPostProcessingEnabled.superRiso && mergedPostProcessingEnabled.riso) mergedPostProcessingEnabled.riso = false;
-			// Master FX OFF (v3.20.5): while it is off every flag is false and the look that was on lives in the
-			// snapshot, so both travel in the file. The snapshot is restored only with the master off, one boolean
-			// per known FX; a stray or empty one is dropped, and loading never inherits the previous project's.
-			const rawFxSnapshot: any = (action.payload as any).postProcessingSnapshot;
-			let loadedFxSnapshot: PostProcessingEnabled | null = null;
-			if (action.payload.fxMasterEnabled === false && rawFxSnapshot && typeof rawFxSnapshot === 'object' && !Array.isArray(rawFxSnapshot)) {
-				const snap = Object.fromEntries(
-					Object.keys(initialState.postProcessingEnabled).map(k => [k, rawFxSnapshot[k] === true])
-				) as PostProcessingEnabled;
-				if (snap.superRiso && snap.riso) snap.riso = false;
-				if (Object.values(snap).some(v => v)) loadedFxSnapshot = snap;
-			}
-
-			const loadedLayerRenderModes = action.payload.layerRenderModes || {};
-			const rawGradParams = action.payload.layerGradParams || {};
-			const loadedLayerGradParams = Object.fromEntries(
-				Object.entries(rawGradParams).map(([k, v]: [string, any]) => [k, { ...GRADIENT_DEFAULTS, ...v }])
-			) as Record<number, LayerGradParams>;
-			const loadedLayerBrushSettings = action.payload.layerBrushSettings || {};
-
-			const loadedPaletteId = action.payload.activePaletteId || 'primary';
-			const loadedPalette = loadedPaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
-
-			// ── Whitelist validation: only accept known keys with type guards ──
-			// Per-shape migration: map legacy lineMode/lineThickness → brushMode/brushThickness
-			const rawShapes = Array.isArray(action.payload.shapes) ? action.payload.shapes : [];
-			const safeShapes: Shape[] = rawShapes.map((shape: any) => {
-				if (!shape || typeof shape !== 'object') return shape;
-				const brushMode = shape.brushMode ?? shape.lineMode;
-				const brushThickness = shape.brushThickness ?? shape.lineThickness;
-				const { lineMode: _lm, lineThickness: _lt, ...rest } = shape;
-				const result: any = { ...rest };
-				if (brushMode !== undefined) result.brushMode = brushMode;
-				if (brushThickness !== undefined) result.brushThickness = brushThickness;
-				// textMatrix (v3.17.56): texts saved before it have none and read their `rotation`.
-				// A malformed or degenerate one is dropped, falling back to that same rotation.
-				if ('textMatrix' in result) {
-					const m = result.textMatrix;
-					const ok = Array.isArray(m) && m.length === 4 && m.every((v: unknown) => typeof v === 'number' && Number.isFinite(v))
-						&& Math.abs(m[0] * m[3] - m[1] * m[2]) > 1e-12;
-					if (!ok) delete result.textMatrix;
-				}
-				// Creation time (v3.25.16): a finite number or nothing (older files fall back to the array index).
-				if ('t' in result && !(typeof result.t === 'number' && Number.isFinite(result.t))) delete result.t;
-				return result as Shape;
-			});
-			const safeTotalLayers = (typeof action.payload.totalLayers === 'number' && action.payload.totalLayers > 0)
-				? Math.min(action.payload.totalLayers, MAX_LAYERS) : 1;
-			const safeHiddenLayers = Array.isArray(action.payload.hiddenLayers) ? action.payload.hiddenLayers : [];
-			const safeLocked3DLayers = Array.isArray(action.payload.locked3DLayers) ? action.payload.locked3DLayers : [];
-			// Tool-value backward compat: until v2.3.0 'brush' was the blob and 'line' the brush. That release
-			// renamed both and, in the same commit, the keys the file saves next to them (lineMode /
-			// currentLineThickness → brushMode / currentBrushThickness), which every save since then writes.
-			// So a file with the new keys already speaks today's names and only an older one is translated.
-			// Not the v2 meta: files of v2.3.0–v3.20.x have none, and the autosave carries no formatVersion.
-			// (Until v3.26.8 every 'brush' was translated: saving with the brush active reopened with the blob.)
-			const savedWithCurrentToolNames = 'brushMode' in action.payload || 'currentBrushThickness' in action.payload;
-			let rawTool = action.payload.tool;
-			if (!savedWithCurrentToolNames) {
-				if (rawTool === 'brush') rawTool = 'blob';
-				else if (rawTool === 'line') rawTool = 'brush';
-			}
-			const safeTool = (typeof rawTool === 'string' && ['blob', 'eraser', 'brush', 'move', 'text'].includes(rawTool))
-				? rawTool as ToolType : 'blob';
-			// brushMode with fallback to legacy lineMode
-			const rawBrushMode = action.payload.brushMode ?? action.payload.lineMode;
-			const safeBrushMode = (typeof rawBrushMode === 'string' && ['tapered', 'uniform', 'ink'].includes(rawBrushMode))
-				? rawBrushMode : 'tapered';
-			// currentBrushThickness with fallback to legacy currentLineThickness
-			const rawBrushThickness = (typeof action.payload.currentBrushThickness === 'number' && action.payload.currentBrushThickness > 0)
-				? action.payload.currentBrushThickness
-				: (typeof action.payload.currentLineThickness === 'number' && action.payload.currentLineThickness > 0)
-					? action.payload.currentLineThickness
-					: 25;
-			// Clamp to the current tool range (v3.17.40 lowered MAX from 100 to 70). This is
-			// TOOL STATE, not geometry — a .dior saved under the old range can carry
-			// currentBrushThickness up to 100, and the slider control has to land somewhere
-			// sane on it, not on a value its own max attribute disagrees with. Shapes are
-			// untouched either way: their baked points/brushThickness are never reinterpreted
-			// on load (see constants/brush.ts). layerBrushSettings needs no equivalent clamp —
-			// useSaveLoad.ts has never included it in a saved payload (verified via
-			// `git log -S`), so action.payload.layerBrushSettings is always undefined here.
-			// The file's currentBrushThickness is the value of whichever layer was active at save;
-			// layer 0 opens with its own (from its strokes) when it has any (v3.26.3).
-			const layer0Brush = resolveLayerBrush(safeShapes, 0, undefined);
-			const safeBrushThickness = Math.min(Math.max(layer0Brush?.thickness ?? rawBrushThickness, BRUSH_THICKNESS_MIN), BRUSH_THICKNESS_MAX);
-			// Gaps take the defaults, never the previous project's values (v3.20.11 rule; until v3.26.8 these two fell back to state.*).
-			const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : initialState.isDarkMode;
-			const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom', 'storytelling'].includes(action.payload.cinematicType))
-				? action.payload.cinematicType as CinematicType : CINEMA_VIEW_DEFAULTS.cinematicType;
-			const rawProjectName = typeof action.payload.projectName === 'string'
-				? action.payload.projectName.slice(0, 100) : initialState.projectName;
-			// Backward compat: legacy .dior files (pre-v2.1.0) saved the literal 'Untitled Project'
-			// instead of the sentinel. Normalize so display goes through i18n.
-			const safeProjectName = rawProjectName === 'Untitled Project' ? UNTITLED_PROJECT_SENTINEL : rawProjectName;
-			const safeFocalLength = typeof action.payload.focalLength === 'number' ? action.payload.focalLength : CINEMA_VIEW_DEFAULTS.focalLength;
-			const safeViewZoomOffset = typeof action.payload.viewZoomOffset === 'number' ? action.payload.viewZoomOffset : CINEMA_VIEW_DEFAULTS.viewZoomOffset;
-			const safeLayerSpacingFactor = typeof action.payload.layerSpacingFactor === 'number' ? action.payload.layerSpacingFactor : CINEMA_VIEW_DEFAULTS.layerSpacingFactor;
-			const safeCinematicSpeed = typeof action.payload.cinematicSpeed === 'number' ? action.payload.cinematicSpeed : initialState.cinematicSpeed;
-			const safeIsHandheldEnabled = typeof action.payload.isHandheldEnabled === 'boolean' ? action.payload.isHandheldEnabled : initialState.isHandheldEnabled;
-			const safeHandheldIntensity = (typeof action.payload.handheldIntensity === 'string' && ['low', 'medium', 'high'].includes(action.payload.handheldIntensity as string)) ? action.payload.handheldIntensity as HandheldIntensity : initialState.handheldIntensity;
-			const safeFxMasterEnabled = typeof action.payload.fxMasterEnabled === 'boolean' ? action.payload.fxMasterEnabled : true;
-			const safePaletteApplyToAllActive = typeof (action.payload as any).paletteApplyToAllActive === 'boolean'
-				? (action.payload as any).paletteApplyToAllActive : false;
-			const safePaletteApplyToAllSnapshot = ((action.payload as any).paletteApplyToAllSnapshot &&
-				typeof (action.payload as any).paletteApplyToAllSnapshot === 'object')
-				? (action.payload as any).paletteApplyToAllSnapshot : null;
-			// Pre-v3.17.26 .dior files carry no pointOfInterest at all — the field is new.
-			// undefined must resolve to null (no CINEMA framing point), never leak a partial
-			// or malformed object through: the CINEMA render path reads poi.x/y/z unchecked.
-			const rawPoi: any = (action.payload as any).pointOfInterest;
-			const safePointOfInterest = (rawPoi && typeof rawPoi === 'object'
-				&& typeof rawPoi.x === 'number' && typeof rawPoi.y === 'number' && typeof rawPoi.z === 'number')
-				? { x: rawPoi.x, y: rawPoi.y, z: rawPoi.z } : null;
-
-			// Create initial history snapshot with loaded state
-			const initialSnapshot: HistorySnapshot = {
-				shapes: safeShapes,
-				totalLayers: safeTotalLayers,
-				layerRenderModes: loadedLayerRenderModes,
-				layerGradParams: loadedLayerGradParams,
-				layerBrushSettings: loadedLayerBrushSettings,
-				activePaletteId: loadedPaletteId
-			};
-
-			return {
-				...state,
-				// Whitelisted fields only — no ...action.payload spread
-				shapes: safeShapes,
-				totalLayers: safeTotalLayers,
-				isDarkMode: safeIsDarkMode,
-				cinematicType: safeCinematicType,
-				projectName: safeProjectName,
-				// .dior v2: a file (or autosave) without meta gets a new identity, written at the next save.
-				projectMeta: readProjectMeta((action.payload as any).meta) ?? createProjectMeta(),
-				postProcessing: mergedPostProcessing,
-				postProcessingEnabled: loadedFxSnapshot
-					? Object.fromEntries(Object.keys(mergedPostProcessingEnabled).map(k => [k, false])) as PostProcessingEnabled
-					: mergedPostProcessingEnabled,
-				fxMasterEnabled: loadedFxSnapshot ? false : safeFxMasterEnabled,
-				postProcessingSnapshot: loadedFxSnapshot,
-				// Ensure critical state is reset/set correctly
-				history: [initialSnapshot],
-				historyIndex: 0,
-				camera: { x: 0, y: 0, z: 0, rotation: 0 },
-				currentLayerIndex: 0,
-				mode: 'drawing',
-				tool: safeTool,
-				hiddenLayers: safeHiddenLayers,
-				locked3DLayers: safeLocked3DLayers,
-				// Re-derived, never restored from the file — it is not serialized. Opening a
-				// project always starts selected, like a fresh session.
-				isLayerSelected: true,
-				drawingZoom: 1,
-				drawingPan: { x: 0, y: 0 },
-				layerRenderModes: loadedLayerRenderModes,
-				layerGradParams: loadedLayerGradParams,
-				layerBrushSettings: loadedLayerBrushSettings,
-				paletteMode: loadedLayerRenderModes[0] || 'flat',
-				currentBrushThickness: safeBrushThickness,
-				brushMode: layer0Brush?.mode ?? safeBrushMode,
-				activePaletteId: loadedPaletteId,
-				palette: loadedPalette,
-				focalLength: safeFocalLength,
-				viewZoomOffset: safeViewZoomOffset,
-				layerSpacingFactor: safeLayerSpacingFactor,
-				cinematicSpeed: safeCinematicSpeed,
-				isHandheldEnabled: safeIsHandheldEnabled,
-				handheldIntensity: safeHandheldIntensity,
-				shouldFitToView: true,
-				isDrawing: false,
-				paletteApplyToAllActive: safePaletteApplyToAllActive,
-				paletteApplyToAllSnapshot: safePaletteApplyToAllSnapshot,
-				pointOfInterest: safePointOfInterest,
-				// Absent or malformed → no frame; never the previous project's.
-				format: sanitizeFormat((action.payload as any).format),
-				isDirty: false,
-				projectWasLoaded: true,
-				// The file's view stands; its gaps were filled above with the defaults, never with the previous project's.
-				cinemaViewInitialized: true,
-			};
+		case 'LOAD_PROJECT': return loadProject(state, action); // Moved to state/loadProject.ts
 		case 'COMPLETE_FIT_TO_VIEW':
 			return { ...state, shouldFitToView: false };
 		case 'TOGGLE_LAYER_VISIBILITY': {

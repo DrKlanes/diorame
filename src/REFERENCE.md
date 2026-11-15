@@ -528,6 +528,7 @@ The logic of the reducer, by subject (refactor phase 3, from v3.26.15). The `swi
 | File | Lines | Purpose |
 |---|---|---|
 | `history.ts` | ~160 | The undo history: `pushHistory` (cap of `MAX_HISTORY_STEPS`), `createSnapshot` (pass the POST-change state; materialises the active layer's brush pair), `patchCurrentSnapshot` (last-writer-wins for pure selections), and `undo` / `redo` (`UNDO`, `REDO`). Every action that pushes a step or stamps the current snapshot imports the three helpers from here |
+| `loadProject.ts` | ~225 | `loadProject` (`LOAD_PROJECT`): the reader of a `.dior`, the autosave and the example scene — merges and sanitises field by field, migrates what older files call differently (`lineMode` / `lineThickness`, `tool` by generation of the file, `grungeOverlay`, «Untitled Project»), fills the gaps with the defaults (never with the project that was open) and resets history, layer, view and `isDirty`. Its writer is `utils/diorPayload.ts`. Rules in §8 |
 
 ### Type System (`src/types/`)
 
