@@ -17,7 +17,7 @@ export type {
 };
 
 // --- Constants ---
-export const BASE_DEPTH_STEP = 150;  
+export const BASE_DEPTH_STEP = 150;
 export const MAX_LAYERS = 10;
 export { APP_VERSION } from '../../constants/version'; // Moved to constants/version.ts
 export const MAX_HISTORY_STEPS = 50; // History limit
@@ -65,254 +65,254 @@ export {
 // 'textMatrix' in v3.17.56: older files have none and are read through their
 // 'rotation' (utils/textTransform.ts), so they need no migration.
 type LegacyShape = Omit<Shape, 'brushMode'> & {
-  brushMode?: BrushMode;
-  lineMode?: BrushMode;      // pre-rename key for brushMode
-  lineThickness?: number;    // pre-rename key for brushThickness
+	brushMode?: BrushMode;
+	lineMode?: BrushMode;      // pre-rename key for brushMode
+	lineThickness?: number;    // pre-rename key for brushThickness
 };
 
 type LegacyProjectPayload = Partial<Omit<AppState, 'shapes' | 'tool'>> & {
-  shapes?: LegacyShape[];
-  tool?: ToolType | 'line';  // pre-rename tool value
-  lineMode?: BrushMode;      // pre-rename key for brushMode
-  currentLineThickness?: number; // pre-rename key for currentBrushThickness
+	shapes?: LegacyShape[];
+	tool?: ToolType | 'line';  // pre-rename tool value
+	lineMode?: BrushMode;      // pre-rename key for brushMode
+	currentLineThickness?: number; // pre-rename key for currentBrushThickness
 };
 
 type Action =
-  | { type: 'ADD_SHAPE'; payload: Shape }
-  | { type: 'ADD_SHAPES'; payload: Shape[] }
-  | { type: 'UNDO' }
-  | { type: 'REDO' }
-  | { type: 'SET_MODE'; payload: AppMode }
-  | { type: 'SET_TOOL'; payload: ToolType }
-  | { type: 'SET_CINEMATIC_TYPE'; payload: CinematicType }
-  | { type: 'SET_COLOR_INDEX'; payload: number }
-  | { type: 'UPDATE_CAMERA'; payload: { x?: number; y?: number; z?: number; rotation?: number } }
-  | { type: 'NEXT_LAYER' }
-  | { type: 'PREV_LAYER' }
-  | { type: 'ADD_LAYER' }
-  | { type: 'SET_CURRENT_LAYER'; payload: number }
-  | { type: 'SET_FOCAL_LENGTH'; payload: number }
-  | { type: 'SET_VIEW_ZOOM_OFFSET'; payload: number }
-  | { type: 'SET_DRAWING_ZOOM'; payload: { zoom: number; pan?: { x: number; y: number } } }
-  | { type: 'TOGGLE_DARK_MODE' }
-  | { type: 'SET_FX_INTENSITY'; payload: { fx: keyof PostProcessingSettings; value: number } }
-  | { type: 'SET_PARTICLE_TYPE'; payload: 'circle' | 'square' | 'stroke' }
-  | { type: 'TOGGLE_FX'; payload: keyof PostProcessingEnabled }
-  | { type: 'TOGGLE_FX_MASTER' }
-  | { type: 'SET_SUPER_RISO'; payload: SuperRisoPatch }
-  | { type: 'APPLY_SUPER_RISO_STYLE'; payload: SuperRisoStyle | XeroxStyle | StencilStyle }
-  | { type: 'REQUEST_EXPORT'; payload: ExportType }
-  | { type: 'FINISH_EXPORT' }
-  | { type: 'CLEAR_CANVAS' }
-  | { type: 'LOAD_PROJECT'; payload: LegacyProjectPayload }
-  | { type: 'SET_LAYER_SELECTED'; payload: boolean }
-  | { type: 'TOGGLE_LAYER_VISIBILITY'; payload: number }
-  | { type: 'TOGGLE_3D_LOCK'; payload: number }
-  | { type: 'MOVE_LAYER'; payload: { layerIndex: number; deltaX: number; deltaY: number } }
-  | { type: 'TRANSFORM_LAYER'; payload: { layerIndex: number; transform: { rotation: number; scale: number; dx: number; dy: number; centerX: number; centerY: number; scaleX?: number; scaleY?: number } } }
-  | { type: 'TOGGLE_WELCOME_MODAL' }
-  | { type: 'TOGGLE_UI' }
-  | { type: 'SET_DRAWING_ACTIVE'; payload: boolean }
-  | { type: 'TOGGLE_SYMMETRY' }
-  | { type: 'TOGGLE_GRID' }
-  | { type: 'SET_PALETTE_MODE'; payload: 'flat' | 'grad' }
-  | { type: 'SET_PALETTE_GRADIENT_ANGLE'; payload: number }
-  | { type: 'SET_PALETTE_GRADIENT_INTENSITY'; payload: number }
-  | { type: 'SET_PALETTE_GRADIENT_TYPE'; payload: 'solid' | 'fade' }
-  | { type: 'COMMIT_PALETTE_GRADIENT' }
-  | { type: 'RESET_DRAWING_VIEW' }
-  | { type: 'SET_FORMAT'; payload: DrawFormat | null }
-  | { type: 'SET_VIEWPORT_SIZE'; payload: { w: number; h: number } }
-  | { type: 'DELETE_CURRENT_LAYER' }
-  | { type: 'MERGE_LAYER_DOWN' }
-  | { type: 'START_TEXT_SESSION'; payload: { x: number; y: number } }
-  | { type: 'UPDATE_TEXT_SESSION'; payload: Partial<TextSession> }
-  | { type: 'COMMIT_TEXT_SESSION' }
-  | { type: 'CANCEL_TEXT_SESSION' }
-  | { type: 'SET_POINT_OF_INTEREST'; payload: { x: number; y: number; z: number } }
-  | { type: 'CLEAR_POINT_OF_INTEREST' }
-  | { type: 'SET_CINEMATIC_SPEED'; payload: number }
-  | { type: 'INIT_CINEMA_VIEW'; payload: { focalLength: number; viewZoomOffset: number; layerSpacingFactor: number; cinematicType: CinematicType } }
-  | { type: 'TOGGLE_DRAW_BEHIND' }
-  | { type: 'TOGGLE_DRAW_INSIDE' }
-  | { type: 'TOGGLE_ORGANIC_MODE' }
-  | { type: 'TOGGLE_BLOB_SMOOTHING' }
-  | { type: 'SET_BRUSH_THICKNESS'; payload: number }
-  | { type: 'SET_BRUSH_THICKNESS_PREVIEW'; payload: number }
-  | { type: 'COMMIT_BRUSH_THICKNESS' }
-  | { type: 'TOGGLE_HANDHELD' }
-  | { type: 'SET_HANDHELD_INTENSITY'; payload: HandheldIntensity }
-  | { type: 'SET_BRUSH_MODE'; payload: BrushMode }
-  | { type: 'SET_LAYER_SPACING_FACTOR'; payload: number }
-  | { type: 'SET_PROJECT_NAME'; payload: string }
-  | { type: 'REORDER_LAYERS'; payload: { fromIndex: number; toIndex: number } }
-  | { type: 'MOVE_LAYER_TO'; payload: { fromIndex: number; toIndex: number } }
-  | { type: 'DUPLICATE_LAYER'; payload: number }
-  | { type: 'DISMISS_ONBOARDING' }
-  | { type: 'SET_ACTIVE_PALETTE'; payload: 'primary' | 'alternative' }
-  | { type: 'COMPLETE_FIT_TO_VIEW' }
-  | { type: 'FLIP_LAYER'; payload: { layerIndex: number; direction: 'horizontal' | 'vertical'; centerX: number; centerY: number } }
-  | { type: 'TOGGLE_PALETTE_APPLY_TO_ALL' }
-  | { type: 'MARK_CLEAN' }
-  | { type: 'PROJECT_SAVED'; payload: ProjectMeta }
-  | { type: 'DUPLICATE_PROJECT'; payload: { projectName: string } }
-  | { type: 'SET_SOUNDS_ENABLED'; payload: boolean }
-  | { type: 'TOGGLE_ANIMATION_MODE' }
-  | { type: 'SET_ANIMATION_PLAYING'; payload: boolean }
-  | { type: 'SET_ANIMATION_FRAMERATE'; payload: number }
-  | { type: 'TOGGLE_ONION_SKIN' }
-  | { type: 'TOGGLE_ANIMATION_FLAT_Z' }
-  | { type: 'ADVANCE_ANIMATION_FRAME' }
-  | { type: 'STEP_ANIMATION_FRAME'; payload: 1 | -1 }
-  | { type: 'TOGGLE_ANIMATION_PLAYBACK_MODE' }
-  | { type: 'SET_ANIMATION_EXPORT_LOOPS'; payload: number }
-  | { type: 'SET_GIF_EXPORT_SCALE'; payload: number };
+	| { type: 'ADD_SHAPE'; payload: Shape }
+	| { type: 'ADD_SHAPES'; payload: Shape[] }
+	| { type: 'UNDO' }
+	| { type: 'REDO' }
+	| { type: 'SET_MODE'; payload: AppMode }
+	| { type: 'SET_TOOL'; payload: ToolType }
+	| { type: 'SET_CINEMATIC_TYPE'; payload: CinematicType }
+	| { type: 'SET_COLOR_INDEX'; payload: number }
+	| { type: 'UPDATE_CAMERA'; payload: { x?: number; y?: number; z?: number; rotation?: number } }
+	| { type: 'NEXT_LAYER' }
+	| { type: 'PREV_LAYER' }
+	| { type: 'ADD_LAYER' }
+	| { type: 'SET_CURRENT_LAYER'; payload: number }
+	| { type: 'SET_FOCAL_LENGTH'; payload: number }
+	| { type: 'SET_VIEW_ZOOM_OFFSET'; payload: number }
+	| { type: 'SET_DRAWING_ZOOM'; payload: { zoom: number; pan?: { x: number; y: number } } }
+	| { type: 'TOGGLE_DARK_MODE' }
+	| { type: 'SET_FX_INTENSITY'; payload: { fx: keyof PostProcessingSettings; value: number } }
+	| { type: 'SET_PARTICLE_TYPE'; payload: 'circle' | 'square' | 'stroke' }
+	| { type: 'TOGGLE_FX'; payload: keyof PostProcessingEnabled }
+	| { type: 'TOGGLE_FX_MASTER' }
+	| { type: 'SET_SUPER_RISO'; payload: SuperRisoPatch }
+	| { type: 'APPLY_SUPER_RISO_STYLE'; payload: SuperRisoStyle | XeroxStyle | StencilStyle }
+	| { type: 'REQUEST_EXPORT'; payload: ExportType }
+	| { type: 'FINISH_EXPORT' }
+	| { type: 'CLEAR_CANVAS' }
+	| { type: 'LOAD_PROJECT'; payload: LegacyProjectPayload }
+	| { type: 'SET_LAYER_SELECTED'; payload: boolean }
+	| { type: 'TOGGLE_LAYER_VISIBILITY'; payload: number }
+	| { type: 'TOGGLE_3D_LOCK'; payload: number }
+	| { type: 'MOVE_LAYER'; payload: { layerIndex: number; deltaX: number; deltaY: number } }
+	| { type: 'TRANSFORM_LAYER'; payload: { layerIndex: number; transform: { rotation: number; scale: number; dx: number; dy: number; centerX: number; centerY: number; scaleX?: number; scaleY?: number } } }
+	| { type: 'TOGGLE_WELCOME_MODAL' }
+	| { type: 'TOGGLE_UI' }
+	| { type: 'SET_DRAWING_ACTIVE'; payload: boolean }
+	| { type: 'TOGGLE_SYMMETRY' }
+	| { type: 'TOGGLE_GRID' }
+	| { type: 'SET_PALETTE_MODE'; payload: 'flat' | 'grad' }
+	| { type: 'SET_PALETTE_GRADIENT_ANGLE'; payload: number }
+	| { type: 'SET_PALETTE_GRADIENT_INTENSITY'; payload: number }
+	| { type: 'SET_PALETTE_GRADIENT_TYPE'; payload: 'solid' | 'fade' }
+	| { type: 'COMMIT_PALETTE_GRADIENT' }
+	| { type: 'RESET_DRAWING_VIEW' }
+	| { type: 'SET_FORMAT'; payload: DrawFormat | null }
+	| { type: 'SET_VIEWPORT_SIZE'; payload: { w: number; h: number } }
+	| { type: 'DELETE_CURRENT_LAYER' }
+	| { type: 'MERGE_LAYER_DOWN' }
+	| { type: 'START_TEXT_SESSION'; payload: { x: number; y: number } }
+	| { type: 'UPDATE_TEXT_SESSION'; payload: Partial<TextSession> }
+	| { type: 'COMMIT_TEXT_SESSION' }
+	| { type: 'CANCEL_TEXT_SESSION' }
+	| { type: 'SET_POINT_OF_INTEREST'; payload: { x: number; y: number; z: number } }
+	| { type: 'CLEAR_POINT_OF_INTEREST' }
+	| { type: 'SET_CINEMATIC_SPEED'; payload: number }
+	| { type: 'INIT_CINEMA_VIEW'; payload: { focalLength: number; viewZoomOffset: number; layerSpacingFactor: number; cinematicType: CinematicType } }
+	| { type: 'TOGGLE_DRAW_BEHIND' }
+	| { type: 'TOGGLE_DRAW_INSIDE' }
+	| { type: 'TOGGLE_ORGANIC_MODE' }
+	| { type: 'TOGGLE_BLOB_SMOOTHING' }
+	| { type: 'SET_BRUSH_THICKNESS'; payload: number }
+	| { type: 'SET_BRUSH_THICKNESS_PREVIEW'; payload: number }
+	| { type: 'COMMIT_BRUSH_THICKNESS' }
+	| { type: 'TOGGLE_HANDHELD' }
+	| { type: 'SET_HANDHELD_INTENSITY'; payload: HandheldIntensity }
+	| { type: 'SET_BRUSH_MODE'; payload: BrushMode }
+	| { type: 'SET_LAYER_SPACING_FACTOR'; payload: number }
+	| { type: 'SET_PROJECT_NAME'; payload: string }
+	| { type: 'REORDER_LAYERS'; payload: { fromIndex: number; toIndex: number } }
+	| { type: 'MOVE_LAYER_TO'; payload: { fromIndex: number; toIndex: number } }
+	| { type: 'DUPLICATE_LAYER'; payload: number }
+	| { type: 'DISMISS_ONBOARDING' }
+	| { type: 'SET_ACTIVE_PALETTE'; payload: 'primary' | 'alternative' }
+	| { type: 'COMPLETE_FIT_TO_VIEW' }
+	| { type: 'FLIP_LAYER'; payload: { layerIndex: number; direction: 'horizontal' | 'vertical'; centerX: number; centerY: number } }
+	| { type: 'TOGGLE_PALETTE_APPLY_TO_ALL' }
+	| { type: 'MARK_CLEAN' }
+	| { type: 'PROJECT_SAVED'; payload: ProjectMeta }
+	| { type: 'DUPLICATE_PROJECT'; payload: { projectName: string } }
+	| { type: 'SET_SOUNDS_ENABLED'; payload: boolean }
+	| { type: 'TOGGLE_ANIMATION_MODE' }
+	| { type: 'SET_ANIMATION_PLAYING'; payload: boolean }
+	| { type: 'SET_ANIMATION_FRAMERATE'; payload: number }
+	| { type: 'TOGGLE_ONION_SKIN' }
+	| { type: 'TOGGLE_ANIMATION_FLAT_Z' }
+	| { type: 'ADVANCE_ANIMATION_FRAME' }
+	| { type: 'STEP_ANIMATION_FRAME'; payload: 1 | -1 }
+	| { type: 'TOGGLE_ANIMATION_PLAYBACK_MODE' }
+	| { type: 'SET_ANIMATION_EXPORT_LOOPS'; payload: number }
+	| { type: 'SET_GIF_EXPORT_SCALE'; payload: number };
 
 // --- Initial State ---
 
 export const initialState: AppState = {
-  shapes: [],
-  palette: FIXED_PALETTE,
-  activePaletteId: 'primary',
-  currentColorIndex: 0,
-  mode: 'drawing',
-  tool: 'blob',
-  textSession: {
-      isActive: false,
-      x: 0,
-      y: 0,
-      content: '',
-      font: 'noir',
-      align: 'left'
-  },
-  cinematicType: 'forward',
-  camera: { x: 0, y: 0, z: 0, rotation: 0 },
-  currentLayerIndex: 0,
-  totalLayers: 1,
-  focalLength: 800, 
-  viewZoomOffset: -600,
-  drawingZoom: 1,
-  drawingPan: { x: 0, y: 0 },
-  isDarkMode: false,
-  layerSpacingFactor: 1.0,
-  postProcessing: {
-      grain: 0.5,
-      vignette: 0.5,
-      distortion: -0.3, // Non-neutral default: ensures visible effect on first toggle
-      dof: 0.5,
-      focusDist: 800, // Default focus distance
-      focusTargetLayer: -1, // Default: -1 (Manual/Free Focus). 0+ = Lock to Layer Index
-      chromaticAberration: 0.5,
-      fog: 0.5,
-      particles: 0.5,
-      particleType: 'circle', // Default particle type
-      wiggle: 0.5, // Default to Medium (Current behavior)
-      glow: 0.5, // Default glow intensity
-      riso: 0.5, // Default RISO texture intensity
-      pixelArtSize: 4, // Default pixel size
-      pixelArtDepth: 4, // Default color depth (4 levels = 64 colors)
-      pixelArtDither: 0, // Default dither (0 = Clean/None)
-      grungeIntensity: 0.5, // Default Medium
-      superRiso: SUPER_RISO_DEFAULTS,
-  },
-  postProcessingEnabled: {
-      grain: false,
-      vignette: false,
-      distortion: false,
-      dof: false,
-      wiggle: false,
-      chromaticAberration: false,
-      fog: false,
-      particles: false,
-      glow: false,
-      riso: false,
-      pixelArt: false,
-      grunge: false,
-      superRiso: false,
-  },
-  fxMasterEnabled: true, // Master toggle for all FX (defaults ON)
-  postProcessingSnapshot: null,
-  history: [{
-      shapes: [],
-      totalLayers: 1,
-      layerRenderModes: {},
-      layerGradParams: {},
-      layerBrushSettings: {},
-      activePaletteId: 'primary'
-  }],
-  historyIndex: 0,
-  exportRequest: null,
-  isExporting: false,
-  hiddenLayers: [],
-  locked3DLayers: [],
-  // Starts selected. The app boots with tool: 'blob', so this is only ever read once
-  // the user reaches Move — and every route into Move (SET_TOOL, the layer panel,
-  // [ / ]) reselects anyway, so `true` is the value that agrees with all of them.
-  // Booting deselected would also cost a click before the tool could do anything.
-  isLayerSelected: true,
-  isWelcomeModalOpen: true,
-  isOnboardingVisible: true, // New: Onboarding overlay on canvas
-  isUIHidden: false,
-  isDrawing: false,
-  projectWasLoaded: false,
-  cinemaViewInitialized: false,
-  isSymmetryEnabled: false,
-  gridEnabled: typeof window !== 'undefined' && window.localStorage?.getItem('diorame-grid-enabled') === 'true',
-  paletteMode: 'flat',
-  layerRenderModes: {},
-  layerGradParams: {},
-  layerBrushSettings: {},
-  pointOfInterest: null,
-  format: null,
-  viewportSize: { w: 0, h: 0 },
-  cinematicSpeed: 1.0, // Default Normal Speed
-  isDrawBehind: false,
-  isDrawInside: false,
-  isOrganicMode: false,
-  blobSmoothing: false,
-  currentBrushThickness: 25,
-  brushThicknessBeforePreview: null,
-  gradParamsPendingCommit: false,
-  isHandheldEnabled: false,
-  handheldIntensity: 'medium',
-  brushMode: 'tapered',
-  projectName: UNTITLED_PROJECT_SENTINEL, // Default project name (sentinel; resolved via t() at render time)
-  projectMeta: createProjectMeta(),
-  paletteApplyToAllActive: false,
-  paletteApplyToAllSnapshot: null,
-  isDirty: false,
-  soundsEnabled: false,
-  shouldFitToView: false,
-  isAnimationMode: false,
-  isAnimationPlaying: false,
-  animationFramerate: 6,
-  animationExportLoops: 1,
-  gifExportScale: 1,
-  isOnionSkinEnabled: false,
-  isAnimationFlatZ: false,
-  layerIndexBeforeAnimation: null,
-  animationPlaybackMode: 'loop',
-  animationDirection: 1,
+	shapes: [],
+	palette: FIXED_PALETTE,
+	activePaletteId: 'primary',
+	currentColorIndex: 0,
+	mode: 'drawing',
+	tool: 'blob',
+	textSession: {
+		isActive: false,
+		x: 0,
+		y: 0,
+		content: '',
+		font: 'noir',
+		align: 'left'
+	},
+	cinematicType: 'forward',
+	camera: { x: 0, y: 0, z: 0, rotation: 0 },
+	currentLayerIndex: 0,
+	totalLayers: 1,
+	focalLength: 800,
+	viewZoomOffset: -600,
+	drawingZoom: 1,
+	drawingPan: { x: 0, y: 0 },
+	isDarkMode: false,
+	layerSpacingFactor: 1.0,
+	postProcessing: {
+		grain: 0.5,
+		vignette: 0.5,
+		distortion: -0.3, // Non-neutral default: ensures visible effect on first toggle
+		dof: 0.5,
+		focusDist: 800, // Default focus distance
+		focusTargetLayer: -1, // Default: -1 (Manual/Free Focus). 0+ = Lock to Layer Index
+		chromaticAberration: 0.5,
+		fog: 0.5,
+		particles: 0.5,
+		particleType: 'circle', // Default particle type
+		wiggle: 0.5, // Default to Medium (Current behavior)
+		glow: 0.5, // Default glow intensity
+		riso: 0.5, // Default RISO texture intensity
+		pixelArtSize: 4, // Default pixel size
+		pixelArtDepth: 4, // Default color depth (4 levels = 64 colors)
+		pixelArtDither: 0, // Default dither (0 = Clean/None)
+		grungeIntensity: 0.5, // Default Medium
+		superRiso: SUPER_RISO_DEFAULTS,
+	},
+	postProcessingEnabled: {
+		grain: false,
+		vignette: false,
+		distortion: false,
+		dof: false,
+		wiggle: false,
+		chromaticAberration: false,
+		fog: false,
+		particles: false,
+		glow: false,
+		riso: false,
+		pixelArt: false,
+		grunge: false,
+		superRiso: false,
+	},
+	fxMasterEnabled: true, // Master toggle for all FX (defaults ON)
+	postProcessingSnapshot: null,
+	history: [{
+		shapes: [],
+		totalLayers: 1,
+		layerRenderModes: {},
+		layerGradParams: {},
+		layerBrushSettings: {},
+		activePaletteId: 'primary'
+	}],
+	historyIndex: 0,
+	exportRequest: null,
+	isExporting: false,
+	hiddenLayers: [],
+	locked3DLayers: [],
+	// Starts selected. The app boots with tool: 'blob', so this is only ever read once
+	// the user reaches Move — and every route into Move (SET_TOOL, the layer panel,
+	// [ / ]) reselects anyway, so `true` is the value that agrees with all of them.
+	// Booting deselected would also cost a click before the tool could do anything.
+	isLayerSelected: true,
+	isWelcomeModalOpen: true,
+	isOnboardingVisible: true, // New: Onboarding overlay on canvas
+	isUIHidden: false,
+	isDrawing: false,
+	projectWasLoaded: false,
+	cinemaViewInitialized: false,
+	isSymmetryEnabled: false,
+	gridEnabled: typeof window !== 'undefined' && window.localStorage?.getItem('diorame-grid-enabled') === 'true',
+	paletteMode: 'flat',
+	layerRenderModes: {},
+	layerGradParams: {},
+	layerBrushSettings: {},
+	pointOfInterest: null,
+	format: null,
+	viewportSize: { w: 0, h: 0 },
+	cinematicSpeed: 1.0, // Default Normal Speed
+	isDrawBehind: false,
+	isDrawInside: false,
+	isOrganicMode: false,
+	blobSmoothing: false,
+	currentBrushThickness: 25,
+	brushThicknessBeforePreview: null,
+	gradParamsPendingCommit: false,
+	isHandheldEnabled: false,
+	handheldIntensity: 'medium',
+	brushMode: 'tapered',
+	projectName: UNTITLED_PROJECT_SENTINEL, // Default project name (sentinel; resolved via t() at render time)
+	projectMeta: createProjectMeta(),
+	paletteApplyToAllActive: false,
+	paletteApplyToAllSnapshot: null,
+	isDirty: false,
+	soundsEnabled: false,
+	shouldFitToView: false,
+	isAnimationMode: false,
+	isAnimationPlaying: false,
+	animationFramerate: 6,
+	animationExportLoops: 1,
+	gifExportScale: 1,
+	isOnionSkinEnabled: false,
+	isAnimationFlatZ: false,
+	layerIndexBeforeAnimation: null,
+	animationPlaybackMode: 'loop',
+	animationDirection: 1,
 };
 
 // --- Helper: Push to History with Limit ---
 function pushHistory(
-    history: HistorySnapshot[], 
-    index: number, 
-    snapshot: HistorySnapshot
+	history: HistorySnapshot[],
+	index: number,
+	snapshot: HistorySnapshot
 ): { history: HistorySnapshot[], index: number } {
-    let newHistory = history.slice(0, index + 1);
-    newHistory.push(snapshot);
-    
-    // Cap history size
-    if (newHistory.length > MAX_HISTORY_STEPS) {
-        newHistory = newHistory.slice(newHistory.length - MAX_HISTORY_STEPS);
-    }
-    
-    return {
-        history: newHistory,
-        index: newHistory.length - 1
-    };
+	let newHistory = history.slice(0, index + 1);
+	newHistory.push(snapshot);
+
+	// Cap history size
+	if (newHistory.length > MAX_HISTORY_STEPS) {
+		newHistory = newHistory.slice(newHistory.length - MAX_HISTORY_STEPS);
+	}
+
+	return {
+		history: newHistory,
+		index: newHistory.length - 1
+	};
 }
 
 // Helper to create a snapshot from current state (hybrid contract — see HistorySnapshot).
@@ -320,1814 +320,1814 @@ function pushHistory(
 // include its new layerBrushSettings/activePaletteId in the state it snapshots, or the
 // snapshot lies (that stale-pair bug caused the original undo complaints — v3.11.1 era).
 function createSnapshot(state: AppState): HistorySnapshot {
-    return {
-        shapes: state.shapes,
-        totalLayers: state.totalLayers,
-        layerRenderModes: state.layerRenderModes,
-        layerGradParams: state.layerGradParams,
-        // Materialize the active layer's EFFECTIVE brush pair if the map has no
-        // entry yet: layers only get an entry on their first explicit change, and
-        // a snapshot with an empty slot forces undo to fall back to live values —
-        // which are the post-change ones, so the selector would never travel back.
-        layerBrushSettings: state.layerBrushSettings[state.currentLayerIndex]
-            ? state.layerBrushSettings
-            : {
-                ...state.layerBrushSettings,
-                [state.currentLayerIndex]: { thickness: state.currentBrushThickness, mode: state.brushMode }
-            },
-        activePaletteId: state.activePaletteId
-    };
+	return {
+		shapes: state.shapes,
+		totalLayers: state.totalLayers,
+		layerRenderModes: state.layerRenderModes,
+		layerGradParams: state.layerGradParams,
+		// Materialize the active layer's EFFECTIVE brush pair if the map has no
+		// entry yet: layers only get an entry on their first explicit change, and
+		// a snapshot with an empty slot forces undo to fall back to live values —
+		// which are the post-change ones, so the selector would never travel back.
+		layerBrushSettings: state.layerBrushSettings[state.currentLayerIndex]
+			? state.layerBrushSettings
+			: {
+				...state.layerBrushSettings,
+				[state.currentLayerIndex]: { thickness: state.currentBrushThickness, mode: state.brushMode }
+			},
+		activePaletteId: state.activePaletteId
+	};
 }
 
 // Last-writer-wins for pure selections (no shapes changed → no undo step): stamp the
 // new selector value onto the CURRENT snapshot so undoing back to "now" never
 // resurrects the old selection.
 function patchCurrentSnapshot(
-    history: HistorySnapshot[],
-    index: number,
-    patch: Partial<Pick<HistorySnapshot, 'layerBrushSettings' | 'activePaletteId' | 'layerRenderModes' | 'layerGradParams'>>
+	history: HistorySnapshot[],
+	index: number,
+	patch: Partial<Pick<HistorySnapshot, 'layerBrushSettings' | 'activePaletteId' | 'layerRenderModes' | 'layerGradParams'>>
 ): HistorySnapshot[] {
-    const newHistory = history.slice();
-    newHistory[index] = { ...newHistory[index], ...patch };
-    return newHistory;
+	const newHistory = history.slice();
+	newHistory[index] = { ...newHistory[index], ...patch };
+	return newHistory;
 }
 
 // --- Reducer ---
 
 // Exported for tools/text-check (runs the real TRANSFORM_LAYER / FLIP_LAYER / LOAD_PROJECT outside React).
 export function appReducer(state: AppState, action: Action): AppState {
-  switch (action.type) {
-    case 'TOGGLE_WELCOME_MODAL':
-      return { ...state, isWelcomeModalOpen: !state.isWelcomeModalOpen };
-    case 'MARK_CLEAN':
-      return { ...state, isDirty: false };
-    case 'PROJECT_SAVED':
-      return { ...state, projectMeta: action.payload, isDirty: false };
-    // A new drawing that starts as a copy of this one: new identity, the old one kept as its origin.
-    case 'DUPLICATE_PROJECT':
-      return { ...state, projectName: action.payload.projectName, projectMeta: createProjectMeta(state.projectMeta.projectId), isDirty: true };
-    case 'SET_SOUNDS_ENABLED':
-      setSoundsManagerEnabled(action.payload);
-      persistSoundsPreference(action.payload);
-      return { ...state, soundsEnabled: action.payload };
-    case 'TOGGLE_UI':
-      playSound('click');
-      return { ...state, isUIHidden: !state.isUIHidden };
-    case 'SET_DRAWING_ACTIVE':
-      return { ...state, isDrawing: action.payload };
-    case 'TOGGLE_SYMMETRY':
-      return { ...state, isSymmetryEnabled: !state.isSymmetryEnabled };
-    case 'TOGGLE_GRID': {
-      const newValue = !state.gridEnabled;
-      try { window.localStorage.setItem('diorame-grid-enabled', String(newValue)); } catch (_) { /* private mode */ }
-      return { ...state, gridEnabled: newValue };
-    }
-    case 'TOGGLE_DRAW_BEHIND':
-      if (state.tool === 'eraser') return state;
-      const willBeBehind = !state.isDrawBehind;
-      return { 
-          ...state, 
-          isDrawBehind: willBeBehind, 
-          isDrawInside: willBeBehind ? false : state.isDrawInside 
-      };
-    case 'TOGGLE_DRAW_INSIDE':
-      if (state.tool === 'eraser') return state;
-      const willBeInside = !state.isDrawInside;
-      return { 
-          ...state, 
-          isDrawInside: willBeInside,
-          isDrawBehind: willBeInside ? false : state.isDrawBehind
-      };
-    case 'TOGGLE_ORGANIC_MODE':
-      return {
-        ...state,
-        isOrganicMode: !state.isOrganicMode,
-        blobSmoothing: state.isOrganicMode ? state.blobSmoothing : false
-      };
-    case 'TOGGLE_BLOB_SMOOTHING':
-      return {
-        ...state,
-        blobSmoothing: !state.blobSmoothing,
-        isOrganicMode: state.blobSmoothing ? state.isOrganicMode : false
-      };
-    case 'SET_PALETTE_MODE': {
-      playSound('click');
-      if (state.paletteApplyToAllActive) {
-          const allModes: Record<number, 'flat' | 'grad'> = {};
-          for (let i = 0; i < state.totalLayers; i++) allModes[i] = action.payload;
-          const nextState = { ...state, paletteMode: action.payload, layerRenderModes: allModes, isDirty: true };
-          // No shapes anywhere → pure selection: no undo step, last-writer-wins.
-          if (state.shapes.length === 0) {
-              return { ...nextState, history: patchCurrentSnapshot(state.history, state.historyIndex, { layerRenderModes: allModes }) };
-          }
-          const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(nextState));
-          return { ...nextState, history, historyIndex: index };
-      }
-      const nextLayerRenderModes = { ...state.layerRenderModes, [state.currentLayerIndex]: action.payload };
-      const nextState = { ...state, paletteMode: action.payload, layerRenderModes: nextLayerRenderModes, isDirty: true };
-      // Current layer has no shapes to re-render → pure selection: no undo step, last-writer-wins.
-      const hasLayerShapes = state.shapes.some(s => s.zIndex === state.currentLayerIndex * -BASE_DEPTH_STEP);
-      if (!hasLayerShapes) {
-          return { ...nextState, history: patchCurrentSnapshot(state.history, state.historyIndex, { layerRenderModes: nextLayerRenderModes }) };
-      }
-      const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(nextState));
-      return { ...nextState, history, historyIndex: index };
-    }
-    // The three gradient setters mutate layerGradParams live and stay OUT of the
-    // history: they are the drag preview, same role as SET_BRUSH_THICKNESS_PREVIEW.
-    // The undo step (or the last-writer-wins patch) lands on release, in
-    // COMMIT_PALETTE_GRADIENT — see the hybrid contract in CLAUDE.md.
-    case 'SET_PALETTE_GRADIENT_ANGLE': {
-      const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
-      if (state.paletteApplyToAllActive) {
-          const allParams: Record<number, LayerGradParams> = {};
-          for (let i = 0; i < state.totalLayers; i++) {
-              allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), angle: action.payload };
-          }
-          return { ...state, layerGradParams: allParams, gradParamsPendingCommit: true };
-      }
-      return {
-          ...state,
-          gradParamsPendingCommit: true,
-          layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, angle: action.payload } }
-      };
-    }
-    case 'SET_PALETTE_GRADIENT_INTENSITY': {
-      const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
-      if (state.paletteApplyToAllActive) {
-          const allParams: Record<number, LayerGradParams> = {};
-          for (let i = 0; i < state.totalLayers; i++) {
-              allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), intensity: action.payload };
-          }
-          return { ...state, layerGradParams: allParams, gradParamsPendingCommit: true };
-      }
-      return {
-          ...state,
-          gradParamsPendingCommit: true,
-          layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, intensity: action.payload } }
-      };
-    }
-    case 'SET_PALETTE_GRADIENT_TYPE': {
-      const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
-      let nextParams: Record<number, LayerGradParams>;
-      if (state.paletteApplyToAllActive) {
-          nextParams = {};
-          for (let i = 0; i < state.totalLayers; i++) {
-              nextParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), gradType: action.payload };
-          }
-      } else {
-          nextParams = { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, gradType: action.payload } };
-      }
-      // TYPE only ever arrives right behind SET_PALETTE_MODE (PaletteHeader fires
-      // both for one tap), and MODE already applied the contract for that gesture.
-      // Patching completes its post-change pair instead of opening a second undo
-      // step for what the user felt as a single action.
-      return {
-          ...state,
-          layerGradParams: nextParams,
-          history: patchCurrentSnapshot(state.history, state.historyIndex, { layerGradParams: nextParams })
-      };
-    }
-    case 'COMMIT_PALETTE_GRADIENT': {
-      // Release with nothing dragged (a tap on the track that landed on the same
-      // value) → neither a step nor a patch.
-      if (!state.gradParamsPendingCommit) return state;
-      const hasShapes = state.paletteApplyToAllActive
-          ? state.shapes.length > 0
-          : state.shapes.some(s => s.zIndex === state.currentLayerIndex * -BASE_DEPTH_STEP);
-      if (hasShapes) {
-          // Material: the gradient repaints existing ink, so the whole drag folds
-          // into ONE undo step whose snapshot already holds the post-drag params.
-          const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
-          return { ...state, gradParamsPendingCommit: false, history, historyIndex: index, isDirty: true };
-      }
-      // Nothing to repaint → pure selection: last-writer-wins onto the current
-      // snapshot so no later undo resurrects the old gradient.
-      return {
-          ...state,
-          gradParamsPendingCommit: false,
-          history: patchCurrentSnapshot(state.history, state.historyIndex, { layerGradParams: state.layerGradParams }),
-          isDirty: true,
-      };
-    }
-    case 'RESET_DRAWING_VIEW': {
-      // With a format frame (v3.25.5), "Centrar vista" fits it as seen from the active layer (frameInView, v3.25.28);
-      // without one, zoom 1 at the origin as always.
-      const { w, h } = state.viewportSize;
-      if (state.format && w > 0 && h > 0) {
-          const fit = fitViewToRect(frameInView(state.format, state.camera.z, state.isAnimationMode), w, h);
-          return { ...state, drawingZoom: fit.zoom, drawingPan: fit.pan };
-      }
-      return { ...state, drawingZoom: 1, drawingPan: { x: 0, y: 0 } };
-    }
-    case 'SET_FORMAT':
-      // View state, outside undo; a user choice that is saved, so it dirties the project.
-      return { ...state, format: action.payload, isDirty: true };
-    case 'SET_VIEWPORT_SIZE':
-      if (state.viewportSize.w === action.payload.w && state.viewportSize.h === action.payload.h) return state;
-      return { ...state, viewportSize: action.payload };
-    case 'ADD_SHAPE': {
-      if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
-      // Creation time stamped here, not in the pointer handler (v3.25.16): the timelapse's clock.
-      const newShapes = [...state.shapes, { ...action.payload, t: Date.now() }];
-      const snapshot = createSnapshot({ ...state, shapes: newShapes });
-      const { history, index } = pushHistory(state.history, state.historyIndex, snapshot);
-
-      return {
-        ...state,
-        shapes: newShapes,
-        // The layer's brush pair, materialized in the state too (not only in the snapshot): a
-        // later patchCurrentSnapshot copies this map over the snapshot and must not drop it.
-        layerBrushSettings: snapshot.layerBrushSettings,
-        history,
-        historyIndex: index,
-        isDirty: true,
-      };
-    }
-    case 'ADD_SHAPES': {
-        if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
-        const t = Date.now();
-        const newShapes = [...state.shapes, ...action.payload.map(s => ({ ...s, t }))];
-        const snapshot = createSnapshot({ ...state, shapes: newShapes });
-        const { history, index } = pushHistory(state.history, state.historyIndex, snapshot);
-
-        return {
-          ...state,
-          shapes: newShapes,
-          layerBrushSettings: snapshot.layerBrushSettings,
-          history,
-          historyIndex: index,
-          isDirty: true,
-        };
-      }
-    case 'UNDO': {
-      if (state.historyIndex <= 0) return state;
-      const newIndex = state.historyIndex - 1;
-      const snapshot = state.history[newIndex];
-
-      // Preserve current layer UNLESS totalLayers changed (layer creation/deletion)
-      // If totalLayers changed, clamp currentLayerIndex to valid range
-      const layerIndexToUse = snapshot.totalLayers !== state.totalLayers
-        ? Math.min(state.currentLayerIndex, snapshot.totalLayers - 1)
-        : state.currentLayerIndex;
-
-      const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
-      const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
-      // Hybrid restore: document-property selectors (brush settings, palette) come
-      // from the snapshot so canvas and selector never desync — snapshots are
-      // consistent (post-change pairs) and pure selections last-writer-win onto the
-      // current snapshot, so undoing a plain stroke never moves a selector. Pure
-      // view state (hiddenLayers, locked3DLayers) is not in the snapshot at all.
-      // Brush pairs: only the layers whose strokes this step restyled move (v3.26.3).
-      const layerBrushSettings = restoreLayerBrushSettings(state, snapshot);
-      const restoredBrush = layerBrushSettings[layerIndexToUse]
-        || { thickness: state.currentBrushThickness, mode: state.brushMode };
-
-      return {
-        ...state,
-        shapes: snapshot.shapes,
-        totalLayers: snapshot.totalLayers,
-        currentLayerIndex: layerIndexToUse,
-        camera: { ...state.camera, z: layerIndexToUse * -BASE_DEPTH_STEP, rotation: 0 },
-        layerRenderModes: snapshot.layerRenderModes,
-        paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
-        layerGradParams: snapshot.layerGradParams,
-        layerBrushSettings,
-        activePaletteId: snapshot.activePaletteId,
-        palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
-        currentBrushThickness: restoredBrush.thickness,
-        brushMode: restoredBrush.mode,
-        hiddenLayers: remapLayerIndices(state.hiddenLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
-        locked3DLayers: remapLayerIndices(state.locked3DLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
-        postProcessing: { ...state.postProcessing, focusTargetLayer: remapFocusLayer(state.postProcessing.focusTargetLayer, state.shapes, snapshot.shapes, snapshot.totalLayers) },
-        historyIndex: newIndex,
-        isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
-        isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false,
-        isDirty: true,
-      };
-    }
-    case 'REDO': {
-      if (state.historyIndex >= state.history.length - 1) return state;
-      const newIndex = state.historyIndex + 1;
-      const snapshot = state.history[newIndex];
-
-      // Preserve current layer UNLESS totalLayers changed (layer creation/deletion)
-      // If totalLayers changed, clamp currentLayerIndex to valid range
-      const layerIndexToUse = snapshot.totalLayers !== state.totalLayers
-        ? Math.min(state.currentLayerIndex, snapshot.totalLayers - 1)
-        : state.currentLayerIndex;
-
-      const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
-      const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
-      // Hybrid restore: document-property selectors (brush settings, palette) come
-      // from the snapshot so canvas and selector never desync — snapshots are
-      // consistent (post-change pairs) and pure selections last-writer-win onto the
-      // current snapshot, so redoing a plain stroke never moves a selector. Pure
-      // view state (hiddenLayers, locked3DLayers) is not in the snapshot at all.
-      // Brush pairs: only the layers whose strokes this step restyled move (v3.26.3).
-      const layerBrushSettings = restoreLayerBrushSettings(state, snapshot);
-      const restoredBrush = layerBrushSettings[layerIndexToUse]
-        || { thickness: state.currentBrushThickness, mode: state.brushMode };
-
-      return {
-        ...state,
-        shapes: snapshot.shapes,
-        totalLayers: snapshot.totalLayers,
-        currentLayerIndex: layerIndexToUse,
-        camera: { ...state.camera, z: layerIndexToUse * -BASE_DEPTH_STEP, rotation: 0 },
-        layerRenderModes: snapshot.layerRenderModes,
-        paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
-        layerGradParams: snapshot.layerGradParams,
-        layerBrushSettings,
-        activePaletteId: snapshot.activePaletteId,
-        palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
-        currentBrushThickness: restoredBrush.thickness,
-        brushMode: restoredBrush.mode,
-        hiddenLayers: remapLayerIndices(state.hiddenLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
-        locked3DLayers: remapLayerIndices(state.locked3DLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
-        postProcessing: { ...state.postProcessing, focusTargetLayer: remapFocusLayer(state.postProcessing.focusTargetLayer, state.shapes, snapshot.shapes, snapshot.totalLayers) },
-        historyIndex: newIndex,
-        isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
-        isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false,
-        isDirty: true,
-      };
-    }
-    case 'SET_MODE':
-      playSound('modeSwitch');
-      return { ...state, mode: action.payload };
-    case 'SET_TOOL':
-      playSound('click');
-      if (action.payload === 'move') {
-          return {
-              ...state,
-              tool: 'move',
-              // Reaching for Move means wanting to transform the layer, so it arrives
-              // selected. The toolbar dispatches SET_TOOL unconditionally (no "already
-              // on this tool" guard in DrawingToolbar), so re-tapping Move while
-              // already in Move runs this again — that is the cheapest way back from a
-              // deselected state, with no extra UI.
-              isLayerSelected: true,
-              isDrawBehind: false,
-              isDrawInside: false,
-              isSymmetryEnabled: false,
-              isOrganicMode: false
-          };
-      }
-      return { 
-        ...state, 
-        tool: action.payload,
-        isDrawBehind: action.payload === 'eraser' ? false : state.isDrawBehind,
-        isDrawInside: action.payload === 'eraser' ? false : state.isDrawInside,
-        isOrganicMode: action.payload === 'brush' ? false : state.isOrganicMode
-      };
-    case 'SET_CINEMATIC_TYPE':
-      playSound('click');
-      return { ...state, cinematicType: action.payload, isDirty: state.isDirty || action.payload !== state.cinematicType };
-    case 'SET_COLOR_INDEX':
-      return { ...state, currentColorIndex: action.payload };
-    case 'UPDATE_CAMERA':
-      return { ...state, camera: { ...state.camera, ...action.payload } };
-    case 'NEXT_LAYER': {
-      if (state.currentLayerIndex < state.totalLayers - 1) {
-          // Just move to next existing layer
-          const nextIndex = state.currentLayerIndex + 1;
-          const newZ = nextIndex * -BASE_DEPTH_STEP;
-          const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-          const nextBrush = resolveLayerBrush(state.shapes, nextIndex, state.layerBrushSettings[nextIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
-          return {
-              ...state,
-              currentLayerIndex: nextIndex,
-              // Navigating to a layer ([ / ]) is wanting to work on it — same reading
-              // as clicking its row in the panel.
-              isLayerSelected: true,
-              camera: { ...state.camera, z: newZ, rotation: 0 },
-              isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
-              isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
-              paletteMode: state.layerRenderModes[nextIndex] || 'flat',
-              currentBrushThickness: nextBrush.thickness,
-              brushMode: nextBrush.mode
-          };
-      } else if (state.totalLayers < MAX_LAYERS) {
-          // Create new layer (always empty) - Save to history
-          const nextIndex = state.currentLayerIndex + 1;
-          const newZ = nextIndex * -BASE_DEPTH_STEP;
-          
-          const propagatedMode = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
-          const propagatedParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
-          const newPaletteMode = state.paletteApplyToAllActive ? propagatedMode : 'flat';
-          const newGradP = state.paletteApplyToAllActive ? propagatedParams : GRADIENT_DEFAULTS;
-          const newLayerRenderModes = state.paletteApplyToAllActive
-              ? { ...state.layerRenderModes, [nextIndex]: propagatedMode }
-              : state.layerRenderModes;
-          const newLayerGradParams = state.paletteApplyToAllActive
-              ? { ...state.layerGradParams, [nextIndex]: { ...propagatedParams } }
-              : state.layerGradParams;
-          const newApplySnapshot = state.paletteApplyToAllActive && state.paletteApplyToAllSnapshot
-              ? {
-                  layerRenderModes: { ...state.paletteApplyToAllSnapshot.layerRenderModes, [nextIndex]: 'flat' as const },
-                  layerGradParams: { ...state.paletteApplyToAllSnapshot.layerGradParams, [nextIndex]: { ...GRADIENT_DEFAULTS } },
-              }
-              : state.paletteApplyToAllSnapshot;
-          
-          const newState = {
-              ...state,
-              currentLayerIndex: nextIndex,
-              isLayerSelected: true,
-              totalLayers: state.totalLayers + 1,
-              camera: { ...state.camera, z: newZ, rotation: 0 },
-              isDrawInside: false,
-              isDrawBehind: false,
-              paletteMode: newPaletteMode,
-              layerRenderModes: newLayerRenderModes,
-              layerGradParams: newLayerGradParams,
-              paletteApplyToAllSnapshot: newApplySnapshot,
-              paletteGradientAngle: newGradP.angle,
-              paletteGradientIntensity: newGradP.intensity,
-              paletteGradientType: newGradP.gradType || 'solid',
-              currentBrushThickness: state.currentBrushThickness,
-              brushMode: state.brushMode,
-              isDirty: true,
-          };
-          
-          const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
-          
-          return {
-              ...newState,
-              history,
-              historyIndex: index
-          };
-      }
-      return state;
-    }
-    case 'PREV_LAYER': {
-        if (state.currentLayerIndex > 0) {
-            const prevIndex = state.currentLayerIndex - 1;
-            const newZ = prevIndex * -BASE_DEPTH_STEP;
-            const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-            const prevBrush = resolveLayerBrush(state.shapes, prevIndex, state.layerBrushSettings[prevIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
-            return {
-                ...state,
-                currentLayerIndex: prevIndex,
-                isLayerSelected: true,
-                camera: { ...state.camera, z: newZ, rotation: 0 },
-                isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
-                isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
-                paletteMode: state.layerRenderModes[prevIndex] || 'flat',
-                currentBrushThickness: prevBrush.thickness,
-                brushMode: prevBrush.mode
-            };
-        }
-        return state;
-    }
-    case 'ADD_LAYER': {
-        if (state.totalLayers >= MAX_LAYERS) return state;
-
-        const newLayerIndex = state.currentLayerIndex + 1;
-        const newZ = newLayerIndex * -BASE_DEPTH_STEP;
-
-        // Shift shapes: layers at index >= newLayerIndex move one slot farther
-        const newShapes = state.shapes.map(s =>
-            s.zIndex <= newZ ? { ...s, zIndex: s.zIndex - BASE_DEPTH_STEP } : s
-        );
-
-        // Shift hidden/locked index arrays
-        const newHidden = state.hiddenLayers.map(i => i >= newLayerIndex ? i + 1 : i);
-        const newLocked = state.locked3DLayers.map(i => i >= newLayerIndex ? i + 1 : i);
-
-        // Shift per-layer dicts
-        const newRenderModes   = { ...state.layerRenderModes };
-        const newGradParams    = { ...state.layerGradParams };
-        const newBrushSettings = { ...state.layerBrushSettings };
-        for (let i = state.totalLayers - 1; i >= newLayerIndex; i--) {
-            newRenderModes[i + 1]   = newRenderModes[i];
-            newGradParams[i + 1]    = newGradParams[i];
-            newBrushSettings[i + 1] = newBrushSettings[i];
-        }
-
-        // New slot: propagate from current layer (paletteApplyToAllActive-aware)
-        const propagatedMode   = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
-        const propagatedParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
-        const newPaletteMode = state.paletteApplyToAllActive ? propagatedMode : 'flat';
-        const newGradP       = state.paletteApplyToAllActive ? propagatedParams : GRADIENT_DEFAULTS;
-        newRenderModes[newLayerIndex] = newPaletteMode;
-        newGradParams[newLayerIndex]  = { ...newGradP };
-        // newBrushSettings[newLayerIndex] not set — new empty layer uses current brush as fallback
-
-        // Shift paletteApplyToAllSnapshot (if active)
-        let newApplySnapshot = state.paletteApplyToAllSnapshot;
-        if (state.paletteApplyToAllActive && state.paletteApplyToAllSnapshot) {
-            const snapModes  = { ...state.paletteApplyToAllSnapshot.layerRenderModes };
-            const snapParams = { ...state.paletteApplyToAllSnapshot.layerGradParams };
-            for (let i = state.totalLayers - 1; i >= newLayerIndex; i--) {
-                snapModes[i + 1]  = snapModes[i];
-                snapParams[i + 1] = snapParams[i];
-            }
-            snapModes[newLayerIndex]  = 'flat' as const;
-            snapParams[newLayerIndex] = { ...GRADIENT_DEFAULTS };
-            newApplySnapshot = { layerRenderModes: snapModes, layerGradParams: snapParams };
-        }
-
-        const newState = {
-            ...state,
-            shapes: newShapes,
-            totalLayers: state.totalLayers + 1,
-            currentLayerIndex: newLayerIndex,
-            camera: { ...state.camera, z: newZ, rotation: 0 },
-            postProcessing: { ...state.postProcessing, focusTargetLayer: shiftFocusLayer(state.postProcessing.focusTargetLayer, newLayerIndex, 1) },
-            hiddenLayers: newHidden,
-            locked3DLayers: newLocked,
-            layerRenderModes: newRenderModes,
-            layerGradParams: newGradParams,
-            layerBrushSettings: newBrushSettings,
-            paletteApplyToAllSnapshot: newApplySnapshot,
-            isDrawInside: false,
-            isDrawBehind: false,
-            paletteMode: newPaletteMode,
-            paletteGradientAngle: newGradP.angle,
-            paletteGradientIntensity: newGradP.intensity,
-            paletteGradientType: newGradP.gradType || 'solid',
-            currentBrushThickness: state.currentBrushThickness,
-            brushMode: state.brushMode,
-            isDirty: true,
-        };
-
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
-        return { ...newState, history, historyIndex: index };
-    }
-    case 'SET_LAYER_SELECTED':
-      // Pure view state: no pushHistory, no createSnapshot, no patchCurrentSnapshot.
-      // Deselecting is not an edit to the document — the geometry was already baked
-      // at the last pointerup — so it must not be undoable, exactly like hiddenLayers.
-      if (state.isLayerSelected === action.payload) return state;
-      return { ...state, isLayerSelected: action.payload };
-    case 'SET_CURRENT_LAYER': {
-        const targetIndex = action.payload;
-        if (targetIndex === state.currentLayerIndex) return state;
-        if (targetIndex < 0 || targetIndex >= state.totalLayers) return state;
-        playSound('click');
-        const newZ = targetIndex * -BASE_DEPTH_STEP;
-        const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-        const targetBrush = resolveLayerBrush(state.shapes, targetIndex, state.layerBrushSettings[targetIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
-        return {
-            ...state,
-            currentLayerIndex: targetIndex,
-            // Clicking a row in the layer panel means "I want to work on this".
-            isLayerSelected: true,
-            camera: { ...state.camera, z: newZ, rotation: 0 },
-            isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
-            isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
-            paletteMode: state.layerRenderModes[targetIndex] || 'flat',
-            currentBrushThickness: targetBrush.thickness,
-            brushMode: targetBrush.mode
-        };
-    }
-    case 'SET_FOCAL_LENGTH':
-      return { ...state, focalLength: action.payload, isDirty: state.isDirty || action.payload !== state.focalLength };
-    case 'SET_VIEW_ZOOM_OFFSET':
-      return { ...state, viewZoomOffset: action.payload, isDirty: state.isDirty || action.payload !== state.viewZoomOffset };
-    // First CINEMA view of a session (ControlsV2): app defaults, not a user change — never dirty.
-    case 'INIT_CINEMA_VIEW':
-      // Only a new project reaches here with nothing of its own: an opened project is already `cinemaViewInitialized`
-      // (LOAD_PROJECT filled its gaps), so its saved view stands.
-      if (state.cinemaViewInitialized) return state;
-      return {
-        ...state,
-        cinemaViewInitialized: true,
-        focalLength: action.payload.focalLength,
-        viewZoomOffset: action.payload.viewZoomOffset,
-        layerSpacingFactor: action.payload.layerSpacingFactor,
-        cinematicType: action.payload.cinematicType,
-      };
-    case 'SET_DRAWING_ZOOM':
-      return { 
-          ...state, 
-          drawingZoom: action.payload.zoom,
-          drawingPan: action.payload.pan || state.drawingPan
-      };
-    case 'TOGGLE_DARK_MODE':
-      playSound('click');
-      return { ...state, isDarkMode: !state.isDarkMode, isDirty: true };
-    case 'SET_FX_INTENSITY':
-      return {
-          ...state,
-          isDirty: true,
-          postProcessing: {
-              ...state.postProcessing,
-              [action.payload.fx]: action.payload.value
-          }
-      };
-    case 'SET_PARTICLE_TYPE':
-      return {
-          ...state,
-          isDirty: true,
-          postProcessing: {
-              ...state.postProcessing,
-              particleType: action.payload
-          }
-      };
-    case 'TOGGLE_FX': {
-      playSound('click');
-      const turningOn = !state.postProcessingEnabled[action.payload];
-      return {
-          ...state,
-          isDirty: true,
-          postProcessingEnabled: {
-              ...state.postProcessingEnabled,
-              [action.payload]: turningOn,
-              // Super Riso and Riso exclude each other: switching one on switches the other off.
-              ...(turningOn && action.payload === 'superRiso' ? { riso: false } : {}),
-              ...(turningOn && action.payload === 'riso' ? { superRiso: false } : {}),
-          },
-          postProcessingSnapshot: null,
-          fxMasterEnabled: true,
-      };
-    }
-    case 'SET_SUPER_RISO':
-      return {
-          ...state,
-          isDirty: true,
-          postProcessing: { ...state.postProcessing, superRiso: patchSuperRiso(state.postProcessing.superRiso, action.payload) },
-      };
-    case 'APPLY_SUPER_RISO_STYLE':
-      return {
-          ...state,
-          isDirty: true,
-          postProcessing: { ...state.postProcessing, superRiso: applySuperRisoStyle(state.postProcessing.superRiso, action.payload) },
-      };
-    case 'TOGGLE_FX_MASTER': {
-      playSound('click');
-      const px = state.postProcessingEnabled;
-      const hasActiveEffects = Object.values(px).some(v => v);
-      if (hasActiveEffects && state.postProcessingSnapshot === null) {
-          const allOff = Object.fromEntries(
-              Object.keys(px).map(k => [k, false])
-          ) as PostProcessingEnabled;
-          return {
-              ...state,
-              isDirty: true,
-              postProcessingSnapshot: { ...px } as PostProcessingEnabled,
-              postProcessingEnabled: allOff,
-              fxMasterEnabled: false,
-          };
-      } else if (state.postProcessingSnapshot !== null) {
-          return {
-              ...state,
-              isDirty: true,
-              postProcessingEnabled: state.postProcessingSnapshot,
-              postProcessingSnapshot: null,
-              fxMasterEnabled: Object.values(state.postProcessingSnapshot).some(v => v),
-          };
-      } else {
-          return state;
-      }
-    }
-    case 'TOGGLE_PALETTE_APPLY_TO_ALL': {
-      playSound('click');
-      if (!state.paletteApplyToAllActive) {
-          const activeMode = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
-          const activeParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
-          const allModes: Record<number, 'flat' | 'grad'> = {};
-          const allParams: Record<number, LayerGradParams> = {};
-          for (let i = 0; i < state.totalLayers; i++) {
-              allModes[i] = activeMode;
-              allParams[i] = { ...activeParams };
-          }
-          return {
-              ...state,
-              paletteApplyToAllActive: true,
-              paletteApplyToAllSnapshot: {
-                  layerRenderModes: { ...state.layerRenderModes },
-                  layerGradParams: { ...state.layerGradParams },
-              },
-              layerRenderModes: allModes,
-              layerGradParams: allParams,
-              isDirty: true,
-          };
-      } else {
-          const snap = state.paletteApplyToAllSnapshot!;
-          const restoredModes = {
-              ...snap.layerRenderModes,
-              [state.currentLayerIndex]: state.layerRenderModes[state.currentLayerIndex],
-          };
-          const restoredParams = {
-              ...snap.layerGradParams,
-              [state.currentLayerIndex]: state.layerGradParams[state.currentLayerIndex],
-          };
-          return {
-              ...state,
-              paletteApplyToAllActive: false,
-              paletteApplyToAllSnapshot: null,
-              layerRenderModes: restoredModes,
-              layerGradParams: restoredParams,
-              paletteMode: state.layerRenderModes[state.currentLayerIndex] ?? 'flat',
-              isDirty: true,
-          };
-      }
-    }
-    case 'REQUEST_EXPORT':
-      return { ...state, exportRequest: action.payload, isExporting: true };
-    case 'FINISH_EXPORT':
-      return { ...state, exportRequest: null, isExporting: false };
-    case 'CLEAR_CANVAS':
-      return {
-          ...state,
-          // A new canvas is a new drawing.
-          projectMeta: createProjectMeta(),
-          cinemaViewInitialized: false,
-          shapes: [],
-          history: [{
-              shapes: [],
-              totalLayers: 1,
-              layerRenderModes: {},
-              layerGradParams: {},
-              layerBrushSettings: {},
-              activePaletteId: state.activePaletteId
-          }],
-          historyIndex: 0,
-          currentLayerIndex: 0,
-          totalLayers: 1,
-          camera: { x: 0, y: 0, z: 0, rotation: 0 },
-          exportRequest: null,
-          isExporting: false,
-          hiddenLayers: [],
-          locked3DLayers: [],
-          isLayerSelected: true,
-          drawingZoom: 1,
-          drawingPan: { x: 0, y: 0 },
-          layerRenderModes: {},
-          layerGradParams: {},
-          layerBrushSettings: {},
-          paletteMode: 'flat',
-          focalLength: initialState.focalLength,
-          viewZoomOffset: initialState.viewZoomOffset,
-          layerSpacingFactor: initialState.layerSpacingFactor,
-          cinematicSpeed: initialState.cinematicSpeed,
-          isHandheldEnabled: initialState.isHandheldEnabled,
-          handheldIntensity: initialState.handheldIntensity,
-          cinematicType: initialState.cinematicType,
-          postProcessing: initialState.postProcessing,
-          postProcessingEnabled: initialState.postProcessingEnabled,
-          fxMasterEnabled: initialState.fxMasterEnabled,
-          postProcessingSnapshot: null,
-          paletteApplyToAllActive: false,
-          paletteApplyToAllSnapshot: null,
-          format: null,
-          isDirty: false,
-      }
-    case 'LOAD_PROJECT':
-      // Ensure we merge postProcessing settings correctly to avoid undefined values
-      // Legacy migration: drop risoInkBlend if present (was never in stable releases)
-      const incomingPostProcessing: any = action.payload.postProcessing || {};
-      const mergedPostProcessing = {
-          ...initialState.postProcessing,
-          ...incomingPostProcessing
-      };
-      delete (mergedPostProcessing as any).risoInkBlend;
-      // Super Riso (v3.17.74): nested object, merged and sanitised field by field (no allow-list
-      // here). Files from before it open with the defaults.
-      mergedPostProcessing.superRiso = sanitizeSuperRiso(incomingPostProcessing.superRiso);
-      // Legacy migration: grungeOverlay -> grunge
-      const incomingPostProcessingEnabled: any = action.payload.postProcessingEnabled || {};
-      const mergedPostProcessingEnabled = {
-          ...initialState.postProcessingEnabled,
-          ...incomingPostProcessingEnabled,
-          grunge: incomingPostProcessingEnabled.grunge ?? incomingPostProcessingEnabled.grungeOverlay ?? false
-      };
-      delete (mergedPostProcessingEnabled as any).grungeOverlay;
-      if (typeof mergedPostProcessingEnabled.superRiso !== 'boolean') mergedPostProcessingEnabled.superRiso = initialState.postProcessingEnabled.superRiso;
-      // The two risos exclude each other; a file with both on keeps Super Riso.
-      if (mergedPostProcessingEnabled.superRiso && mergedPostProcessingEnabled.riso) mergedPostProcessingEnabled.riso = false;
-      // Master FX OFF (v3.20.5): while it is off every flag is false and the look that was on lives in the
-      // snapshot, so both travel in the file. The snapshot is restored only with the master off, one boolean
-      // per known FX; a stray or empty one is dropped, and loading never inherits the previous project's.
-      const rawFxSnapshot: any = (action.payload as any).postProcessingSnapshot;
-      let loadedFxSnapshot: PostProcessingEnabled | null = null;
-      if (action.payload.fxMasterEnabled === false && rawFxSnapshot && typeof rawFxSnapshot === 'object' && !Array.isArray(rawFxSnapshot)) {
-          const snap = Object.fromEntries(
-              Object.keys(initialState.postProcessingEnabled).map(k => [k, rawFxSnapshot[k] === true])
-          ) as PostProcessingEnabled;
-          if (snap.superRiso && snap.riso) snap.riso = false;
-          if (Object.values(snap).some(v => v)) loadedFxSnapshot = snap;
-      }
-      
-      const loadedLayerRenderModes = action.payload.layerRenderModes || {};
-      const rawGradParams = action.payload.layerGradParams || {};
-      const loadedLayerGradParams = Object.fromEntries(
-          Object.entries(rawGradParams).map(([k, v]: [string, any]) => [k, { ...GRADIENT_DEFAULTS, ...v }])
-      ) as Record<number, LayerGradParams>;
-      const loadedLayerBrushSettings = action.payload.layerBrushSettings || {};
-      
-      const loadedPaletteId = action.payload.activePaletteId || 'primary';
-      const loadedPalette = loadedPaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
-
-      // ── Whitelist validation: only accept known keys with type guards ──
-      // Per-shape migration: map legacy lineMode/lineThickness → brushMode/brushThickness
-      const rawShapes = Array.isArray(action.payload.shapes) ? action.payload.shapes : [];
-      const safeShapes: Shape[] = rawShapes.map((shape: any) => {
-          if (!shape || typeof shape !== 'object') return shape;
-          const brushMode = shape.brushMode ?? shape.lineMode;
-          const brushThickness = shape.brushThickness ?? shape.lineThickness;
-          const { lineMode: _lm, lineThickness: _lt, ...rest } = shape;
-          const result: any = { ...rest };
-          if (brushMode !== undefined) result.brushMode = brushMode;
-          if (brushThickness !== undefined) result.brushThickness = brushThickness;
-          // textMatrix (v3.17.56): texts saved before it have none and read their `rotation`.
-          // A malformed or degenerate one is dropped, falling back to that same rotation.
-          if ('textMatrix' in result) {
-              const m = result.textMatrix;
-              const ok = Array.isArray(m) && m.length === 4 && m.every((v: unknown) => typeof v === 'number' && Number.isFinite(v))
-                  && Math.abs(m[0] * m[3] - m[1] * m[2]) > 1e-12;
-              if (!ok) delete result.textMatrix;
-          }
-          // Creation time (v3.25.16): a finite number or nothing (older files fall back to the array index).
-          if ('t' in result && !(typeof result.t === 'number' && Number.isFinite(result.t))) delete result.t;
-          return result as Shape;
-      });
-      const safeTotalLayers = (typeof action.payload.totalLayers === 'number' && action.payload.totalLayers > 0)
-          ? Math.min(action.payload.totalLayers, MAX_LAYERS) : 1;
-      const safeHiddenLayers = Array.isArray(action.payload.hiddenLayers) ? action.payload.hiddenLayers : [];
-      const safeLocked3DLayers = Array.isArray(action.payload.locked3DLayers) ? action.payload.locked3DLayers : [];
-      // Tool-value backward compat: until v2.3.0 'brush' was the blob and 'line' the brush. That release
-      // renamed both and, in the same commit, the keys the file saves next to them (lineMode /
-      // currentLineThickness → brushMode / currentBrushThickness), which every save since then writes.
-      // So a file with the new keys already speaks today's names and only an older one is translated.
-      // Not the v2 meta: files of v2.3.0–v3.20.x have none, and the autosave carries no formatVersion.
-      // (Until v3.26.8 every 'brush' was translated: saving with the brush active reopened with the blob.)
-      const savedWithCurrentToolNames = 'brushMode' in action.payload || 'currentBrushThickness' in action.payload;
-      let rawTool = action.payload.tool;
-      if (!savedWithCurrentToolNames) {
-          if (rawTool === 'brush') rawTool = 'blob';
-          else if (rawTool === 'line') rawTool = 'brush';
-      }
-      const safeTool = (typeof rawTool === 'string' && ['blob', 'eraser', 'brush', 'move', 'text'].includes(rawTool))
-          ? rawTool as ToolType : 'blob';
-      // brushMode with fallback to legacy lineMode
-      const rawBrushMode = action.payload.brushMode ?? action.payload.lineMode;
-      const safeBrushMode = (typeof rawBrushMode === 'string' && ['tapered', 'uniform', 'ink'].includes(rawBrushMode))
-          ? rawBrushMode : 'tapered';
-      // currentBrushThickness with fallback to legacy currentLineThickness
-      const rawBrushThickness = (typeof action.payload.currentBrushThickness === 'number' && action.payload.currentBrushThickness > 0)
-          ? action.payload.currentBrushThickness
-          : (typeof action.payload.currentLineThickness === 'number' && action.payload.currentLineThickness > 0)
-              ? action.payload.currentLineThickness
-              : 25;
-      // Clamp to the current tool range (v3.17.40 lowered MAX from 100 to 70). This is
-      // TOOL STATE, not geometry — a .dior saved under the old range can carry
-      // currentBrushThickness up to 100, and the slider control has to land somewhere
-      // sane on it, not on a value its own max attribute disagrees with. Shapes are
-      // untouched either way: their baked points/brushThickness are never reinterpreted
-      // on load (see constants/brush.ts). layerBrushSettings needs no equivalent clamp —
-      // useSaveLoad.ts has never included it in a saved payload (verified via
-      // `git log -S`), so action.payload.layerBrushSettings is always undefined here.
-      // The file's currentBrushThickness is the value of whichever layer was active at save;
-      // layer 0 opens with its own (from its strokes) when it has any (v3.26.3).
-      const layer0Brush = resolveLayerBrush(safeShapes, 0, undefined);
-      const safeBrushThickness = Math.min(Math.max(layer0Brush?.thickness ?? rawBrushThickness, BRUSH_THICKNESS_MIN), BRUSH_THICKNESS_MAX);
-      // Gaps take the defaults, never the previous project's values (v3.20.11 rule; until v3.26.8 these two fell back to state.*).
-      const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : initialState.isDarkMode;
-      const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom', 'storytelling'].includes(action.payload.cinematicType))
-          ? action.payload.cinematicType as CinematicType : CINEMA_VIEW_DEFAULTS.cinematicType;
-      const rawProjectName = typeof action.payload.projectName === 'string'
-          ? action.payload.projectName.slice(0, 100) : initialState.projectName;
-      // Backward compat: legacy .dior files (pre-v2.1.0) saved the literal 'Untitled Project'
-      // instead of the sentinel. Normalize so display goes through i18n.
-      const safeProjectName = rawProjectName === 'Untitled Project' ? UNTITLED_PROJECT_SENTINEL : rawProjectName;
-      const safeFocalLength = typeof action.payload.focalLength === 'number' ? action.payload.focalLength : CINEMA_VIEW_DEFAULTS.focalLength;
-      const safeViewZoomOffset = typeof action.payload.viewZoomOffset === 'number' ? action.payload.viewZoomOffset : CINEMA_VIEW_DEFAULTS.viewZoomOffset;
-      const safeLayerSpacingFactor = typeof action.payload.layerSpacingFactor === 'number' ? action.payload.layerSpacingFactor : CINEMA_VIEW_DEFAULTS.layerSpacingFactor;
-      const safeCinematicSpeed = typeof action.payload.cinematicSpeed === 'number' ? action.payload.cinematicSpeed : initialState.cinematicSpeed;
-      const safeIsHandheldEnabled = typeof action.payload.isHandheldEnabled === 'boolean' ? action.payload.isHandheldEnabled : initialState.isHandheldEnabled;
-      const safeHandheldIntensity = (typeof action.payload.handheldIntensity === 'string' && ['low', 'medium', 'high'].includes(action.payload.handheldIntensity as string)) ? action.payload.handheldIntensity as HandheldIntensity : initialState.handheldIntensity;
-      const safeFxMasterEnabled = typeof action.payload.fxMasterEnabled === 'boolean' ? action.payload.fxMasterEnabled : true;
-      const safePaletteApplyToAllActive = typeof (action.payload as any).paletteApplyToAllActive === 'boolean'
-          ? (action.payload as any).paletteApplyToAllActive : false;
-      const safePaletteApplyToAllSnapshot = ((action.payload as any).paletteApplyToAllSnapshot &&
-          typeof (action.payload as any).paletteApplyToAllSnapshot === 'object')
-          ? (action.payload as any).paletteApplyToAllSnapshot : null;
-      // Pre-v3.17.26 .dior files carry no pointOfInterest at all — the field is new.
-      // undefined must resolve to null (no CINEMA framing point), never leak a partial
-      // or malformed object through: the CINEMA render path reads poi.x/y/z unchecked.
-      const rawPoi: any = (action.payload as any).pointOfInterest;
-      const safePointOfInterest = (rawPoi && typeof rawPoi === 'object'
-          && typeof rawPoi.x === 'number' && typeof rawPoi.y === 'number' && typeof rawPoi.z === 'number')
-          ? { x: rawPoi.x, y: rawPoi.y, z: rawPoi.z } : null;
-
-      // Create initial history snapshot with loaded state
-      const initialSnapshot: HistorySnapshot = {
-          shapes: safeShapes,
-          totalLayers: safeTotalLayers,
-          layerRenderModes: loadedLayerRenderModes,
-          layerGradParams: loadedLayerGradParams,
-          layerBrushSettings: loadedLayerBrushSettings,
-          activePaletteId: loadedPaletteId
-      };
-
-      return {
-          ...state,
-          // Whitelisted fields only — no ...action.payload spread
-          shapes: safeShapes,
-          totalLayers: safeTotalLayers,
-          isDarkMode: safeIsDarkMode,
-          cinematicType: safeCinematicType,
-          projectName: safeProjectName,
-          // .dior v2: a file (or autosave) without meta gets a new identity, written at the next save.
-          projectMeta: readProjectMeta((action.payload as any).meta) ?? createProjectMeta(),
-          postProcessing: mergedPostProcessing,
-          postProcessingEnabled: loadedFxSnapshot
-              ? Object.fromEntries(Object.keys(mergedPostProcessingEnabled).map(k => [k, false])) as PostProcessingEnabled
-              : mergedPostProcessingEnabled,
-          fxMasterEnabled: loadedFxSnapshot ? false : safeFxMasterEnabled,
-          postProcessingSnapshot: loadedFxSnapshot,
-          // Ensure critical state is reset/set correctly
-          history: [initialSnapshot],
-          historyIndex: 0,
-          camera: { x: 0, y: 0, z: 0, rotation: 0 },
-          currentLayerIndex: 0,
-          mode: 'drawing',
-          tool: safeTool,
-          hiddenLayers: safeHiddenLayers,
-          locked3DLayers: safeLocked3DLayers,
-          // Re-derived, never restored from the file — it is not serialized. Opening a
-          // project always starts selected, like a fresh session.
-          isLayerSelected: true,
-          drawingZoom: 1,
-          drawingPan: { x: 0, y: 0 },
-          layerRenderModes: loadedLayerRenderModes,
-          layerGradParams: loadedLayerGradParams,
-          layerBrushSettings: loadedLayerBrushSettings,
-          paletteMode: loadedLayerRenderModes[0] || 'flat',
-          currentBrushThickness: safeBrushThickness,
-          brushMode: layer0Brush?.mode ?? safeBrushMode,
-          activePaletteId: loadedPaletteId,
-          palette: loadedPalette,
-          focalLength: safeFocalLength,
-          viewZoomOffset: safeViewZoomOffset,
-          layerSpacingFactor: safeLayerSpacingFactor,
-          cinematicSpeed: safeCinematicSpeed,
-          isHandheldEnabled: safeIsHandheldEnabled,
-          handheldIntensity: safeHandheldIntensity,
-          shouldFitToView: true,
-          isDrawing: false,
-          paletteApplyToAllActive: safePaletteApplyToAllActive,
-          paletteApplyToAllSnapshot: safePaletteApplyToAllSnapshot,
-          pointOfInterest: safePointOfInterest,
-          // Absent or malformed → no frame; never the previous project's.
-          format: sanitizeFormat((action.payload as any).format),
-          isDirty: false,
-          projectWasLoaded: true,
-          // The file's view stands; its gaps were filled above with the defaults, never with the previous project's.
-          cinemaViewInitialized: true,
-      };
-    case 'COMPLETE_FIT_TO_VIEW':
-        return { ...state, shouldFitToView: false };
-    case 'TOGGLE_LAYER_VISIBILITY': {
-        playSound('click');
-        const layerIndex = action.payload;
-        const isHidden = state.hiddenLayers.includes(layerIndex);
-        return {
-            ...state,
-            hiddenLayers: isHidden 
-                ? state.hiddenLayers.filter(i => i !== layerIndex)
-                : [...state.hiddenLayers, layerIndex],
-            isDirty: true,
-        };
-    }
-    case 'TOGGLE_3D_LOCK': {
-        playSound('click');
-        const layerIndex = action.payload;
-        const isLocked = state.locked3DLayers.includes(layerIndex);
-        return {
-            ...state,
-            locked3DLayers: isLocked 
-                ? state.locked3DLayers.filter(i => i !== layerIndex)
-                : [...state.locked3DLayers, layerIndex],
-            isDirty: true,
-        };
-    }
-    case 'MOVE_LAYER': {
-        const { layerIndex, deltaX, deltaY } = action.payload;
-        // Nothing to move on an empty layer: no history step (an undo that changes nothing
-        // feels broken, and it spends one of the MAX_HISTORY_STEPS). A layer holding only
-        // eraser shapes is NOT empty and still moves.
-        if (!state.shapes.some(s => s.zIndex === layerIndex * -BASE_DEPTH_STEP)) return state;
-        const newShapes = state.shapes.map(shape => {
-            if (shape.zIndex === layerIndex * -BASE_DEPTH_STEP) {
-                const updatedShape = {
-                    ...shape,
-                    points: shape.points.map(point => ({
-                        x: point.x + deltaX,
-                        y: point.y + deltaY,
-                        pressure: point.pressure
-                    }))
-                };
-
-                if (shape.originalPoints) {
-                    updatedShape.originalPoints = shape.originalPoints.map(point => ({
-                        x: point.x + deltaX,
-                        y: point.y + deltaY,
-                        pressure: point.pressure
-                    }));
-                }
-                return updatedShape;
-            }
-            return shape;
-        });
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
-        return {
-            ...state,
-            shapes: newShapes,
-            history,
-            historyIndex: index,
-            isDirty: true,
-        };
-    }
-    case 'TRANSFORM_LAYER': {
-        const { layerIndex, transform } = action.payload;
-        // Same guard as MOVE_LAYER: an empty layer gets no history step.
-        if (!state.shapes.some(s => s.zIndex === layerIndex * -BASE_DEPTH_STEP)) return state;
-        const { rotation, scale, dx, dy, centerX, centerY } = transform;
-        const sin = Math.sin(rotation);
-        const cos = Math.cos(rotation);
-
-        const newShapes = state.shapes.map(shape => {
-            if (shape.zIndex === layerIndex * -BASE_DEPTH_STEP) {
-                // Non-uniform deformation (squash & stretch), text included (v3.17.56): its
-                // anchor moves like any point and its matrix absorbs the stretch. When
-                // scaleX/scaleY are absent (every legacy uniform transform), sx===sy===scale
-                // and the formula below reduces to the original uniform bake byte-identically.
-                const hasNonUniform = transform.scaleX !== undefined || transform.scaleY !== undefined;
-                // Clamp ONLY the non-uniform axes to prevent flip/collapse (scale <= 0).
-                // The uniform path is left untouched to preserve exact legacy behavior.
-                const sx = hasNonUniform ? Math.max(0.01, transform.scaleX ?? scale) : scale;
-                const sy = hasNonUniform ? Math.max(0.01, transform.scaleY ?? scale) : scale;
-
-                // Handle Text specific transforms (utils/textTransform.ts)
-                const newProps = shape.type === 'text'
-                    ? bakeTextTransform(shape, { rotation, scale, sx, sy, nonUniform: hasNonUniform })
-                    : {};
-
-                const transformPoint = (point: Point) => {
-                    // 1. Translate to origin
-                    const ox = point.x - centerX;
-                    const oy = point.y - centerY;
-
-                    // 2. Rotate & Scale (per-axis). sx===sy===scale reduces this to the
-                    //    original uniform formula exactly.
-                    const rx = (ox * cos - oy * sin) * sx;
-                    const ry = (ox * sin + oy * cos) * sy;
-
-                    // 3. Translate back & Apply delta
-                    return {
-                        x: rx + centerX + dx,
-                        y: ry + centerY + dy,
-                        pressure: point.pressure
-                    };
-                };
-
-                const updatedShape = {
-                    ...shape,
-                    ...newProps,
-                    points: shape.points.map(transformPoint)
-                };
-
-                if (shape.originalPoints) {
-                    updatedShape.originalPoints = shape.originalPoints.map(transformPoint);
-                }
-
-                // #7: bake eraserPolygon with the SAME transformPoint so the eraser's SVG-export
-                // mask/bounds stay coherent with the deformed points. Erasers are never text, so
-                // under uniform scale this matches the canvas result (canvas always used `points`);
-                // it only improves SVG export coherence (was stale before).
-                if (shape.eraserPolygon) {
-                    updatedShape.eraserPolygon = shape.eraserPolygon.map(transformPoint);
-                }
-
-                return updatedShape;
-            }
-            return shape;
-        });
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
-        return {
-            ...state,
-            shapes: newShapes,
-            history,
-            historyIndex: index,
-            isDirty: true,
-        };
-    }
-    case 'FLIP_LAYER': {
-        const { layerIndex, direction, centerX, centerY } = action.payload;
-        const layerZ = layerIndex * -BASE_DEPTH_STEP;
-
-        const newShapes = state.shapes.map(shape => {
-            if (shape.zIndex !== layerZ) return shape;
-
-            const flipPoint = (point: Point): Point => {
-                if (direction === 'horizontal') {
-                    return { ...point, x: 2 * centerX - point.x };
-                } else {
-                    return { ...point, y: 2 * centerY - point.y };
-                }
-            };
-
-            // Text mirrors for real, like every drawing on the layer (utils/textTransform.ts)
-            const newProps: Partial<Shape> = shape.type === 'text' ? flipTextProps(shape, direction) : {};
-
-            const updatedShape: Shape = {
-                ...shape,
-                ...newProps,
-                points: shape.points.map(flipPoint)
-            };
-
-            if (shape.originalPoints) {
-                updatedShape.originalPoints = shape.originalPoints.map(flipPoint);
-            }
-
-            return updatedShape;
-        });
-
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
-        return {
-            ...state,
-            shapes: newShapes,
-            history,
-            historyIndex: index,
-            isDirty: true,
-        };
-    }
-    case 'DELETE_CURRENT_LAYER': {
-        if (state.totalLayers <= 1) return state;
-
-        const layerToDelete = state.currentLayerIndex;
-        const targetZ = layerToDelete * -BASE_DEPTH_STEP;
-        
-        // Remove shapes in this layer
-        let newShapes = state.shapes.filter(s => s.zIndex !== targetZ);
-        
-        // Shift layers below up (if any) - Actually in Strata layers are fixed slots, but we might want to shift content?
-        // Current implementation: Just delete content, then we decrease totalLayers and shift remaining layers content UP?
-        // Let's look at standard behavior: usually deleting a layer shifts subsequent layers down or up.
-        // Here we just remove the content and decrease count.
-        
-        // To maintain continuity, we should shift content from higher indices down to fill the gap.
-        for (let i = layerToDelete + 1; i < state.totalLayers; i++) {
-            const oldZ = i * -BASE_DEPTH_STEP;
-            const newZ = (i - 1) * -BASE_DEPTH_STEP;
-            
-            newShapes = newShapes.map(s => {
-                if (s.zIndex === oldZ) {
-                    return { ...s, zIndex: newZ };
-                }
-                return s;
-            });
-        }
-
-        // Adjust locked/hidden arrays
-        const newHidden = state.hiddenLayers
-            .filter(i => i !== layerToDelete)
-            .map(i => i > layerToDelete ? i - 1 : i);
-            
-        const newLocked = state.locked3DLayers
-            .filter(i => i !== layerToDelete)
-            .map(i => i > layerToDelete ? i - 1 : i);
-
-        // Adjust properties
-        const newRenderModes = { ...state.layerRenderModes };
-        const newGradParams = { ...state.layerGradParams };
-        const newBrushSettings = { ...state.layerBrushSettings };
-        
-        for (let i = layerToDelete; i < state.totalLayers - 1; i++) {
-            newRenderModes[i] = newRenderModes[i+1];
-            newGradParams[i] = newGradParams[i+1];
-            newBrushSettings[i] = newBrushSettings[i+1];
-        }
-        delete newRenderModes[state.totalLayers - 1];
-        delete newGradParams[state.totalLayers - 1];
-        delete newBrushSettings[state.totalLayers - 1];
-
-        // Determine new current layer
-        const newCurrentLayer = Math.min(state.currentLayerIndex, state.totalLayers - 2);
-
-        // Sync global settings with new current layer
-        const nextBrush = newBrushSettings[newCurrentLayer] || { thickness: state.currentBrushThickness, mode: state.brushMode };
-
-        // Snapshot the FINAL state (shapes reindexed AND totalLayers/maps updated) —
-        // snapshotting {...state, shapes} here recorded the old layer count with the
-        // new shapes, so redo/undo across a delete resurrected a phantom layer.
-        const newState = {
-            ...state,
-            shapes: newShapes,
-            totalLayers: state.totalLayers - 1,
-            currentLayerIndex: newCurrentLayer,
-            camera: { ...state.camera, z: newCurrentLayer * -BASE_DEPTH_STEP, rotation: 0 },
-            postProcessing: { ...state.postProcessing, focusTargetLayer: shiftFocusLayer(state.postProcessing.focusTargetLayer, layerToDelete, -1) },
-            hiddenLayers: newHidden,
-            locked3DLayers: newLocked,
-            layerRenderModes: newRenderModes,
-            layerGradParams: newGradParams,
-            layerBrushSettings: newBrushSettings,
-            paletteMode: newRenderModes[newCurrentLayer] || 'flat',
-            currentBrushThickness: nextBrush.thickness,
-            brushMode: nextBrush.mode,
-            isDirty: true,
-        };
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
-        return { ...newState, history, historyIndex: index };
-    }
-    case 'MERGE_LAYER_DOWN': return mergeLayerDown(state, next => pushHistory(state.history, state.historyIndex, createSnapshot(next)));
-    case 'START_TEXT_SESSION':
-        return {
-            ...state,
-            textSession: {
-                isActive: true,
-                x: action.payload.x,
-                y: action.payload.y,
-                content: '',
-                font: 'noir',
-                align: 'left'
-            }
-        };
-    case 'UPDATE_TEXT_SESSION':
-        return {
-            ...state,
-            textSession: {
-                ...state.textSession,
-                ...action.payload
-            }
-        };
-    case 'COMMIT_TEXT_SESSION':
-        if (!state.textSession.isActive || !state.textSession.content.trim()) {
-             return { ...state, textSession: { ...state.textSession, isActive: false } };
-        }
-        
-        const textShape: Shape = {
-            id: Date.now().toString(),
-            type: 'text',
-            points: [{ x: state.textSession.x, y: state.textSession.y }],
-            color: state.palette[state.currentColorIndex],
-            zIndex: state.currentLayerIndex * -BASE_DEPTH_STEP,
-            text: state.textSession.content,
-            font: state.textSession.font,
-            align: state.textSession.align,
-            fontSize: 40, // Base font size
-            rotation: 0,
-            isDrawInside: false,
-            isDrawBehind: false,
-            t: Date.now(),
-        };
-
-        const shapesWithText = [...state.shapes, textShape];
-        const { history: textHistory, index: textIndex } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: shapesWithText }));
-        
-        return {
-            ...state,
-            shapes: shapesWithText,
-            history: textHistory,
-            historyIndex: textIndex,
-            textSession: { ...state.textSession, isActive: false, content: '' },
-            isDirty: true,
-        };
-    case 'CANCEL_TEXT_SESSION':
-        return {
-            ...state,
-            textSession: { ...state.textSession, isActive: false, content: '' }
-        };
-    case 'SET_POINT_OF_INTEREST':
-        return { ...state, pointOfInterest: action.payload, isDirty: true };
-    case 'CLEAR_POINT_OF_INTEREST':
-        playSound('click');
-        return { ...state, pointOfInterest: null, isDirty: state.isDirty || state.pointOfInterest !== null };
-    case 'SET_CINEMATIC_SPEED':
-        return { ...state, cinematicSpeed: action.payload, isDirty: state.isDirty || action.payload !== state.cinematicSpeed };
-    case 'SET_BRUSH_THICKNESS': {
-        const thickness = action.payload;
-        const layerIdx = state.currentLayerIndex;
-        const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
-        const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, thickness } };
-        
-        // Also update shapes immediately (for onChange events)
-        const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
-        const newShapes = state.shapes.map(s => {
-             if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
-                 const effectiveMode = s.brushMode || currentSettings.mode;
-                 const newPoints = generateStrokeForMode(effectiveMode, s.originalPoints, thickness);
-                 return { ...s, brushThickness: thickness, brushMode: effectiveMode, points: newPoints };
-             }
-             return s;
-        });
-
-        return { ...state, currentBrushThickness: thickness, layerBrushSettings: newLayerSettings, shapes: newShapes };
-    }
-    case 'SET_BRUSH_THICKNESS_PREVIEW': {
-        const thickness = action.payload;
-        const layerIdx = state.currentLayerIndex;
-        const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
-        const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, thickness } };
-        
-        const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
-        const newShapes = state.shapes.map(s => {
-             if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
-                 const effectiveMode = s.brushMode || currentSettings.mode;
-                 const newPoints = generateStrokeForMode(effectiveMode, s.originalPoints, thickness);
-                 return { ...s, brushThickness: thickness, brushMode: effectiveMode, points: newPoints };
-             }
-             return s;
-        });
-
-        // Store current shapes state if not already stored
-        return { 
-            ...state, 
-            currentBrushThickness: thickness,
-            layerBrushSettings: newLayerSettings,
-            brushThicknessBeforePreview: state.brushThicknessBeforePreview || state.shapes,
-            shapes: newShapes
-        };
-    }
-    case 'COMMIT_BRUSH_THICKNESS': {
-        const prevShapes = state.brushThicknessBeforePreview;
-        if (prevShapes) {
-             // Only commit an undo step if the thickness cycle actually restyled
-             // strokes (state already holds the post-preview shapes + settings).
-             const currentLayerZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
-             const strokesWereRestyled = state.shapes.some(s => s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0);
-             if (strokesWereRestyled) {
-                 const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
-                 return { ...state, brushThicknessBeforePreview: null, history, historyIndex: index, isDirty: true };
-             }
-        }
-        // Pure selection (no strokes restyled) → last-writer-wins onto the current snapshot.
-        return {
-            ...state,
-            brushThicknessBeforePreview: null,
-            isDirty: state.isDirty || prevShapes !== null,
-            history: patchCurrentSnapshot(state.history, state.historyIndex, { layerBrushSettings: state.layerBrushSettings })
-        };
-    }
-    case 'TOGGLE_HANDHELD':
-        playSound('click');
-        return { ...state, isHandheldEnabled: !state.isHandheldEnabled, isDirty: true };
-    case 'SET_HANDHELD_INTENSITY':
-        return { ...state, handheldIntensity: action.payload, isDirty: state.isDirty || action.payload !== state.handheldIntensity };
-    case 'SET_BRUSH_MODE': {
-        const mode = action.payload;
-        const layerIdx = state.currentLayerIndex;
-        const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
-        const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, mode } };
-        const thickness = currentSettings.thickness;
-
-        const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
-        const hasRegenerableStrokes = state.shapes.some(s => s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0);
-
-        // No strokes to restyle → pure selection: no undo step, last-writer-wins
-        // onto the current snapshot so a later undo never reverts this choice.
-        if (!hasRegenerableStrokes) {
-            return {
-                ...state,
-                brushMode: mode,
-                layerBrushSettings: newLayerSettings,
-                history: patchCurrentSnapshot(state.history, state.historyIndex, { layerBrushSettings: newLayerSettings }),
-                isDirty: true,
-            };
-        }
-
-        const newShapes = state.shapes.map(s => {
-             if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
-                 let newPoints: Point[] = [];
-                 newPoints = generateStrokeForMode(mode, s.originalPoints, thickness);
-                 return { ...s, brushThickness: thickness, brushMode: mode, points: newPoints };
-             }
-             return s;
-        });
-
-        // Material restyle → undo step; snapshot the POST-change pair (shapes + settings).
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes, layerBrushSettings: newLayerSettings }));
-
-        return {
-            ...state,
-            brushMode: mode,
-            layerBrushSettings: newLayerSettings,
-            shapes: newShapes,
-            history,
-            historyIndex: index,
-            isDirty: true,
-        };
-    }
-    case 'SET_LAYER_SPACING_FACTOR':
-        return { ...state, layerSpacingFactor: action.payload, isDirty: state.isDirty || action.payload !== state.layerSpacingFactor };
-    case 'SET_PROJECT_NAME':
-        return { ...state, projectName: action.payload, isDirty: state.isDirty || action.payload !== state.projectName };
-    case 'REORDER_LAYERS': {
-        const { fromIndex, toIndex } = action.payload;
-        if (fromIndex === toIndex) return state;
-        
-        // We need to swap the z-indices of shapes in these layers
-        const fromZ = fromIndex * -BASE_DEPTH_STEP;
-        const toZ = toIndex * -BASE_DEPTH_STEP;
-        
-        const newShapes = state.shapes.map(shape => {
-            if (shape.zIndex === fromZ) return { ...shape, zIndex: toZ };
-            if (shape.zIndex === toZ) return { ...shape, zIndex: fromZ };
-            return shape;
-        });
-        
-        // Swap hidden/locked states if needed (not actually needed as these track INDICES, but content moved)
-        // Wait, if I move Layer 1 content to Layer 2 position:
-        // The content at Index 1 goes to Index 2.
-        // The "Hidden" state at Index 1 should probably stay at Index 1 (the slot)? 
-        // Or move with content? Standard UI behavior: Move with content.
-        
-        const newHidden = state.hiddenLayers.map(i => {
-            if (i === fromIndex) return toIndex;
-            if (i === toIndex) return fromIndex;
-            return i;
-        });
-        
-        const newLocked = state.locked3DLayers.map(i => {
-            if (i === fromIndex) return toIndex;
-            if (i === toIndex) return fromIndex;
-            return i;
-        });
-
-        const newRenderModes = { ...state.layerRenderModes };
-        const modeFrom = newRenderModes[fromIndex];
-        const modeTo = newRenderModes[toIndex];
-        newRenderModes[fromIndex] = modeTo;
-        newRenderModes[toIndex] = modeFrom;
-
-        const newGradParams = { ...state.layerGradParams };
-        const paramFrom = newGradParams[fromIndex];
-        const paramTo = newGradParams[toIndex];
-        newGradParams[fromIndex] = paramTo;
-        newGradParams[toIndex] = paramFrom;
-
-        const newBrushSettings = { ...state.layerBrushSettings };
-        const brushFrom = newBrushSettings[fromIndex];
-        const brushTo = newBrushSettings[toIndex];
-        newBrushSettings[fromIndex] = brushTo;
-        newBrushSettings[toIndex] = brushFrom;
-        
-        // If current layer was moved, update currentLayerIndex
-        let newCurrent = state.currentLayerIndex;
-        if (state.currentLayerIndex === fromIndex) newCurrent = toIndex;
-        else if (state.currentLayerIndex === toIndex) newCurrent = fromIndex;
-        
-        // No need to sync global settings as they stick with the logical layer index if it moved?
-        // Actually if I move the CURRENT layer, newCurrent changes to follow it.
-        // So I'm still on the same "content" layer.
-        // And brushSettings moved with it.
-        // So currentLineThickness (global) is still valid for the content.
-        
-        const newState = {
-            ...state,
-            shapes: newShapes,
-            currentLayerIndex: newCurrent,
-            camera: { ...state.camera, z: newCurrent * -BASE_DEPTH_STEP, rotation: 0 },
-            hiddenLayers: newHidden,
-            locked3DLayers: newLocked,
-            layerRenderModes: newRenderModes,
-            layerGradParams: newGradParams,
-            layerBrushSettings: newBrushSettings
-        };
-        
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
-
-        return {
-            ...newState,
-            history,
-            historyIndex: index,
-            isDirty: true,
-        };
-    }
-    case 'MOVE_LAYER_TO': {
-        const { fromIndex, toIndex } = action.payload;
-
-        // Guards
-        if (fromIndex === toIndex) return state;
-        if (fromIndex < 0 || fromIndex >= state.totalLayers) return state;
-        if (toIndex < 0 || toIndex >= state.totalLayers) return state;
-
-        // Helper: given an old layer index, return its new index after the move.
-        // Case A (from < to): items in (from, to] shift down by 1; fromIndex jumps to toIndex.
-        // Case B (from > to): items in [to, from) shift up by 1; fromIndex jumps to toIndex.
-        const remap = (oldIdx: number): number => {
-            if (oldIdx === fromIndex) return toIndex;
-            if (fromIndex < toIndex) {
-                if (oldIdx > fromIndex && oldIdx <= toIndex) return oldIdx - 1;
-            } else {
-                if (oldIdx >= toIndex && oldIdx < fromIndex) return oldIdx + 1;
-            }
-            return oldIdx;
-        };
-
-        // 1. Reindex shapes via zIndex
-        const newShapes = state.shapes.map(shape => {
-            const oldLayerIdx = Math.round(shape.zIndex / -BASE_DEPTH_STEP);
-            const newLayerIdx = remap(oldLayerIdx);
-            if (newLayerIdx === oldLayerIdx) return shape;
-            return { ...shape, zIndex: newLayerIdx * -BASE_DEPTH_STEP };
-        });
-
-        // 2. Reindex index arrays
-        const newHidden = state.hiddenLayers.map(remap);
-        const newLocked = state.locked3DLayers.map(remap);
-
-        // 3. Reindex Records (Record<number, T>)
-        const remapRecord = <T,>(record: Record<number, T>): Record<number, T> => {
-            const result: Record<number, T> = {};
-            for (let i = 0; i < state.totalLayers; i++) {
-                if (record[i] !== undefined) {
-                    result[remap(i)] = record[i];
-                }
-            }
-            return result;
-        };
-
-        const newRenderModes = remapRecord(state.layerRenderModes);
-        const newGradParams = remapRecord(state.layerGradParams);
-        const newBrushSettings = remapRecord(state.layerBrushSettings);
-
-        // 4. Reindex currentLayerIndex (active layer follows its content)
-        const newCurrent = remap(state.currentLayerIndex);
-
-        // 5. Reindex focusTargetLayer (cinematic focus follows its target layer when not -1/manual)
-        const oldFocusTarget = state.postProcessing.focusTargetLayer;
-        const newFocusTarget = (typeof oldFocusTarget === 'number' && oldFocusTarget >= 0)
-            ? remap(oldFocusTarget)
-            : oldFocusTarget;
-
-        const newState = {
-            ...state,
-            shapes: newShapes,
-            hiddenLayers: newHidden,
-            locked3DLayers: newLocked,
-            layerRenderModes: newRenderModes,
-            layerGradParams: newGradParams,
-            layerBrushSettings: newBrushSettings,
-            currentLayerIndex: newCurrent,
-            camera: {
-                ...state.camera,
-                z: newCurrent * -BASE_DEPTH_STEP,
-                rotation: 0
-            },
-            postProcessing: {
-                ...state.postProcessing,
-                focusTargetLayer: newFocusTarget
-            }
-        };
-
-        const { history, index } = pushHistory(
-            state.history,
-            state.historyIndex,
-            createSnapshot(newState)
-        );
-
-        return {
-            ...newState,
-            history,
-            historyIndex: index,
-            isDirty: true,
-        };
-    }
-    case 'DUPLICATE_LAYER': {
-        const layerIndex = action.payload;
-        if (state.totalLayers >= MAX_LAYERS) return state;
-        
-        const sourceZ = layerIndex * -BASE_DEPTH_STEP;
-        const newLayerIndex = layerIndex + 1;
-        const newZ = newLayerIndex * -BASE_DEPTH_STEP;
-        
-        // Shift existing layers down
-        const newShapes = state.shapes.map(s => {
-            if (s.zIndex <= newZ) {
-                 return { ...s, zIndex: s.zIndex - BASE_DEPTH_STEP };
-            }
-            return s;
-        });
-        
-        // Clone shapes from source layer
-        const sourceShapes = state.shapes.filter(s => s.zIndex === sourceZ);
-        // The copy is new content: it is created now (t = duplication time, v3.25.16).
-        const duplicatedAt = Date.now();
-        const clonedShapes = sourceShapes.map(s => ({
-            ...s,
-            id: Date.now() + Math.random().toString(),
-            zIndex: newZ,
-            t: duplicatedAt,
-        }));
-        
-        // Update hidden/locked - Shift indices
-        const newHidden = state.hiddenLayers.map(i => i >= newLayerIndex ? i + 1 : i);
-        const newLocked = state.locked3DLayers.map(i => i >= newLayerIndex ? i + 1 : i);
-        
-        // Update props
-        const newRenderModes = { ...state.layerRenderModes };
-        const newGradParams = { ...state.layerGradParams };
-        const newBrushSettings = { ...state.layerBrushSettings };
-        
-        // Shift props
-        for (let i = state.totalLayers - 1; i >= newLayerIndex; i--) {
-            newRenderModes[i+1] = newRenderModes[i];
-            newGradParams[i+1] = newGradParams[i];
-            newBrushSettings[i+1] = newBrushSettings[i];
-        }
-        
-        // Copy props to new layer
-        newRenderModes[newLayerIndex] = newRenderModes[layerIndex];
-        newGradParams[newLayerIndex] = newGradParams[layerIndex];
-        newBrushSettings[newLayerIndex] = newBrushSettings[layerIndex] ? { ...newBrushSettings[layerIndex] } : { thickness: state.currentBrushThickness, mode: state.brushMode };
-
-        // Sync global
-        const nextBrush = newBrushSettings[newLayerIndex];
-        const nextGradP = newGradParams[newLayerIndex] || GRADIENT_DEFAULTS;
-
-        // Update paletteApplyToAllSnapshot if active
-        let newApplySnapshot = state.paletteApplyToAllSnapshot;
-        if (state.paletteApplyToAllActive && state.paletteApplyToAllSnapshot) {
-            const snapModes = { ...state.paletteApplyToAllSnapshot.layerRenderModes };
-            const snapParams = { ...state.paletteApplyToAllSnapshot.layerGradParams };
-            for (let i = state.totalLayers - 1; i >= newLayerIndex; i--) {
-                snapModes[i+1] = snapModes[i];
-                snapParams[i+1] = snapParams[i];
-            }
-            snapModes[newLayerIndex] = snapModes[layerIndex];
-            snapParams[newLayerIndex] = snapParams[layerIndex] ? { ...snapParams[layerIndex] } : { ...GRADIENT_DEFAULTS };
-            newApplySnapshot = { layerRenderModes: snapModes, layerGradParams: snapParams };
-        }
-
-        const newState = {
-            ...state,
-            shapes: [...newShapes, ...clonedShapes],
-            totalLayers: state.totalLayers + 1,
-            currentLayerIndex: newLayerIndex,
-            camera: { ...state.camera, z: newLayerIndex * -BASE_DEPTH_STEP, rotation: 0 },
-            postProcessing: { ...state.postProcessing, focusTargetLayer: shiftFocusLayer(state.postProcessing.focusTargetLayer, newLayerIndex, 1) },
-            hiddenLayers: newHidden,
-            locked3DLayers: newLocked,
-            layerRenderModes: newRenderModes,
-            layerGradParams: newGradParams,
-            layerBrushSettings: newBrushSettings,
-            paletteApplyToAllSnapshot: newApplySnapshot,
-            paletteMode: newRenderModes[newLayerIndex] || 'flat',
-            paletteGradientAngle: nextGradP.angle,
-            paletteGradientIntensity: nextGradP.intensity,
-            paletteGradientType: nextGradP.gradType || 'solid',
-            currentBrushThickness: nextBrush.thickness,
-            brushMode: nextBrush.mode
-        };
-        
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
-        
-        return {
-            ...newState,
-            history,
-            historyIndex: index,
-            isDirty: true,
-        };
-    }
-    case 'DISMISS_ONBOARDING':
-        return { ...state, isOnboardingVisible: false };
-    case 'SET_ACTIVE_PALETTE': {
-        playSound('click');
-        const newId = action.payload;
-        if (newId === state.activePaletteId) return state;
-        
-        const newPalette = newId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
-        const oldPalette = state.palette;
-
-        // Map shapes to new palette colors based on index
-        let anyRemapped = false;
-        const newShapes = state.shapes.map(shape => {
-            // Find index in OLD palette
-            const idx = oldPalette.indexOf(shape.color);
-
-            // If color exists in old palette and we have a corresponding color in new palette
-            if (idx !== -1 && idx < newPalette.length && newPalette[idx] !== shape.color) {
-                anyRemapped = true;
-                return { ...shape, color: newPalette[idx] };
-            }
-            return shape;
-        });
-
-        // No shape colors remapped → pure selection: no undo step, last-writer-wins
-        // onto the current snapshot so a later undo never reverts this choice.
-        if (!anyRemapped) {
-            return {
-                ...state,
-                activePaletteId: newId,
-                palette: newPalette,
-                history: patchCurrentSnapshot(state.history, state.historyIndex, { activePaletteId: newId }),
-                isDirty: true,
-            };
-        }
-
-        // Material remap → undo step; snapshot the POST-change pair (shapes + palette id).
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes, activePaletteId: newId }));
-
-        return {
-            ...state,
-            activePaletteId: newId,
-            palette: newPalette,
-            shapes: newShapes,
-            history,
-            historyIndex: index,
-            isDirty: true,
-        };
-    }
-    case 'TOGGLE_ANIMATION_MODE': {
-      const entering = !state.isAnimationMode;
-      if (entering) {
-        return {
-          ...state,
-          isAnimationMode: true,
-          layerIndexBeforeAnimation: state.currentLayerIndex,
-        };
-      } else {
-        const restored = state.layerIndexBeforeAnimation;
-        const safeIndex = (restored != null && restored >= 0 && restored < state.totalLayers)
-          ? restored
-          : state.currentLayerIndex;
-        return {
-          ...state,
-          isAnimationMode: false,
-          isAnimationPlaying: false,
-          currentLayerIndex: safeIndex,
-          layerIndexBeforeAnimation: null,
-        };
-      }
-    }
-    case 'SET_ANIMATION_PLAYING':
-      return { ...state, isAnimationPlaying: action.payload };
-    case 'SET_ANIMATION_FRAMERATE':
-      return { ...state, animationFramerate: action.payload };
-    case 'SET_ANIMATION_EXPORT_LOOPS':
-      return { ...state, animationExportLoops: action.payload };
-    case 'SET_GIF_EXPORT_SCALE':
-      return { ...state, gifExportScale: action.payload };
-    case 'TOGGLE_ONION_SKIN':
-      return { ...state, isOnionSkinEnabled: !state.isOnionSkinEnabled };
-    case 'TOGGLE_ANIMATION_FLAT_Z':
-      return { ...state, isAnimationFlatZ: !state.isAnimationFlatZ };
-    case 'ADVANCE_ANIMATION_FRAME': {
-      const frames = getAnimationFrames(state);
-      if (frames.length === 0) return state;
-      const currentPos = frames.indexOf(state.currentLayerIndex);
-      if (state.animationPlaybackMode !== 'pingpong' || frames.length < 2) {
-        // Loop mode (or single frame): always forward, wrap to start
-        const nextIndex = currentPos === -1
-          ? frames[0]
-          : frames[(currentPos + 1) % frames.length];
-        return { ...state, currentLayerIndex: nextIndex };
-      }
-      // Ping-pong mode: advance by current direction, reverse at extremities
-      const dir = state.animationDirection;
-      const pos = currentPos === -1 ? 0 : currentPos;
-      let nextPos = pos + dir;
-      let nextDir = dir;
-      if (nextPos >= frames.length) {
-        nextDir = -1;
-        nextPos = frames.length - 2; // skip back, don't replay last frame
-      } else if (nextPos < 0) {
-        nextDir = 1;
-        nextPos = 1; // skip forward, don't replay first frame
-      }
-      return { ...state, currentLayerIndex: frames[nextPos], animationDirection: nextDir as 1 | -1 };
-    }
-    case 'STEP_ANIMATION_FRAME': {
-      // Navigate the real frame sequence with circular wrap, never creating layers.
-      // Used by the pill buttons (frame-back / frame-fwd).
-      // Keyboard shortcuts [/] keep PREV_LAYER/NEXT_LAYER (construct in DRAW).
-      const dir = action.payload;
-      const frames = getAnimationFrames(state);
-      if (frames.length === 0) return state;
-      const pos = frames.indexOf(state.currentLayerIndex);
-      // If current layer is empty/hidden (not in sequence): go to first or last frame
-      const nextPos = pos === -1
-        ? (dir > 0 ? 0 : frames.length - 1)
-        : (pos + dir + frames.length) % frames.length;
-      const nextIndex = frames[nextPos];
-      const newZ = nextIndex * -BASE_DEPTH_STEP;
-      const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-      const nextBrush = resolveLayerBrush(state.shapes, nextIndex, state.layerBrushSettings[nextIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
-      return {
-        ...state,
-        currentLayerIndex: nextIndex,
-        camera: { ...state.camera, z: newZ, rotation: 0 },
-        isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
-        isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
-        paletteMode: state.layerRenderModes[nextIndex] || 'flat',
-        currentBrushThickness: nextBrush.thickness,
-        brushMode: nextBrush.mode,
-      };
-    }
-    case 'TOGGLE_ANIMATION_PLAYBACK_MODE':
-      return {
-        ...state,
-        animationPlaybackMode: state.animationPlaybackMode === 'loop' ? 'pingpong' : 'loop',
-        animationDirection: 1, // reset direction when switching modes
-      };
-    default:
-      return state;
-  }
+	switch (action.type) {
+		case 'TOGGLE_WELCOME_MODAL':
+			return { ...state, isWelcomeModalOpen: !state.isWelcomeModalOpen };
+		case 'MARK_CLEAN':
+			return { ...state, isDirty: false };
+		case 'PROJECT_SAVED':
+			return { ...state, projectMeta: action.payload, isDirty: false };
+		// A new drawing that starts as a copy of this one: new identity, the old one kept as its origin.
+		case 'DUPLICATE_PROJECT':
+			return { ...state, projectName: action.payload.projectName, projectMeta: createProjectMeta(state.projectMeta.projectId), isDirty: true };
+		case 'SET_SOUNDS_ENABLED':
+			setSoundsManagerEnabled(action.payload);
+			persistSoundsPreference(action.payload);
+			return { ...state, soundsEnabled: action.payload };
+		case 'TOGGLE_UI':
+			playSound('click');
+			return { ...state, isUIHidden: !state.isUIHidden };
+		case 'SET_DRAWING_ACTIVE':
+			return { ...state, isDrawing: action.payload };
+		case 'TOGGLE_SYMMETRY':
+			return { ...state, isSymmetryEnabled: !state.isSymmetryEnabled };
+		case 'TOGGLE_GRID': {
+			const newValue = !state.gridEnabled;
+			try { window.localStorage.setItem('diorame-grid-enabled', String(newValue)); } catch (_) { /* private mode */ }
+			return { ...state, gridEnabled: newValue };
+		}
+		case 'TOGGLE_DRAW_BEHIND':
+			if (state.tool === 'eraser') return state;
+			const willBeBehind = !state.isDrawBehind;
+			return {
+				...state,
+				isDrawBehind: willBeBehind,
+				isDrawInside: willBeBehind ? false : state.isDrawInside
+			};
+		case 'TOGGLE_DRAW_INSIDE':
+			if (state.tool === 'eraser') return state;
+			const willBeInside = !state.isDrawInside;
+			return {
+				...state,
+				isDrawInside: willBeInside,
+				isDrawBehind: willBeInside ? false : state.isDrawBehind
+			};
+		case 'TOGGLE_ORGANIC_MODE':
+			return {
+				...state,
+				isOrganicMode: !state.isOrganicMode,
+				blobSmoothing: state.isOrganicMode ? state.blobSmoothing : false
+			};
+		case 'TOGGLE_BLOB_SMOOTHING':
+			return {
+				...state,
+				blobSmoothing: !state.blobSmoothing,
+				isOrganicMode: state.blobSmoothing ? state.isOrganicMode : false
+			};
+		case 'SET_PALETTE_MODE': {
+			playSound('click');
+			if (state.paletteApplyToAllActive) {
+				const allModes: Record<number, 'flat' | 'grad'> = {};
+				for (let i = 0; i < state.totalLayers; i++) allModes[i] = action.payload;
+				const nextState = { ...state, paletteMode: action.payload, layerRenderModes: allModes, isDirty: true };
+				// No shapes anywhere → pure selection: no undo step, last-writer-wins.
+				if (state.shapes.length === 0) {
+					return { ...nextState, history: patchCurrentSnapshot(state.history, state.historyIndex, { layerRenderModes: allModes }) };
+				}
+				const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(nextState));
+				return { ...nextState, history, historyIndex: index };
+			}
+			const nextLayerRenderModes = { ...state.layerRenderModes, [state.currentLayerIndex]: action.payload };
+			const nextState = { ...state, paletteMode: action.payload, layerRenderModes: nextLayerRenderModes, isDirty: true };
+			// Current layer has no shapes to re-render → pure selection: no undo step, last-writer-wins.
+			const hasLayerShapes = state.shapes.some(s => s.zIndex === state.currentLayerIndex * -BASE_DEPTH_STEP);
+			if (!hasLayerShapes) {
+				return { ...nextState, history: patchCurrentSnapshot(state.history, state.historyIndex, { layerRenderModes: nextLayerRenderModes }) };
+			}
+			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(nextState));
+			return { ...nextState, history, historyIndex: index };
+		}
+		// The three gradient setters mutate layerGradParams live and stay OUT of the
+		// history: they are the drag preview, same role as SET_BRUSH_THICKNESS_PREVIEW.
+		// The undo step (or the last-writer-wins patch) lands on release, in
+		// COMMIT_PALETTE_GRADIENT — see the hybrid contract in CLAUDE.md.
+		case 'SET_PALETTE_GRADIENT_ANGLE': {
+			const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
+			if (state.paletteApplyToAllActive) {
+				const allParams: Record<number, LayerGradParams> = {};
+				for (let i = 0; i < state.totalLayers; i++) {
+					allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), angle: action.payload };
+				}
+				return { ...state, layerGradParams: allParams, gradParamsPendingCommit: true };
+			}
+			return {
+				...state,
+				gradParamsPendingCommit: true,
+				layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, angle: action.payload } }
+			};
+		}
+		case 'SET_PALETTE_GRADIENT_INTENSITY': {
+			const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
+			if (state.paletteApplyToAllActive) {
+				const allParams: Record<number, LayerGradParams> = {};
+				for (let i = 0; i < state.totalLayers; i++) {
+					allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), intensity: action.payload };
+				}
+				return { ...state, layerGradParams: allParams, gradParamsPendingCommit: true };
+			}
+			return {
+				...state,
+				gradParamsPendingCommit: true,
+				layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, intensity: action.payload } }
+			};
+		}
+		case 'SET_PALETTE_GRADIENT_TYPE': {
+			const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
+			let nextParams: Record<number, LayerGradParams>;
+			if (state.paletteApplyToAllActive) {
+				nextParams = {};
+				for (let i = 0; i < state.totalLayers; i++) {
+					nextParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), gradType: action.payload };
+				}
+			} else {
+				nextParams = { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, gradType: action.payload } };
+			}
+			// TYPE only ever arrives right behind SET_PALETTE_MODE (PaletteHeader fires
+			// both for one tap), and MODE already applied the contract for that gesture.
+			// Patching completes its post-change pair instead of opening a second undo
+			// step for what the user felt as a single action.
+			return {
+				...state,
+				layerGradParams: nextParams,
+				history: patchCurrentSnapshot(state.history, state.historyIndex, { layerGradParams: nextParams })
+			};
+		}
+		case 'COMMIT_PALETTE_GRADIENT': {
+			// Release with nothing dragged (a tap on the track that landed on the same
+			// value) → neither a step nor a patch.
+			if (!state.gradParamsPendingCommit) return state;
+			const hasShapes = state.paletteApplyToAllActive
+				? state.shapes.length > 0
+				: state.shapes.some(s => s.zIndex === state.currentLayerIndex * -BASE_DEPTH_STEP);
+			if (hasShapes) {
+				// Material: the gradient repaints existing ink, so the whole drag folds
+				// into ONE undo step whose snapshot already holds the post-drag params.
+				const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
+				return { ...state, gradParamsPendingCommit: false, history, historyIndex: index, isDirty: true };
+			}
+			// Nothing to repaint → pure selection: last-writer-wins onto the current
+			// snapshot so no later undo resurrects the old gradient.
+			return {
+				...state,
+				gradParamsPendingCommit: false,
+				history: patchCurrentSnapshot(state.history, state.historyIndex, { layerGradParams: state.layerGradParams }),
+				isDirty: true,
+			};
+		}
+		case 'RESET_DRAWING_VIEW': {
+			// With a format frame (v3.25.5), "Centrar vista" fits it as seen from the active layer (frameInView, v3.25.28);
+			// without one, zoom 1 at the origin as always.
+			const { w, h } = state.viewportSize;
+			if (state.format && w > 0 && h > 0) {
+				const fit = fitViewToRect(frameInView(state.format, state.camera.z, state.isAnimationMode), w, h);
+				return { ...state, drawingZoom: fit.zoom, drawingPan: fit.pan };
+			}
+			return { ...state, drawingZoom: 1, drawingPan: { x: 0, y: 0 } };
+		}
+		case 'SET_FORMAT':
+			// View state, outside undo; a user choice that is saved, so it dirties the project.
+			return { ...state, format: action.payload, isDirty: true };
+		case 'SET_VIEWPORT_SIZE':
+			if (state.viewportSize.w === action.payload.w && state.viewportSize.h === action.payload.h) return state;
+			return { ...state, viewportSize: action.payload };
+		case 'ADD_SHAPE': {
+			if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
+			// Creation time stamped here, not in the pointer handler (v3.25.16): the timelapse's clock.
+			const newShapes = [...state.shapes, { ...action.payload, t: Date.now() }];
+			const snapshot = createSnapshot({ ...state, shapes: newShapes });
+			const { history, index } = pushHistory(state.history, state.historyIndex, snapshot);
+
+			return {
+				...state,
+				shapes: newShapes,
+				// The layer's brush pair, materialized in the state too (not only in the snapshot): a
+				// later patchCurrentSnapshot copies this map over the snapshot and must not drop it.
+				layerBrushSettings: snapshot.layerBrushSettings,
+				history,
+				historyIndex: index,
+				isDirty: true,
+			};
+		}
+		case 'ADD_SHAPES': {
+			if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
+			const t = Date.now();
+			const newShapes = [...state.shapes, ...action.payload.map(s => ({ ...s, t }))];
+			const snapshot = createSnapshot({ ...state, shapes: newShapes });
+			const { history, index } = pushHistory(state.history, state.historyIndex, snapshot);
+
+			return {
+				...state,
+				shapes: newShapes,
+				layerBrushSettings: snapshot.layerBrushSettings,
+				history,
+				historyIndex: index,
+				isDirty: true,
+			};
+		}
+		case 'UNDO': {
+			if (state.historyIndex <= 0) return state;
+			const newIndex = state.historyIndex - 1;
+			const snapshot = state.history[newIndex];
+
+			// Preserve current layer UNLESS totalLayers changed (layer creation/deletion)
+			// If totalLayers changed, clamp currentLayerIndex to valid range
+			const layerIndexToUse = snapshot.totalLayers !== state.totalLayers
+				? Math.min(state.currentLayerIndex, snapshot.totalLayers - 1)
+				: state.currentLayerIndex;
+
+			const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
+			const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
+			// Hybrid restore: document-property selectors (brush settings, palette) come
+			// from the snapshot so canvas and selector never desync — snapshots are
+			// consistent (post-change pairs) and pure selections last-writer-win onto the
+			// current snapshot, so undoing a plain stroke never moves a selector. Pure
+			// view state (hiddenLayers, locked3DLayers) is not in the snapshot at all.
+			// Brush pairs: only the layers whose strokes this step restyled move (v3.26.3).
+			const layerBrushSettings = restoreLayerBrushSettings(state, snapshot);
+			const restoredBrush = layerBrushSettings[layerIndexToUse]
+				|| { thickness: state.currentBrushThickness, mode: state.brushMode };
+
+			return {
+				...state,
+				shapes: snapshot.shapes,
+				totalLayers: snapshot.totalLayers,
+				currentLayerIndex: layerIndexToUse,
+				camera: { ...state.camera, z: layerIndexToUse * -BASE_DEPTH_STEP, rotation: 0 },
+				layerRenderModes: snapshot.layerRenderModes,
+				paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
+				layerGradParams: snapshot.layerGradParams,
+				layerBrushSettings,
+				activePaletteId: snapshot.activePaletteId,
+				palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
+				currentBrushThickness: restoredBrush.thickness,
+				brushMode: restoredBrush.mode,
+				hiddenLayers: remapLayerIndices(state.hiddenLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
+				locked3DLayers: remapLayerIndices(state.locked3DLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
+				postProcessing: { ...state.postProcessing, focusTargetLayer: remapFocusLayer(state.postProcessing.focusTargetLayer, state.shapes, snapshot.shapes, snapshot.totalLayers) },
+				historyIndex: newIndex,
+				isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
+				isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false,
+				isDirty: true,
+			};
+		}
+		case 'REDO': {
+			if (state.historyIndex >= state.history.length - 1) return state;
+			const newIndex = state.historyIndex + 1;
+			const snapshot = state.history[newIndex];
+
+			// Preserve current layer UNLESS totalLayers changed (layer creation/deletion)
+			// If totalLayers changed, clamp currentLayerIndex to valid range
+			const layerIndexToUse = snapshot.totalLayers !== state.totalLayers
+				? Math.min(state.currentLayerIndex, snapshot.totalLayers - 1)
+				: state.currentLayerIndex;
+
+			const currentLayerZ = layerIndexToUse * -BASE_DEPTH_STEP;
+			const hasShapesInCurrentLayer = snapshot.shapes.some(s => s.zIndex === currentLayerZ);
+			// Hybrid restore: document-property selectors (brush settings, palette) come
+			// from the snapshot so canvas and selector never desync — snapshots are
+			// consistent (post-change pairs) and pure selections last-writer-win onto the
+			// current snapshot, so redoing a plain stroke never moves a selector. Pure
+			// view state (hiddenLayers, locked3DLayers) is not in the snapshot at all.
+			// Brush pairs: only the layers whose strokes this step restyled move (v3.26.3).
+			const layerBrushSettings = restoreLayerBrushSettings(state, snapshot);
+			const restoredBrush = layerBrushSettings[layerIndexToUse]
+				|| { thickness: state.currentBrushThickness, mode: state.brushMode };
+
+			return {
+				...state,
+				shapes: snapshot.shapes,
+				totalLayers: snapshot.totalLayers,
+				currentLayerIndex: layerIndexToUse,
+				camera: { ...state.camera, z: layerIndexToUse * -BASE_DEPTH_STEP, rotation: 0 },
+				layerRenderModes: snapshot.layerRenderModes,
+				paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
+				layerGradParams: snapshot.layerGradParams,
+				layerBrushSettings,
+				activePaletteId: snapshot.activePaletteId,
+				palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
+				currentBrushThickness: restoredBrush.thickness,
+				brushMode: restoredBrush.mode,
+				hiddenLayers: remapLayerIndices(state.hiddenLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
+				locked3DLayers: remapLayerIndices(state.locked3DLayers, state.shapes, snapshot.shapes, snapshot.totalLayers),
+				postProcessing: { ...state.postProcessing, focusTargetLayer: remapFocusLayer(state.postProcessing.focusTargetLayer, state.shapes, snapshot.shapes, snapshot.totalLayers) },
+				historyIndex: newIndex,
+				isDrawInside: hasShapesInCurrentLayer ? state.isDrawInside : false,
+				isDrawBehind: hasShapesInCurrentLayer ? state.isDrawBehind : false,
+				isDirty: true,
+			};
+		}
+		case 'SET_MODE':
+			playSound('modeSwitch');
+			return { ...state, mode: action.payload };
+		case 'SET_TOOL':
+			playSound('click');
+			if (action.payload === 'move') {
+				return {
+					...state,
+					tool: 'move',
+					// Reaching for Move means wanting to transform the layer, so it arrives
+					// selected. The toolbar dispatches SET_TOOL unconditionally (no "already
+					// on this tool" guard in DrawingToolbar), so re-tapping Move while
+					// already in Move runs this again — that is the cheapest way back from a
+					// deselected state, with no extra UI.
+					isLayerSelected: true,
+					isDrawBehind: false,
+					isDrawInside: false,
+					isSymmetryEnabled: false,
+					isOrganicMode: false
+				};
+			}
+			return {
+				...state,
+				tool: action.payload,
+				isDrawBehind: action.payload === 'eraser' ? false : state.isDrawBehind,
+				isDrawInside: action.payload === 'eraser' ? false : state.isDrawInside,
+				isOrganicMode: action.payload === 'brush' ? false : state.isOrganicMode
+			};
+		case 'SET_CINEMATIC_TYPE':
+			playSound('click');
+			return { ...state, cinematicType: action.payload, isDirty: state.isDirty || action.payload !== state.cinematicType };
+		case 'SET_COLOR_INDEX':
+			return { ...state, currentColorIndex: action.payload };
+		case 'UPDATE_CAMERA':
+			return { ...state, camera: { ...state.camera, ...action.payload } };
+		case 'NEXT_LAYER': {
+			if (state.currentLayerIndex < state.totalLayers - 1) {
+				// Just move to next existing layer
+				const nextIndex = state.currentLayerIndex + 1;
+				const newZ = nextIndex * -BASE_DEPTH_STEP;
+				const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
+				const nextBrush = resolveLayerBrush(state.shapes, nextIndex, state.layerBrushSettings[nextIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
+				return {
+					...state,
+					currentLayerIndex: nextIndex,
+					// Navigating to a layer ([ / ]) is wanting to work on it — same reading
+					// as clicking its row in the panel.
+					isLayerSelected: true,
+					camera: { ...state.camera, z: newZ, rotation: 0 },
+					isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
+					isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
+					paletteMode: state.layerRenderModes[nextIndex] || 'flat',
+					currentBrushThickness: nextBrush.thickness,
+					brushMode: nextBrush.mode
+				};
+			} else if (state.totalLayers < MAX_LAYERS) {
+				// Create new layer (always empty) - Save to history
+				const nextIndex = state.currentLayerIndex + 1;
+				const newZ = nextIndex * -BASE_DEPTH_STEP;
+
+				const propagatedMode = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
+				const propagatedParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
+				const newPaletteMode = state.paletteApplyToAllActive ? propagatedMode : 'flat';
+				const newGradP = state.paletteApplyToAllActive ? propagatedParams : GRADIENT_DEFAULTS;
+				const newLayerRenderModes = state.paletteApplyToAllActive
+					? { ...state.layerRenderModes, [nextIndex]: propagatedMode }
+					: state.layerRenderModes;
+				const newLayerGradParams = state.paletteApplyToAllActive
+					? { ...state.layerGradParams, [nextIndex]: { ...propagatedParams } }
+					: state.layerGradParams;
+				const newApplySnapshot = state.paletteApplyToAllActive && state.paletteApplyToAllSnapshot
+					? {
+						layerRenderModes: { ...state.paletteApplyToAllSnapshot.layerRenderModes, [nextIndex]: 'flat' as const },
+						layerGradParams: { ...state.paletteApplyToAllSnapshot.layerGradParams, [nextIndex]: { ...GRADIENT_DEFAULTS } },
+					}
+					: state.paletteApplyToAllSnapshot;
+
+				const newState = {
+					...state,
+					currentLayerIndex: nextIndex,
+					isLayerSelected: true,
+					totalLayers: state.totalLayers + 1,
+					camera: { ...state.camera, z: newZ, rotation: 0 },
+					isDrawInside: false,
+					isDrawBehind: false,
+					paletteMode: newPaletteMode,
+					layerRenderModes: newLayerRenderModes,
+					layerGradParams: newLayerGradParams,
+					paletteApplyToAllSnapshot: newApplySnapshot,
+					paletteGradientAngle: newGradP.angle,
+					paletteGradientIntensity: newGradP.intensity,
+					paletteGradientType: newGradP.gradType || 'solid',
+					currentBrushThickness: state.currentBrushThickness,
+					brushMode: state.brushMode,
+					isDirty: true,
+				};
+
+				const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
+
+				return {
+					...newState,
+					history,
+					historyIndex: index
+				};
+			}
+			return state;
+		}
+		case 'PREV_LAYER': {
+			if (state.currentLayerIndex > 0) {
+				const prevIndex = state.currentLayerIndex - 1;
+				const newZ = prevIndex * -BASE_DEPTH_STEP;
+				const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
+				const prevBrush = resolveLayerBrush(state.shapes, prevIndex, state.layerBrushSettings[prevIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
+				return {
+					...state,
+					currentLayerIndex: prevIndex,
+					isLayerSelected: true,
+					camera: { ...state.camera, z: newZ, rotation: 0 },
+					isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
+					isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
+					paletteMode: state.layerRenderModes[prevIndex] || 'flat',
+					currentBrushThickness: prevBrush.thickness,
+					brushMode: prevBrush.mode
+				};
+			}
+			return state;
+		}
+		case 'ADD_LAYER': {
+			if (state.totalLayers >= MAX_LAYERS) return state;
+
+			const newLayerIndex = state.currentLayerIndex + 1;
+			const newZ = newLayerIndex * -BASE_DEPTH_STEP;
+
+			// Shift shapes: layers at index >= newLayerIndex move one slot farther
+			const newShapes = state.shapes.map(s =>
+				s.zIndex <= newZ ? { ...s, zIndex: s.zIndex - BASE_DEPTH_STEP } : s
+			);
+
+			// Shift hidden/locked index arrays
+			const newHidden = state.hiddenLayers.map(i => i >= newLayerIndex ? i + 1 : i);
+			const newLocked = state.locked3DLayers.map(i => i >= newLayerIndex ? i + 1 : i);
+
+			// Shift per-layer dicts
+			const newRenderModes   = { ...state.layerRenderModes };
+			const newGradParams    = { ...state.layerGradParams };
+			const newBrushSettings = { ...state.layerBrushSettings };
+			for (let i = state.totalLayers - 1; i >= newLayerIndex; i--) {
+				newRenderModes[i + 1]   = newRenderModes[i];
+				newGradParams[i + 1]    = newGradParams[i];
+				newBrushSettings[i + 1] = newBrushSettings[i];
+			}
+
+			// New slot: propagate from current layer (paletteApplyToAllActive-aware)
+			const propagatedMode   = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
+			const propagatedParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
+			const newPaletteMode = state.paletteApplyToAllActive ? propagatedMode : 'flat';
+			const newGradP       = state.paletteApplyToAllActive ? propagatedParams : GRADIENT_DEFAULTS;
+			newRenderModes[newLayerIndex] = newPaletteMode;
+			newGradParams[newLayerIndex]  = { ...newGradP };
+			// newBrushSettings[newLayerIndex] not set — new empty layer uses current brush as fallback
+
+			// Shift paletteApplyToAllSnapshot (if active)
+			let newApplySnapshot = state.paletteApplyToAllSnapshot;
+			if (state.paletteApplyToAllActive && state.paletteApplyToAllSnapshot) {
+				const snapModes  = { ...state.paletteApplyToAllSnapshot.layerRenderModes };
+				const snapParams = { ...state.paletteApplyToAllSnapshot.layerGradParams };
+				for (let i = state.totalLayers - 1; i >= newLayerIndex; i--) {
+					snapModes[i + 1]  = snapModes[i];
+					snapParams[i + 1] = snapParams[i];
+				}
+				snapModes[newLayerIndex]  = 'flat' as const;
+				snapParams[newLayerIndex] = { ...GRADIENT_DEFAULTS };
+				newApplySnapshot = { layerRenderModes: snapModes, layerGradParams: snapParams };
+			}
+
+			const newState = {
+				...state,
+				shapes: newShapes,
+				totalLayers: state.totalLayers + 1,
+				currentLayerIndex: newLayerIndex,
+				camera: { ...state.camera, z: newZ, rotation: 0 },
+				postProcessing: { ...state.postProcessing, focusTargetLayer: shiftFocusLayer(state.postProcessing.focusTargetLayer, newLayerIndex, 1) },
+				hiddenLayers: newHidden,
+				locked3DLayers: newLocked,
+				layerRenderModes: newRenderModes,
+				layerGradParams: newGradParams,
+				layerBrushSettings: newBrushSettings,
+				paletteApplyToAllSnapshot: newApplySnapshot,
+				isDrawInside: false,
+				isDrawBehind: false,
+				paletteMode: newPaletteMode,
+				paletteGradientAngle: newGradP.angle,
+				paletteGradientIntensity: newGradP.intensity,
+				paletteGradientType: newGradP.gradType || 'solid',
+				currentBrushThickness: state.currentBrushThickness,
+				brushMode: state.brushMode,
+				isDirty: true,
+			};
+
+			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
+			return { ...newState, history, historyIndex: index };
+		}
+		case 'SET_LAYER_SELECTED':
+			// Pure view state: no pushHistory, no createSnapshot, no patchCurrentSnapshot.
+			// Deselecting is not an edit to the document — the geometry was already baked
+			// at the last pointerup — so it must not be undoable, exactly like hiddenLayers.
+			if (state.isLayerSelected === action.payload) return state;
+			return { ...state, isLayerSelected: action.payload };
+		case 'SET_CURRENT_LAYER': {
+			const targetIndex = action.payload;
+			if (targetIndex === state.currentLayerIndex) return state;
+			if (targetIndex < 0 || targetIndex >= state.totalLayers) return state;
+			playSound('click');
+			const newZ = targetIndex * -BASE_DEPTH_STEP;
+			const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
+			const targetBrush = resolveLayerBrush(state.shapes, targetIndex, state.layerBrushSettings[targetIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
+			return {
+				...state,
+				currentLayerIndex: targetIndex,
+				// Clicking a row in the layer panel means "I want to work on this".
+				isLayerSelected: true,
+				camera: { ...state.camera, z: newZ, rotation: 0 },
+				isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
+				isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
+				paletteMode: state.layerRenderModes[targetIndex] || 'flat',
+				currentBrushThickness: targetBrush.thickness,
+				brushMode: targetBrush.mode
+			};
+		}
+		case 'SET_FOCAL_LENGTH':
+			return { ...state, focalLength: action.payload, isDirty: state.isDirty || action.payload !== state.focalLength };
+		case 'SET_VIEW_ZOOM_OFFSET':
+			return { ...state, viewZoomOffset: action.payload, isDirty: state.isDirty || action.payload !== state.viewZoomOffset };
+		// First CINEMA view of a session (ControlsV2): app defaults, not a user change — never dirty.
+		case 'INIT_CINEMA_VIEW':
+			// Only a new project reaches here with nothing of its own: an opened project is already `cinemaViewInitialized`
+			// (LOAD_PROJECT filled its gaps), so its saved view stands.
+			if (state.cinemaViewInitialized) return state;
+			return {
+				...state,
+				cinemaViewInitialized: true,
+				focalLength: action.payload.focalLength,
+				viewZoomOffset: action.payload.viewZoomOffset,
+				layerSpacingFactor: action.payload.layerSpacingFactor,
+				cinematicType: action.payload.cinematicType,
+			};
+		case 'SET_DRAWING_ZOOM':
+			return {
+				...state,
+				drawingZoom: action.payload.zoom,
+				drawingPan: action.payload.pan || state.drawingPan
+			};
+		case 'TOGGLE_DARK_MODE':
+			playSound('click');
+			return { ...state, isDarkMode: !state.isDarkMode, isDirty: true };
+		case 'SET_FX_INTENSITY':
+			return {
+				...state,
+				isDirty: true,
+				postProcessing: {
+					...state.postProcessing,
+					[action.payload.fx]: action.payload.value
+				}
+			};
+		case 'SET_PARTICLE_TYPE':
+			return {
+				...state,
+				isDirty: true,
+				postProcessing: {
+					...state.postProcessing,
+					particleType: action.payload
+				}
+			};
+		case 'TOGGLE_FX': {
+			playSound('click');
+			const turningOn = !state.postProcessingEnabled[action.payload];
+			return {
+				...state,
+				isDirty: true,
+				postProcessingEnabled: {
+					...state.postProcessingEnabled,
+					[action.payload]: turningOn,
+					// Super Riso and Riso exclude each other: switching one on switches the other off.
+					...(turningOn && action.payload === 'superRiso' ? { riso: false } : {}),
+					...(turningOn && action.payload === 'riso' ? { superRiso: false } : {}),
+				},
+				postProcessingSnapshot: null,
+				fxMasterEnabled: true,
+			};
+		}
+		case 'SET_SUPER_RISO':
+			return {
+				...state,
+				isDirty: true,
+				postProcessing: { ...state.postProcessing, superRiso: patchSuperRiso(state.postProcessing.superRiso, action.payload) },
+			};
+		case 'APPLY_SUPER_RISO_STYLE':
+			return {
+				...state,
+				isDirty: true,
+				postProcessing: { ...state.postProcessing, superRiso: applySuperRisoStyle(state.postProcessing.superRiso, action.payload) },
+			};
+		case 'TOGGLE_FX_MASTER': {
+			playSound('click');
+			const px = state.postProcessingEnabled;
+			const hasActiveEffects = Object.values(px).some(v => v);
+			if (hasActiveEffects && state.postProcessingSnapshot === null) {
+				const allOff = Object.fromEntries(
+					Object.keys(px).map(k => [k, false])
+				) as PostProcessingEnabled;
+				return {
+					...state,
+					isDirty: true,
+					postProcessingSnapshot: { ...px } as PostProcessingEnabled,
+					postProcessingEnabled: allOff,
+					fxMasterEnabled: false,
+				};
+			} else if (state.postProcessingSnapshot !== null) {
+				return {
+					...state,
+					isDirty: true,
+					postProcessingEnabled: state.postProcessingSnapshot,
+					postProcessingSnapshot: null,
+					fxMasterEnabled: Object.values(state.postProcessingSnapshot).some(v => v),
+				};
+			} else {
+				return state;
+			}
+		}
+		case 'TOGGLE_PALETTE_APPLY_TO_ALL': {
+			playSound('click');
+			if (!state.paletteApplyToAllActive) {
+				const activeMode = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
+				const activeParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
+				const allModes: Record<number, 'flat' | 'grad'> = {};
+				const allParams: Record<number, LayerGradParams> = {};
+				for (let i = 0; i < state.totalLayers; i++) {
+					allModes[i] = activeMode;
+					allParams[i] = { ...activeParams };
+				}
+				return {
+					...state,
+					paletteApplyToAllActive: true,
+					paletteApplyToAllSnapshot: {
+						layerRenderModes: { ...state.layerRenderModes },
+						layerGradParams: { ...state.layerGradParams },
+					},
+					layerRenderModes: allModes,
+					layerGradParams: allParams,
+					isDirty: true,
+				};
+			} else {
+				const snap = state.paletteApplyToAllSnapshot!;
+				const restoredModes = {
+					...snap.layerRenderModes,
+					[state.currentLayerIndex]: state.layerRenderModes[state.currentLayerIndex],
+				};
+				const restoredParams = {
+					...snap.layerGradParams,
+					[state.currentLayerIndex]: state.layerGradParams[state.currentLayerIndex],
+				};
+				return {
+					...state,
+					paletteApplyToAllActive: false,
+					paletteApplyToAllSnapshot: null,
+					layerRenderModes: restoredModes,
+					layerGradParams: restoredParams,
+					paletteMode: state.layerRenderModes[state.currentLayerIndex] ?? 'flat',
+					isDirty: true,
+				};
+			}
+		}
+		case 'REQUEST_EXPORT':
+			return { ...state, exportRequest: action.payload, isExporting: true };
+		case 'FINISH_EXPORT':
+			return { ...state, exportRequest: null, isExporting: false };
+		case 'CLEAR_CANVAS':
+			return {
+				...state,
+				// A new canvas is a new drawing.
+				projectMeta: createProjectMeta(),
+				cinemaViewInitialized: false,
+				shapes: [],
+				history: [{
+					shapes: [],
+					totalLayers: 1,
+					layerRenderModes: {},
+					layerGradParams: {},
+					layerBrushSettings: {},
+					activePaletteId: state.activePaletteId
+				}],
+				historyIndex: 0,
+				currentLayerIndex: 0,
+				totalLayers: 1,
+				camera: { x: 0, y: 0, z: 0, rotation: 0 },
+				exportRequest: null,
+				isExporting: false,
+				hiddenLayers: [],
+				locked3DLayers: [],
+				isLayerSelected: true,
+				drawingZoom: 1,
+				drawingPan: { x: 0, y: 0 },
+				layerRenderModes: {},
+				layerGradParams: {},
+				layerBrushSettings: {},
+				paletteMode: 'flat',
+				focalLength: initialState.focalLength,
+				viewZoomOffset: initialState.viewZoomOffset,
+				layerSpacingFactor: initialState.layerSpacingFactor,
+				cinematicSpeed: initialState.cinematicSpeed,
+				isHandheldEnabled: initialState.isHandheldEnabled,
+				handheldIntensity: initialState.handheldIntensity,
+				cinematicType: initialState.cinematicType,
+				postProcessing: initialState.postProcessing,
+				postProcessingEnabled: initialState.postProcessingEnabled,
+				fxMasterEnabled: initialState.fxMasterEnabled,
+				postProcessingSnapshot: null,
+				paletteApplyToAllActive: false,
+				paletteApplyToAllSnapshot: null,
+				format: null,
+				isDirty: false,
+			}
+		case 'LOAD_PROJECT':
+			// Ensure we merge postProcessing settings correctly to avoid undefined values
+			// Legacy migration: drop risoInkBlend if present (was never in stable releases)
+			const incomingPostProcessing: any = action.payload.postProcessing || {};
+			const mergedPostProcessing = {
+				...initialState.postProcessing,
+				...incomingPostProcessing
+			};
+			delete (mergedPostProcessing as any).risoInkBlend;
+			// Super Riso (v3.17.74): nested object, merged and sanitised field by field (no allow-list
+			// here). Files from before it open with the defaults.
+			mergedPostProcessing.superRiso = sanitizeSuperRiso(incomingPostProcessing.superRiso);
+			// Legacy migration: grungeOverlay -> grunge
+			const incomingPostProcessingEnabled: any = action.payload.postProcessingEnabled || {};
+			const mergedPostProcessingEnabled = {
+				...initialState.postProcessingEnabled,
+				...incomingPostProcessingEnabled,
+				grunge: incomingPostProcessingEnabled.grunge ?? incomingPostProcessingEnabled.grungeOverlay ?? false
+			};
+			delete (mergedPostProcessingEnabled as any).grungeOverlay;
+			if (typeof mergedPostProcessingEnabled.superRiso !== 'boolean') mergedPostProcessingEnabled.superRiso = initialState.postProcessingEnabled.superRiso;
+			// The two risos exclude each other; a file with both on keeps Super Riso.
+			if (mergedPostProcessingEnabled.superRiso && mergedPostProcessingEnabled.riso) mergedPostProcessingEnabled.riso = false;
+			// Master FX OFF (v3.20.5): while it is off every flag is false and the look that was on lives in the
+			// snapshot, so both travel in the file. The snapshot is restored only with the master off, one boolean
+			// per known FX; a stray or empty one is dropped, and loading never inherits the previous project's.
+			const rawFxSnapshot: any = (action.payload as any).postProcessingSnapshot;
+			let loadedFxSnapshot: PostProcessingEnabled | null = null;
+			if (action.payload.fxMasterEnabled === false && rawFxSnapshot && typeof rawFxSnapshot === 'object' && !Array.isArray(rawFxSnapshot)) {
+				const snap = Object.fromEntries(
+					Object.keys(initialState.postProcessingEnabled).map(k => [k, rawFxSnapshot[k] === true])
+				) as PostProcessingEnabled;
+				if (snap.superRiso && snap.riso) snap.riso = false;
+				if (Object.values(snap).some(v => v)) loadedFxSnapshot = snap;
+			}
+
+			const loadedLayerRenderModes = action.payload.layerRenderModes || {};
+			const rawGradParams = action.payload.layerGradParams || {};
+			const loadedLayerGradParams = Object.fromEntries(
+				Object.entries(rawGradParams).map(([k, v]: [string, any]) => [k, { ...GRADIENT_DEFAULTS, ...v }])
+			) as Record<number, LayerGradParams>;
+			const loadedLayerBrushSettings = action.payload.layerBrushSettings || {};
+
+			const loadedPaletteId = action.payload.activePaletteId || 'primary';
+			const loadedPalette = loadedPaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
+
+			// ── Whitelist validation: only accept known keys with type guards ──
+			// Per-shape migration: map legacy lineMode/lineThickness → brushMode/brushThickness
+			const rawShapes = Array.isArray(action.payload.shapes) ? action.payload.shapes : [];
+			const safeShapes: Shape[] = rawShapes.map((shape: any) => {
+				if (!shape || typeof shape !== 'object') return shape;
+				const brushMode = shape.brushMode ?? shape.lineMode;
+				const brushThickness = shape.brushThickness ?? shape.lineThickness;
+				const { lineMode: _lm, lineThickness: _lt, ...rest } = shape;
+				const result: any = { ...rest };
+				if (brushMode !== undefined) result.brushMode = brushMode;
+				if (brushThickness !== undefined) result.brushThickness = brushThickness;
+				// textMatrix (v3.17.56): texts saved before it have none and read their `rotation`.
+				// A malformed or degenerate one is dropped, falling back to that same rotation.
+				if ('textMatrix' in result) {
+					const m = result.textMatrix;
+					const ok = Array.isArray(m) && m.length === 4 && m.every((v: unknown) => typeof v === 'number' && Number.isFinite(v))
+						&& Math.abs(m[0] * m[3] - m[1] * m[2]) > 1e-12;
+					if (!ok) delete result.textMatrix;
+				}
+				// Creation time (v3.25.16): a finite number or nothing (older files fall back to the array index).
+				if ('t' in result && !(typeof result.t === 'number' && Number.isFinite(result.t))) delete result.t;
+				return result as Shape;
+			});
+			const safeTotalLayers = (typeof action.payload.totalLayers === 'number' && action.payload.totalLayers > 0)
+				? Math.min(action.payload.totalLayers, MAX_LAYERS) : 1;
+			const safeHiddenLayers = Array.isArray(action.payload.hiddenLayers) ? action.payload.hiddenLayers : [];
+			const safeLocked3DLayers = Array.isArray(action.payload.locked3DLayers) ? action.payload.locked3DLayers : [];
+			// Tool-value backward compat: until v2.3.0 'brush' was the blob and 'line' the brush. That release
+			// renamed both and, in the same commit, the keys the file saves next to them (lineMode /
+			// currentLineThickness → brushMode / currentBrushThickness), which every save since then writes.
+			// So a file with the new keys already speaks today's names and only an older one is translated.
+			// Not the v2 meta: files of v2.3.0–v3.20.x have none, and the autosave carries no formatVersion.
+			// (Until v3.26.8 every 'brush' was translated: saving with the brush active reopened with the blob.)
+			const savedWithCurrentToolNames = 'brushMode' in action.payload || 'currentBrushThickness' in action.payload;
+			let rawTool = action.payload.tool;
+			if (!savedWithCurrentToolNames) {
+				if (rawTool === 'brush') rawTool = 'blob';
+				else if (rawTool === 'line') rawTool = 'brush';
+			}
+			const safeTool = (typeof rawTool === 'string' && ['blob', 'eraser', 'brush', 'move', 'text'].includes(rawTool))
+				? rawTool as ToolType : 'blob';
+			// brushMode with fallback to legacy lineMode
+			const rawBrushMode = action.payload.brushMode ?? action.payload.lineMode;
+			const safeBrushMode = (typeof rawBrushMode === 'string' && ['tapered', 'uniform', 'ink'].includes(rawBrushMode))
+				? rawBrushMode : 'tapered';
+			// currentBrushThickness with fallback to legacy currentLineThickness
+			const rawBrushThickness = (typeof action.payload.currentBrushThickness === 'number' && action.payload.currentBrushThickness > 0)
+				? action.payload.currentBrushThickness
+				: (typeof action.payload.currentLineThickness === 'number' && action.payload.currentLineThickness > 0)
+					? action.payload.currentLineThickness
+					: 25;
+			// Clamp to the current tool range (v3.17.40 lowered MAX from 100 to 70). This is
+			// TOOL STATE, not geometry — a .dior saved under the old range can carry
+			// currentBrushThickness up to 100, and the slider control has to land somewhere
+			// sane on it, not on a value its own max attribute disagrees with. Shapes are
+			// untouched either way: their baked points/brushThickness are never reinterpreted
+			// on load (see constants/brush.ts). layerBrushSettings needs no equivalent clamp —
+			// useSaveLoad.ts has never included it in a saved payload (verified via
+			// `git log -S`), so action.payload.layerBrushSettings is always undefined here.
+			// The file's currentBrushThickness is the value of whichever layer was active at save;
+			// layer 0 opens with its own (from its strokes) when it has any (v3.26.3).
+			const layer0Brush = resolveLayerBrush(safeShapes, 0, undefined);
+			const safeBrushThickness = Math.min(Math.max(layer0Brush?.thickness ?? rawBrushThickness, BRUSH_THICKNESS_MIN), BRUSH_THICKNESS_MAX);
+			// Gaps take the defaults, never the previous project's values (v3.20.11 rule; until v3.26.8 these two fell back to state.*).
+			const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : initialState.isDarkMode;
+			const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom', 'storytelling'].includes(action.payload.cinematicType))
+				? action.payload.cinematicType as CinematicType : CINEMA_VIEW_DEFAULTS.cinematicType;
+			const rawProjectName = typeof action.payload.projectName === 'string'
+				? action.payload.projectName.slice(0, 100) : initialState.projectName;
+			// Backward compat: legacy .dior files (pre-v2.1.0) saved the literal 'Untitled Project'
+			// instead of the sentinel. Normalize so display goes through i18n.
+			const safeProjectName = rawProjectName === 'Untitled Project' ? UNTITLED_PROJECT_SENTINEL : rawProjectName;
+			const safeFocalLength = typeof action.payload.focalLength === 'number' ? action.payload.focalLength : CINEMA_VIEW_DEFAULTS.focalLength;
+			const safeViewZoomOffset = typeof action.payload.viewZoomOffset === 'number' ? action.payload.viewZoomOffset : CINEMA_VIEW_DEFAULTS.viewZoomOffset;
+			const safeLayerSpacingFactor = typeof action.payload.layerSpacingFactor === 'number' ? action.payload.layerSpacingFactor : CINEMA_VIEW_DEFAULTS.layerSpacingFactor;
+			const safeCinematicSpeed = typeof action.payload.cinematicSpeed === 'number' ? action.payload.cinematicSpeed : initialState.cinematicSpeed;
+			const safeIsHandheldEnabled = typeof action.payload.isHandheldEnabled === 'boolean' ? action.payload.isHandheldEnabled : initialState.isHandheldEnabled;
+			const safeHandheldIntensity = (typeof action.payload.handheldIntensity === 'string' && ['low', 'medium', 'high'].includes(action.payload.handheldIntensity as string)) ? action.payload.handheldIntensity as HandheldIntensity : initialState.handheldIntensity;
+			const safeFxMasterEnabled = typeof action.payload.fxMasterEnabled === 'boolean' ? action.payload.fxMasterEnabled : true;
+			const safePaletteApplyToAllActive = typeof (action.payload as any).paletteApplyToAllActive === 'boolean'
+				? (action.payload as any).paletteApplyToAllActive : false;
+			const safePaletteApplyToAllSnapshot = ((action.payload as any).paletteApplyToAllSnapshot &&
+				typeof (action.payload as any).paletteApplyToAllSnapshot === 'object')
+				? (action.payload as any).paletteApplyToAllSnapshot : null;
+			// Pre-v3.17.26 .dior files carry no pointOfInterest at all — the field is new.
+			// undefined must resolve to null (no CINEMA framing point), never leak a partial
+			// or malformed object through: the CINEMA render path reads poi.x/y/z unchecked.
+			const rawPoi: any = (action.payload as any).pointOfInterest;
+			const safePointOfInterest = (rawPoi && typeof rawPoi === 'object'
+				&& typeof rawPoi.x === 'number' && typeof rawPoi.y === 'number' && typeof rawPoi.z === 'number')
+				? { x: rawPoi.x, y: rawPoi.y, z: rawPoi.z } : null;
+
+			// Create initial history snapshot with loaded state
+			const initialSnapshot: HistorySnapshot = {
+				shapes: safeShapes,
+				totalLayers: safeTotalLayers,
+				layerRenderModes: loadedLayerRenderModes,
+				layerGradParams: loadedLayerGradParams,
+				layerBrushSettings: loadedLayerBrushSettings,
+				activePaletteId: loadedPaletteId
+			};
+
+			return {
+				...state,
+				// Whitelisted fields only — no ...action.payload spread
+				shapes: safeShapes,
+				totalLayers: safeTotalLayers,
+				isDarkMode: safeIsDarkMode,
+				cinematicType: safeCinematicType,
+				projectName: safeProjectName,
+				// .dior v2: a file (or autosave) without meta gets a new identity, written at the next save.
+				projectMeta: readProjectMeta((action.payload as any).meta) ?? createProjectMeta(),
+				postProcessing: mergedPostProcessing,
+				postProcessingEnabled: loadedFxSnapshot
+					? Object.fromEntries(Object.keys(mergedPostProcessingEnabled).map(k => [k, false])) as PostProcessingEnabled
+					: mergedPostProcessingEnabled,
+				fxMasterEnabled: loadedFxSnapshot ? false : safeFxMasterEnabled,
+				postProcessingSnapshot: loadedFxSnapshot,
+				// Ensure critical state is reset/set correctly
+				history: [initialSnapshot],
+				historyIndex: 0,
+				camera: { x: 0, y: 0, z: 0, rotation: 0 },
+				currentLayerIndex: 0,
+				mode: 'drawing',
+				tool: safeTool,
+				hiddenLayers: safeHiddenLayers,
+				locked3DLayers: safeLocked3DLayers,
+				// Re-derived, never restored from the file — it is not serialized. Opening a
+				// project always starts selected, like a fresh session.
+				isLayerSelected: true,
+				drawingZoom: 1,
+				drawingPan: { x: 0, y: 0 },
+				layerRenderModes: loadedLayerRenderModes,
+				layerGradParams: loadedLayerGradParams,
+				layerBrushSettings: loadedLayerBrushSettings,
+				paletteMode: loadedLayerRenderModes[0] || 'flat',
+				currentBrushThickness: safeBrushThickness,
+				brushMode: layer0Brush?.mode ?? safeBrushMode,
+				activePaletteId: loadedPaletteId,
+				palette: loadedPalette,
+				focalLength: safeFocalLength,
+				viewZoomOffset: safeViewZoomOffset,
+				layerSpacingFactor: safeLayerSpacingFactor,
+				cinematicSpeed: safeCinematicSpeed,
+				isHandheldEnabled: safeIsHandheldEnabled,
+				handheldIntensity: safeHandheldIntensity,
+				shouldFitToView: true,
+				isDrawing: false,
+				paletteApplyToAllActive: safePaletteApplyToAllActive,
+				paletteApplyToAllSnapshot: safePaletteApplyToAllSnapshot,
+				pointOfInterest: safePointOfInterest,
+				// Absent or malformed → no frame; never the previous project's.
+				format: sanitizeFormat((action.payload as any).format),
+				isDirty: false,
+				projectWasLoaded: true,
+				// The file's view stands; its gaps were filled above with the defaults, never with the previous project's.
+				cinemaViewInitialized: true,
+			};
+		case 'COMPLETE_FIT_TO_VIEW':
+			return { ...state, shouldFitToView: false };
+		case 'TOGGLE_LAYER_VISIBILITY': {
+			playSound('click');
+			const layerIndex = action.payload;
+			const isHidden = state.hiddenLayers.includes(layerIndex);
+			return {
+				...state,
+				hiddenLayers: isHidden
+					? state.hiddenLayers.filter(i => i !== layerIndex)
+					: [...state.hiddenLayers, layerIndex],
+				isDirty: true,
+			};
+		}
+		case 'TOGGLE_3D_LOCK': {
+			playSound('click');
+			const layerIndex = action.payload;
+			const isLocked = state.locked3DLayers.includes(layerIndex);
+			return {
+				...state,
+				locked3DLayers: isLocked
+					? state.locked3DLayers.filter(i => i !== layerIndex)
+					: [...state.locked3DLayers, layerIndex],
+				isDirty: true,
+			};
+		}
+		case 'MOVE_LAYER': {
+			const { layerIndex, deltaX, deltaY } = action.payload;
+			// Nothing to move on an empty layer: no history step (an undo that changes nothing
+			// feels broken, and it spends one of the MAX_HISTORY_STEPS). A layer holding only
+			// eraser shapes is NOT empty and still moves.
+			if (!state.shapes.some(s => s.zIndex === layerIndex * -BASE_DEPTH_STEP)) return state;
+			const newShapes = state.shapes.map(shape => {
+				if (shape.zIndex === layerIndex * -BASE_DEPTH_STEP) {
+					const updatedShape = {
+						...shape,
+						points: shape.points.map(point => ({
+							x: point.x + deltaX,
+							y: point.y + deltaY,
+							pressure: point.pressure
+						}))
+					};
+
+					if (shape.originalPoints) {
+						updatedShape.originalPoints = shape.originalPoints.map(point => ({
+							x: point.x + deltaX,
+							y: point.y + deltaY,
+							pressure: point.pressure
+						}));
+					}
+					return updatedShape;
+				}
+				return shape;
+			});
+			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
+			return {
+				...state,
+				shapes: newShapes,
+				history,
+				historyIndex: index,
+				isDirty: true,
+			};
+		}
+		case 'TRANSFORM_LAYER': {
+			const { layerIndex, transform } = action.payload;
+			// Same guard as MOVE_LAYER: an empty layer gets no history step.
+			if (!state.shapes.some(s => s.zIndex === layerIndex * -BASE_DEPTH_STEP)) return state;
+			const { rotation, scale, dx, dy, centerX, centerY } = transform;
+			const sin = Math.sin(rotation);
+			const cos = Math.cos(rotation);
+
+			const newShapes = state.shapes.map(shape => {
+				if (shape.zIndex === layerIndex * -BASE_DEPTH_STEP) {
+					// Non-uniform deformation (squash & stretch), text included (v3.17.56): its
+					// anchor moves like any point and its matrix absorbs the stretch. When
+					// scaleX/scaleY are absent (every legacy uniform transform), sx===sy===scale
+					// and the formula below reduces to the original uniform bake byte-identically.
+					const hasNonUniform = transform.scaleX !== undefined || transform.scaleY !== undefined;
+					// Clamp ONLY the non-uniform axes to prevent flip/collapse (scale <= 0).
+					// The uniform path is left untouched to preserve exact legacy behavior.
+					const sx = hasNonUniform ? Math.max(0.01, transform.scaleX ?? scale) : scale;
+					const sy = hasNonUniform ? Math.max(0.01, transform.scaleY ?? scale) : scale;
+
+					// Handle Text specific transforms (utils/textTransform.ts)
+					const newProps = shape.type === 'text'
+						? bakeTextTransform(shape, { rotation, scale, sx, sy, nonUniform: hasNonUniform })
+						: {};
+
+					const transformPoint = (point: Point) => {
+						// 1. Translate to origin
+						const ox = point.x - centerX;
+						const oy = point.y - centerY;
+
+						// 2. Rotate & Scale (per-axis). sx===sy===scale reduces this to the
+						//    original uniform formula exactly.
+						const rx = (ox * cos - oy * sin) * sx;
+						const ry = (ox * sin + oy * cos) * sy;
+
+						// 3. Translate back & Apply delta
+						return {
+							x: rx + centerX + dx,
+							y: ry + centerY + dy,
+							pressure: point.pressure
+						};
+					};
+
+					const updatedShape = {
+						...shape,
+						...newProps,
+						points: shape.points.map(transformPoint)
+					};
+
+					if (shape.originalPoints) {
+						updatedShape.originalPoints = shape.originalPoints.map(transformPoint);
+					}
+
+					// #7: bake eraserPolygon with the SAME transformPoint so the eraser's SVG-export
+					// mask/bounds stay coherent with the deformed points. Erasers are never text, so
+					// under uniform scale this matches the canvas result (canvas always used `points`);
+					// it only improves SVG export coherence (was stale before).
+					if (shape.eraserPolygon) {
+						updatedShape.eraserPolygon = shape.eraserPolygon.map(transformPoint);
+					}
+
+					return updatedShape;
+				}
+				return shape;
+			});
+			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
+			return {
+				...state,
+				shapes: newShapes,
+				history,
+				historyIndex: index,
+				isDirty: true,
+			};
+		}
+		case 'FLIP_LAYER': {
+			const { layerIndex, direction, centerX, centerY } = action.payload;
+			const layerZ = layerIndex * -BASE_DEPTH_STEP;
+
+			const newShapes = state.shapes.map(shape => {
+				if (shape.zIndex !== layerZ) return shape;
+
+				const flipPoint = (point: Point): Point => {
+					if (direction === 'horizontal') {
+						return { ...point, x: 2 * centerX - point.x };
+					} else {
+						return { ...point, y: 2 * centerY - point.y };
+					}
+				};
+
+				// Text mirrors for real, like every drawing on the layer (utils/textTransform.ts)
+				const newProps: Partial<Shape> = shape.type === 'text' ? flipTextProps(shape, direction) : {};
+
+				const updatedShape: Shape = {
+					...shape,
+					...newProps,
+					points: shape.points.map(flipPoint)
+				};
+
+				if (shape.originalPoints) {
+					updatedShape.originalPoints = shape.originalPoints.map(flipPoint);
+				}
+
+				return updatedShape;
+			});
+
+			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
+			return {
+				...state,
+				shapes: newShapes,
+				history,
+				historyIndex: index,
+				isDirty: true,
+			};
+		}
+		case 'DELETE_CURRENT_LAYER': {
+			if (state.totalLayers <= 1) return state;
+
+			const layerToDelete = state.currentLayerIndex;
+			const targetZ = layerToDelete * -BASE_DEPTH_STEP;
+
+			// Remove shapes in this layer
+			let newShapes = state.shapes.filter(s => s.zIndex !== targetZ);
+
+			// Shift layers below up (if any) - Actually in Strata layers are fixed slots, but we might want to shift content?
+			// Current implementation: Just delete content, then we decrease totalLayers and shift remaining layers content UP?
+			// Let's look at standard behavior: usually deleting a layer shifts subsequent layers down or up.
+			// Here we just remove the content and decrease count.
+
+			// To maintain continuity, we should shift content from higher indices down to fill the gap.
+			for (let i = layerToDelete + 1; i < state.totalLayers; i++) {
+				const oldZ = i * -BASE_DEPTH_STEP;
+				const newZ = (i - 1) * -BASE_DEPTH_STEP;
+
+				newShapes = newShapes.map(s => {
+					if (s.zIndex === oldZ) {
+						return { ...s, zIndex: newZ };
+					}
+					return s;
+				});
+			}
+
+			// Adjust locked/hidden arrays
+			const newHidden = state.hiddenLayers
+				.filter(i => i !== layerToDelete)
+				.map(i => i > layerToDelete ? i - 1 : i);
+
+			const newLocked = state.locked3DLayers
+				.filter(i => i !== layerToDelete)
+				.map(i => i > layerToDelete ? i - 1 : i);
+
+			// Adjust properties
+			const newRenderModes = { ...state.layerRenderModes };
+			const newGradParams = { ...state.layerGradParams };
+			const newBrushSettings = { ...state.layerBrushSettings };
+
+			for (let i = layerToDelete; i < state.totalLayers - 1; i++) {
+				newRenderModes[i] = newRenderModes[i+1];
+				newGradParams[i] = newGradParams[i+1];
+				newBrushSettings[i] = newBrushSettings[i+1];
+			}
+			delete newRenderModes[state.totalLayers - 1];
+			delete newGradParams[state.totalLayers - 1];
+			delete newBrushSettings[state.totalLayers - 1];
+
+			// Determine new current layer
+			const newCurrentLayer = Math.min(state.currentLayerIndex, state.totalLayers - 2);
+
+			// Sync global settings with new current layer
+			const nextBrush = newBrushSettings[newCurrentLayer] || { thickness: state.currentBrushThickness, mode: state.brushMode };
+
+			// Snapshot the FINAL state (shapes reindexed AND totalLayers/maps updated) —
+			// snapshotting {...state, shapes} here recorded the old layer count with the
+			// new shapes, so redo/undo across a delete resurrected a phantom layer.
+			const newState = {
+				...state,
+				shapes: newShapes,
+				totalLayers: state.totalLayers - 1,
+				currentLayerIndex: newCurrentLayer,
+				camera: { ...state.camera, z: newCurrentLayer * -BASE_DEPTH_STEP, rotation: 0 },
+				postProcessing: { ...state.postProcessing, focusTargetLayer: shiftFocusLayer(state.postProcessing.focusTargetLayer, layerToDelete, -1) },
+				hiddenLayers: newHidden,
+				locked3DLayers: newLocked,
+				layerRenderModes: newRenderModes,
+				layerGradParams: newGradParams,
+				layerBrushSettings: newBrushSettings,
+				paletteMode: newRenderModes[newCurrentLayer] || 'flat',
+				currentBrushThickness: nextBrush.thickness,
+				brushMode: nextBrush.mode,
+				isDirty: true,
+			};
+			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
+			return { ...newState, history, historyIndex: index };
+		}
+		case 'MERGE_LAYER_DOWN': return mergeLayerDown(state, next => pushHistory(state.history, state.historyIndex, createSnapshot(next)));
+		case 'START_TEXT_SESSION':
+			return {
+				...state,
+				textSession: {
+					isActive: true,
+					x: action.payload.x,
+					y: action.payload.y,
+					content: '',
+					font: 'noir',
+					align: 'left'
+				}
+			};
+		case 'UPDATE_TEXT_SESSION':
+			return {
+				...state,
+				textSession: {
+					...state.textSession,
+					...action.payload
+				}
+			};
+		case 'COMMIT_TEXT_SESSION':
+			if (!state.textSession.isActive || !state.textSession.content.trim()) {
+				return { ...state, textSession: { ...state.textSession, isActive: false } };
+			}
+
+			const textShape: Shape = {
+				id: Date.now().toString(),
+				type: 'text',
+				points: [{ x: state.textSession.x, y: state.textSession.y }],
+				color: state.palette[state.currentColorIndex],
+				zIndex: state.currentLayerIndex * -BASE_DEPTH_STEP,
+				text: state.textSession.content,
+				font: state.textSession.font,
+				align: state.textSession.align,
+				fontSize: 40, // Base font size
+				rotation: 0,
+				isDrawInside: false,
+				isDrawBehind: false,
+				t: Date.now(),
+			};
+
+			const shapesWithText = [...state.shapes, textShape];
+			const { history: textHistory, index: textIndex } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: shapesWithText }));
+
+			return {
+				...state,
+				shapes: shapesWithText,
+				history: textHistory,
+				historyIndex: textIndex,
+				textSession: { ...state.textSession, isActive: false, content: '' },
+				isDirty: true,
+			};
+		case 'CANCEL_TEXT_SESSION':
+			return {
+				...state,
+				textSession: { ...state.textSession, isActive: false, content: '' }
+			};
+		case 'SET_POINT_OF_INTEREST':
+			return { ...state, pointOfInterest: action.payload, isDirty: true };
+		case 'CLEAR_POINT_OF_INTEREST':
+			playSound('click');
+			return { ...state, pointOfInterest: null, isDirty: state.isDirty || state.pointOfInterest !== null };
+		case 'SET_CINEMATIC_SPEED':
+			return { ...state, cinematicSpeed: action.payload, isDirty: state.isDirty || action.payload !== state.cinematicSpeed };
+		case 'SET_BRUSH_THICKNESS': {
+			const thickness = action.payload;
+			const layerIdx = state.currentLayerIndex;
+			const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
+			const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, thickness } };
+
+			// Also update shapes immediately (for onChange events)
+			const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
+			const newShapes = state.shapes.map(s => {
+				if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
+					const effectiveMode = s.brushMode || currentSettings.mode;
+					const newPoints = generateStrokeForMode(effectiveMode, s.originalPoints, thickness);
+					return { ...s, brushThickness: thickness, brushMode: effectiveMode, points: newPoints };
+				}
+				return s;
+			});
+
+			return { ...state, currentBrushThickness: thickness, layerBrushSettings: newLayerSettings, shapes: newShapes };
+		}
+		case 'SET_BRUSH_THICKNESS_PREVIEW': {
+			const thickness = action.payload;
+			const layerIdx = state.currentLayerIndex;
+			const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
+			const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, thickness } };
+
+			const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
+			const newShapes = state.shapes.map(s => {
+				if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
+					const effectiveMode = s.brushMode || currentSettings.mode;
+					const newPoints = generateStrokeForMode(effectiveMode, s.originalPoints, thickness);
+					return { ...s, brushThickness: thickness, brushMode: effectiveMode, points: newPoints };
+				}
+				return s;
+			});
+
+			// Store current shapes state if not already stored
+			return {
+				...state,
+				currentBrushThickness: thickness,
+				layerBrushSettings: newLayerSettings,
+				brushThicknessBeforePreview: state.brushThicknessBeforePreview || state.shapes,
+				shapes: newShapes
+			};
+		}
+		case 'COMMIT_BRUSH_THICKNESS': {
+			const prevShapes = state.brushThicknessBeforePreview;
+			if (prevShapes) {
+				// Only commit an undo step if the thickness cycle actually restyled
+				// strokes (state already holds the post-preview shapes + settings).
+				const currentLayerZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
+				const strokesWereRestyled = state.shapes.some(s => s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0);
+				if (strokesWereRestyled) {
+					const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
+					return { ...state, brushThicknessBeforePreview: null, history, historyIndex: index, isDirty: true };
+				}
+			}
+			// Pure selection (no strokes restyled) → last-writer-wins onto the current snapshot.
+			return {
+				...state,
+				brushThicknessBeforePreview: null,
+				isDirty: state.isDirty || prevShapes !== null,
+				history: patchCurrentSnapshot(state.history, state.historyIndex, { layerBrushSettings: state.layerBrushSettings })
+			};
+		}
+		case 'TOGGLE_HANDHELD':
+			playSound('click');
+			return { ...state, isHandheldEnabled: !state.isHandheldEnabled, isDirty: true };
+		case 'SET_HANDHELD_INTENSITY':
+			return { ...state, handheldIntensity: action.payload, isDirty: state.isDirty || action.payload !== state.handheldIntensity };
+		case 'SET_BRUSH_MODE': {
+			const mode = action.payload;
+			const layerIdx = state.currentLayerIndex;
+			const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
+			const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, mode } };
+			const thickness = currentSettings.thickness;
+
+			const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
+			const hasRegenerableStrokes = state.shapes.some(s => s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0);
+
+			// No strokes to restyle → pure selection: no undo step, last-writer-wins
+			// onto the current snapshot so a later undo never reverts this choice.
+			if (!hasRegenerableStrokes) {
+				return {
+					...state,
+					brushMode: mode,
+					layerBrushSettings: newLayerSettings,
+					history: patchCurrentSnapshot(state.history, state.historyIndex, { layerBrushSettings: newLayerSettings }),
+					isDirty: true,
+				};
+			}
+
+			const newShapes = state.shapes.map(s => {
+				if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
+					let newPoints: Point[] = [];
+					newPoints = generateStrokeForMode(mode, s.originalPoints, thickness);
+					return { ...s, brushThickness: thickness, brushMode: mode, points: newPoints };
+				}
+				return s;
+			});
+
+			// Material restyle → undo step; snapshot the POST-change pair (shapes + settings).
+			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes, layerBrushSettings: newLayerSettings }));
+
+			return {
+				...state,
+				brushMode: mode,
+				layerBrushSettings: newLayerSettings,
+				shapes: newShapes,
+				history,
+				historyIndex: index,
+				isDirty: true,
+			};
+		}
+		case 'SET_LAYER_SPACING_FACTOR':
+			return { ...state, layerSpacingFactor: action.payload, isDirty: state.isDirty || action.payload !== state.layerSpacingFactor };
+		case 'SET_PROJECT_NAME':
+			return { ...state, projectName: action.payload, isDirty: state.isDirty || action.payload !== state.projectName };
+		case 'REORDER_LAYERS': {
+			const { fromIndex, toIndex } = action.payload;
+			if (fromIndex === toIndex) return state;
+
+			// We need to swap the z-indices of shapes in these layers
+			const fromZ = fromIndex * -BASE_DEPTH_STEP;
+			const toZ = toIndex * -BASE_DEPTH_STEP;
+
+			const newShapes = state.shapes.map(shape => {
+				if (shape.zIndex === fromZ) return { ...shape, zIndex: toZ };
+				if (shape.zIndex === toZ) return { ...shape, zIndex: fromZ };
+				return shape;
+			});
+
+			// Swap hidden/locked states if needed (not actually needed as these track INDICES, but content moved)
+			// Wait, if I move Layer 1 content to Layer 2 position:
+			// The content at Index 1 goes to Index 2.
+			// The "Hidden" state at Index 1 should probably stay at Index 1 (the slot)?
+			// Or move with content? Standard UI behavior: Move with content.
+
+			const newHidden = state.hiddenLayers.map(i => {
+				if (i === fromIndex) return toIndex;
+				if (i === toIndex) return fromIndex;
+				return i;
+			});
+
+			const newLocked = state.locked3DLayers.map(i => {
+				if (i === fromIndex) return toIndex;
+				if (i === toIndex) return fromIndex;
+				return i;
+			});
+
+			const newRenderModes = { ...state.layerRenderModes };
+			const modeFrom = newRenderModes[fromIndex];
+			const modeTo = newRenderModes[toIndex];
+			newRenderModes[fromIndex] = modeTo;
+			newRenderModes[toIndex] = modeFrom;
+
+			const newGradParams = { ...state.layerGradParams };
+			const paramFrom = newGradParams[fromIndex];
+			const paramTo = newGradParams[toIndex];
+			newGradParams[fromIndex] = paramTo;
+			newGradParams[toIndex] = paramFrom;
+
+			const newBrushSettings = { ...state.layerBrushSettings };
+			const brushFrom = newBrushSettings[fromIndex];
+			const brushTo = newBrushSettings[toIndex];
+			newBrushSettings[fromIndex] = brushTo;
+			newBrushSettings[toIndex] = brushFrom;
+
+			// If current layer was moved, update currentLayerIndex
+			let newCurrent = state.currentLayerIndex;
+			if (state.currentLayerIndex === fromIndex) newCurrent = toIndex;
+			else if (state.currentLayerIndex === toIndex) newCurrent = fromIndex;
+
+			// No need to sync global settings as they stick with the logical layer index if it moved?
+			// Actually if I move the CURRENT layer, newCurrent changes to follow it.
+			// So I'm still on the same "content" layer.
+			// And brushSettings moved with it.
+			// So currentLineThickness (global) is still valid for the content.
+
+			const newState = {
+				...state,
+				shapes: newShapes,
+				currentLayerIndex: newCurrent,
+				camera: { ...state.camera, z: newCurrent * -BASE_DEPTH_STEP, rotation: 0 },
+				hiddenLayers: newHidden,
+				locked3DLayers: newLocked,
+				layerRenderModes: newRenderModes,
+				layerGradParams: newGradParams,
+				layerBrushSettings: newBrushSettings
+			};
+
+			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
+
+			return {
+				...newState,
+				history,
+				historyIndex: index,
+				isDirty: true,
+			};
+		}
+		case 'MOVE_LAYER_TO': {
+			const { fromIndex, toIndex } = action.payload;
+
+			// Guards
+			if (fromIndex === toIndex) return state;
+			if (fromIndex < 0 || fromIndex >= state.totalLayers) return state;
+			if (toIndex < 0 || toIndex >= state.totalLayers) return state;
+
+			// Helper: given an old layer index, return its new index after the move.
+			// Case A (from < to): items in (from, to] shift down by 1; fromIndex jumps to toIndex.
+			// Case B (from > to): items in [to, from) shift up by 1; fromIndex jumps to toIndex.
+			const remap = (oldIdx: number): number => {
+				if (oldIdx === fromIndex) return toIndex;
+				if (fromIndex < toIndex) {
+					if (oldIdx > fromIndex && oldIdx <= toIndex) return oldIdx - 1;
+				} else {
+					if (oldIdx >= toIndex && oldIdx < fromIndex) return oldIdx + 1;
+				}
+				return oldIdx;
+			};
+
+			// 1. Reindex shapes via zIndex
+			const newShapes = state.shapes.map(shape => {
+				const oldLayerIdx = Math.round(shape.zIndex / -BASE_DEPTH_STEP);
+				const newLayerIdx = remap(oldLayerIdx);
+				if (newLayerIdx === oldLayerIdx) return shape;
+				return { ...shape, zIndex: newLayerIdx * -BASE_DEPTH_STEP };
+			});
+
+			// 2. Reindex index arrays
+			const newHidden = state.hiddenLayers.map(remap);
+			const newLocked = state.locked3DLayers.map(remap);
+
+			// 3. Reindex Records (Record<number, T>)
+			const remapRecord = <T,>(record: Record<number, T>): Record<number, T> => {
+				const result: Record<number, T> = {};
+				for (let i = 0; i < state.totalLayers; i++) {
+					if (record[i] !== undefined) {
+						result[remap(i)] = record[i];
+					}
+				}
+				return result;
+			};
+
+			const newRenderModes = remapRecord(state.layerRenderModes);
+			const newGradParams = remapRecord(state.layerGradParams);
+			const newBrushSettings = remapRecord(state.layerBrushSettings);
+
+			// 4. Reindex currentLayerIndex (active layer follows its content)
+			const newCurrent = remap(state.currentLayerIndex);
+
+			// 5. Reindex focusTargetLayer (cinematic focus follows its target layer when not -1/manual)
+			const oldFocusTarget = state.postProcessing.focusTargetLayer;
+			const newFocusTarget = (typeof oldFocusTarget === 'number' && oldFocusTarget >= 0)
+				? remap(oldFocusTarget)
+				: oldFocusTarget;
+
+			const newState = {
+				...state,
+				shapes: newShapes,
+				hiddenLayers: newHidden,
+				locked3DLayers: newLocked,
+				layerRenderModes: newRenderModes,
+				layerGradParams: newGradParams,
+				layerBrushSettings: newBrushSettings,
+				currentLayerIndex: newCurrent,
+				camera: {
+					...state.camera,
+					z: newCurrent * -BASE_DEPTH_STEP,
+					rotation: 0
+				},
+				postProcessing: {
+					...state.postProcessing,
+					focusTargetLayer: newFocusTarget
+				}
+			};
+
+			const { history, index } = pushHistory(
+				state.history,
+				state.historyIndex,
+				createSnapshot(newState)
+			);
+
+			return {
+				...newState,
+				history,
+				historyIndex: index,
+				isDirty: true,
+			};
+		}
+		case 'DUPLICATE_LAYER': {
+			const layerIndex = action.payload;
+			if (state.totalLayers >= MAX_LAYERS) return state;
+
+			const sourceZ = layerIndex * -BASE_DEPTH_STEP;
+			const newLayerIndex = layerIndex + 1;
+			const newZ = newLayerIndex * -BASE_DEPTH_STEP;
+
+			// Shift existing layers down
+			const newShapes = state.shapes.map(s => {
+				if (s.zIndex <= newZ) {
+					return { ...s, zIndex: s.zIndex - BASE_DEPTH_STEP };
+				}
+				return s;
+			});
+
+			// Clone shapes from source layer
+			const sourceShapes = state.shapes.filter(s => s.zIndex === sourceZ);
+			// The copy is new content: it is created now (t = duplication time, v3.25.16).
+			const duplicatedAt = Date.now();
+			const clonedShapes = sourceShapes.map(s => ({
+				...s,
+				id: Date.now() + Math.random().toString(),
+				zIndex: newZ,
+				t: duplicatedAt,
+			}));
+
+			// Update hidden/locked - Shift indices
+			const newHidden = state.hiddenLayers.map(i => i >= newLayerIndex ? i + 1 : i);
+			const newLocked = state.locked3DLayers.map(i => i >= newLayerIndex ? i + 1 : i);
+
+			// Update props
+			const newRenderModes = { ...state.layerRenderModes };
+			const newGradParams = { ...state.layerGradParams };
+			const newBrushSettings = { ...state.layerBrushSettings };
+
+			// Shift props
+			for (let i = state.totalLayers - 1; i >= newLayerIndex; i--) {
+				newRenderModes[i+1] = newRenderModes[i];
+				newGradParams[i+1] = newGradParams[i];
+				newBrushSettings[i+1] = newBrushSettings[i];
+			}
+
+			// Copy props to new layer
+			newRenderModes[newLayerIndex] = newRenderModes[layerIndex];
+			newGradParams[newLayerIndex] = newGradParams[layerIndex];
+			newBrushSettings[newLayerIndex] = newBrushSettings[layerIndex] ? { ...newBrushSettings[layerIndex] } : { thickness: state.currentBrushThickness, mode: state.brushMode };
+
+			// Sync global
+			const nextBrush = newBrushSettings[newLayerIndex];
+			const nextGradP = newGradParams[newLayerIndex] || GRADIENT_DEFAULTS;
+
+			// Update paletteApplyToAllSnapshot if active
+			let newApplySnapshot = state.paletteApplyToAllSnapshot;
+			if (state.paletteApplyToAllActive && state.paletteApplyToAllSnapshot) {
+				const snapModes = { ...state.paletteApplyToAllSnapshot.layerRenderModes };
+				const snapParams = { ...state.paletteApplyToAllSnapshot.layerGradParams };
+				for (let i = state.totalLayers - 1; i >= newLayerIndex; i--) {
+					snapModes[i+1] = snapModes[i];
+					snapParams[i+1] = snapParams[i];
+				}
+				snapModes[newLayerIndex] = snapModes[layerIndex];
+				snapParams[newLayerIndex] = snapParams[layerIndex] ? { ...snapParams[layerIndex] } : { ...GRADIENT_DEFAULTS };
+				newApplySnapshot = { layerRenderModes: snapModes, layerGradParams: snapParams };
+			}
+
+			const newState = {
+				...state,
+				shapes: [...newShapes, ...clonedShapes],
+				totalLayers: state.totalLayers + 1,
+				currentLayerIndex: newLayerIndex,
+				camera: { ...state.camera, z: newLayerIndex * -BASE_DEPTH_STEP, rotation: 0 },
+				postProcessing: { ...state.postProcessing, focusTargetLayer: shiftFocusLayer(state.postProcessing.focusTargetLayer, newLayerIndex, 1) },
+				hiddenLayers: newHidden,
+				locked3DLayers: newLocked,
+				layerRenderModes: newRenderModes,
+				layerGradParams: newGradParams,
+				layerBrushSettings: newBrushSettings,
+				paletteApplyToAllSnapshot: newApplySnapshot,
+				paletteMode: newRenderModes[newLayerIndex] || 'flat',
+				paletteGradientAngle: nextGradP.angle,
+				paletteGradientIntensity: nextGradP.intensity,
+				paletteGradientType: nextGradP.gradType || 'solid',
+				currentBrushThickness: nextBrush.thickness,
+				brushMode: nextBrush.mode
+			};
+
+			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
+
+			return {
+				...newState,
+				history,
+				historyIndex: index,
+				isDirty: true,
+			};
+		}
+		case 'DISMISS_ONBOARDING':
+			return { ...state, isOnboardingVisible: false };
+		case 'SET_ACTIVE_PALETTE': {
+			playSound('click');
+			const newId = action.payload;
+			if (newId === state.activePaletteId) return state;
+
+			const newPalette = newId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
+			const oldPalette = state.palette;
+
+			// Map shapes to new palette colors based on index
+			let anyRemapped = false;
+			const newShapes = state.shapes.map(shape => {
+				// Find index in OLD palette
+				const idx = oldPalette.indexOf(shape.color);
+
+				// If color exists in old palette and we have a corresponding color in new palette
+				if (idx !== -1 && idx < newPalette.length && newPalette[idx] !== shape.color) {
+					anyRemapped = true;
+					return { ...shape, color: newPalette[idx] };
+				}
+				return shape;
+			});
+
+			// No shape colors remapped → pure selection: no undo step, last-writer-wins
+			// onto the current snapshot so a later undo never reverts this choice.
+			if (!anyRemapped) {
+				return {
+					...state,
+					activePaletteId: newId,
+					palette: newPalette,
+					history: patchCurrentSnapshot(state.history, state.historyIndex, { activePaletteId: newId }),
+					isDirty: true,
+				};
+			}
+
+			// Material remap → undo step; snapshot the POST-change pair (shapes + palette id).
+			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes, activePaletteId: newId }));
+
+			return {
+				...state,
+				activePaletteId: newId,
+				palette: newPalette,
+				shapes: newShapes,
+				history,
+				historyIndex: index,
+				isDirty: true,
+			};
+		}
+		case 'TOGGLE_ANIMATION_MODE': {
+			const entering = !state.isAnimationMode;
+			if (entering) {
+				return {
+					...state,
+					isAnimationMode: true,
+					layerIndexBeforeAnimation: state.currentLayerIndex,
+				};
+			} else {
+				const restored = state.layerIndexBeforeAnimation;
+				const safeIndex = (restored != null && restored >= 0 && restored < state.totalLayers)
+					? restored
+					: state.currentLayerIndex;
+				return {
+					...state,
+					isAnimationMode: false,
+					isAnimationPlaying: false,
+					currentLayerIndex: safeIndex,
+					layerIndexBeforeAnimation: null,
+				};
+			}
+		}
+		case 'SET_ANIMATION_PLAYING':
+			return { ...state, isAnimationPlaying: action.payload };
+		case 'SET_ANIMATION_FRAMERATE':
+			return { ...state, animationFramerate: action.payload };
+		case 'SET_ANIMATION_EXPORT_LOOPS':
+			return { ...state, animationExportLoops: action.payload };
+		case 'SET_GIF_EXPORT_SCALE':
+			return { ...state, gifExportScale: action.payload };
+		case 'TOGGLE_ONION_SKIN':
+			return { ...state, isOnionSkinEnabled: !state.isOnionSkinEnabled };
+		case 'TOGGLE_ANIMATION_FLAT_Z':
+			return { ...state, isAnimationFlatZ: !state.isAnimationFlatZ };
+		case 'ADVANCE_ANIMATION_FRAME': {
+			const frames = getAnimationFrames(state);
+			if (frames.length === 0) return state;
+			const currentPos = frames.indexOf(state.currentLayerIndex);
+			if (state.animationPlaybackMode !== 'pingpong' || frames.length < 2) {
+				// Loop mode (or single frame): always forward, wrap to start
+				const nextIndex = currentPos === -1
+					? frames[0]
+					: frames[(currentPos + 1) % frames.length];
+				return { ...state, currentLayerIndex: nextIndex };
+			}
+			// Ping-pong mode: advance by current direction, reverse at extremities
+			const dir = state.animationDirection;
+			const pos = currentPos === -1 ? 0 : currentPos;
+			let nextPos = pos + dir;
+			let nextDir = dir;
+			if (nextPos >= frames.length) {
+				nextDir = -1;
+				nextPos = frames.length - 2; // skip back, don't replay last frame
+			} else if (nextPos < 0) {
+				nextDir = 1;
+				nextPos = 1; // skip forward, don't replay first frame
+			}
+			return { ...state, currentLayerIndex: frames[nextPos], animationDirection: nextDir as 1 | -1 };
+		}
+		case 'STEP_ANIMATION_FRAME': {
+			// Navigate the real frame sequence with circular wrap, never creating layers.
+			// Used by the pill buttons (frame-back / frame-fwd).
+			// Keyboard shortcuts [/] keep PREV_LAYER/NEXT_LAYER (construct in DRAW).
+			const dir = action.payload;
+			const frames = getAnimationFrames(state);
+			if (frames.length === 0) return state;
+			const pos = frames.indexOf(state.currentLayerIndex);
+			// If current layer is empty/hidden (not in sequence): go to first or last frame
+			const nextPos = pos === -1
+				? (dir > 0 ? 0 : frames.length - 1)
+				: (pos + dir + frames.length) % frames.length;
+			const nextIndex = frames[nextPos];
+			const newZ = nextIndex * -BASE_DEPTH_STEP;
+			const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
+			const nextBrush = resolveLayerBrush(state.shapes, nextIndex, state.layerBrushSettings[nextIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
+			return {
+				...state,
+				currentLayerIndex: nextIndex,
+				camera: { ...state.camera, z: newZ, rotation: 0 },
+				isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
+				isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
+				paletteMode: state.layerRenderModes[nextIndex] || 'flat',
+				currentBrushThickness: nextBrush.thickness,
+				brushMode: nextBrush.mode,
+			};
+		}
+		case 'TOGGLE_ANIMATION_PLAYBACK_MODE':
+			return {
+				...state,
+				animationPlaybackMode: state.animationPlaybackMode === 'loop' ? 'pingpong' : 'loop',
+				animationDirection: 1, // reset direction when switching modes
+			};
+		default:
+			return state;
+	}
 }
 
 // --- Context & Provider ---
@@ -2135,20 +2135,20 @@ export function appReducer(state: AppState, action: Action): AppState {
 const StrataContext = createContext<{ state: AppState; dispatch: React.Dispatch<Action> } | undefined>(undefined);
 
 export const StrataProvider: React.FC<{ children: ReactNode; initialStateOverride?: Partial<AppState> }> = ({ children, initialStateOverride }) => {
-  const merged = initialStateOverride ? { ...initialState, ...initialStateOverride } : initialState;
-  const [state, dispatch] = useReducer(appReducer, merged);
+	const merged = initialStateOverride ? { ...initialState, ...initialStateOverride } : initialState;
+	const [state, dispatch] = useReducer(appReducer, merged);
 
-  return (
-    <StrataContext.Provider value={{ state, dispatch }}>
-      {children}
-    </StrataContext.Provider>
-  );
+	return (
+		<StrataContext.Provider value={{ state, dispatch }}>
+			{children}
+		</StrataContext.Provider>
+	);
 };
 
 export const useStrata = () => {
-  const context = useContext(StrataContext);
-  if (!context) {
-    throw new Error('useStrata must be used within a StrataProvider');
-  }
-  return context;
+	const context = useContext(StrataContext);
+	if (!context) {
+		throw new Error('useStrata must be used within a StrataProvider');
+	}
+	return context;
 };
