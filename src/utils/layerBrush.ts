@@ -38,6 +38,9 @@ export function resolveLayerBrush(shapes: readonly Shape[], layerIndex: number, 
  * UNDO/REDO: a layer's brush only moves when the step being crossed restyled that layer's
  * strokes. The live entry is kept while it agrees with the target's strokes; the snapshot's
  * entry is only the base when the layers themselves changed (count or shape membership).
+ * When the live entry agrees with none of the target's strokes, the snapshot's own entry is asked
+ * before settling for the last stroke's (v3.26.23): on a layer of several thicknesses, undoing a
+ * unification has to bring back the pair that was in force, not whichever stroke comes last.
  */
 export function restoreLayerBrushSettings(
 	current: { shapes: readonly Shape[]; totalLayers: number; layerBrushSettings: Record<number, LayerBrush> },
@@ -46,8 +49,10 @@ export function restoreLayerBrushSettings(
 	const sameLayers = current.totalLayers === target.totalLayers && sameLayerMembership(current.shapes, target.shapes);
 	const out: Record<number, LayerBrush> = {};
 	for (let i = 0; i < target.totalLayers; i++) {
-		const base = (sameLayers && current.layerBrushSettings[i]) || target.layerBrushSettings[i];
-		const brush = resolveLayerBrush(target.shapes, i, base);
+		const saved = target.layerBrushSettings[i];
+		const base = (sameLayers && current.layerBrushSettings[i]) || saved;
+		let brush = resolveLayerBrush(target.shapes, i, base);
+		if (brush !== base && saved && saved !== base) brush = resolveLayerBrush(target.shapes, i, saved);
 		if (brush) out[i] = brush;
 	}
 	return out;
@@ -62,4 +67,29 @@ function sameLayerMembership(a: readonly Shape[], b: readonly Shape[]): boolean 
 		if (z !== undefined && z !== s.zIndex) return false;
 	}
 	return true;
+}
+
+/**
+ * A thickness as the panel shows it (D4, v3.26.23): it is stored exact and rounded here, to whole
+ * numbers — the slider moves in whole steps, and a merge's 1.5 % per plane (30 → 30.45) would
+ * otherwise read as a second thickness. Under 1 it keeps one decimal, so that it never reads 0.
+ */
+export const shownThickness = (thickness: number): number =>
+	(thickness < 1 ? Math.max(0.1, Math.round(thickness * 10) / 10) : Math.round(thickness));
+
+/**
+ * The thicknesses of a layer's regenerable brush strokes, as shown (v3.26.23). `mixed`: the layer holds
+ * more than one — after a merge, or strokes drawn at different sizes — and the panel says «Mixto» in
+ * place of a number until the slider unifies them. null = a layer with no such strokes.
+ */
+export function layerThicknessRange(shapes: readonly Shape[], layerIndex: number): { min: number; max: number; mixed: boolean } | null {
+	const z = layerIndex * -BASE_DEPTH_STEP;
+	let min = Infinity, max = -Infinity;
+	for (const s of shapes) {
+		if (s.zIndex !== z || !isRegenerable(s) || s.brushThickness === undefined) continue;
+		const shown = shownThickness(s.brushThickness);
+		if (shown < min) min = shown;
+		if (shown > max) max = shown;
+	}
+	return max === -Infinity ? null : { min, max, mixed: min !== max };
 }

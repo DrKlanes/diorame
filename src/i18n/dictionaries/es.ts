@@ -125,6 +125,8 @@ export const es: Dictionary = {
 	'bottombar.draw.lineMode.title': 'Modo de trazo: {label} ({n}/3) — pulsa para cambiar',
 
 	'bottombar.draw.toolOptions.size': 'Tamaño',
+	'bottombar.draw.toolOptions.mixed': 'Mixto',
+	'bottombar.draw.toolOptions.mixedAria': 'Mixto, de {min} a {max}',
 
 	// Animation player (moved to topbar)
 	'bottombar.anim.toggle': 'Modo animación',

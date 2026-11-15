@@ -134,6 +134,8 @@ export const en: Dictionary = {
 
 	// Tool options
 	'bottombar.draw.toolOptions.size': 'Size',
+	'bottombar.draw.toolOptions.mixed': 'Mixed',
+	'bottombar.draw.toolOptions.mixedAria': 'Mixed, from {min} to {max}',
 
 	// Animation player (moved to topbar)
 	'bottombar.anim.toggle': 'Animation mode',
