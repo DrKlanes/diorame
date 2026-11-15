@@ -529,6 +529,7 @@ The logic of the reducer, by subject (refactor phase 3, from v3.26.15). The `swi
 |---|---|---|
 | `history.ts` | ~160 | The undo history: `pushHistory` (cap of `MAX_HISTORY_STEPS`), `createSnapshot` (pass the POST-change state; materialises the active layer's brush pair), `patchCurrentSnapshot` (last-writer-wins for pure selections), and `undo` / `redo` (`UNDO`, `REDO`). Every action that pushes a step or stamps the current snapshot imports the three helpers from here |
 | `loadProject.ts` | ~225 | `loadProject` (`LOAD_PROJECT`): the reader of a `.dior`, the autosave and the example scene — merges and sanitises field by field, migrates what older files call differently (`lineMode` / `lineThickness`, `tool` by generation of the file, `grungeOverlay`, «Untitled Project»), fills the gaps with the defaults (never with the project that was open) and resets history, layer, view and `isDirty`. Its writer is `utils/diorPayload.ts`. Rules in §8 |
+| `brush.ts` | ~120 | Thickness and mode of a layer's brush: `setBrushThickness` (`SET_BRUSH_THICKNESS`), `setBrushThicknessPreview` (the drag: re-styles live, keeps the pre-drag shapes), `commitBrushThickness` (one undo step if strokes were re-styled, else a stamp on the current snapshot) and `setBrushMode`. Re-styling regenerates the outline of every regenerable stroke of the layer from its spine (`generateStrokeForMode`). Where «Mixto» (D3, D4) will land |
 
 ### Type System (`src/types/`)
 

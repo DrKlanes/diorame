@@ -56,6 +56,7 @@ export { initialState }; // Moved to constants/initialState.ts
 
 import { pushHistory, createSnapshot, patchCurrentSnapshot, undo, redo } from '../../state/history'; // Moved to state/history.ts
 import { loadProject } from '../../state/loadProject';
+import { setBrushThickness, setBrushThicknessPreview, commitBrushThickness, setBrushMode } from '../../state/brush';
 
 // --- Reducer ---
 
@@ -1011,119 +1012,15 @@ export function appReducer(state: AppState, action: Action): AppState {
 			return { ...state, pointOfInterest: null, isDirty: state.isDirty || state.pointOfInterest !== null };
 		case 'SET_CINEMATIC_SPEED':
 			return { ...state, cinematicSpeed: action.payload, isDirty: state.isDirty || action.payload !== state.cinematicSpeed };
-		case 'SET_BRUSH_THICKNESS': {
-			const thickness = action.payload;
-			const layerIdx = state.currentLayerIndex;
-			const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
-			const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, thickness } };
-
-			// Also update shapes immediately (for onChange events)
-			const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
-			const newShapes = state.shapes.map(s => {
-				if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
-					const effectiveMode = s.brushMode || currentSettings.mode;
-					const newPoints = generateStrokeForMode(effectiveMode, s.originalPoints, thickness);
-					return { ...s, brushThickness: thickness, brushMode: effectiveMode, points: newPoints };
-				}
-				return s;
-			});
-
-			return { ...state, currentBrushThickness: thickness, layerBrushSettings: newLayerSettings, shapes: newShapes };
-		}
-		case 'SET_BRUSH_THICKNESS_PREVIEW': {
-			const thickness = action.payload;
-			const layerIdx = state.currentLayerIndex;
-			const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
-			const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, thickness } };
-
-			const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
-			const newShapes = state.shapes.map(s => {
-				if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
-					const effectiveMode = s.brushMode || currentSettings.mode;
-					const newPoints = generateStrokeForMode(effectiveMode, s.originalPoints, thickness);
-					return { ...s, brushThickness: thickness, brushMode: effectiveMode, points: newPoints };
-				}
-				return s;
-			});
-
-			// Store current shapes state if not already stored
-			return {
-				...state,
-				currentBrushThickness: thickness,
-				layerBrushSettings: newLayerSettings,
-				brushThicknessBeforePreview: state.brushThicknessBeforePreview || state.shapes,
-				shapes: newShapes
-			};
-		}
-		case 'COMMIT_BRUSH_THICKNESS': {
-			const prevShapes = state.brushThicknessBeforePreview;
-			if (prevShapes) {
-				// Only commit an undo step if the thickness cycle actually restyled
-				// strokes (state already holds the post-preview shapes + settings).
-				const currentLayerZ = state.currentLayerIndex * -BASE_DEPTH_STEP;
-				const strokesWereRestyled = state.shapes.some(s => s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0);
-				if (strokesWereRestyled) {
-					const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
-					return { ...state, brushThicknessBeforePreview: null, history, historyIndex: index, isDirty: true };
-				}
-			}
-			// Pure selection (no strokes restyled) → last-writer-wins onto the current snapshot.
-			return {
-				...state,
-				brushThicknessBeforePreview: null,
-				isDirty: state.isDirty || prevShapes !== null,
-				history: patchCurrentSnapshot(state.history, state.historyIndex, { layerBrushSettings: state.layerBrushSettings })
-			};
-		}
+		case 'SET_BRUSH_THICKNESS': return setBrushThickness(state, action); // Moved to state/brush.ts
+		case 'SET_BRUSH_THICKNESS_PREVIEW': return setBrushThicknessPreview(state, action); // Moved to state/brush.ts
+		case 'COMMIT_BRUSH_THICKNESS': return commitBrushThickness(state); // Moved to state/brush.ts
 		case 'TOGGLE_HANDHELD':
 			playSound('click');
 			return { ...state, isHandheldEnabled: !state.isHandheldEnabled, isDirty: true };
 		case 'SET_HANDHELD_INTENSITY':
 			return { ...state, handheldIntensity: action.payload, isDirty: state.isDirty || action.payload !== state.handheldIntensity };
-		case 'SET_BRUSH_MODE': {
-			const mode = action.payload;
-			const layerIdx = state.currentLayerIndex;
-			const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
-			const newLayerSettings = { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, mode } };
-			const thickness = currentSettings.thickness;
-
-			const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
-			const hasRegenerableStrokes = state.shapes.some(s => s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0);
-
-			// No strokes to restyle → pure selection: no undo step, last-writer-wins
-			// onto the current snapshot so a later undo never reverts this choice.
-			if (!hasRegenerableStrokes) {
-				return {
-					...state,
-					brushMode: mode,
-					layerBrushSettings: newLayerSettings,
-					history: patchCurrentSnapshot(state.history, state.historyIndex, { layerBrushSettings: newLayerSettings }),
-					isDirty: true,
-				};
-			}
-
-			const newShapes = state.shapes.map(s => {
-				if (s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0) {
-					let newPoints: Point[] = [];
-					newPoints = generateStrokeForMode(mode, s.originalPoints, thickness);
-					return { ...s, brushThickness: thickness, brushMode: mode, points: newPoints };
-				}
-				return s;
-			});
-
-			// Material restyle → undo step; snapshot the POST-change pair (shapes + settings).
-			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes, layerBrushSettings: newLayerSettings }));
-
-			return {
-				...state,
-				brushMode: mode,
-				layerBrushSettings: newLayerSettings,
-				shapes: newShapes,
-				history,
-				historyIndex: index,
-				isDirty: true,
-			};
-		}
+		case 'SET_BRUSH_MODE': return setBrushMode(state, action); // Moved to state/brush.ts
 		case 'SET_LAYER_SPACING_FACTOR':
 			return { ...state, layerSpacingFactor: action.payload, isDirty: state.isDirty || action.payload !== state.layerSpacingFactor };
 		case 'SET_PROJECT_NAME':
