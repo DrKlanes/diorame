@@ -119,17 +119,25 @@ describe('capas · caracterización', () => {
 			expect(run(s, { type: 'NEXT_LAYER' }).totalLayers).toBe(MAX_LAYERS);
 		});
 
-		it('G8 [COMPORTAMIENTO ACTUAL · hallazgo de la fase 1, sin decisión] una capa creada en medio de la pila hereda el par guardado de la capa que ocupaba su sitio', () => {
-			// ADD_LAYER shifts the per-layer brush pairs up but never clears the new slot (its own
-			// comment says «not set»): the empty layer 2 keeps old layer 2's pair, uniform / 50. The
-			// slider still shows 30 / ink right after creating it, and switches to 50 / uniform as
-			// soon as the user leaves the layer and comes back: one layer's thickness on another.
+		// G8 (v3.26.22). Until then ADD_LAYER shifted the pairs up and left the new slot with the pair of the
+		// layer that used to be there: the empty layer showed 30 / ink when created and 50 / uniform (the layer
+		// above's) as soon as the user left it and came back.
+		it('G8 una capa creada en medio de la pila toma el par de la capa activa, no el de la que ocupaba su sitio', () => {
 			const after = run(richState(1), { type: 'ADD_LAYER' });
 			expect(regenerable(after, 2)).toHaveLength(0);
-			expect(after.layerBrushSettings[2]).toEqual({ thickness: 50, mode: 'uniform' });
+			expect(after.layerBrushSettings[2]).toEqual({ thickness: 30, mode: 'ink' });
 			expect(after.layerBrushSettings[3]).toEqual({ thickness: 50, mode: 'uniform' });
 			const back = run(after, { type: 'PREV_LAYER' }, { type: 'NEXT_LAYER' });
-			expect(pairOf(back)).toEqual({ layer: 2, thickness: 50, mode: 'uniform' });
+			expect(pairOf(back)).toEqual({ layer: 2, thickness: 30, mode: 'ink' });
+			const fromAbove = run(after, { type: 'NEXT_LAYER' }, { type: 'PREV_LAYER' });
+			expect(pairOf(fromAbove)).toEqual({ layer: 2, thickness: 30, mode: 'ink' });
+		});
+
+		it('G8 una capa creada al final con NEXT_LAYER también nace con el par de la activa y lo conserva al volver', () => {
+			const created = run(richState(2), { type: 'NEXT_LAYER' });
+			expect(created.layerBrushSettings[3]).toEqual({ thickness: 50, mode: 'uniform' });
+			const back = run(created, { type: 'SET_CURRENT_LAYER', payload: 0 }, { type: 'SET_CURRENT_LAYER', payload: 3 });
+			expect(pairOf(back)).toEqual({ layer: 3, thickness: 50, mode: 'uniform' });
 		});
 	});
 
@@ -241,7 +249,9 @@ describe('capas · caracterización', () => {
 			expect(undone.layerBrushSettings).toEqual(before.layerBrushSettings);
 		});
 
-		it('G4 [COMPORTAMIENTO ACTUAL · pendiente de D4] la capa resultante mezcla grosores (10 y 30,449999999999996) y el slider enseña 10', () => {
+		// G4 · D4 (v3.26.22): the merged thickness is stored exact; it is the display that rounds (30). A layer of
+		// several thicknesses is a state the app now names («Mixto»): tests/mixedThickness.test.ts.
+		it('G4 · D4 la capa resultante guarda los dos grosores exactos (10 y 30,449999999999996); el par vigente es el de la capa de abajo', () => {
 			const after = run(richState(1), { type: 'MERGE_LAYER_DOWN' });
 			expect([...new Set(regenerable(after, 0).map(x => x.brushThickness))]).toEqual([10, 30.449999999999996]);
 			expect(pairOf(after)).toEqual({ layer: 0, thickness: 10, mode: 'tapered' });

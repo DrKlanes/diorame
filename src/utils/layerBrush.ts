@@ -1,9 +1,19 @@
 import type { BrushMode, HistorySnapshot, Shape } from '../types/strataTypes';
 import { BASE_DEPTH_STEP } from '../constants/layers';
+import { inkSeedFor } from './strokeGenerators';
 
 export type LayerBrush = { thickness: number; mode: BrushMode };
 
 const isRegenerable = (s: Shape) => !!s.originalPoints && s.originalPoints.length > 0;
+
+/**
+ * An Ink stroke with the seed of its noise on it (v3.26.22). Called when a stroke is added and before
+ * anything moves its coordinates: an older stroke without a seed gets the one its outline was drawn
+ * with (a hash of its spine as it is now), so re-styling it after a move, flip or resize no longer
+ * deals it a new pattern. Not an Ink stroke, or already seeded: returned as it is.
+ */
+export const withInkSeed = (s: Shape): Shape =>
+	(s.brushMode === 'ink' && s.inkSeed === undefined && isRegenerable(s) ? { ...s, inkSeed: inkSeedFor(s.originalPoints!) } : s);
 
 /**
  * A layer's brush is a document property its regenerable strokes already carry: a thickness

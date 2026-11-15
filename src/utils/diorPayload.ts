@@ -28,6 +28,9 @@ export function buildDiorFields(state: AppState, name: string) {
 		pointOfInterest: state.pointOfInterest,
 		// DRAW format guide (v3.25.5): optional, null = no frame. Older apps ignore it.
 		format: state.format,
+		// Brush thickness and mode of each layer (v3.26.22): optional. A layer with strokes answers with theirs
+		// anyway; this is what lets an EMPTY layer keep the pair chosen for it. Older apps ignore it.
+		layerBrushSettings: state.layerBrushSettings,
 	};
 }
 

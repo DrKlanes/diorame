@@ -23,6 +23,8 @@ export interface Shape {
   originalPoints?: Point[]; // Store spine for re-generation
   brushThickness?: number; // Store thickness value
   brushMode?: BrushMode; // Store brush mode (tapered or uniform)
+  inkSeed?: number; // Seed of an Ink stroke's noise (v3.26.22): stamped when the stroke is added, kept through moves, flips, resizes and re-styles. Absent = older stroke: it gets one, from its coordinates at that moment, the first time it is transformed or re-styled
+  inkMirrored?: boolean; // The stroke was flipped an odd number of times since its seed was set (v3.26.22): its noise is drawn mirrored, so a re-style after a flip keeps the pattern. Absent = not mirrored
   eraserPolygon?: Point[]; // Expanded polygon for SVG mask export
   group?: string[]; // Isolated group chain, outermost first (merged layers, v3.24.0); absent = top level
   t?: number; // Creation time (Date.now() ms), stamped by the reducer (v3.25.16): WHEN the timelapse shows it, never paint order; absent = older file

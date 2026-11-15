@@ -78,7 +78,6 @@ export function loadProject(state: AppState, action: Extract<Action, { type: 'LO
 	const loadedLayerGradParams = Object.fromEntries(
 		Object.entries(rawGradParams).map(([k, v]: [string, any]) => [k, { ...GRADIENT_DEFAULTS, ...v }])
 	) as Record<number, LayerGradParams>;
-	const loadedLayerBrushSettings = action.payload.layerBrushSettings || {};
 
 	const loadedPaletteId = action.payload.activePaletteId || 'primary';
 	const loadedPalette = loadedPaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
@@ -116,6 +115,16 @@ export function loadProject(state: AppState, action: Extract<Action, { type: 'LO
 		? [...new Set(raw.filter((i): i is number => Number.isInteger(i) && i >= 0 && i < safeTotalLayers))] : []);
 	const safeHiddenLayers = layerIndices(action.payload.hiddenLayers);
 	const safeLocked3DLayers = layerIndices(action.payload.locked3DLayers);
+	// Per-layer brush pairs (v3.26.22, an additive field: files without it open as before, with none). A pair
+	// is kept for a layer that exists when it has a positive thickness and a known mode. A layer with strokes
+	// still answers with THEIR pair (resolveLayerBrush): this is what an empty layer keeps of its own.
+	const rawBrushSettings: unknown = action.payload.layerBrushSettings;
+	const loadedLayerBrushSettings = Object.fromEntries(
+		Object.entries(rawBrushSettings && typeof rawBrushSettings === 'object' ? rawBrushSettings : {})
+			.filter(([k, v]: [string, any]) => /^\d+$/.test(k) && Number(k) < safeTotalLayers && !!v && typeof v === 'object'
+				&& Number.isFinite(v.thickness) && v.thickness > 0 && ['tapered', 'uniform', 'ink'].includes(v.mode))
+			.map(([k, v]: [string, any]) => [k, Object.fromEntries(Object.entries(v).filter(([field]) => field === 'thickness' || field === 'mode'))])
+	) as AppState['layerBrushSettings'];
 	// Tool-value backward compat: until v2.3.0 'brush' was the blob and 'line' the brush. That release
 	// renamed both and, in the same commit, the keys the file saves next to them (lineMode /
 	// currentLineThickness → brushMode / currentBrushThickness), which every save since then writes.
@@ -140,18 +149,14 @@ export function loadProject(state: AppState, action: Extract<Action, { type: 'LO
 		: (typeof action.payload.currentLineThickness === 'number' && action.payload.currentLineThickness > 0)
 			? action.payload.currentLineThickness
 			: 25;
-	// Clamp to the current tool range (v3.17.40 lowered MAX from 100 to 70). This is
-	// TOOL STATE, not geometry — a .dior saved under the old range can carry
-	// currentBrushThickness up to 100, and the slider control has to land somewhere
-	// sane on it, not on a value its own max attribute disagrees with. Shapes are
-	// untouched either way: their baked points/brushThickness are never reinterpreted
-	// on load (see constants/brush.ts). layerBrushSettings needs no equivalent clamp —
-	// useSaveLoad.ts has never included it in a saved payload (verified via
-	// `git log -S`), so action.payload.layerBrushSettings is always undefined here.
-	// The file's currentBrushThickness is the value of whichever layer was active at save;
-	// layer 0 opens with its own (from its strokes) when it has any (v3.26.3).
-	const layer0Brush = resolveLayerBrush(safeShapes, 0, undefined);
-	const safeBrushThickness = Math.min(Math.max(layer0Brush?.thickness ?? rawBrushThickness, BRUSH_THICKNESS_MIN), BRUSH_THICKNESS_MAX);
+	// The file's currentBrushThickness is the value of whichever layer was active at save. Layer 0 opens
+	// with its own pair: its strokes' (v3.26.3) or, when it has none, the one saved for it (v3.26.22).
+	// That pair is what is on the canvas, so it is taken as it is, also outside the slider's range (a
+	// resized stroke, D3/D4: stored exact, rounded for display). Only the file's loose tool value is
+	// clamped to the range (v3.17.40 lowered MAX from 100 to 70): it is tool state, not geometry, and the
+	// control has to land somewhere sane. Shapes are untouched either way (see constants/brush.ts).
+	const layer0Brush = resolveLayerBrush(safeShapes, 0, loadedLayerBrushSettings[0]);
+	const safeBrushThickness = layer0Brush?.thickness ?? Math.min(Math.max(rawBrushThickness, BRUSH_THICKNESS_MIN), BRUSH_THICKNESS_MAX);
 	// Gaps take the defaults, never the previous project's values (v3.20.11 rule; until v3.26.8 these two fell back to state.*).
 	const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : initialState.isDarkMode;
 	const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom', 'storytelling'].includes(action.payload.cinematicType))

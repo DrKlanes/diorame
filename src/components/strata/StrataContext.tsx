@@ -5,7 +5,7 @@ import {
 	TextSession, HistorySnapshot, AppState, LayerGradParams,
 } from '../../types/strataTypes';
 import { createProjectMeta } from '../../utils/projectMeta';
-import { resolveLayerBrush } from '../../utils/layerBrush';
+import { resolveLayerBrush, withInkSeed } from '../../utils/layerBrush';
 
 export type {
 	Point, Shape, AppMode, ToolType, CinematicType, ExportType, BrushMode,
@@ -235,7 +235,8 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'ADD_SHAPE': {
 			if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
 			// Creation time stamped here, not in the pointer handler (v3.25.16): the timelapse's clock.
-			const newShapes = [...state.shapes, { ...action.payload, t: Date.now() }];
+			// An Ink stroke gets the seed of its noise here too (v3.26.22): the one its outline was just drawn with.
+			const newShapes = [...state.shapes, withInkSeed({ ...action.payload, t: Date.now() })];
 			const snapshot = createSnapshot({ ...state, shapes: newShapes });
 			const { history, index } = pushHistory(state.history, state.historyIndex, snapshot);
 
@@ -253,7 +254,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'ADD_SHAPES': {
 			if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
 			const t = Date.now();
-			const newShapes = [...state.shapes, ...action.payload.map(s => ({ ...s, t }))];
+			const newShapes = [...state.shapes, ...action.payload.map(s => withInkSeed({ ...s, t }))];
 			const snapshot = createSnapshot({ ...state, shapes: newShapes });
 			const { history, index } = pushHistory(state.history, state.historyIndex, snapshot);
 
@@ -362,6 +363,8 @@ export function appReducer(state: AppState, action: Action): AppState {
 					paletteGradientType: newGradP.gradType || 'solid',
 					currentBrushThickness: state.currentBrushThickness,
 					brushMode: state.brushMode,
+					// Like ADD_LAYER: the new layer owns the active layer's pair from the start (v3.26.22).
+					layerBrushSettings: { ...state.layerBrushSettings, [nextIndex]: { thickness: state.currentBrushThickness, mode: state.brushMode } },
 					isDirty: true,
 				};
 
@@ -427,7 +430,9 @@ export function appReducer(state: AppState, action: Action): AppState {
 			const newGradP       = state.paletteApplyToAllActive ? propagatedParams : GRADIENT_DEFAULTS;
 			newRenderModes[newLayerIndex] = newPaletteMode;
 			newGradParams[newLayerIndex]  = { ...newGradP };
-			// newBrushSettings[newLayerIndex] not set — new empty layer uses current brush as fallback
+			// The new layer starts with the active layer's pair (v3.26.22). Until then its slot kept, after the
+			// shift above, the pair of the layer that used to be at this position.
+			newBrushSettings[newLayerIndex] = { thickness: state.currentBrushThickness, mode: state.brushMode };
 
 			// Shift paletteApplyToAllSnapshot (if active)
 			let newApplySnapshot = state.paletteApplyToAllSnapshot;

@@ -124,9 +124,12 @@ export function useSaveLoad() {
 			setProjectFileLink(meta.projectId, handle && isDiorFile(handle.name) ? handle : null, loadedName === 'Untitled Project' ? UNTITLED_PROJECT_SENTINEL : loadedName);
 			// What was loaded, not what the file listed: a shape that cannot be drawn is left out (v3.26.20).
 			const n = readableShapes(json.shapes).length;
-			if (n < json.shapes.length) console.warn(`[load] ${json.shapes.length - n} shape(s) could not be read and were left out`);
+			const skipped = json.shapes.length - n;
+			if (skipped > 0) console.warn(`[load] ${skipped} shape(s) could not be read and were left out`);
 			const desc = n === 1 ? t('toast.load.successDescOne', { n }) : t('toast.load.successDesc', { n });
 			toast.success(t('toast.load.successTitle'), { description: desc, duration: 2000 });
+			// Said on screen too (v3.26.22), and for longer: part of the file did not make it.
+			if (skipped > 0) toast.warning(t('toast.load.skippedTitle'), { description: t(skipped === 1 ? 'toast.load.skippedDescOne' : 'toast.load.skippedDesc', { n: skipped }), duration: 8000 });
 			analytics.projectLoaded();
 			onLoaded?.();
 		} catch (err) {

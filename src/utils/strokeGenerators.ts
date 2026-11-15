@@ -216,9 +216,21 @@ const _inkSmoothPass = (pts: {x:number,y:number}[], w: number) => {
     return out;
 };
 
-export const generateInkStroke = (points: {x:number,y:number}[], thickness: number = 20): {x:number,y:number}[] => {
+// The seed a stroke's noise is drawn with when it carries none of its own: a hash of its coordinates.
+// A stroke stores it (Shape.inkSeed, v3.26.22) so that moving, flipping or resizing it and then
+// re-styling it gives the same pattern, not a new one.
+export const inkSeedFor = (points: {x:number,y:number}[]): number => _spineSeed(points);
+
+export const generateInkStroke = (points: {x:number,y:number}[], thickness: number = 20, inkSeed?: number, mirrored?: boolean): {x:number,y:number}[] => {
 	if (points.length < 2) return points;
-	const seed = _spineSeed(points);
+	// A stroke flipped after it was drawn (Shape.inkMirrored, v3.26.22). The noise is laid along the line's
+	// normal, and a mirror turns the normal over: the same seed on the flipped spine would put the wobble and
+	// the edge bumps on the other side. So it is drawn as the mirror image of its own mirror.
+	if (mirrored) {
+		const flipX = (p: {x:number,y:number}) => ({ x: -p.x, y: p.y });
+		return generateInkStroke(points.map(flipX), thickness, inkSeed ?? _spineSeed(points)).map(flipX);
+	}
+	const seed = inkSeed ?? _spineSeed(points);
 	const segLen = Math.max(thickness / 5, 1.5);
 	let spine = _inkDensify(points, segLen);
 	for (let p = 0; p < 3; p++) spine = _inkSmoothPass(spine, 0.3);
@@ -310,8 +322,10 @@ export const generateStrokeForMode = (
     mode: BrushMode,
     points: {x:number, y:number}[],
     thickness: number,
+    inkSeed?: number,
+    inkMirrored?: boolean,
 ): {x:number, y:number}[] => {
     if (mode === 'tapered') return generateTaperedStroke(points, thickness);
-    if (mode === 'ink') return generateInkStroke(points, thickness);
+    if (mode === 'ink') return generateInkStroke(points, thickness, inkSeed, inkMirrored);
     return generateUniformStroke(points, thickness);
 };

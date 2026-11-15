@@ -3,6 +3,7 @@
 // docs/audit-2026-11.md). Out of StrataContext.tsx (v3.26.18, refactor phase 3A), moved as it was.
 import { BASE_DEPTH_STEP } from '../constants/layers';
 import { bakeTextTransform, flipTextProps } from '../utils/textTransform';
+import { resolveLayerBrush, withInkSeed } from '../utils/layerBrush';
 import { pushHistory, createSnapshot } from './history';
 import type { AppState, Point, Shape } from '../types/strataTypes';
 import type { Action } from '../types/strataActions';
@@ -14,8 +15,9 @@ export function moveLayer(state: AppState, action: Extract<Action, { type: 'MOVE
 	// feels broken, and it spends one of the MAX_HISTORY_STEPS). A layer holding only
 	// eraser shapes is NOT empty and still moves.
 	if (!state.shapes.some(s => s.zIndex === layerIndex * -BASE_DEPTH_STEP)) return state;
-	const newShapes = state.shapes.map(shape => {
-		if (shape.zIndex === layerIndex * -BASE_DEPTH_STEP) {
+	const newShapes = state.shapes.map(unseeded => {
+		if (unseeded.zIndex === layerIndex * -BASE_DEPTH_STEP) {
+			const shape = withInkSeed(unseeded);
 			const updatedShape = {
 				...shape,
 				points: shape.points.map(point => ({
@@ -32,9 +34,17 @@ export function moveLayer(state: AppState, action: Extract<Action, { type: 'MOVE
 					pressure: point.pressure
 				}));
 			}
+			// The eraser's polygon moves with it, as it already did on a resize (v3.26.22).
+			if (shape.eraserPolygon) {
+				updatedShape.eraserPolygon = shape.eraserPolygon.map(point => ({
+					x: point.x + deltaX,
+					y: point.y + deltaY,
+					pressure: point.pressure
+				}));
+			}
 			return updatedShape;
 		}
-		return shape;
+		return unseeded;
 	});
 	const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
 	return {
@@ -54,8 +64,9 @@ export function transformLayer(state: AppState, action: Extract<Action, { type: 
 	const sin = Math.sin(rotation);
 	const cos = Math.cos(rotation);
 
-	const newShapes = state.shapes.map(shape => {
-		if (shape.zIndex === layerIndex * -BASE_DEPTH_STEP) {
+	const newShapes = state.shapes.map(unseeded => {
+		if (unseeded.zIndex === layerIndex * -BASE_DEPTH_STEP) {
+			const shape = withInkSeed(unseeded);
 			// Non-uniform deformation (squash & stretch), text included (v3.17.56): its
 			// anchor moves like any point and its matrix absorbs the stretch. When
 			// scaleX/scaleY are absent (every legacy uniform transform), sx===sy===scale
@@ -107,14 +118,29 @@ export function transformLayer(state: AppState, action: Extract<Action, { type: 
 				updatedShape.eraserPolygon = shape.eraserPolygon.map(transformPoint);
 			}
 
+			// D3 (v3.26.22): the stored thickness follows the geometry in the three brush modes, as it
+			// already did on a merge, so the slider keeps saying what is on the canvas and the next
+			// re-style no longer snaps the stroke back to its old width. A per-axis stretch has no single
+			// width: the geometric mean of the two factors. Stored exact, rounded only for display (D4).
+			if (shape.brushThickness !== undefined) {
+				updatedShape.brushThickness = shape.brushThickness * (hasNonUniform ? Math.sqrt(Math.abs(sx * sy)) : Math.abs(scale));
+			}
+
 			return updatedShape;
 		}
-		return shape;
+		return unseeded;
 	});
-	const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
+	// The layer's pair follows its strokes, and the slider with it when the layer is the active one.
+	const layerBrush = resolveLayerBrush(newShapes, layerIndex, state.layerBrushSettings[layerIndex]);
+	const layerBrushSettings = layerBrush ? { ...state.layerBrushSettings, [layerIndex]: layerBrush } : state.layerBrushSettings;
+	const slider = layerBrush && layerIndex === state.currentLayerIndex
+		? { currentBrushThickness: layerBrush.thickness, brushMode: layerBrush.mode } : {};
+	const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes, layerBrushSettings }));
 	return {
 		...state,
 		shapes: newShapes,
+		layerBrushSettings,
+		...slider,
 		history,
 		historyIndex: index,
 		isDirty: true,
@@ -125,8 +151,9 @@ export function flipLayer(state: AppState, action: Extract<Action, { type: 'FLIP
 	const { layerIndex, direction, centerX, centerY } = action.payload;
 	const layerZ = layerIndex * -BASE_DEPTH_STEP;
 
-	const newShapes = state.shapes.map(shape => {
-		if (shape.zIndex !== layerZ) return shape;
+	const newShapes = state.shapes.map(unseeded => {
+		if (unseeded.zIndex !== layerZ) return unseeded;
+		const shape = withInkSeed(unseeded);
 
 		const flipPoint = (point: Point): Point => {
 			if (direction === 'horizontal') {
@@ -144,9 +171,19 @@ export function flipLayer(state: AppState, action: Extract<Action, { type: 'FLIP
 			...newProps,
 			points: shape.points.map(flipPoint)
 		};
+		// A seeded stroke remembers it was mirrored (v3.26.22): its noise is laid along the normal, which a
+		// flip turns over, so a later re-style draws it mirrored and the pattern stays. Two flips cancel.
+		if (shape.inkSeed !== undefined) {
+			if (shape.inkMirrored) delete updatedShape.inkMirrored;
+			else updatedShape.inkMirrored = true;
+		}
 
 		if (shape.originalPoints) {
 			updatedShape.originalPoints = shape.originalPoints.map(flipPoint);
+		}
+		// The eraser's polygon mirrors with it, as it already did on a resize (v3.26.22).
+		if (shape.eraserPolygon) {
+			updatedShape.eraserPolygon = shape.eraserPolygon.map(flipPoint);
 		}
 
 		return updatedShape;

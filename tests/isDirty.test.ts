@@ -22,8 +22,9 @@ const BY_DESIGN = ['LOAD_PROJECT', 'PROJECT_SAVED', 'CLEAR_CANVAS', 'INIT_CINEMA
 
 /** Halfway through a drag: the gesture's closing action decides (see «gestos completos» below). */
 const DRAG_PREVIEWS: Record<string, string[]> = {
-	SET_BRUSH_THICKNESS: ['currentBrushThickness', 'shapes'],
-	SET_BRUSH_THICKNESS_PREVIEW: ['currentBrushThickness', 'shapes'],
+	// layerBrushSettings is in these two lists since v3.26.22, when the per-layer pairs started to travel in the file.
+	SET_BRUSH_THICKNESS: ['currentBrushThickness', 'layerBrushSettings', 'shapes'],
+	SET_BRUSH_THICKNESS_PREVIEW: ['currentBrushThickness', 'layerBrushSettings', 'shapes'],
 	SET_PALETTE_GRADIENT_ANGLE: ['layerGradParams'],
 	SET_PALETTE_GRADIENT_INTENSITY: ['layerGradParams'],
 	SET_PALETTE_GRADIENT_TYPE: ['layerGradParams'],
@@ -134,7 +135,7 @@ describe('isDirty · transversal', () => {
 		it('elegir grosor en una capa vacía (selección pura) también ensucia: el valor viaja en el archivo', () => {
 			const before = run(base(), { type: 'ADD_SHAPE', payload: stroke('a', 'tapered', straight(0), 20) }, { type: 'ADD_LAYER' }, CLEAN);
 			const after = run(before, ...setThickness(44));
-			expect(diffKeys(diorOf(before), diorOf(after))).toEqual(['currentBrushThickness']);
+			expect(diffKeys(diorOf(before), diorOf(after))).toEqual(['currentBrushThickness', 'layerBrushSettings']); // the layer's own pair, in the file since v3.26.22
 			expect(after.isDirty).toBe(true);
 		});
 

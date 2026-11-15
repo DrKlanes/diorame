@@ -68,10 +68,11 @@ describe('.dior · ida y vuelta', () => {
 			expect(load(saved).projectMeta).toEqual(A.projectMeta);
 		});
 
-		it('las claves que escribe un .dior son estas 29 (añadir o quitar una es cambiar el formato)', () => {
+		// 29 until v3.26.22, which adds layerBrushSettings (optional: older apps ignore it, files without it open as before).
+		it('las claves que escribe un .dior son estas 30 (añadir o quitar una es cambiar el formato)', () => {
 			expect(Object.keys(diorOf(projectA())).sort()).toEqual([
 				'activePaletteId', 'brushMode', 'cinematicSpeed', 'cinematicType', 'currentBrushThickness', 'focalLength', 'format',
-				'fxMasterEnabled', 'handheldIntensity', 'hiddenLayers', 'isDarkMode', 'isHandheldEnabled', 'layerGradParams',
+				'fxMasterEnabled', 'handheldIntensity', 'hiddenLayers', 'isDarkMode', 'isHandheldEnabled', 'layerBrushSettings', 'layerGradParams',
 				'layerRenderModes', 'layerSpacingFactor', 'locked3DLayers', 'meta', 'palette', 'paletteApplyToAllActive',
 				'paletteApplyToAllSnapshot', 'pointOfInterest', 'postProcessing', 'postProcessingEnabled', 'postProcessingSnapshot',
 				'projectName', 'shapes', 'tool', 'totalLayers', 'viewZoomOffset',
@@ -108,14 +109,65 @@ describe('.dior · ida y vuelta', () => {
 			for (const key of Object.keys(CINEMA_VIEW_DEFAULTS) as (keyof typeof CINEMA_VIEW_DEFAULTS)[]) expect(saved[key]).toBe(CINEMA_VIEW_DEFAULTS[key]);
 		});
 
-		it('G7 [COMPORTAMIENTO ACTUAL · se decide con «Mixto»] el grosor por capa no viaja en el archivo: una capa vacía con grosor 44 reabre en 10', () => {
-			const before = run(base('tapered', 10), { type: 'ADD_SHAPE', payload: stroke('a', 'tapered', straight(0), 10) }, { type: 'ADD_LAYER' }, ...setThickness(44));
-			expect(before.layerBrushSettings[1].thickness).toBe(44);
+		// G7 (v3.26.22). Until then the file carried one pair, the active layer's, and an empty layer lost its own (44 → 10).
+		it('G7 el grosor y el modo de cada capa viajan en el archivo: una capa vacía con 44 / ink reabre con 44 / ink', () => {
+			const before = run(base('tapered', 10), { type: 'ADD_SHAPE', payload: stroke('a', 'tapered', straight(0), 10) }, { type: 'ADD_LAYER' }, { type: 'SET_BRUSH_MODE', payload: 'ink' }, ...setThickness(44));
+			expect(before.layerBrushSettings[1]).toEqual({ thickness: 44, mode: 'ink' });
 			const saved = diorOf(before);
-			expect('layerBrushSettings' in saved).toBe(false);
+			expect(saved.layerBrushSettings).toEqual({ 0: { thickness: 10, mode: 'tapered' }, 1: { thickness: 44, mode: 'ink' } });
 			const loaded = load(saved);
+			expect(loaded.layerBrushSettings).toEqual(before.layerBrushSettings);
+			expect(loaded.currentBrushThickness).toBe(10); // opens on layer 0, with its strokes' pair
+			const onLayer1 = run(loaded, { type: 'SET_CURRENT_LAYER', payload: 1 });
+			expect(onLayer1.currentBrushThickness).toBe(44);
+			expect(onLayer1.brushMode).toBe('ink');
+		});
+
+		it('G7 un archivo sin el campo abre como antes: sin pares guardados, cada capa con el de sus trazos', () => {
+			const { layerBrushSettings: _pairs, ...older } = diorOf(richState(2));
+			const loaded = load(older);
 			expect(loaded.layerBrushSettings).toEqual({});
-			expect(run(loaded, { type: 'SET_CURRENT_LAYER', payload: 1 }).currentBrushThickness).toBe(10);
+			expect(loaded.currentBrushThickness).toBe(10);
+			expect(run(loaded, { type: 'SET_CURRENT_LAYER', payload: 1 }).currentBrushThickness).toBe(30);
+			expect(run(loaded, { type: 'SET_CURRENT_LAYER', payload: 2 }).currentBrushThickness).toBe(50);
+		});
+
+		it('G7 una capa 0 vacía abre con el par guardado para ella; una con trazos, con el de sus trazos aunque el archivo diga otra cosa', () => {
+			const empty = load({ shapes: [], totalLayers: 2, layerBrushSettings: { 0: { thickness: 33, mode: 'uniform' } }, currentBrushThickness: 12, brushMode: 'tapered' });
+			expect(empty.currentBrushThickness).toBe(33);
+			expect(empty.brushMode).toBe('uniform');
+			const withStrokes = load({ shapes: [stroke('a', 'tapered', straight(0), 10)], layerBrushSettings: { 0: { thickness: 33, mode: 'uniform' } } });
+			expect(withStrokes.currentBrushThickness).toBe(10);
+			expect(withStrokes.brushMode).toBe('tapered');
+		});
+
+		it('G7 los pares que no sirven se descartan: capa que no existe, grosor que no es positivo, modo desconocido', () => {
+			const loaded = load({ shapes: [], totalLayers: 2, layerBrushSettings: { 0: { thickness: 0, mode: 'ink' }, 1: { thickness: 20, mode: 'rayas' }, 5: { thickness: 20, mode: 'ink' }, x: { thickness: 20, mode: 'ink' } } });
+			expect(loaded.layerBrushSettings).toEqual({});
+			expect(load({ shapes: [], layerBrushSettings: 'gordo' }).layerBrushSettings).toEqual({});
+			expect(load({ shapes: [], totalLayers: 2, layerBrushSettings: { 1: { thickness: 20, mode: 'ink', sobra: true } } }).layerBrushSettings).toEqual({ 1: { thickness: 20, mode: 'ink' } });
+		});
+
+		it('D4 el grosor de un trazo redimensionado vuelve del archivo exacto, y el slider abre en él aunque pase del máximo (70)', () => {
+			const big = run(base('tapered', 50), { type: 'ADD_SHAPE', payload: stroke('a', 'tapered', straight(0), 50) },
+				{ type: 'TRANSFORM_LAYER', payload: { layerIndex: 0, transform: { rotation: 0, scale: 1.37, dx: 0, dy: 0, centerX: 0, centerY: 0 } } });
+			expect(big.currentBrushThickness).toBe(50 * 1.37);
+			const loaded = load(diorOf(big));
+			expect(loaded.shapes[0].brushThickness).toBe(50 * 1.37);
+			expect(loaded.currentBrushThickness).toBe(50 * 1.37); // 68.5: under the max here; the next line is over it
+			const huge = load(diorOf(run(big, { type: 'TRANSFORM_LAYER', payload: { layerIndex: 0, transform: { rotation: 0, scale: 2, dx: 0, dy: 0, centerX: 0, centerY: 0 } } })));
+			expect(huge.currentBrushThickness).toBe(50 * 1.37 * 2);
+		});
+
+		it('G5 la semilla de Ink y la marca de espejado viajan en el archivo; un trazo sin ellas abre sin ellas', () => {
+			const drawn = run(base('ink', 20), { type: 'ADD_SHAPE', payload: stroke('a', 'ink', straight(0), 20) },
+				{ type: 'FLIP_LAYER', payload: { layerIndex: 0, direction: 'horizontal', centerX: 0, centerY: 0 } });
+			const loaded = load(diorOf(drawn));
+			expect(loaded.shapes[0].inkSeed).toBe(drawn.shapes[0].inkSeed);
+			expect(loaded.shapes[0].inkMirrored).toBe(true);
+			const older = load({ shapes: [stroke('b', 'ink', straight(0), 20)] });
+			expect('inkSeed' in older.shapes[0]).toBe(false);
+			expect('inkMirrored' in older.shapes[0]).toBe(false);
 		});
 
 		it.each([['blob'], ['brush'], ['eraser'], ['text'], ['move']] as const)('la herramienta %s vuelve igual', (tool) => {

@@ -2,7 +2,7 @@ import { DRAW_FOCAL_LENGTH } from '../constants/renderConstants';
 import { GRADIENT_DEFAULTS } from '../constants/palette';
 import { isLayerEmpty } from './animationFrames';
 import { bakeTextTransform } from './textTransform';
-import { resolveLayerBrush } from './layerBrush';
+import { resolveLayerBrush, withInkSeed } from './layerBrush';
 import type { AppState, HistorySnapshot, LayerGradParams, Point, Shape } from '../types/strataTypes';
 import { BASE_DEPTH_STEP } from '../constants/layers';
 
@@ -42,7 +42,8 @@ export const mergeChangesGradient = (state: AppState): boolean => {
 const planeScale = (fromZ: number, toZ: number, cameraZ: number) =>
 	(DRAW_FOCAL_LENGTH + toZ - cameraZ) / (DRAW_FOCAL_LENGTH + fromZ - cameraZ);
 
-const onPlane = (shape: Shape, toZ: number, k: number): Shape => {
+const onPlane = (unseeded: Shape, toZ: number, k: number): Shape => {
+	const shape = withInkSeed(unseeded);
 	const scaled = (p: Point): Point => ({ ...p, x: p.x * k, y: p.y * k });
 	const out: Shape = { ...shape, zIndex: toZ, points: shape.points.map(scaled) };
 	if (shape.originalPoints) out.originalPoints = shape.originalPoints.map(scaled);
