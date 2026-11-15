@@ -172,13 +172,36 @@ const _spineSeed = (pts: {x:number,y:number}[]): number => {
     const a = pts[0], b = pts[Math.min(1, pts.length - 1)], c = pts[pts.length - 1];
     return _hashU32(Math.round(a.x*100) ^ Math.round(a.y*73) ^ Math.round(b.x*51) ^ Math.round(c.y*37) ^ (pts.length*7919));
 };
+// Point at u ∈ [0,1] of the centripetal Catmull-Rom span p1→p2 (Barry–Goldman). A missing or
+// coincident neighbour is replaced by the reflection of the other end (2·p1 − p2), so the knot
+// intervals are never zero. Centripetal: no cusps or loops at sharp turns.
+const _crCentripetal = (p0: {x:number,y:number} | undefined, p1: {x:number,y:number}, p2: {x:number,y:number}, p3: {x:number,y:number} | undefined, u: number) => {
+	const d12 = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+	if (!p0 || Math.hypot(p1.x - p0.x, p1.y - p0.y) < 1e-6) p0 = { x: 2*p1.x - p2.x, y: 2*p1.y - p2.y };
+	if (!p3 || Math.hypot(p3.x - p2.x, p3.y - p2.y) < 1e-6) p3 = { x: 2*p2.x - p1.x, y: 2*p2.y - p1.y };
+	const t1 = Math.sqrt(Math.hypot(p1.x - p0.x, p1.y - p0.y));
+	const t2 = t1 + Math.sqrt(d12);
+	const t3 = t2 + Math.sqrt(Math.hypot(p3.x - p2.x, p3.y - p2.y));
+	const t = t1 + (t2 - t1) * u;
+	const lerp = (a: {x:number,y:number}, b: {x:number,y:number}, ta: number, tb: number) => {
+		const k = (t - ta) / (tb - ta);
+		return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+	};
+	const a1 = lerp(p0, p1, 0, t1), a2 = lerp(p1, p2, t1, t2), a3 = lerp(p2, p3, t2, t3);
+	const b1 = lerp(a1, a2, 0, t2), b2 = lerp(a2, a3, t1, t3);
+	return lerp(b1, b2, t1, t2);
+};
+// Densify (v3.26.4): the in-between points of a long span lie on the curve through the ORIGINAL
+// points, not on the chord — a fast stroke's sparse samples used to come out as straight facets
+// that the (deliberately light) smoothing below cannot round. Same segLen, same count per span:
+// spans ≤ segLen get nothing inserted, so slow strokes stay byte-identical.
 const _inkDensify = (pts: {x:number,y:number}[], segLen: number) => {
     const out: {x:number,y:number}[] = [];
     for (let i = 0; i < pts.length - 1; i++) {
         const p1 = pts[i], p2 = pts[i+1];
         const dx = p2.x - p1.x, dy = p2.y - p1.y, d = Math.hypot(dx, dy);
         out.push(p1);
-        if (d > segLen) { const n = Math.ceil(d / segLen); for (let j = 1; j < n; j++) { const t = j / n; out.push({x: p1.x+dx*t, y: p1.y+dy*t}); } }
+        if (d > segLen) { const n = Math.ceil(d / segLen); for (let j = 1; j < n; j++) out.push(_crCentripetal(pts[i-1], p1, p2, pts[i+2], j / n)); }
     }
     out.push(pts[pts.length - 1]);
     return out;
