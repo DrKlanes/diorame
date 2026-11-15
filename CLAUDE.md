@@ -44,6 +44,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 |---|---|
 | Constantes / datos puros | `src/constants/<name>.ts` |
 | Utilidades / helpers | `src/utils/<name>.ts` |
+| Lógica del reducer (las acciones de un mismo asunto) | `src/state/<name>.ts` — una función por acción; el `switch` de `appReducer` se queda en `StrataContext.tsx` y delega |
 | Lógica de canvas modular | `src/components/strata/canvas/<Name>.ts` |
 | Hooks React | `src/hooks/use<Name>.ts` |
 | Sub-componentes UI | `src/components/strata/<Name>.tsx` |

@@ -521,6 +521,14 @@ Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"
 - **Palabra a palabra, como Chrome:** sin kerning a través de los espacios y sin ligaduras con letterSpacing ≠ 0; la posición de cada palabra sale de `measureText` de Canvas. Con otro criterio los anchos divergen (3,7 px en una línea de Inter).
 - **Guion blando (U+00AD) fuera antes de componer:** Canvas no lo pinta.
 
+### Reducer modules (`src/state/`)
+
+The logic of the reducer, by subject (refactor phase 3, from v3.26.15). The `switch` of `appReducer` stays in `StrataContext.tsx` and each moved `case` is one line that delegates to a function here (the pattern `MERGE_LAYER_DOWN` → `utils/mergeLayers.ts` already used). A function that reads `action.payload` takes the narrowed action (`Extract<Action, { type: '…' }>`). No React; covered by `tests/` through `appReducer`.
+
+| File | Lines | Purpose |
+|---|---|---|
+| `history.ts` | ~160 | The undo history: `pushHistory` (cap of `MAX_HISTORY_STEPS`), `createSnapshot` (pass the POST-change state; materialises the active layer's brush pair), `patchCurrentSnapshot` (last-writer-wins for pure selections), and `undo` / `redo` (`UNDO`, `REDO`). Every action that pushes a step or stamps the current snapshot imports the three helpers from here |
+
 ### Type System (`src/types/`)
 
 | File | Lines | Purpose |
