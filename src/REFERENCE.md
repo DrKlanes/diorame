@@ -553,6 +553,7 @@ Cada uno vino de un fallo medido con `tools/svg-diff`. Leer antes de "optimizar"
 | `soundManager.ts` | ~140 | UI sound playback manager: click, success, brush stroke (pool of 6), mode switch via HTMLAudioElement |
 | `cinemaView.ts` | ~20 | `cinemaViewForSave(state)` (v3.20.11): the four CINEMA view fields as written to a `.dior` and the autosave — the defaults while `cinemaViewInitialized` is false (the state then holds placeholders, not a framing anyone chose), the state's values otherwise |
 | `brushThicknessCurve.ts` | ~30 | `sliderPositionToThickness`/`thicknessToSliderPosition` (v3.17.41) — exponent-1.5 curve converting the thickness slider's 0-100 physical position to/from real world-px thickness, and back. Confined to `ToolOptionsPanel.tsx`: only the slider's `value`/dispatch cross this boundary, nothing downstream (reducer, shapes, .dior) ever sees a position |
+| `layerBrush.ts` | ~55 | Per-layer brush pair (v3.26.3): `resolveLayerBrush(shapes, i, entry)` — a layer's regenerable strokes are the truth, the `layerBrushSettings` entry only stands while it agrees with one of them (layer navigation, merge, load); `restoreLayerBrushSettings(current, snapshot)` for UNDO/REDO — a layer's pair only moves when the crossed step restyled its strokes (live entry kept otherwise, snapshot entry as base only when layer count or shape membership changed) |
 
 ### Design system (`src/design-system/`)
 

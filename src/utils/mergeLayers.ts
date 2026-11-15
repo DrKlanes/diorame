@@ -2,6 +2,7 @@ import { DRAW_FOCAL_LENGTH } from '../constants/renderConstants';
 import { GRADIENT_DEFAULTS } from '../constants/palette';
 import { isLayerEmpty } from './animationFrames';
 import { bakeTextTransform } from './textTransform';
+import { resolveLayerBrush } from './layerBrush';
 import type { AppState, HistorySnapshot, LayerGradParams, Point, Shape } from '../types/strataTypes';
 
 // Mirror of StrataContext.BASE_DEPTH_STEP — kept local to avoid circular import (see animationFrames.ts)
@@ -104,7 +105,7 @@ export const mergeLayerDown = (
 	const layerRenderModes = shiftRecord(state.layerRenderModes, a);
 	const layerGradParams = shiftRecord(state.layerGradParams, a);
 	const layerBrushSettings = shiftRecord(state.layerBrushSettings, a);
-	const brush =layerBrushSettings[b] || { thickness: state.currentBrushThickness, mode: state.brushMode };
+	const brush = resolveLayerBrush([...rest, ...merged], b, layerBrushSettings[b]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
 	const snap = state.paletteApplyToAllSnapshot;
 	const focus = state.postProcessing.focusTargetLayer;
 

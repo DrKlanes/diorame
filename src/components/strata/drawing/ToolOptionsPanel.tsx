@@ -49,6 +49,12 @@ export function ToolOptionsPanel({ dark }: ToolOptionsPanelProps) {
 				disabled={isPlaybackLocked}
 				onInput={(e) => dispatch({ type: 'SET_BRUSH_THICKNESS_PREVIEW', payload: sliderPositionToThickness(parseInt((e.target as HTMLInputElement).value)) })}
 				onChange={(e) => dispatch({ type: 'SET_BRUSH_THICKNESS', payload: sliderPositionToThickness(parseInt(e.target.value)) })}
+				// One undo step per gesture: the NATIVE change event is the end of the gesture for
+				// mouse, touch, pen and keyboard alike (React's onChange fires per tick). pointerup
+				// alone missed the keyboard, and an uncommitted restyle slipped into the next
+				// stroke's snapshot — undoing that stroke reverted the thickness (v3.26.3).
+				// A second commit is a no-op.
+				ref={(el) => { if (el) el.onchange = () => dispatch({ type: 'COMMIT_BRUSH_THICKNESS' }); }}
 				onPointerUp={() => dispatch({ type: 'COMMIT_BRUSH_THICKNESS' })}
 				style={{
 					width: 80,

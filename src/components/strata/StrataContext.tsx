@@ -8,6 +8,7 @@ import { UNTITLED_PROJECT_SENTINEL } from '../../constants/project';
 import { createProjectMeta, readProjectMeta } from '../../utils/projectMeta';
 import { BRUSH_THICKNESS_MIN, BRUSH_THICKNESS_MAX } from '../../constants/brush';
 import { CINEMA_VIEW_DEFAULTS } from '../../constants/cinemaView';
+import { resolveLayerBrush, restoreLayerBrushSettings } from '../../utils/layerBrush';
 
 export type {
 	Point, Shape, AppMode, ToolType, CinematicType, ExportType, BrushMode,
@@ -528,11 +529,15 @@ export function appReducer(state: AppState, action: Action): AppState {
       if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
       // Creation time stamped here, not in the pointer handler (v3.25.16): the timelapse's clock.
       const newShapes = [...state.shapes, { ...action.payload, t: Date.now() }];
-      const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
-      
+      const snapshot = createSnapshot({ ...state, shapes: newShapes });
+      const { history, index } = pushHistory(state.history, state.historyIndex, snapshot);
+
       return {
         ...state,
         shapes: newShapes,
+        // The layer's brush pair, materialized in the state too (not only in the snapshot): a
+        // later patchCurrentSnapshot copies this map over the snapshot and must not drop it.
+        layerBrushSettings: snapshot.layerBrushSettings,
         history,
         historyIndex: index,
         isDirty: true,
@@ -542,11 +547,13 @@ export function appReducer(state: AppState, action: Action): AppState {
         if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
         const t = Date.now();
         const newShapes = [...state.shapes, ...action.payload.map(s => ({ ...s, t }))];
-        const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes }));
-        
+        const snapshot = createSnapshot({ ...state, shapes: newShapes });
+        const { history, index } = pushHistory(state.history, state.historyIndex, snapshot);
+
         return {
           ...state,
           shapes: newShapes,
+          layerBrushSettings: snapshot.layerBrushSettings,
           history,
           historyIndex: index,
           isDirty: true,
@@ -570,7 +577,9 @@ export function appReducer(state: AppState, action: Action): AppState {
       // consistent (post-change pairs) and pure selections last-writer-win onto the
       // current snapshot, so undoing a plain stroke never moves a selector. Pure
       // view state (hiddenLayers, locked3DLayers) is not in the snapshot at all.
-      const restoredBrush = snapshot.layerBrushSettings[layerIndexToUse]
+      // Brush pairs: only the layers whose strokes this step restyled move (v3.26.3).
+      const layerBrushSettings = restoreLayerBrushSettings(state, snapshot);
+      const restoredBrush = layerBrushSettings[layerIndexToUse]
         || { thickness: state.currentBrushThickness, mode: state.brushMode };
 
       return {
@@ -582,7 +591,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         layerRenderModes: snapshot.layerRenderModes,
         paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
         layerGradParams: snapshot.layerGradParams,
-        layerBrushSettings: snapshot.layerBrushSettings,
+        layerBrushSettings,
         activePaletteId: snapshot.activePaletteId,
         palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
         currentBrushThickness: restoredBrush.thickness,
@@ -614,7 +623,9 @@ export function appReducer(state: AppState, action: Action): AppState {
       // consistent (post-change pairs) and pure selections last-writer-win onto the
       // current snapshot, so redoing a plain stroke never moves a selector. Pure
       // view state (hiddenLayers, locked3DLayers) is not in the snapshot at all.
-      const restoredBrush = snapshot.layerBrushSettings[layerIndexToUse]
+      // Brush pairs: only the layers whose strokes this step restyled move (v3.26.3).
+      const layerBrushSettings = restoreLayerBrushSettings(state, snapshot);
+      const restoredBrush = layerBrushSettings[layerIndexToUse]
         || { thickness: state.currentBrushThickness, mode: state.brushMode };
 
       return {
@@ -626,7 +637,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         layerRenderModes: snapshot.layerRenderModes,
         paletteMode: snapshot.layerRenderModes[layerIndexToUse] || 'flat',
         layerGradParams: snapshot.layerGradParams,
-        layerBrushSettings: snapshot.layerBrushSettings,
+        layerBrushSettings,
         activePaletteId: snapshot.activePaletteId,
         palette: snapshot.activePaletteId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE,
         currentBrushThickness: restoredBrush.thickness,
@@ -681,7 +692,7 @@ export function appReducer(state: AppState, action: Action): AppState {
           const nextIndex = state.currentLayerIndex + 1;
           const newZ = nextIndex * -BASE_DEPTH_STEP;
           const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-          const nextBrush = state.layerBrushSettings[nextIndex] || { thickness: state.currentBrushThickness, mode: state.brushMode };
+          const nextBrush = resolveLayerBrush(state.shapes, nextIndex, state.layerBrushSettings[nextIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
           return {
               ...state,
               currentLayerIndex: nextIndex,
@@ -751,7 +762,7 @@ export function appReducer(state: AppState, action: Action): AppState {
             const prevIndex = state.currentLayerIndex - 1;
             const newZ = prevIndex * -BASE_DEPTH_STEP;
             const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-            const prevBrush = state.layerBrushSettings[prevIndex] || { thickness: state.currentBrushThickness, mode: state.brushMode };
+            const prevBrush = resolveLayerBrush(state.shapes, prevIndex, state.layerBrushSettings[prevIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
             return {
                 ...state,
                 currentLayerIndex: prevIndex,
@@ -853,7 +864,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         playSound('click');
         const newZ = targetIndex * -BASE_DEPTH_STEP;
         const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-        const targetBrush = state.layerBrushSettings[targetIndex] || { thickness: state.currentBrushThickness, mode: state.brushMode };
+        const targetBrush = resolveLayerBrush(state.shapes, targetIndex, state.layerBrushSettings[targetIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
         return {
             ...state,
             currentLayerIndex: targetIndex,
@@ -1155,7 +1166,10 @@ export function appReducer(state: AppState, action: Action): AppState {
       // on load (see constants/brush.ts). layerBrushSettings needs no equivalent clamp —
       // useSaveLoad.ts has never included it in a saved payload (verified via
       // `git log -S`), so action.payload.layerBrushSettings is always undefined here.
-      const safeBrushThickness = Math.min(Math.max(rawBrushThickness, BRUSH_THICKNESS_MIN), BRUSH_THICKNESS_MAX);
+      // The file's currentBrushThickness is the value of whichever layer was active at save;
+      // layer 0 opens with its own (from its strokes) when it has any (v3.26.3).
+      const layer0Brush = resolveLayerBrush(safeShapes, 0, undefined);
+      const safeBrushThickness = Math.min(Math.max(layer0Brush?.thickness ?? rawBrushThickness, BRUSH_THICKNESS_MIN), BRUSH_THICKNESS_MAX);
       const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : state.isDarkMode;
       const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom', 'storytelling'].includes(action.payload.cinematicType))
           ? action.payload.cinematicType as CinematicType : CINEMA_VIEW_DEFAULTS.cinematicType;
@@ -1229,7 +1243,7 @@ export function appReducer(state: AppState, action: Action): AppState {
           layerBrushSettings: loadedLayerBrushSettings,
           paletteMode: loadedLayerRenderModes[0] || 'flat',
           currentBrushThickness: safeBrushThickness,
-          brushMode: safeBrushMode,
+          brushMode: layer0Brush?.mode ?? safeBrushMode,
           activePaletteId: loadedPaletteId,
           palette: loadedPalette,
           focalLength: safeFocalLength,
@@ -1623,13 +1637,14 @@ export function appReducer(state: AppState, action: Action): AppState {
              const strokesWereRestyled = state.shapes.some(s => s.zIndex === currentLayerZ && s.originalPoints && s.originalPoints.length > 0);
              if (strokesWereRestyled) {
                  const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
-                 return { ...state, brushThicknessBeforePreview: null, history, historyIndex: index };
+                 return { ...state, brushThicknessBeforePreview: null, history, historyIndex: index, isDirty: true };
              }
         }
         // Pure selection (no strokes restyled) → last-writer-wins onto the current snapshot.
         return {
             ...state,
             brushThicknessBeforePreview: null,
+            isDirty: state.isDirty || prevShapes !== null,
             history: patchCurrentSnapshot(state.history, state.historyIndex, { layerBrushSettings: state.layerBrushSettings })
         };
     }
@@ -2073,7 +2088,7 @@ export function appReducer(state: AppState, action: Action): AppState {
       const nextIndex = frames[nextPos];
       const newZ = nextIndex * -BASE_DEPTH_STEP;
       const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-      const nextBrush = state.layerBrushSettings[nextIndex] || { thickness: state.currentBrushThickness, mode: state.brushMode };
+      const nextBrush = resolveLayerBrush(state.shapes, nextIndex, state.layerBrushSettings[nextIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
       return {
         ...state,
         currentLayerIndex: nextIndex,
