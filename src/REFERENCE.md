@@ -654,7 +654,7 @@ APIs they import change.
 
 The safety net of the refactor (plan and invariants: `docs/audit-2026-11.md` §3.6, §4, §5). They run the **real** reducer (`appReducer`) and the **real** stroke generators in Node: no DOM, no canvas, no mocks.
 
-- **Run:** `npm test` (`vitest run`; 377 tests, under 1 s of tests, ~1.5 s wall clock). One file: `npx vitest run tests/<file>`. Not in CI yet.
+- **Run:** `npm test` (`vitest run`; 377 tests, under 1 s of tests, ~1.5 s wall clock). One file: `npx vitest run tests/<file>`. In CI since v3.26.9: a blocking step of `.github/workflows/deploy.yml`, after the typecheck and before the build, so a red test is never deployed.
 - **Config:** `vitest.config.ts` inherits only `resolve.alias` from `vite.config.ts` (no PWA plugin, no Tailwind, no build entries); `environment: 'node'`. Vitest 4.1.12, pinned: the last line that declares Vite ^6.0 (5.x needs Vite ≥ 6.4). Adding it leaves the production build byte-identical.
 - **Typecheck:** `tsconfig.json` includes `tests`.
 - **What they do NOT cover:** pixels, WebGL, gestures, iPad. That stays with the browser harnesses of `tools/` above.
