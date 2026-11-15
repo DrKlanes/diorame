@@ -12,6 +12,7 @@ import { initialState } from '../src/components/strata/StrataContext';
 import { CINEMA_VIEW_DEFAULTS } from '../src/constants/cinemaView';
 import { UNTITLED_PROJECT_SENTINEL } from '../src/constants/project';
 import { DIOR_FORMAT_VERSION } from '../src/utils/projectMeta';
+import { buildAutosaveData, buildDiorData, buildDiorFields } from '../src/utils/diorPayload';
 import { base, diffKeys, diorOf, richState, run, setThickness, straight, stroke, type Action } from './helpers/fixtures';
 import type { AppState } from '../src/types/strataTypes';
 
@@ -167,6 +168,33 @@ describe('.dior · ida y vuelta', () => {
 
 		it('en un archivo actual «line» ya no existe: cae al blob', () => {
 			expect(load({ ...diorOf(projectA()), tool: 'line' }).tool).toBe('blob');
+		});
+	});
+
+	// H2 (docs/audit-2026-11.md §3.7), closed in v3.26.19: the autosave kept its own hand-copied list of fields.
+	describe('autoguardado: la misma lista de campos que el .dior', () => {
+		it('guarda exactamente los mismos campos que el .dior, en el mismo orden, con los mismos valores', () => {
+			const A = projectA();
+			const autosave = buildAutosaveData(A) as Record<string, unknown>;
+			const file = buildDiorData(A, A.projectName, { formatVersion: DIOR_FORMAT_VERSION, ...A.projectMeta, shapeCount: A.shapes.length, thumbnail: null }) as Record<string, unknown>;
+			expect(Object.keys(autosave)).toEqual(Object.keys(file));
+			expect(Object.keys(autosave)).toEqual(['meta', ...Object.keys(buildDiorFields(A, A.projectName))]);
+			for (const key of Object.keys(file)) if (key !== 'meta') expect(autosave[key], key).toBe(file[key]);
+		});
+
+		it('su meta es la identidad del proyecto, sin lo que es propio de un archivo (formato, número de formas, miniatura)', () => {
+			const A = projectA();
+			expect(buildAutosaveData(A).meta).toBe(A.projectMeta);
+			expect(Object.keys(buildAutosaveData(A).meta).sort()).toEqual(['createdAt', 'derivedFrom', 'projectId', 'updatedAt', 'version']);
+		});
+
+		it('restaurar un autoguardado deja el mismo proyecto que abrir su .dior', () => {
+			const A = projectA();
+			const fromAutosave = load(JSON.parse(JSON.stringify(buildAutosaveData(A))));
+			const fromFile = load(diorOf(A));
+			expect(diffKeys(diorOf(fromAutosave), diorOf(fromFile))).toEqual([]);
+			expect(JSON.stringify(fromAutosave.shapes)).toBe(JSON.stringify(A.shapes));
+			expect(fromAutosave.projectMeta).toEqual(A.projectMeta);
 		});
 	});
 

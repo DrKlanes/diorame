@@ -2,10 +2,11 @@ import { cinemaViewForSave } from './cinemaView';
 import type { DiorFileMeta } from './projectMeta';
 import type { AppState } from '../types/strataTypes';
 
-// The JSON a .dior holds (v3.23.0: out of useSaveLoad so "Save" and "Super Riso ↗" write the same file).
-export function buildDiorData(state: AppState, name: string, fileMeta: DiorFileMeta) {
+// What a project saves besides its identity: the ONE list of fields a .dior and the autosave both hold
+// (v3.26.19; the autosave used to keep its own copy of this list by hand). A new saved field goes here and
+// into its reader, LOAD_PROJECT (state/loadProject.ts).
+export function buildDiorFields(state: AppState, name: string) {
 	return {
-		meta: fileMeta,
 		shapes: state.shapes, palette: state.palette, totalLayers: state.totalLayers,
 		isDarkMode: state.isDarkMode, postProcessing: state.postProcessing,
 		postProcessingEnabled: state.postProcessingEnabled,
@@ -28,4 +29,15 @@ export function buildDiorData(state: AppState, name: string, fileMeta: DiorFileM
 		// DRAW format guide (v3.25.5): optional, null = no frame. Older apps ignore it.
 		format: state.format,
 	};
+}
+
+// The JSON a .dior holds (v3.23.0: out of useSaveLoad so "Save" and "Super Riso ↗" write the same file).
+export function buildDiorData(state: AppState, name: string, fileMeta: DiorFileMeta) {
+	return { meta: fileMeta, ...buildDiorFields(state, name) };
+}
+
+// What the autosave holds: the same fields, with the project's identity as `meta` (.dior v2: a recovered
+// project keeps its projectId and version). No formatVersion, shape count or thumbnail: those belong to a file.
+export function buildAutosaveData(state: AppState) {
+	return { meta: state.projectMeta, ...buildDiorFields(state, state.projectName) };
 }

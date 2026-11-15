@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { set } from 'idb-keyval';
 import { useStrata } from '../components/strata/StrataContext';
-import { cinemaViewForSave } from '../utils/cinemaView';
+import { buildAutosaveData } from '../utils/diorPayload';
 
 export const AUTOSAVE_KEY = 'diorame-autosave-v1';
 const AUTOSAVE_INTERVAL_MS = 30 * 1000;
@@ -79,36 +79,8 @@ export function useAutoSave() {
 		const currentState = stateRef.current;
 		if (!currentState.isDirty || currentState === lastWrittenRef.current) return;
 
-		const data = {
-			// .dior v2 identity: a recovered project keeps its projectId and version.
-			meta: currentState.projectMeta,
-			shapes: currentState.shapes,
-			palette: currentState.palette,
-			totalLayers: currentState.totalLayers,
-			isDarkMode: currentState.isDarkMode,
-			postProcessing: currentState.postProcessing,
-			postProcessingEnabled: currentState.postProcessingEnabled,
-			// Master FX OFF: the flags are all false and the look that was on is the snapshot.
-			fxMasterEnabled: currentState.fxMasterEnabled,
-			postProcessingSnapshot: currentState.postProcessingSnapshot,
-			hiddenLayers: currentState.hiddenLayers,
-			locked3DLayers: currentState.locked3DLayers,
-			projectName: currentState.projectName,
-			layerRenderModes: currentState.layerRenderModes,
-			layerGradParams: currentState.layerGradParams,
-			currentBrushThickness: currentState.currentBrushThickness,
-			brushMode: currentState.brushMode,
-			tool: currentState.tool,
-			activePaletteId: currentState.activePaletteId,
-			...cinemaViewForSave(currentState),
-			cinematicSpeed: currentState.cinematicSpeed,
-			isHandheldEnabled: currentState.isHandheldEnabled,
-			handheldIntensity: currentState.handheldIntensity,
-			paletteApplyToAllActive: currentState.paletteApplyToAllActive,
-			paletteApplyToAllSnapshot: currentState.paletteApplyToAllSnapshot,
-			pointOfInterest: currentState.pointOfInterest,
-			format: currentState.format,
-		};
+		// One list of fields for the .dior and the autosave (utils/diorPayload.ts, v3.26.19).
+		const data = buildAutosaveData(currentState);
 
 		try {
 			// Re-check suspended después del await por si cambió mientras esperaba
