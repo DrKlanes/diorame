@@ -5,10 +5,12 @@
 // «Changes something a .dior holds» is measured with the real writer: buildDiorData before and
 // after the action, on a clean state with content.
 //
-// The exceptions are an explicit list. H1 and the «found in phase 1» group are pinned as
-// [COMPORTAMIENTO ACTUAL]: they are known gaps, scheduled or pending a decision. The commit that
-// fixes one must delete it from the list here, and that deletion is the visible proof of the fix.
-// A NEW offender, or one that disappears, makes this test fail: both are the point.
+// The exceptions are an explicit list, each group with its reason. A NEW offender, or one that
+// disappears, makes this test fail: both are the point.
+//
+// v3.26.8 closed H1 (docs/audit-2026-11.md §3.7): SET_BRUSH_MODE, SET_PALETTE_MODE,
+// COMMIT_PALETTE_GRADIENT, SET_ACTIVE_PALETTE, ADD_LAYER, NEXT_LAYER when it creates a layer,
+// TOGGLE_PALETTE_APPLY_TO_ALL — and TOGGLE_3D_LOCK, found while writing this test — now mark dirty.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { CATALOGUE } from './helpers/actions';
 import { base, diffKeys, diorOf, richState, run, setThickness, straight, stroke, type Action } from './helpers/fixtures';
@@ -27,23 +29,15 @@ const DRAG_PREVIEWS: Record<string, string[]> = {
 	SET_PALETTE_GRADIENT_TYPE: ['layerGradParams'],
 };
 
-/** H1 (docs/audit-2026-11.md §3.7). Six show up as single actions; the seventh, COMMIT_PALETTE_GRADIENT, as a gesture. */
-const H1_KNOWN_GAPS: Record<string, string[]> = {
-	SET_BRUSH_MODE: ['brushMode', 'shapes'],
-	SET_PALETTE_MODE: ['layerRenderModes'],
-	SET_ACTIVE_PALETTE: ['activePaletteId', 'palette', 'shapes'],
-	ADD_LAYER: ['layerGradParams', 'layerRenderModes', 'shapes', 'totalLayers'],
-	'NEXT_LAYER (crea capa)': ['totalLayers'],
-	TOGGLE_PALETTE_APPLY_TO_ALL: ['layerGradParams', 'layerRenderModes', 'paletteApplyToAllActive', 'paletteApplyToAllSnapshot'],
-};
-
-/** Not in H1: found by this test when it was written (v3.26.7). No decision yet. */
-const FOUND_IN_PHASE_1: Record<string, string[]> = {
-	// Saved like hiddenLayers, but TOGGLE_LAYER_VISIBILITY marks dirty and this one does not.
-	TOGGLE_3D_LOCK: ['locked3DLayers'],
-	// The file carries the active tool…
+/**
+ * Where the user IS, not what the document holds (decision of Moisés, v3.26.8: these stay out).
+ * The file happens to carry the active tool and the ACTIVE layer's brush pair, so picking a tool or
+ * walking between layers changes what would be written — but nothing was edited: asking to save, or
+ * waking the autosave, for a change of tool or of layer would be noise. Whatever the user does next
+ * with that tool or on that layer marks the document dirty, and the save then carries both.
+ */
+const WHERE_THE_USER_IS: Record<string, string[]> = {
 	SET_TOOL: ['tool'],
-	// …and the ACTIVE layer's brush pair, so merely walking between layers changes the file.
 	NEXT_LAYER: ['brushMode', 'currentBrushThickness'],
 	PREV_LAYER: ['brushMode', 'currentBrushThickness'],
 	SET_CURRENT_LAYER: ['brushMode', 'currentBrushThickness'],
@@ -66,23 +60,40 @@ describe('isDirty · transversal', () => {
 	beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-11-15T12:00:00.000Z')); });
 	afterEach(() => { vi.useRealTimers(); });
 
-	it('toda acción que cambia lo que guarda un .dior marca isDirty, salvo la lista de excepciones [H1: COMPORTAMIENTO ACTUAL, se arregla tras la fase 1]', () => {
+	it('toda acción que cambia lo que guarda un .dior marca isDirty, salvo la lista de excepciones', () => {
 		const found = offenders();
 		for (const label of BY_DESIGN) {
 			expect(found[label], `${label} debería cambiar el .dior sin ensuciar (por diseño)`).toBeDefined();
 			delete found[label];
 		}
-		expect(found).toEqual({ ...DRAG_PREVIEWS, ...H1_KNOWN_GAPS, ...FOUND_IN_PHASE_1 });
+		expect(found).toEqual({ ...DRAG_PREVIEWS, ...WHERE_THE_USER_IS });
 	});
 
-	it('la prueba no es vacía: al menos 25 acciones cambian el .dior y ensucian (29 al escribirla)', () => {
+	it('la prueba no es vacía: al menos 30 acciones cambian el .dior y ensucian (37 desde v3.26.8)', () => {
 		let dirtying = 0;
 		for (const entry of CATALOGUE) {
 			const before = run(richState(1), ...(entry.setup ?? []), CLEAN);
 			const after = run(before, entry.action);
 			if (diffKeys(diorOf(before), diorOf(after)).length > 0 && after.isDirty) dirtying++;
 		}
-		expect(dirtying).toBeGreaterThanOrEqual(25);
+		expect(dirtying).toBeGreaterThanOrEqual(30);
+	});
+
+	// H1 + TOGGLE_3D_LOCK, fixed in v3.26.8. Until then these changed the file and left it «clean».
+	it.each([
+		'SET_BRUSH_MODE', 'SET_PALETTE_MODE', 'COMMIT_PALETTE_GRADIENT', 'SET_ACTIVE_PALETTE', 'ADD_LAYER', 'NEXT_LAYER (crea capa)',
+		'TOGGLE_PALETTE_APPLY_TO_ALL', 'TOGGLE_3D_LOCK',
+	])('%s ensucia (H1, v3.26.8)', (label) => {
+		const entry = CATALOGUE.find(e => e.label === label)!;
+		const before = run(richState(1), ...(entry.setup ?? []), CLEAN);
+		expect(before.isDirty).toBe(false);
+		expect(run(before, entry.action).isDirty).toBe(true);
+	});
+
+	it.each(['NEXT_LAYER', 'PREV_LAYER', 'SET_CURRENT_LAYER', 'SET_TOOL'])('%s no ensucia: cambia dónde está el usuario, no el dibujo', (label) => {
+		const entry = CATALOGUE.find(e => e.label === label)!;
+		const before = run(richState(1), CLEAN);
+		expect(run(before, entry.action).isDirty).toBe(false);
 	});
 
 	it.each([
@@ -127,19 +138,43 @@ describe('isDirty · transversal', () => {
 			expect(after.isDirty).toBe(true);
 		});
 
-		it('H1 [COMPORTAMIENTO ACTUAL · se arregla tras la fase 1] arrastrar el ángulo del gradiente y soltar (COMMIT_PALETTE_GRADIENT) cambia el .dior, crea paso de undo y NO ensucia', () => {
+		it('arrastrar el ángulo del gradiente y soltar (COMMIT_PALETTE_GRADIENT) cambia el .dior, crea un paso de undo y ensucia', () => {
 			const before = run(richState(1), { type: 'SET_PALETTE_MODE', payload: 'grad' }, CLEAN);
 			const after = run(before, { type: 'SET_PALETTE_GRADIENT_ANGLE', payload: 45 }, { type: 'COMMIT_PALETTE_GRADIENT' });
 			expect(diffKeys(diorOf(before), diorOf(after))).toEqual(['layerGradParams']);
 			expect(after.history).toHaveLength(before.history.length + 1);
-			expect(after.isDirty).toBe(false);
+			expect(after.isDirty).toBe(true);
 		});
 
-		it('H1 [COMPORTAMIENTO ACTUAL · se arregla tras la fase 1] cambiar el modo de pincel re-estila los trazos, crea paso de undo y NO ensucia', () => {
+		it('soltar el slider del gradiente sin haberlo movido no ensucia (ni crea paso)', () => {
+			const before = run(richState(1), { type: 'SET_PALETTE_MODE', payload: 'grad' }, CLEAN);
+			expect(run(before, { type: 'COMMIT_PALETTE_GRADIENT' })).toBe(before);
+		});
+
+		it('cambiar el modo de pincel re-estila los trazos, crea un paso de undo y ensucia', () => {
 			const before = run(richState(1), CLEAN);
 			const after = run(before, { type: 'SET_BRUSH_MODE', payload: 'tapered' });
 			expect(after.history).toHaveLength(before.history.length + 1);
-			expect(after.isDirty).toBe(false);
+			expect(after.isDirty).toBe(true);
+		});
+
+		it('las selecciones puras (capa o lienzo sin nada que repintar) no crean paso de undo pero también ensucian: el valor viaja en el archivo', () => {
+			const emptyLayer = run(base(), { type: 'ADD_SHAPE', payload: stroke('a', 'tapered', straight(0), 20) }, { type: 'ADD_LAYER' }, CLEAN);
+			const pure: Action[] = [
+				{ type: 'SET_BRUSH_MODE', payload: 'ink' },
+				{ type: 'SET_PALETTE_MODE', payload: 'grad' },
+			];
+			for (const action of pure) {
+				const after = run(emptyLayer, action);
+				expect(after.history, action.type).toHaveLength(emptyLayer.history.length);
+				expect(diffKeys(diorOf(emptyLayer), diorOf(after)).length, action.type).toBeGreaterThan(0);
+				expect(after.isDirty, action.type).toBe(true);
+			}
+			const emptyCanvas = run(base(), CLEAN);
+			const palette = run(emptyCanvas, { type: 'SET_ACTIVE_PALETTE', payload: 'alternative' });
+			expect(palette.history).toHaveLength(emptyCanvas.history.length);
+			expect(palette.isDirty).toBe(true);
+			expect(run(emptyCanvas, { type: 'SET_ACTIVE_PALETTE', payload: 'primary' })).toBe(emptyCanvas); // already active: nothing happens
 		});
 	});
 });

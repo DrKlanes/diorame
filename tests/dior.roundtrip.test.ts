@@ -1,9 +1,12 @@
+/// <reference types="node" />
 // .dior v2: the writer (utils/diorPayload.ts, buildDiorData) against the reader (LOAD_PROJECT).
 // Invariant I11 of docs/audit-2026-11.md, the migration of older files, and «loading B after A
 // inherits nothing from A» (CLAUDE.md: the file's values rule, defaults fill the gaps, never state.*).
 //
 // Tests tagged [COMPORTAMIENTO ACTUAL · …] pin what the app does TODAY, pending a decision. They
 // change only in the commit that takes that decision, visibly, never to make a refactor pass.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initialState } from '../src/components/strata/StrataContext';
 import { CINEMA_VIEW_DEFAULTS } from '../src/constants/cinemaView';
@@ -114,15 +117,56 @@ describe('.dior · ida y vuelta', () => {
 			expect(run(loaded, { type: 'SET_CURRENT_LAYER', payload: 1 }).currentBrushThickness).toBe(10);
 		});
 
-		it.each([['blob'], ['eraser'], ['text'], ['move']] as const)('la herramienta %s vuelve igual', (tool) => {
+		it.each([['blob'], ['brush'], ['eraser'], ['text'], ['move']] as const)('la herramienta %s vuelve igual', (tool) => {
 			expect(load({ ...diorOf(projectA()), tool }).tool).toBe(tool);
 		});
 
-		it('H7 [COMPORTAMIENTO ACTUAL · hallazgo de la fase 1, sin decisión] guardar con el pincel activo reabre con el blob: la migración de archivos antiguos lee «brush» como el blob de entonces', () => {
+		it('guardar con el pincel activo reabre con el pincel (H7, v3.26.8)', () => {
 			const withBrush = run(projectA(), { type: 'SET_TOOL', payload: 'brush' });
 			const saved = diorOf(withBrush);
 			expect(saved.tool).toBe('brush');
-			expect(load(saved).tool).toBe('blob');
+			expect(load(saved).tool).toBe('brush');
+		});
+	});
+
+	// Until v2.3.0 the tool values were 'brush' (the blob) and 'line' (the brush). That release renamed
+	// them and, in the same commit, the keys saved next to them: lineMode / currentLineThickness →
+	// brushMode / currentBrushThickness. LOAD_PROJECT tells the two generations apart by those keys.
+	describe('H7: el valor «brush» de tool, según la generación del archivo', () => {
+		it('archivo actual (v2, con meta): «brush» es el pincel', () => {
+			const saved = diorOf(projectA());
+			expect((saved.meta as { formatVersion: number }).formatVersion).toBe(2);
+			expect(load({ ...saved, tool: 'brush' }).tool).toBe('brush');
+		});
+
+		it('archivo real de v3.17.55 (formato v1, sin meta, ya con las claves nuevas): abre con su herramienta, y «brush» es el pincel', () => {
+			const real = JSON.parse(readFileSync(join(__dirname, '..', 'tools', 'svg-diff', 'fixtures', 'text-legacy-v3.17.55.dior'), 'utf8'));
+			expect('meta' in real).toBe(false);
+			expect('brushMode' in real && 'currentBrushThickness' in real).toBe(true);
+			expect(real.tool).toBe('blob');
+			expect(load(real).tool).toBe('blob');
+			expect(load({ ...real, tool: 'brush' }).tool).toBe('brush');
+		});
+
+		it('autoguardado (sin formatVersion, con las claves nuevas): «brush» es el pincel', () => {
+			const withBrush = run(projectA(), { type: 'SET_TOOL', payload: 'brush' });
+			const { meta: _fileMeta, ...fields } = diorOf(withBrush);
+			expect(load({ ...fields, meta: withBrush.projectMeta }).tool).toBe('brush');
+		});
+
+		it('archivo antiguo (anterior a v2.3.0, con lineMode / currentLineThickness): «brush» sigue abriendo con el blob y «line» con el pincel', () => {
+			const old = { shapes: [], lineMode: 'tapered', currentLineThickness: 25 };
+			expect(load({ ...old, tool: 'brush' }).tool).toBe('blob');
+			expect(load({ ...old, tool: 'line' }).tool).toBe('brush');
+			expect(load({ ...old, tool: 'eraser' }).tool).toBe('eraser');
+		});
+
+		it('archivo sin ninguna de las dos generaciones de claves: se lee como antiguo («brush» → blob)', () => {
+			expect(load({ shapes: [], tool: 'brush' }).tool).toBe('blob');
+		});
+
+		it('en un archivo actual «line» ya no existe: cae al blob', () => {
+			expect(load({ ...diorOf(projectA()), tool: 'line' }).tool).toBe('blob');
 		});
 	});
 
@@ -184,12 +228,22 @@ describe('.dior · ida y vuelta', () => {
 	describe('cargar B tras A no hereda nada de A', () => {
 		const B = { shapes: [] }; // the emptiest file that still opens: every field is a gap to fill
 
-		it('H6 [COMPORTAMIENTO ACTUAL · se arregla tras la fase 1] un archivo sin isDarkMode ni projectName hereda los de A; el resto de lo que se guarda sale de los valores por defecto', () => {
-			const afterA = load(B, projectA());
+		it('un archivo sin isDarkMode ni projectName los recibe de los valores por defecto, no de A; igual que todo lo demás que se guarda (H6, v3.26.8)', () => {
+			const A = projectA();
+			expect(A.isDarkMode).toBe(true);
+			expect(A.projectName).toBe('Proyecto A');
+			const afterA = load(B, A);
 			const afterNothing = load(B);
-			expect(diffKeys(diorOf(afterA), diorOf(afterNothing)).filter(k => k !== 'meta')).toEqual(['isDarkMode', 'projectName']);
-			expect(afterA.isDarkMode).toBe(true);
-			expect(afterA.projectName).toBe('Proyecto A');
+			expect(diffKeys(diorOf(afterA), diorOf(afterNothing)).filter(k => k !== 'meta')).toEqual([]);
+			expect(afterA.isDarkMode).toBe(initialState.isDarkMode);
+			expect(afterA.isDarkMode).toBe(false);
+			expect(afterA.projectName).toBe(UNTITLED_PROJECT_SENTINEL);
+		});
+
+		it('el tema y el nombre que el archivo sí trae mandan, también sobre un proyecto anterior en claro', () => {
+			const dark = load({ shapes: [], isDarkMode: true, projectName: 'Nocturno' });
+			expect(dark.isDarkMode).toBe(true);
+			expect(dark.projectName).toBe('Nocturno');
 		});
 
 		it('un archivo que sí trae isDarkMode y projectName no hereda nada de lo que se guarda', () => {

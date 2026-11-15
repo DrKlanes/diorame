@@ -415,7 +415,7 @@ export function appReducer(state: AppState, action: Action): AppState {
       if (state.paletteApplyToAllActive) {
           const allModes: Record<number, 'flat' | 'grad'> = {};
           for (let i = 0; i < state.totalLayers; i++) allModes[i] = action.payload;
-          const nextState = { ...state, paletteMode: action.payload, layerRenderModes: allModes };
+          const nextState = { ...state, paletteMode: action.payload, layerRenderModes: allModes, isDirty: true };
           // No shapes anywhere → pure selection: no undo step, last-writer-wins.
           if (state.shapes.length === 0) {
               return { ...nextState, history: patchCurrentSnapshot(state.history, state.historyIndex, { layerRenderModes: allModes }) };
@@ -424,7 +424,7 @@ export function appReducer(state: AppState, action: Action): AppState {
           return { ...nextState, history, historyIndex: index };
       }
       const nextLayerRenderModes = { ...state.layerRenderModes, [state.currentLayerIndex]: action.payload };
-      const nextState = { ...state, paletteMode: action.payload, layerRenderModes: nextLayerRenderModes };
+      const nextState = { ...state, paletteMode: action.payload, layerRenderModes: nextLayerRenderModes, isDirty: true };
       // Current layer has no shapes to re-render → pure selection: no undo step, last-writer-wins.
       const hasLayerShapes = state.shapes.some(s => s.zIndex === state.currentLayerIndex * -BASE_DEPTH_STEP);
       if (!hasLayerShapes) {
@@ -499,14 +499,15 @@ export function appReducer(state: AppState, action: Action): AppState {
           // Material: the gradient repaints existing ink, so the whole drag folds
           // into ONE undo step whose snapshot already holds the post-drag params.
           const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
-          return { ...state, gradParamsPendingCommit: false, history, historyIndex: index };
+          return { ...state, gradParamsPendingCommit: false, history, historyIndex: index, isDirty: true };
       }
       // Nothing to repaint → pure selection: last-writer-wins onto the current
       // snapshot so no later undo resurrects the old gradient.
       return {
           ...state,
           gradParamsPendingCommit: false,
-          history: patchCurrentSnapshot(state.history, state.historyIndex, { layerGradParams: state.layerGradParams })
+          history: patchCurrentSnapshot(state.history, state.historyIndex, { layerGradParams: state.layerGradParams }),
+          isDirty: true,
       };
     }
     case 'RESET_DRAWING_VIEW': {
@@ -744,7 +745,8 @@ export function appReducer(state: AppState, action: Action): AppState {
               paletteGradientIntensity: newGradP.intensity,
               paletteGradientType: newGradP.gradType || 'solid',
               currentBrushThickness: state.currentBrushThickness,
-              brushMode: state.brushMode
+              brushMode: state.brushMode,
+              isDirty: true,
           };
           
           const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
@@ -846,6 +848,7 @@ export function appReducer(state: AppState, action: Action): AppState {
             paletteGradientType: newGradP.gradType || 'solid',
             currentBrushThickness: state.currentBrushThickness,
             brushMode: state.brushMode,
+            isDirty: true,
         };
 
         const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(newState));
@@ -998,6 +1001,7 @@ export function appReducer(state: AppState, action: Action): AppState {
               },
               layerRenderModes: allModes,
               layerGradParams: allParams,
+              isDirty: true,
           };
       } else {
           const snap = state.paletteApplyToAllSnapshot!;
@@ -1016,6 +1020,7 @@ export function appReducer(state: AppState, action: Action): AppState {
               layerRenderModes: restoredModes,
               layerGradParams: restoredParams,
               paletteMode: state.layerRenderModes[state.currentLayerIndex] ?? 'flat',
+              isDirty: true,
           };
       }
     }
@@ -1142,12 +1147,20 @@ export function appReducer(state: AppState, action: Action): AppState {
           ? Math.min(action.payload.totalLayers, MAX_LAYERS) : 1;
       const safeHiddenLayers = Array.isArray(action.payload.hiddenLayers) ? action.payload.hiddenLayers : [];
       const safeLocked3DLayers = Array.isArray(action.payload.locked3DLayers) ? action.payload.locked3DLayers : [];
-      // Tool-value backward compat: 'brush' (old blob) → 'blob', 'line' (old brush) → 'brush'
+      // Tool-value backward compat: until v2.3.0 'brush' was the blob and 'line' the brush. That release
+      // renamed both and, in the same commit, the keys the file saves next to them (lineMode /
+      // currentLineThickness → brushMode / currentBrushThickness), which every save since then writes.
+      // So a file with the new keys already speaks today's names and only an older one is translated.
+      // Not the v2 meta: files of v2.3.0–v3.20.x have none, and the autosave carries no formatVersion.
+      // (Until v3.26.8 every 'brush' was translated: saving with the brush active reopened with the blob.)
+      const savedWithCurrentToolNames = 'brushMode' in action.payload || 'currentBrushThickness' in action.payload;
       let rawTool = action.payload.tool;
-      if (rawTool === 'brush') rawTool = 'blob';
-      else if (rawTool === 'line') rawTool = 'brush';
+      if (!savedWithCurrentToolNames) {
+          if (rawTool === 'brush') rawTool = 'blob';
+          else if (rawTool === 'line') rawTool = 'brush';
+      }
       const safeTool = (typeof rawTool === 'string' && ['blob', 'eraser', 'brush', 'move', 'text'].includes(rawTool))
-          ? rawTool : 'blob';
+          ? rawTool as ToolType : 'blob';
       // brushMode with fallback to legacy lineMode
       const rawBrushMode = action.payload.brushMode ?? action.payload.lineMode;
       const safeBrushMode = (typeof rawBrushMode === 'string' && ['tapered', 'uniform', 'ink'].includes(rawBrushMode))
@@ -1170,11 +1183,12 @@ export function appReducer(state: AppState, action: Action): AppState {
       // layer 0 opens with its own (from its strokes) when it has any (v3.26.3).
       const layer0Brush = resolveLayerBrush(safeShapes, 0, undefined);
       const safeBrushThickness = Math.min(Math.max(layer0Brush?.thickness ?? rawBrushThickness, BRUSH_THICKNESS_MIN), BRUSH_THICKNESS_MAX);
-      const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : state.isDarkMode;
+      // Gaps take the defaults, never the previous project's values (v3.20.11 rule; until v3.26.8 these two fell back to state.*).
+      const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : initialState.isDarkMode;
       const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom', 'storytelling'].includes(action.payload.cinematicType))
           ? action.payload.cinematicType as CinematicType : CINEMA_VIEW_DEFAULTS.cinematicType;
       const rawProjectName = typeof action.payload.projectName === 'string'
-          ? action.payload.projectName.slice(0, 100) : state.projectName;
+          ? action.payload.projectName.slice(0, 100) : initialState.projectName;
       // Backward compat: legacy .dior files (pre-v2.1.0) saved the literal 'Untitled Project'
       // instead of the sentinel. Normalize so display goes through i18n.
       const safeProjectName = rawProjectName === 'Untitled Project' ? UNTITLED_PROJECT_SENTINEL : rawProjectName;
@@ -1286,7 +1300,8 @@ export function appReducer(state: AppState, action: Action): AppState {
             ...state,
             locked3DLayers: isLocked 
                 ? state.locked3DLayers.filter(i => i !== layerIndex)
-                : [...state.locked3DLayers, layerIndex]
+                : [...state.locked3DLayers, layerIndex],
+            isDirty: true,
         };
     }
     case 'MOVE_LAYER': {
@@ -1670,7 +1685,8 @@ export function appReducer(state: AppState, action: Action): AppState {
                 ...state,
                 brushMode: mode,
                 layerBrushSettings: newLayerSettings,
-                history: patchCurrentSnapshot(state.history, state.historyIndex, { layerBrushSettings: newLayerSettings })
+                history: patchCurrentSnapshot(state.history, state.historyIndex, { layerBrushSettings: newLayerSettings }),
+                isDirty: true,
             };
         }
 
@@ -1692,7 +1708,8 @@ export function appReducer(state: AppState, action: Action): AppState {
             layerBrushSettings: newLayerSettings,
             shapes: newShapes,
             history,
-            historyIndex: index
+            historyIndex: index,
+            isDirty: true,
         };
     }
     case 'SET_LAYER_SPACING_FACTOR':
@@ -1998,7 +2015,8 @@ export function appReducer(state: AppState, action: Action): AppState {
                 ...state,
                 activePaletteId: newId,
                 palette: newPalette,
-                history: patchCurrentSnapshot(state.history, state.historyIndex, { activePaletteId: newId })
+                history: patchCurrentSnapshot(state.history, state.historyIndex, { activePaletteId: newId }),
+                isDirty: true,
             };
         }
 
@@ -2011,7 +2029,8 @@ export function appReducer(state: AppState, action: Action): AppState {
             palette: newPalette,
             shapes: newShapes,
             history,
-            historyIndex: index
+            historyIndex: index,
+            isDirty: true,
         };
     }
     case 'TOGGLE_ANIMATION_MODE': {

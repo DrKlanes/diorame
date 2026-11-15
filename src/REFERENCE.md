@@ -281,6 +281,8 @@ Two distinct actions create layers — they are **not** interchangeable:
 - **Load**: Reads the file via `FileReader`, validates structure (`shapes` array; if not, localized toast «not a Diorame project» and the project is untouched), asks about unsaved changes when `isDirty` (v3.25.3: Save first / Open anyway / Cancel), and dispatches `LOAD_PROJECT`. On iPad/iPhone the open inputs carry no `accept` (v3.25.1); `file_handlers` is unsupported on iOS/iPadOS, so «Open with Diorame» from Files is impossible there
   - File size guard: rejects files larger than 50 MB
   - Triggers fit-to-view on successful load
+  - Gaps take the defaults, never the previous project's values: since v3.26.8 also `isDarkMode` and `projectName` (a file without them used to open with the theme and the name of the project that was open)
+  - `tool` by generation of the file (v3.26.8): until v2.3.0 the saved values were `'brush'` (the blob) and `'line'` (the brush); that release renamed them and, in the same commit, the keys saved next to them (`lineMode` / `currentLineThickness` → `brushMode` / `currentBrushThickness`). A file with the new keys (every save since v2.3.0, v1 or v2 format, and the autosave) is read as is; only an older one is translated. Before, every `'brush'` was translated, so a project saved with the brush active reopened with the blob
 - **Saved data** (besides `meta`): shapes (each with its creation time `t` since v3.25.16 — when the timelapse shows it, never its paint order), palette, layers, dark mode, post-processing settings (v3.20.5: also the FX master switch `fxMasterEnabled` and the OFF-snapshot `postProcessingSnapshot`: with the master off every flag is false and the look that was on is the snapshot, which `LOAD_PROJECT` restores only with the master off and sanitised to one boolean per known FX), hidden/locked layers, project name, per-layer render modes, gradient params, brush settings, line mode, active palette ID, CINEMA view, point of interest
 - **Project Name**: Editable via the UI; asked for at the first save of an untitled project
 
@@ -652,7 +654,7 @@ APIs they import change.
 
 The safety net of the refactor (plan and invariants: `docs/audit-2026-11.md` §3.6, §4, §5). They run the **real** reducer (`appReducer`) and the **real** stroke generators in Node: no DOM, no canvas, no mocks.
 
-- **Run:** `npm test` (`vitest run`; 355 tests, under 1 s of tests, ~1.5 s wall clock). One file: `npx vitest run tests/<file>`. Not in CI yet.
+- **Run:** `npm test` (`vitest run`; 377 tests, under 1 s of tests, ~1.5 s wall clock). One file: `npx vitest run tests/<file>`. Not in CI yet.
 - **Config:** `vitest.config.ts` inherits only `resolve.alias` from `vite.config.ts` (no PWA plugin, no Tailwind, no build entries); `environment: 'node'`. Vitest 4.1.12, pinned: the last line that declares Vite ^6.0 (5.x needs Vite ≥ 6.4). Adding it leaves the production build byte-identical.
 - **Typecheck:** `tsconfig.json` includes `tests`.
 - **What they do NOT cover:** pixels, WebGL, gestures, iPad. That stays with the browser harnesses of `tools/` above.
@@ -666,10 +668,10 @@ The safety net of the refactor (plan and invariants: `docs/audit-2026-11.md` §3
 | `history.characterization.test.ts` | ~205 | Hybrid undo contract: a 24-gesture session undone and redone step by step (I1, I2), a layer's pair only moves with its own restyle (I3, v3.26.3), view state never in a snapshot (I13), cap of 50 (I14) |
 | `brush.characterization.test.ts` | ~250 | Thickness model: resize (I6), restyle touches only its layer's regenerable strokes (I7), pure selection (I8), one drag = one step (I9), restyle at the same thickness (I10), move / flip are isometries (I12) |
 | `layers.characterization.test.ts` | ~275 | Navigation never leaks a layer's thickness (I4), `ADD_LAYER` / `NEXT_LAYER` semantics, delete / reorder / duplicate remap, merge scales outline + spine + `brushThickness` together (I5) |
-| `isDirty.test.ts` | ~145 | Every action that changes what `buildDiorData` writes marks `isDirty`, except an explicit list |
-| `dior.roundtrip.test.ts` | ~230 | `buildDiorData` → JSON → `LOAD_PROJECT` (I11), the 29 keys of a `.dior`, migration of old files, «loading B after A inherits nothing from A» |
+| `isDirty.test.ts` | ~185 | Every action that changes what `buildDiorData` writes marks `isDirty`, except an explicit list with its reasons: by design (load, save, new canvas, automatic CINEMA init), drag previews (the gesture's commit decides) and «where the user is» (`SET_TOOL` and walking between layers: the file carries the active tool and the active layer's brush pair, but nothing was edited). H1 closed in v3.26.8 |
+| `dior.roundtrip.test.ts` | ~280 | `buildDiorData` → JSON → `LOAD_PROJECT` (I11), the 29 keys of a `.dior`, migration of old files, the `tool` value by generation of the file (current v2, a real v3.17.55 file, autosave, pre-v2.3.0), «loading B after A inherits nothing from A» |
 
-**`[COMPORTAMIENTO ACTUAL · …]` in a test name** = it pins what the app does today, pending the decision or fix the tag names (I6, G1, G3–G8, H1, H6–H8 of the audit). It changes only in the commit that takes that decision, and the change must be visible in the test's diff.
+**`[COMPORTAMIENTO ACTUAL · …]` in a test name** = it pins what the app does today, pending the decision or fix the tag names (I6, G1, G3–G8 and H8 of the audit; H1, H6 and H7 were pinned too until v3.26.8 fixed them). It changes only in the commit that takes that decision, and the change must be visible in the test's diff.
 
 **The golden references are not regenerated to make a test pass.** `DIORAME_WRITE_GOLDEN=1 npx vitest run tests/strokeGenerators.golden.test.ts` rewrites `strokes.golden.json` and is a deliberate decision to change the reference (a change of stroke style approved by Moisés). `ink-slow-pre-3.26.4.json` is frozen: never regenerate.
 
