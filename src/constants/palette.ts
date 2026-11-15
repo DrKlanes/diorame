@@ -84,3 +84,8 @@ export const COLOR_NAME_KEYS = new Map<string, string>([
 	...PALETTE_PRIMARY.map(c => [c.hex, c.nameKey] as const),
 	...PALETTE_ALTERNATIVE.map(c => [c.hex, c.nameKey] as const),
 ]);
+
+// Hex lists of the two palettes: what the state holds as `palette`. Moved from StrataContext.tsx
+// (v3.26.14), which re-exports them: constants/initialState.ts needs FIXED_PALETTE and cannot import the reducer.
+export const FIXED_PALETTE: string[] = PALETTE_PRIMARY.map(c => c.hex);
+export const ALTERNATIVE_PALETTE: string[] = PALETTE_ALTERNATIVE.map(c => c.hex);

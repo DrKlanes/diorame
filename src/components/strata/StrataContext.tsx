@@ -21,13 +21,12 @@ import { BASE_DEPTH_STEP, MAX_LAYERS, MAX_HISTORY_STEPS } from '../../constants/
 export { BASE_DEPTH_STEP, MAX_LAYERS, MAX_HISTORY_STEPS }; // Moved to constants/layers.ts
 export { APP_VERSION } from '../../constants/version'; // Moved to constants/version.ts
 
-import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS } from '../../constants/palette';
-import { SUPER_RISO_DEFAULTS, sanitizeSuperRiso, applySuperRisoStyle, patchSuperRiso } from '../../constants/superRiso';
+import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS, FIXED_PALETTE, ALTERNATIVE_PALETTE } from '../../constants/palette';
+import { sanitizeSuperRiso, applySuperRisoStyle, patchSuperRiso } from '../../constants/superRiso';
 export type { PaletteColor } from '../../constants/palette';
 export { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS };
 
-export const FIXED_PALETTE: string[] = PALETTE_PRIMARY.map(c => c.hex);
-export const ALTERNATIVE_PALETTE: string[] = PALETTE_ALTERNATIVE.map(c => c.hex);
+export { FIXED_PALETTE, ALTERNATIVE_PALETTE }; // Moved to constants/palette.ts
 
 import {
 	generateTaperedStroke, generateUniformStroke, generateInkStroke, generateStrokeForMode,
@@ -55,130 +54,8 @@ import type { Action } from '../../types/strataActions'; // Moved to types/strat
 
 // --- Initial State ---
 
-export const initialState: AppState = {
-	shapes: [],
-	palette: FIXED_PALETTE,
-	activePaletteId: 'primary',
-	currentColorIndex: 0,
-	mode: 'drawing',
-	tool: 'blob',
-	textSession: {
-		isActive: false,
-		x: 0,
-		y: 0,
-		content: '',
-		font: 'noir',
-		align: 'left'
-	},
-	cinematicType: 'forward',
-	camera: { x: 0, y: 0, z: 0, rotation: 0 },
-	currentLayerIndex: 0,
-	totalLayers: 1,
-	focalLength: 800,
-	viewZoomOffset: -600,
-	drawingZoom: 1,
-	drawingPan: { x: 0, y: 0 },
-	isDarkMode: false,
-	layerSpacingFactor: 1.0,
-	postProcessing: {
-		grain: 0.5,
-		vignette: 0.5,
-		distortion: -0.3, // Non-neutral default: ensures visible effect on first toggle
-		dof: 0.5,
-		focusDist: 800, // Default focus distance
-		focusTargetLayer: -1, // Default: -1 (Manual/Free Focus). 0+ = Lock to Layer Index
-		chromaticAberration: 0.5,
-		fog: 0.5,
-		particles: 0.5,
-		particleType: 'circle', // Default particle type
-		wiggle: 0.5, // Default to Medium (Current behavior)
-		glow: 0.5, // Default glow intensity
-		riso: 0.5, // Default RISO texture intensity
-		pixelArtSize: 4, // Default pixel size
-		pixelArtDepth: 4, // Default color depth (4 levels = 64 colors)
-		pixelArtDither: 0, // Default dither (0 = Clean/None)
-		grungeIntensity: 0.5, // Default Medium
-		superRiso: SUPER_RISO_DEFAULTS,
-	},
-	postProcessingEnabled: {
-		grain: false,
-		vignette: false,
-		distortion: false,
-		dof: false,
-		wiggle: false,
-		chromaticAberration: false,
-		fog: false,
-		particles: false,
-		glow: false,
-		riso: false,
-		pixelArt: false,
-		grunge: false,
-		superRiso: false,
-	},
-	fxMasterEnabled: true, // Master toggle for all FX (defaults ON)
-	postProcessingSnapshot: null,
-	history: [{
-		shapes: [],
-		totalLayers: 1,
-		layerRenderModes: {},
-		layerGradParams: {},
-		layerBrushSettings: {},
-		activePaletteId: 'primary'
-	}],
-	historyIndex: 0,
-	exportRequest: null,
-	isExporting: false,
-	hiddenLayers: [],
-	locked3DLayers: [],
-	// Starts selected. The app boots with tool: 'blob', so this is only ever read once
-	// the user reaches Move — and every route into Move (SET_TOOL, the layer panel,
-	// [ / ]) reselects anyway, so `true` is the value that agrees with all of them.
-	// Booting deselected would also cost a click before the tool could do anything.
-	isLayerSelected: true,
-	isWelcomeModalOpen: true,
-	isOnboardingVisible: true, // New: Onboarding overlay on canvas
-	isUIHidden: false,
-	isDrawing: false,
-	projectWasLoaded: false,
-	cinemaViewInitialized: false,
-	isSymmetryEnabled: false,
-	gridEnabled: typeof window !== 'undefined' && window.localStorage?.getItem('diorame-grid-enabled') === 'true',
-	paletteMode: 'flat',
-	layerRenderModes: {},
-	layerGradParams: {},
-	layerBrushSettings: {},
-	pointOfInterest: null,
-	format: null,
-	viewportSize: { w: 0, h: 0 },
-	cinematicSpeed: 1.0, // Default Normal Speed
-	isDrawBehind: false,
-	isDrawInside: false,
-	isOrganicMode: false,
-	blobSmoothing: false,
-	currentBrushThickness: 25,
-	brushThicknessBeforePreview: null,
-	gradParamsPendingCommit: false,
-	isHandheldEnabled: false,
-	handheldIntensity: 'medium',
-	brushMode: 'tapered',
-	projectName: UNTITLED_PROJECT_SENTINEL, // Default project name (sentinel; resolved via t() at render time)
-	projectMeta: createProjectMeta(),
-	paletteApplyToAllActive: false,
-	paletteApplyToAllSnapshot: null,
-	isDirty: false,
-	soundsEnabled: false,
-	shouldFitToView: false,
-	isAnimationMode: false,
-	isAnimationPlaying: false,
-	animationFramerate: 6,
-	animationExportLoops: 1,
-	gifExportScale: 1,
-	isOnionSkinEnabled: false,
-	isAnimationFlatZ: false,
-	layerIndexBeforeAnimation: null,
-	animationPlaybackMode: 'loop',
-	animationDirection: 1,
-};
+import { initialState } from '../../constants/initialState';
+export { initialState }; // Moved to constants/initialState.ts
 
 // --- Helper: Push to History with Limit ---
 function pushHistory(

@@ -188,7 +188,7 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 ## Sistema de color (`src/constants/palette.ts`)
 
 - `PALETTE_PRIMARY` / `PALETTE_ALTERNATIVE`: 24 colores cada una, **fijas e inmutables** (filosofía Riso)
-- `FIXED_PALETTE` / `ALTERNATIVE_PALETTE` en `StrataContext.tsx` se derivan con `.map(c => c.hex)` — retrocompatibilidad total
+- `FIXED_PALETTE` / `ALTERNATIVE_PALETTE` se derivan con `.map(c => c.hex)` — retrocompatibilidad total. Viven en `constants/palette.ts` desde v3.26.14 (`StrataContext.tsx` las re-exporta)
 - `DARK_COLORS`: Set derivado de `isDark: true` en ambas paletas — usado en `SwatchGrid.tsx`/`ColorPalette.tsx` para el ring de contraste en swatches seleccionados
 - `GRADIENT_DEFAULTS`: `{ angle: 90, intensity: 0.2, gradType: 'solid' }` — único fallback para `layerGradParams`
 
