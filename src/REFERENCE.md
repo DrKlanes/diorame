@@ -641,6 +641,8 @@ decisions that the code cannot express on its own.
 | `ux-debt.md` | Running list of known UX debt, with the reasoning behind each accepted quirk. |
 | `fx-in-draw.md` | **Paused project (F0 done, F1 next):** FX also in DRAW. Goal, the 8 base decisions, Moisés's answers, the accepted UX (two-face inspector, cards, accordion, reveal, compare), the inventory (FX verdict table, Super Riso heights, usable height per viewport), the composition risks, phases F0–F6 with model and risk, what to test on the iPad and how it was measured. Read it before touching `FXPanel`, the `renderFrame` FX gate or the DRAW PNG export |
 | `BRIEF-CLAUDE-CODE.md` | Project brief. |
+| `audit-2026-11.md` | **Refactor in progress (from v3.26.6).** The Phase 0 audit (monoliths, cut proposals, the brush thickness model measured with the real reducer, the test plan, the phase order, documentation drift) and, appended as they close, the decisions taken (D1–D8) and the result of each phase. The detailed record |
+| `refactor-resumen-2026-11.md` | One-page-per-topic summary of the refactor as of v3.26.21: what was done by version, the architecture before and now, the safety net and its rules, findings and their state, decisions, what is left, contracts and what is not verified. Written to bring someone up to date without reading the audit |
 | `media/` | Corporate media (itch.io / devlog covers and screenshots, hooks GIFs, logos, the itch launcher zip). Not used by the app; files here are public, so nothing private goes in. |
 
 ### Dev Tools (`tools/`)
