@@ -651,15 +651,23 @@ H.264 en Safari iPadOS, Wake Lock, tiempo y memoria con 60 s a 1920 (antes de la
 
 ## Grosor y trazos Ink (v3.26.3–3.26.4): pendientes y decisiones abiertas
 
-**Estado:** registrados al cerrar v3.26.4, sin programar. Los puntos 1 y 2 van juntos y están planificados tras la Fase 0 del refactor.
+**Estado:** registrados al cerrar v3.26.4. Los puntos 1 y 2 se cerraron en la fase 4 del refactor (v3.26.22–3.26.23); el resto sigue sin programar.
 
-### El slider de grosor no refleja el grosor visible de la capa
+### ~~El slider de grosor no refleja el grosor visible de la capa~~ — CERRADO (v3.26.22–3.26.23)
 
-Redimensionar trazos de brush cambia el grosor visible pero no el valor del slider; tras acoplar capas con grosores distintos el slider muestra el del último trazo. **Decisión de Moisés (15 nov 2026):** el slider mostrará el grosor visible y «Mixto» cuando la capa tenga varios; tocarlo unifica. Futuro: opción explícita de escalado proporcional de grosores mixtos. Planificado tras la Fase 0 del refactor.
+Redimensionar trazos de brush cambiaba el grosor visible pero no el valor del slider; tras acoplar capas con grosores distintos el slider mostraba uno de ellos sin avisar. **Decisión de Moisés (15 nov 2026):** el slider muestra el grosor visible y «Mixto» cuando la capa tiene varios; tocarlo unifica.
 
-### Una capa vacía con grosor propio no lo persiste
+**Hecho:** el grosor guardado es el que hay en el lienzo (redimensionar lo escala en los tres modos; estirado por ejes: media geométrica; se guarda exacto y se redondea al mostrar), y el panel enseña «Mixto» con el tramo de la capa resaltado en el track. Modelo y UI: REFERENCE.md §4; mediciones y desviaciones: `docs/audit-2026-11.md`, «Fase 4 — resultado». [VERIFICADO en escritorio; **POR VALIDAR por Moisés**: el aspecto del estado «Mixto» en `localhost:3000` y en iPad.]
 
-El grosor se deriva de los trazos (`resolveLayerBrush`, `utils/layerBrush.ts`), así que una capa sin trazos no escribe su par en el `.dior`: al reabrir vuelve al valor por defecto. Menor; abordar junto al punto anterior.
+Quedan abiertos, de este punto:
+
+- **Escalado proporcional de grosores mixtos** (futuro, sin programar): una opción explícita para engordar o adelgazar una capa mixta conservando la proporción entre sus trazos, en vez de unificarlos.
+- **Archivos guardados antes de v3.26.22 con trazos redimensionados**: llevan el número antiguo (un trazo dibujado a 20 y redimensionado ×2 dice 20 y mide 40). No se migran. Se ven igual que antes, el slider marca 20 y el primer re-estilado los redibuja al valor elegido, como siempre hizo; un Uniform se pinta con el número guardado, así que sigue tan fino como estaba. **Decisión pendiente de Moisés:** dejarlo así, o detectar el desfase al cargar midiendo el contorno contra el número (exacto en Tapered, aproximado en Ink, imposible en Uniform, que no hornea contorno).
+- **Tono de la banda y del tirador en «Mixto»**: `T.purpleLight` para los dos. Con `T.purple20` (más suave) la banda de 3 px casi no se distinguía del track gris en claro. Es calibrado a ojo: lo decide Moisés.
+
+### ~~Una capa vacía con grosor propio no lo persiste~~ — CERRADO (v3.26.22)
+
+El par de grosor y modo de cada capa viaja en el `.dior` y en el autoguardado (`layerBrushSettings`, campo aditivo y opcional). Una capa con trazos sigue respondiendo con el de sus trazos; el campo es lo que permite a una capa VACÍA conservar el par elegido para ella. Un archivo sin el campo abre como antes.
 
 ### Los trazos Ink anteriores a v3.26.4 conservan facetas hasta regenerar su capa
 
