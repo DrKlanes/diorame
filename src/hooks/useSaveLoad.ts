@@ -7,6 +7,7 @@ import { UNTITLED_PROJECT_SENTINEL } from '../constants/project';
 import { useTranslation } from '../i18n';
 import { AUTOSAVE_KEY } from './useAutoSave';
 import { buildDiorData } from '../utils/diorPayload';
+import { readableShapes } from '../state/loadProject';
 import { analytics } from '../analytics/analytics';
 import { downloadBlob } from '../utils/downloadBlob';
 import { DIOR_FORMAT_VERSION, DIOR_MIME, createProjectMeta, projectFileStem, diorNameFromFile, readProjectMeta, type DiorFileMeta } from '../utils/projectMeta';
@@ -121,7 +122,9 @@ export function useSaveLoad() {
 			dispatch({ type: 'LOAD_PROJECT', payload: { ...json, meta } });
 			const loadedName = typeof json.projectName === 'string' ? json.projectName.slice(0, 100) : '';
 			setProjectFileLink(meta.projectId, handle && isDiorFile(handle.name) ? handle : null, loadedName === 'Untitled Project' ? UNTITLED_PROJECT_SENTINEL : loadedName);
-			const n = json.shapes.length;
+			// What was loaded, not what the file listed: a shape that cannot be drawn is left out (v3.26.20).
+			const n = readableShapes(json.shapes).length;
+			if (n < json.shapes.length) console.warn(`[load] ${json.shapes.length - n} shape(s) could not be read and were left out`);
 			const desc = n === 1 ? t('toast.load.successDescOne', { n }) : t('toast.load.successDesc', { n });
 			toast.success(t('toast.load.successTitle'), { description: desc, duration: 2000 });
 			analytics.projectLoaded();

@@ -18,6 +18,20 @@ import type {
 import type { Action } from '../types/strataActions';
 
 
+const isPoint = (p: any): boolean => !!p && typeof p === 'object' && Number.isFinite(p.x) && Number.isFinite(p.y);
+const isPointList = (v: unknown): boolean => Array.isArray(v) && v.every(isPoint);
+
+/**
+ * The shapes of a file that can be drawn (v3.26.20): an object with at least one point, every point
+ * with finite x and y, and a finite zIndex. Anything else used to go into the state as it came: a null
+ * threw inside LOAD_PROJECT itself, and a shape without points on the first move, transform or flip of
+ * its layer. One damaged shape must not take the drawing with it, so it is left out and the rest opens.
+ * Exported for the "N shapes loaded" toast (useSaveLoad), which counts what was actually loaded.
+ */
+export const readableShapes = (raw: unknown): unknown[] => (Array.isArray(raw)
+	? raw.filter((s: any) => !!s && typeof s === 'object' && isPointList(s.points) && s.points.length > 0 && Number.isFinite(s.zIndex))
+	: []);
+
 export function loadProject(state: AppState, action: Extract<Action, { type: 'LOAD_PROJECT' }>): AppState {
 	// Ensure we merge postProcessing settings correctly to avoid undefined values
 	// Legacy migration: drop risoInkBlend if present (was never in stable releases)
@@ -54,7 +68,12 @@ export function loadProject(state: AppState, action: Extract<Action, { type: 'LO
 		if (Object.values(snap).some(v => v)) loadedFxSnapshot = snap;
 	}
 
-	const loadedLayerRenderModes = action.payload.layerRenderModes || {};
+	// Only 'flat' / 'grad' under a layer position (v3.26.20): anything else used to reach the palette selector as it came.
+	const rawRenderModes: unknown = action.payload.layerRenderModes;
+	const loadedLayerRenderModes = Object.fromEntries(
+		Object.entries(rawRenderModes && typeof rawRenderModes === 'object' ? rawRenderModes : {})
+			.filter(([k, v]) => /^\d+$/.test(k) && (v === 'flat' || v === 'grad'))
+	) as Record<number, 'flat' | 'grad'>;
 	const rawGradParams = action.payload.layerGradParams || {};
 	const loadedLayerGradParams = Object.fromEntries(
 		Object.entries(rawGradParams).map(([k, v]: [string, any]) => [k, { ...GRADIENT_DEFAULTS, ...v }])
@@ -66,9 +85,9 @@ export function loadProject(state: AppState, action: Extract<Action, { type: 'LO
 
 	// ── Whitelist validation: only accept known keys with type guards ──
 	// Per-shape migration: map legacy lineMode/lineThickness → brushMode/brushThickness
-	const rawShapes = Array.isArray(action.payload.shapes) ? action.payload.shapes : [];
+	// A shape that cannot be drawn is left out and the rest of the drawing opens (v3.26.20); see readableShapes.
+	const rawShapes = readableShapes(action.payload.shapes);
 	const safeShapes: Shape[] = rawShapes.map((shape: any) => {
-		if (!shape || typeof shape !== 'object') return shape;
 		const brushMode = shape.brushMode ?? shape.lineMode;
 		const brushThickness = shape.brushThickness ?? shape.lineThickness;
 		const { lineMode: _lm, lineThickness: _lt, ...rest } = shape;
@@ -85,12 +104,18 @@ export function loadProject(state: AppState, action: Extract<Action, { type: 'LO
 		}
 		// Creation time (v3.25.16): a finite number or nothing (older files fall back to the array index).
 		if ('t' in result && !(typeof result.t === 'number' && Number.isFinite(result.t))) delete result.t;
+		// The spine and the eraser polygon are optional: a damaged one goes, the shape stays (it keeps its outline).
+		if (result.originalPoints != null && !isPointList(result.originalPoints)) delete result.originalPoints;
+		if (result.eraserPolygon != null && !isPointList(result.eraserPolygon)) delete result.eraserPolygon;
 		return result as Shape;
 	});
 	const safeTotalLayers = (typeof action.payload.totalLayers === 'number' && action.payload.totalLayers > 0)
 		? Math.min(action.payload.totalLayers, MAX_LAYERS) : 1;
-	const safeHiddenLayers = Array.isArray(action.payload.hiddenLayers) ? action.payload.hiddenLayers : [];
-	const safeLocked3DLayers = Array.isArray(action.payload.locked3DLayers) ? action.payload.locked3DLayers : [];
+	// Hidden and pinned layers: positions of layers that exist, each once (v3.26.20).
+	const layerIndices = (raw: unknown): number[] => (Array.isArray(raw)
+		? [...new Set(raw.filter((i): i is number => Number.isInteger(i) && i >= 0 && i < safeTotalLayers))] : []);
+	const safeHiddenLayers = layerIndices(action.payload.hiddenLayers);
+	const safeLocked3DLayers = layerIndices(action.payload.locked3DLayers);
 	// Tool-value backward compat: until v2.3.0 'brush' was the blob and 'line' the brush. That release
 	// renamed both and, in the same commit, the keys the file saves next to them (lineMode /
 	// currentLineThickness → brushMode / currentBrushThickness), which every save since then writes.
