@@ -25,6 +25,8 @@ const DRAG_PREVIEWS: Record<string, string[]> = {
 	// layerBrushSettings is in these two lists since v3.26.22, when the per-layer pairs started to travel in the file.
 	SET_BRUSH_THICKNESS: ['currentBrushThickness', 'layerBrushSettings', 'shapes'],
 	SET_BRUSH_THICKNESS_PREVIEW: ['currentBrushThickness', 'layerBrushSettings', 'shapes'],
+	// The proportional scale of a «Mixto» layer (v3.26.25): the same drag preview, closed by the same commit.
+	SCALE_LAYER_THICKNESS_PREVIEW: ['currentBrushThickness', 'layerBrushSettings', 'shapes'],
 	SET_PALETTE_GRADIENT_ANGLE: ['layerGradParams'],
 	SET_PALETTE_GRADIENT_INTENSITY: ['layerGradParams'],
 	SET_PALETTE_GRADIENT_TYPE: ['layerGradParams'],

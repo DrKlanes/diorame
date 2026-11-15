@@ -1,5 +1,6 @@
 import type { BrushMode, HistorySnapshot, Shape } from '../types/strataTypes';
 import { BASE_DEPTH_STEP } from '../constants/layers';
+import { BRUSH_THICKNESS_MIN, BRUSH_THICKNESS_MAX } from '../constants/brush';
 import { inkSeedFor } from './strokeGenerators';
 
 export type LayerBrush = { thickness: number; mode: BrushMode };
@@ -92,4 +93,25 @@ export function layerThicknessRange(shapes: readonly Shape[], layerIndex: number
 		if (shown > max) max = shown;
 	}
 	return max === -Infinity ? null : { min, max, mixed: min !== max };
+}
+
+/**
+ * How far a proportional scale of a layer can go (v3.26.25): k in steps of 0.1, so that no stroke ends
+ * thinner than the slider's minimum or thicker than its maximum. Measured on the stored thicknesses, not
+ * the shown ones. A layer that is already past a limit (a file loaded with strokes over 70) cannot be
+ * pushed further that way, but can still go the other: the bound never crosses 1.
+ */
+export function layerScaleBounds(shapes: readonly Shape[], layerIndex: number): { kMin: number; kMax: number } {
+	const z = layerIndex * -BASE_DEPTH_STEP;
+	let min = Infinity, max = -Infinity;
+	for (const s of shapes) {
+		if (s.zIndex !== z || !isRegenerable(s) || s.brushThickness === undefined) continue;
+		if (s.brushThickness < min) min = s.brushThickness;
+		if (s.brushThickness > max) max = s.brushThickness;
+	}
+	if (max === -Infinity) return { kMin: 1, kMax: 1 };
+	return {
+		kMin: Math.min(1, Math.ceil(BRUSH_THICKNESS_MIN / min * 10 - 1e-9) / 10),
+		kMax: Math.max(1, Math.floor(BRUSH_THICKNESS_MAX / max * 10 + 1e-9) / 10),
+	};
 }

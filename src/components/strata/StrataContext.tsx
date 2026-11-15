@@ -55,7 +55,7 @@ export { initialState }; // Moved to constants/initialState.ts
 
 import { pushHistory, createSnapshot, patchCurrentSnapshot, undo, redo } from '../../state/history'; // Moved to state/history.ts
 import { loadProject } from '../../state/loadProject';
-import { setBrushThickness, setBrushThicknessPreview, commitBrushThickness, setBrushMode } from '../../state/brush';
+import { setBrushThickness, setBrushThicknessPreview, commitBrushThickness, setBrushMode, scaleLayerThicknessPreview, setBrushScaleProportional } from '../../state/brush';
 import { moveLayer, transformLayer, flipLayer } from '../../state/layerTransform';
 
 // --- Reducer ---
@@ -872,6 +872,8 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'SET_BRUSH_THICKNESS': return setBrushThickness(state, action); // Moved to state/brush.ts
 		case 'SET_BRUSH_THICKNESS_PREVIEW': return setBrushThicknessPreview(state, action); // Moved to state/brush.ts
 		case 'COMMIT_BRUSH_THICKNESS': return commitBrushThickness(state); // Moved to state/brush.ts
+		case 'SCALE_LAYER_THICKNESS_PREVIEW': return scaleLayerThicknessPreview(state, action);
+		case 'SET_BRUSH_SCALE_PROPORTIONAL': return setBrushScaleProportional(state, action);
 		case 'TOGGLE_HANDHELD':
 			playSound('click');
 			return { ...state, isHandheldEnabled: !state.isHandheldEnabled, isDirty: true };

@@ -94,6 +94,8 @@ export type Action =
 	| { type: 'SET_BRUSH_THICKNESS'; payload: number }
 	| { type: 'SET_BRUSH_THICKNESS_PREVIEW'; payload: number }
 	| { type: 'COMMIT_BRUSH_THICKNESS' }
+	| { type: 'SCALE_LAYER_THICKNESS_PREVIEW'; payload: number }
+	| { type: 'SET_BRUSH_SCALE_PROPORTIONAL'; payload: boolean }
 	| { type: 'TOGGLE_HANDHELD' }
 	| { type: 'SET_HANDHELD_INTENSITY'; payload: HandheldIntensity }
 	| { type: 'SET_BRUSH_MODE'; payload: BrushMode }

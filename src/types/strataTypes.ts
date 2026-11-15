@@ -334,6 +334,8 @@ export interface AppState {
   blobSmoothing: boolean;
   currentBrushThickness: number; // New: Brush Thickness (continuous value)
   brushThicknessBeforePreview: Shape[] | null; // Store shapes before thickness preview
+  brushScaleGesture: { baseThickness: number; k: number } | null; // Transient: an open proportional scale of a «Mixto» layer (v3.26.25)
+  brushScaleProportional: boolean; // UI preference: the «Mixto» slider scales (true) or unifies. Not in .dior or history (v3.26.25)
   gradParamsPendingCommit: boolean; // A gradient slider drag is open, awaiting commit-on-release
   isHandheldEnabled: boolean; // New: Handheld camera shake
   handheldIntensity: HandheldIntensity; // New: Handheld shake intensity

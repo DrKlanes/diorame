@@ -21,6 +21,9 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
 	{ label: 'SET_BRUSH_THICKNESS_PREVIEW', action: { type: 'SET_BRUSH_THICKNESS_PREVIEW', payload: 44 } },
 	{ label: 'COMMIT_BRUSH_THICKNESS', setup: [{ type: 'SET_BRUSH_THICKNESS_PREVIEW', payload: 44 }], action: { type: 'COMMIT_BRUSH_THICKNESS' } },
 	{ label: 'SET_BRUSH_MODE', action: { type: 'SET_BRUSH_MODE', payload: 'tapered' } },
+	{ label: 'SCALE_LAYER_THICKNESS_PREVIEW', action: { type: 'SCALE_LAYER_THICKNESS_PREVIEW', payload: 1.5 } },
+	{ label: 'COMMIT_BRUSH_THICKNESS (escala)', setup: [{ type: 'SCALE_LAYER_THICKNESS_PREVIEW', payload: 1.5 }], action: { type: 'COMMIT_BRUSH_THICKNESS' } },
+	{ label: 'SET_BRUSH_SCALE_PROPORTIONAL', action: { type: 'SET_BRUSH_SCALE_PROPORTIONAL', payload: false } },
 	// Transform
 	{ label: 'MOVE_LAYER', action: { type: 'MOVE_LAYER', payload: { layerIndex: 1, deltaX: 10, deltaY: -5 } } },
 	{ label: 'TRANSFORM_LAYER', action: { type: 'TRANSFORM_LAYER', payload: { layerIndex: 1, transform: { rotation: 0.3, scale: 1.5, dx: 5, dy: 5, centerX: 100, centerY: 100 } } } },

@@ -109,6 +109,8 @@ export const initialState: AppState = {
 	blobSmoothing: false,
 	currentBrushThickness: 25,
 	brushThicknessBeforePreview: null,
+	brushScaleGesture: null,
+	brushScaleProportional: true,
 	gradParamsPendingCommit: false,
 	isHandheldEnabled: false,
 	handheldIntensity: 'medium',

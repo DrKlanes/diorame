@@ -34,11 +34,11 @@ describe('reducer · humo', () => {
 	beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-11-15T12:00:00.000Z')); });
 	afterEach(() => { vi.useRealTimers(); });
 
-	it('el catálogo cubre exactamente las acciones del reducer (89)', () => {
+	it('el catálogo cubre exactamente las acciones del reducer (91 desde v3.26.25)', () => {
 		const cases = reducerCases();
 		const covered = [...new Set(CATALOGUE.map(e => e.action.type))].sort();
 		expect(covered).toEqual(cases);
-		expect(cases).toHaveLength(89);
+		expect(cases).toHaveLength(91);
 	});
 
 	it.each(CATALOGUE.map(e => [e.label, e] as const))('%s corre sobre un estado con contenido', (_label, entry) => {

@@ -651,7 +651,7 @@ H.264 en Safari iPadOS, Wake Lock, tiempo y memoria con 60 s a 1920 (antes de la
 
 ## Grosor y trazos Ink (v3.26.3–3.26.4): pendientes y decisiones abiertas
 
-**Estado:** registrados al cerrar v3.26.4. Los puntos 1 y 2 se cerraron en la fase 4 del refactor (v3.26.22–3.26.23); el resto sigue sin programar.
+**Estado:** registrados al cerrar v3.26.4. Los puntos 1 y 2 se cerraron en la fase 4 del refactor (v3.26.22–3.26.23) y el escalado proporcional en v3.26.25; el resto sigue sin programar.
 
 ### ~~El slider de grosor no refleja el grosor visible de la capa~~ — CERRADO (v3.26.22–3.26.23)
 
@@ -661,7 +661,8 @@ Redimensionar trazos de brush cambiaba el grosor visible pero no el valor del sl
 
 Quedan abiertos, de este punto:
 
-- **Escalado proporcional de grosores mixtos** (futuro, sin programar): una opción explícita para engordar o adelgazar una capa mixta conservando la proporción entre sus trazos, en vez de unificarlos.
+- ~~**Escalado proporcional de grosores mixtos**~~ — **CERRADO (v3.26.25).** En una capa «Mixto», un candado junto al valor elige qué hace el slider: cerrado (por defecto) escala todos los trazos por k conservando sus razones; abierto unifica, como antes. k en pasos de 0,1, acotado para que ningún trazo salga de 1–70; «×k» mientras se arrastra; un gesto = un paso de undo; k = 1 no deja paso; el trazo nuevo sale al par × k. El candado es preferencia de UI: dura la sesión (en memoria), no va al `.dior` ni al historial, no ensucia. Detalle: REFERENCE.md §4. [VERIFICADO en escritorio con datos (Node y dev server, claro y oscuro); **POR VALIDAR por Moisés**: el aspecto del candado y del «×k» en `localhost:3000` y en iPad, y si el tamaño de toque de 30 px —el de toda la píldora— basta en el iPad.]
+  - Decisiones tomadas al construirlo, para revisar si no convencen: el tirador sigue en la escala de grosor (k = grosor del tirador / par vigente al empezar), no en una escala propia de k, para que banda y tirador hablen el mismo idioma; cada pulsación de flecha es un gesto (×1,1 sobre ×1,1 compone), sostenerla acumula k dentro del mismo gesto; el tooltip y el `aria-label` nombran el modo actual; la píldora se ensancha al volverse mixta (230 → 276 px) y no se mueve durante el arrastre.
 - **Archivos guardados antes de v3.26.22 con trazos redimensionados**: llevan el número antiguo (un trazo dibujado a 20 y redimensionado ×2 dice 20 y mide 40). No se migran. Se ven igual que antes, el slider marca 20 y el primer re-estilado los redibuja al valor elegido, como siempre hizo; un Uniform se pinta con el número guardado, así que sigue tan fino como estaba. **Decisión pendiente de Moisés:** dejarlo así, o detectar el desfase al cargar midiendo el contorno contra el número (exacto en Tapered, aproximado en Ink, imposible en Uniform, que no hornea contorno).
 - **Tono de la banda y del tirador en «Mixto»**: `T.purpleLight` para los dos. Con `T.purple20` (más suave) la banda de 3 px casi no se distinguía del track gris en claro. Es calibrado a ojo: lo decide Moisés.
 

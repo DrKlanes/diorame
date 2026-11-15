@@ -6,6 +6,7 @@
 import { BASE_DEPTH_STEP } from '../constants/layers';
 import { generateStrokeForMode, inkSeedFor } from '../utils/strokeGenerators';
 import { pushHistory, createSnapshot, patchCurrentSnapshot } from './history';
+import { layerScaleBounds } from '../utils/layerBrush';
 import type { AppState, BrushMode, Shape } from '../types/strataTypes';
 import type { Action } from '../types/strataActions';
 
@@ -52,7 +53,40 @@ export function setBrushThicknessPreview(state: AppState, action: Extract<Action
 	};
 }
 
+// Proportional scale of a «Mixto» layer (v3.26.25): the slider is a multiplier k on the thickness each
+// stroke had when the gesture began — never on the last tick's —, so the ratios between strokes stand.
+// The layer's pair (what a new stroke takes) is scaled by the same k. Bounded by layerScaleBounds; the
+// gesture closes with COMMIT_BRUSH_THICKNESS, as the unifying drag does: one step, none if k ends at 1.
+export function scaleLayerThicknessPreview(state: AppState, action: Extract<Action, { type: 'SCALE_LAYER_THICKNESS_PREVIEW' }>): AppState {
+	const layerIdx = state.currentLayerIndex;
+	const baseShapes = state.brushThicknessBeforePreview || state.shapes;
+	const currentSettings = state.layerBrushSettings[layerIdx] || { mode: state.brushMode, thickness: state.currentBrushThickness };
+	const baseThickness = state.brushScaleGesture?.baseThickness ?? currentSettings.thickness;
+	const { kMin, kMax } = layerScaleBounds(baseShapes, layerIdx);
+	const k = Math.min(kMax, Math.max(kMin, action.payload));
+	const thickness = baseThickness * k;
+
+	const currentLayerZ = layerIdx * -BASE_DEPTH_STEP;
+	const shapes = baseShapes.map(s => (isRegenerable(s, currentLayerZ) ? restyle(s, s.brushMode || currentSettings.mode, (s.brushThickness ?? baseThickness) * k) : s));
+
+	return {
+		...state,
+		currentBrushThickness: thickness,
+		layerBrushSettings: { ...state.layerBrushSettings, [layerIdx]: { ...currentSettings, thickness } },
+		brushThicknessBeforePreview: baseShapes,
+		brushScaleGesture: { baseThickness, k },
+		shapes,
+	};
+}
+
+// Proportional or unify, for the slider of a «Mixto» layer. A preference of the UI: not in the .dior, not
+// in the history, never dirty.
+export function setBrushScaleProportional(state: AppState, action: Extract<Action, { type: 'SET_BRUSH_SCALE_PROPORTIONAL' }>): AppState {
+	return { ...state, brushScaleProportional: action.payload };
+}
+
 export function commitBrushThickness(state: AppState): AppState {
+	if (state.brushScaleGesture) state = { ...state, brushScaleGesture: null };
 	const prevShapes = state.brushThicknessBeforePreview;
 	if (prevShapes) {
 		// Only commit an undo step if the thickness cycle actually restyled

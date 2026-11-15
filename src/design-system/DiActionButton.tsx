@@ -3,7 +3,7 @@ import { Ico } from './Ico';
 import { T, TYPE, RADIUS, dk } from './tokens';
 import { EnhancedTooltip } from '../components/ui/enhanced-tooltip';
 
-export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, label, labelSize, tooltip, shortcut, disabled = false, danger = false, minWidth }: {
+export function DiActionButton({ name, onClick, dark, active = false, activeStyle = 'wash', iconWeight = 'normal', iconSize = 18, label, labelSize, tooltip, shortcut, disabled = false, danger = false, minWidth, ariaLabel }: {
 	name: string;
 	onClick: () => void;
 	dark: boolean;
@@ -18,6 +18,7 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 	disabled?: boolean;
 	danger?: boolean;
 	minWidth?: number;
+	ariaLabel?: string;
 }) {
 	const [hov, setHov] = useState(false);
 	const activeBg = activeStyle === 'solid'
@@ -42,6 +43,7 @@ export function DiActionButton({ name, onClick, dark, active = false, activeStyl
 	const btn = (
 		<button
 			onClick={onClick}
+			aria-label={ariaLabel}
 			// An immediate-action button must not keep the DOM focus after its click.
 			// Keeping it makes the global shortcut guard (useKeyboardShortcuts) stand
 			// down for Space and Enter for as long as the button stays focused — which

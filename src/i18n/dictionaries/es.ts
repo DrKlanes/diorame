@@ -127,6 +127,9 @@ export const es: Dictionary = {
 	'bottombar.draw.toolOptions.size': 'Tamaño',
 	'bottombar.draw.toolOptions.mixed': 'Mixto',
 	'bottombar.draw.toolOptions.mixedAria': 'Mixto, de {min} a {max}',
+	'bottombar.draw.toolOptions.mixedScaleAria': 'Mixto, de {min} a {max}, escala ×{k}',
+	'bottombar.draw.toolOptions.scaleProportional': 'Escalar proporcionalmente',
+	'bottombar.draw.toolOptions.scaleUnify': 'Unificar grosor',
 
 	// Animation player (moved to topbar)
 	'bottombar.anim.toggle': 'Modo animación',

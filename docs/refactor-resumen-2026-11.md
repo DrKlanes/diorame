@@ -1,18 +1,19 @@
-# Refactor de Diorame — estado a v3.26.24 (15 nov 2026)
+# Refactor de Diorame — estado a v3.26.25 (15 nov 2026)
 
 Resumen autocontenido de todo lo hecho en el refactor, para poner al día a quien no ha seguido la sesión. El detalle, las mediciones y las tablas completas están en `docs/audit-2026-11.md`; este documento no lo sustituye, lo resume.
 
-**Punto de partida:** v3.26.5, commit `2097388`. **Estado actual:** v3.26.24 en `main`, subido, CI en verde. **Hecho desde la versión anterior de este resumen (v3.26.21):** la fase 4, modelo de grosor y «Mixto» (§2, §5 y `docs/audit-2026-11.md`, «Fase 4 — resultado»). **Siguiente:** lo decide Moisés entre las fases 3B, 5, 6 y 7; antes, su validación visual de «Mixto» en `localhost:3000` y en iPad.
+**Punto de partida:** v3.26.5, commit `2097388`. **Estado actual:** v3.26.25 en `main`. **Hecho desde la versión anterior de este resumen (v3.26.21):** la fase 4, modelo de grosor y «Mixto» (§2, §5 y `docs/audit-2026-11.md`, «Fase 4 — resultado»), y sobre ella el escalado proporcional de una capa «Mixto» (v3.26.25). **Siguiente:** lo decide Moisés entre las fases 3B, 5, 6 y 7; antes, su validación visual de «Mixto» y del candado de escala en `localhost:3000` y en iPad.
 
 ---
 
 ## 1. En una página
 
 - Se auditó `src/` y se confirmó un monolito principal, `StrataContext.tsx` (2 153 líneas, reducer de 89 acciones), y un segundo, `StrataCanvas.tsx` (1 922).
-- Se montó una red de seguridad: Vitest, 451 tests en 9 archivos, que ejecutan el reducer y los generadores de trazo reales en Node. Corre en el CI y bloquea el deploy.
+- Se montó una red de seguridad: Vitest, 476 tests en 10 archivos (451 en 9 al cerrar la fase 4), que ejecutan el reducer y los generadores de trazo reales en Node. Corre en el CI y bloquea el deploy.
 - Se arreglaron seis hallazgos de persistencia que la auditoría y los tests destaparon (H1, H6, H7, `TOGGLE_3D_LOCK`, H2, H3).
 - Se partió `StrataContext.tsx` moviendo código sin reescribirlo: 2 153 → 1 314 líneas. Lo que salió vive en `constants/`, `types/` y la carpeta nueva `src/state/`.
 - **Fase 4, hecha:** el grosor que guarda un trazo es el que hay en el lienzo (D3 y D4 aplicadas), y el panel enseña «Mixto» cuando una capa tiene trazos de varios grosores; tocar el slider los unifica. Con ella se cerraron I6, G1, G3–G8 y H8.
+- **Escalado proporcional (v3.26.25):** en una capa «Mixto», un candado elige entre escalar todos los trazos por k (por defecto) o unificarlos.
 - Nada se ha probado en iPad. `StrataCanvas.tsx` solo ha cambiado de indentación.
 
 ---
@@ -39,7 +40,8 @@ Resumen autocontenido de todo lo hecho en el refactor, para poner al día a quie
 | v3.26.21 | `3f2b4c2` | docs | Primera versión de este resumen |
 | v3.26.22 | `1d03930` | feat | **Fase 4a.** Modelo de grosor: D3, D4, G5–G8, H8, aviso de formas descartadas |
 | v3.26.23 | `ec40501` | feat | **Fase 4b.** «Mixto» en el panel de grosor |
-| v3.26.24 | — | docs | Cierre de la fase 4: auditoría, deuda de UX y este resumen |
+| v3.26.24 | `f54d6fd` | docs | Cierre de la fase 4: auditoría, deuda de UX y este resumen |
+| v3.26.25 | — | feat | Escalado proporcional de una capa «Mixto»: candado, `SCALE_LAYER_THICKNESS_PREVIEW`, `SET_BRUSH_SCALE_PROPORTIONAL` (91 acciones) |
 
 Todos los tags son anotados y están en el remoto. No se reescribió historia.
 
@@ -67,7 +69,7 @@ Sigue conteniendo el `switch` de `appReducer`, las acciones aún no movidas, el 
 | `src/types/strataActions.ts` | 123 | Unión `Action` (89 acciones), `LegacyShape`, `LegacyProjectPayload` |
 | `src/state/history.ts` | 159 | `pushHistory`, `createSnapshot`, `patchCurrentSnapshot`, `undo`, `redo` |
 | `src/state/loadProject.ts` | 255 | `loadProject` (`LOAD_PROJECT`), `readableShapes` |
-| `src/state/brush.ts` | 119 | `setBrushThickness`, `setBrushThicknessPreview`, `commitBrushThickness`, `setBrushMode`, y desde la fase 4 un único `restyle` |
+| `src/state/brush.ts` | 153 | `setBrushThickness`, `setBrushThicknessPreview`, `commitBrushThickness`, `setBrushMode`, desde la fase 4 un único `restyle`, y desde v3.26.25 `scaleLayerThicknessPreview` y `setBrushScaleProportional` |
 | `src/state/layerTransform.ts` | 200 | `moveLayer`, `transformLayer`, `flipLayer` |
 
 Además: `FIXED_PALETTE` y `ALTERNATIVE_PALETTE` pasaron de `StrataContext.tsx` a `constants/palette.ts` (las necesita `initialState` y no puede importar del reducer). `utils/diorPayload.ts` ganó `buildDiorFields` y `buildAutosaveData`.
@@ -91,17 +93,18 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 
 ## 4. Red de seguridad
 
-- **`npm test`**: Vitest 4.1.12 (fijada: es la última línea que declara Vite ^6.0; el proyecto fija Vite 6.3.5). Entorno `node`, sin mocks. 451 tests, ~1,5 s.
+- **`npm test`**: Vitest 4.1.12 (fijada: es la última línea que declara Vite ^6.0; el proyecto fija Vite 6.3.5). Entorno `node`, sin mocks. 476 tests, ~1,5 s.
 - **CI**: paso `Test` en `.github/workflows/deploy.yml`, tras el typecheck y antes del build. Un test en rojo no se despliega.
 - **Tests en `tests/`** (fuera de `src/`), incluidos en el typecheck.
 
 | Archivo | Cubre |
 |---|---|
-| `reducer.smoke.test.ts` | Las 89 acciones corren sobre un estado con contenido. Falla si se añade una acción sin entrada en `helpers/actions.ts` |
+| `reducer.smoke.test.ts` | Las 91 acciones corren sobre un estado con contenido. Falla si se añade una acción sin entrada en `helpers/actions.ts` |
 | `strokeGenerators.golden.test.ts` | 6 trazos × tapered / uniform / ink × grosor 1 / 20 / 70 contra referencia (tolerancia 1e-9). Protege `_inkSmoothPass` ×3 peso 0,3 y el densificado curvo de v3.26.4 |
 | `history.characterization.test.ts` | Contrato de undo híbrido: sesión de 24 gestos deshecha y rehecha paso a paso |
 | `brush.characterization.test.ts` | Modelo de grosor: redimensionar escala el grosor guardado, re-estilar, selección pura, arrastre = un paso (y ninguno si vuelve a donde empezó), Ink conserva su dibujo |
 | `mixedThickness.test.ts` | «Mixto»: qué capa es mixta, cómo se muestra un grosor, unificar = un paso de undo, deshacer devuelve cada grosor y el par que regía |
+| `proportionalScale.test.ts` | Escalado proporcional (v3.26.25): razones conservadas (1e-9), límites de k, un gesto = un paso, undo exacto, k = 1 sin paso, trazo nuevo al par × k, el candado fuera del `.dior`, del historial y de `isDirty`, unificar idéntico |
 | `layers.characterization.test.ts` | Navegación, alta, borrado, reordenado, duplicado y acoplado de capas |
 | `isDirty.test.ts` | Toda acción que cambia lo que guarda el `.dior` marca `isDirty`, salvo una lista explícita |
 | `dior.roundtrip.test.ts` | Guardar → cargar, paridad `.dior` / autoguardado, migración de archivos antiguos |
@@ -160,7 +163,6 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 
 - **Archivos guardados antes de v3.26.22 con trazos redimensionados:** llevan el número antiguo (dibujado a 20, redimensionado ×2: dice 20, mide 40). No se migran: se ven igual, el slider marca 20 y el primer re-estilado los redibuja al valor elegido. Falta decidir si se deja así o se detecta el desfase al cargar (exacto en Tapered, aproximado en Ink).
 - **Tono de la banda y del tirador de «Mixto»** (`T.purpleLight`): calibrado visual, lo cierra Moisés.
-- Escalado proporcional de una capa mixta, sin unificar: idea futura, sin programar (`docs/ux-debt.md`).
 - Los valores de dentro de `layerGradParams` no se validan al cargar.
 - Desfases de documentación listados en la auditoría §6 (Apéndice C de REFERENCE.md parado en 3.25.29, atajos del Apéndice B, tabla de primitivas Di*…). No se corrigieron, salvo los que tocaba cada commit.
 
@@ -189,7 +191,7 @@ Decisiones tomadas dentro de la fase 4, con su motivo en la auditoría: el redon
 
 | Fase | Qué | Notas |
 |---|---|---|
-| ~~4. «Mixto»~~ | **Hecha** (v3.26.22–23) | Pendiente solo la validación visual de Moisés, en `localhost:3000` y en iPad |
+| ~~4. «Mixto»~~ | **Hecha** (v3.26.22–23; escalado proporcional en v3.26.25) | Pendiente solo la validación visual de Moisés, en `localhost:3000` y en iPad |
 | **3B. Resto del reducer** | Capas (navegación y reordenado), paleta, FX, animación, texto; `appReducer` a su archivo | Al final `diorRender.ts` importará el reducer puro y React saldrá del grafo de `dior-render.js` |
 | **5. Archivos de FX** | `canvas/risoV2.ts`, `superRiso/engineHost.ts`, tipos de `renderPipeline.ts` | Núcleo: GO explícito. `pixcheck` 0 px. Una ronda en iPad |
 | **6. `StrataCanvas.tsx`** | `canvas/commitStroke.ts` y dos hooks de efectos | Los handlers de puntero y táctil piden sprint propio con iPad |
