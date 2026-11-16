@@ -18564,6 +18564,130 @@
 				"isDirty": false
 			}
 		},
+		"pan/middle-button/draw/clamped-negative": {
+			"trace": [
+				{
+					"ev": "pointerdown 520,410",
+					"actions": [],
+					"prevented": 1,
+					"capture": [
+						"set:1"
+					],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						},
+						"isPanning": true,
+						"activePointerId": 1,
+						"cursorOverride": "cursor-grabbing"
+					}
+				},
+				{
+					"ev": "pointermove -1480,4410",
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": -1500,
+									"y": 1500
+								}
+							}
+						}
+					],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {}
+				},
+				{
+					"ev": "pointermove -979,1909",
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": -1499,
+									"y": 1499
+								}
+							}
+						}
+					],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {}
+				},
+				{
+					"ev": "pointerup -979,1909",
+					"actions": [],
+					"prevented": 0,
+					"capture": [
+						"release:1"
+					],
+					"log": [],
+					"refs": {
+						"isPanning": false,
+						"activePointerId": null,
+						"cursorOverride": null
+					}
+				}
+			],
+			"state": {
+				"mode": "drawing",
+				"tool": "blob",
+				"currentLayerIndex": 0,
+				"totalLayers": 1,
+				"shapes": [],
+				"drawingZoom": 1,
+				"drawingPan": {
+					"x": -1499,
+					"y": 1499
+				},
+				"isLayerSelected": true,
+				"viewZoomOffset": -600,
+				"pointOfInterest": null,
+				"textSession": {
+					"isActive": false,
+					"x": 0,
+					"y": 0,
+					"content": "",
+					"font": "noir",
+					"align": "left"
+				},
+				"historyIndex": 0,
+				"historyLength": 1,
+				"isDrawing": false,
+				"isOnboardingVisible": false,
+				"isDirty": false
+			}
+		},
 		"pan/middle-button/orbit-is-zoom": {
 			"trace": [
 				{
@@ -20764,6 +20888,318 @@
 				"drawingPan": {
 					"x": 750,
 					"y": -750
+				},
+				"isLayerSelected": true,
+				"viewZoomOffset": -600,
+				"pointOfInterest": null,
+				"textSession": {
+					"isActive": false,
+					"x": 0,
+					"y": 0,
+					"content": "",
+					"font": "noir",
+					"align": "left"
+				},
+				"historyIndex": 0,
+				"historyLength": 1,
+				"isDrawing": false,
+				"isOnboardingVisible": false,
+				"isDirty": false
+			}
+		},
+		"touch2/pinch/zoom-out/pan-clamped/opposite-corner": {
+			"trace": [
+				{
+					"ev": "touchstart 2",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 400,
+							"startZoom": 1,
+							"startPan": {
+								"x": -700,
+								"y": 700
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 1700000000000,
+							"tapMoved": false,
+							"tapTouchCount": 2
+						}
+					}
+				},
+				{
+					"ev": "touchmove 2",
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 0.5,
+								"pan": {
+									"x": -750,
+									"y": 750
+								}
+							}
+						}
+					],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": true,
+							"startDist": 400,
+							"startZoom": 1,
+							"startPan": {
+								"x": -700,
+								"y": 700
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 1700000000000,
+							"tapMoved": true,
+							"tapTouchCount": 2
+						}
+					}
+				},
+				{
+					"ev": "touchend 0",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 400,
+							"startZoom": 1,
+							"startPan": {
+								"x": -700,
+								"y": 700
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						},
+						"pinchEnd": 1700000000000
+					}
+				}
+			],
+			"state": {
+				"mode": "drawing",
+				"tool": "blob",
+				"currentLayerIndex": 0,
+				"totalLayers": 1,
+				"shapes": [],
+				"drawingZoom": 0.5,
+				"drawingPan": {
+					"x": -750,
+					"y": 750
+				},
+				"isLayerSelected": true,
+				"viewZoomOffset": -600,
+				"pointOfInterest": null,
+				"textSession": {
+					"isActive": false,
+					"x": 0,
+					"y": 0,
+					"content": "",
+					"font": "noir",
+					"align": "left"
+				},
+				"historyIndex": 0,
+				"historyLength": 1,
+				"isDrawing": false,
+				"isOnboardingVisible": false,
+				"isDirty": false
+			}
+		},
+		"touch2/pinch/start-distance-0-falls-back-to-1": {
+			"trace": [
+				{
+					"ev": "touchmove 2",
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 2,
+								"pan": {
+									"x": 1040,
+									"y": 820
+								}
+							}
+						}
+					],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {}
+				},
+				{
+					"ev": "touchend 0",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 0,
+								"y": 0
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						},
+						"pinchEnd": 1700000000000
+					}
+				}
+			],
+			"state": {
+				"mode": "drawing",
+				"tool": "blob",
+				"currentLayerIndex": 0,
+				"totalLayers": 1,
+				"shapes": [],
+				"drawingZoom": 2,
+				"drawingPan": {
+					"x": 1040,
+					"y": 820
+				},
+				"isLayerSelected": true,
+				"viewZoomOffset": -600,
+				"pointOfInterest": null,
+				"textSession": {
+					"isActive": false,
+					"x": 0,
+					"y": 0,
+					"content": "",
+					"font": "noir",
+					"align": "left"
+				},
+				"historyIndex": 0,
+				"historyLength": 1,
+				"isDrawing": false,
+				"isOnboardingVisible": false,
+				"isDirty": false
+			}
+		},
+		"touch2/pinch/non-finite-distance/ignored": {
+			"trace": [
+				{
+					"ev": "touchmove 2",
+					"actions": [],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {}
+				},
+				{
+					"ev": "touchend 0",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 100,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 0,
+								"y": 0
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						},
+						"pinchEnd": 1700000000000
+					}
+				}
+			],
+			"state": {
+				"mode": "drawing",
+				"tool": "blob",
+				"currentLayerIndex": 0,
+				"totalLayers": 1,
+				"shapes": [],
+				"drawingZoom": 1,
+				"drawingPan": {
+					"x": 0,
+					"y": 0
 				},
 				"isLayerSelected": true,
 				"viewZoomOffset": -600,
@@ -25166,6 +25602,408 @@
 				"isDrawing": false,
 				"isOnboardingVisible": false,
 				"isDirty": true
+			}
+		},
+		"orbit/touch2/pinch/within-range": {
+			"trace": [
+				{
+					"ev": "touchstart 2",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": true,
+							"startDist": 200,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": true,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0.2,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": -600,
+							"orbitTouchLastPos": {
+								"x": 520,
+								"y": 410
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						}
+					}
+				},
+				{
+					"ev": "touchmove 2",
+					"actions": [
+						{
+							"type": "SET_VIEW_ZOOM_OFFSET",
+							"payload": -1300.0000000000005
+						}
+					],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"orbit": {
+							"azimuth": 0,
+							"elevation": 0.2,
+							"targetAzimuth": 0,
+							"targetElevation": 0.225,
+							"panOffsetX": 0,
+							"panOffsetY": 0
+						}
+					}
+				},
+				{
+					"ev": "touchmove 2",
+					"actions": [
+						{
+							"type": "SET_VIEW_ZOOM_OFFSET",
+							"payload": 99.99999999999989
+						}
+					],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"orbit": {
+							"azimuth": 0,
+							"elevation": 0.2,
+							"targetAzimuth": 0,
+							"targetElevation": 0.16,
+							"panOffsetX": 0,
+							"panOffsetY": 0
+						}
+					}
+				},
+				{
+					"ev": "touchend 0",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 200,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0.2,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": -600,
+							"orbitTouchLastPos": {
+								"x": 520,
+								"y": 410
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						}
+					}
+				}
+			],
+			"state": {
+				"mode": "cinematic",
+				"tool": "blob",
+				"currentLayerIndex": 0,
+				"totalLayers": 1,
+				"shapes": [],
+				"drawingZoom": 1,
+				"drawingPan": {
+					"x": 0,
+					"y": 0
+				},
+				"isLayerSelected": true,
+				"viewZoomOffset": 99.99999999999989,
+				"pointOfInterest": null,
+				"textSession": {
+					"isActive": false,
+					"x": 0,
+					"y": 0,
+					"content": "",
+					"font": "noir",
+					"align": "left"
+				},
+				"historyIndex": 0,
+				"historyLength": 1,
+				"isDrawing": false,
+				"isOnboardingVisible": false,
+				"isDirty": true
+			}
+		},
+		"orbit/touch2/elevation-clamps-both-ways": {
+			"trace": [
+				{
+					"ev": "touchstart 2",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": true,
+							"startDist": 100,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": true,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0.2,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": -600,
+							"orbitTouchLastPos": {
+								"x": 520,
+								"y": 410
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						}
+					}
+				},
+				{
+					"ev": "touchmove 2",
+					"actions": [
+						{
+							"type": "SET_VIEW_ZOOM_OFFSET",
+							"payload": -600
+						}
+					],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"orbit": {
+							"azimuth": 0,
+							"elevation": 0.2,
+							"targetAzimuth": 0,
+							"targetElevation": 1.5,
+							"panOffsetX": 0,
+							"panOffsetY": 0
+						}
+					}
+				},
+				{
+					"ev": "touchmove 2",
+					"actions": [
+						{
+							"type": "SET_VIEW_ZOOM_OFFSET",
+							"payload": -600
+						}
+					],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"orbit": {
+							"azimuth": 0,
+							"elevation": 0.2,
+							"targetAzimuth": 0,
+							"targetElevation": -1.5,
+							"panOffsetX": 0,
+							"panOffsetY": 0
+						}
+					}
+				},
+				{
+					"ev": "touchend 0",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 100,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0.2,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": -600,
+							"orbitTouchLastPos": {
+								"x": 520,
+								"y": 410
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						}
+					}
+				}
+			],
+			"state": {
+				"mode": "cinematic",
+				"tool": "blob",
+				"currentLayerIndex": 0,
+				"totalLayers": 1,
+				"shapes": [],
+				"drawingZoom": 1,
+				"drawingPan": {
+					"x": 0,
+					"y": 0
+				},
+				"isLayerSelected": true,
+				"viewZoomOffset": -600,
+				"pointOfInterest": null,
+				"textSession": {
+					"isActive": false,
+					"x": 0,
+					"y": 0,
+					"content": "",
+					"font": "noir",
+					"align": "left"
+				},
+				"historyIndex": 0,
+				"historyLength": 1,
+				"isDrawing": false,
+				"isOnboardingVisible": false,
+				"isDirty": false
+			}
+		},
+		"orbit/touch2/fingers-on-the-same-spot/no-zoom": {
+			"trace": [
+				{
+					"ev": "touchstart 2",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": true,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": true,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0.2,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": -600,
+							"orbitTouchLastPos": {
+								"x": 520,
+								"y": 410
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						}
+					}
+				},
+				{
+					"ev": "touchmove 2",
+					"actions": [],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {}
+				},
+				{
+					"ev": "touchend 0",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0.2,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": -600,
+							"orbitTouchLastPos": {
+								"x": 520,
+								"y": 410
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						}
+					}
+				}
+			],
+			"state": {
+				"mode": "cinematic",
+				"tool": "blob",
+				"currentLayerIndex": 0,
+				"totalLayers": 1,
+				"shapes": [],
+				"drawingZoom": 1,
+				"drawingPan": {
+					"x": 0,
+					"y": 0
+				},
+				"isLayerSelected": true,
+				"viewZoomOffset": -600,
+				"pointOfInterest": null,
+				"textSession": {
+					"isActive": false,
+					"x": 0,
+					"y": 0,
+					"content": "",
+					"font": "noir",
+					"align": "left"
+				},
+				"historyIndex": 0,
+				"historyLength": 1,
+				"isDrawing": false,
+				"isOnboardingVisible": false,
+				"isDirty": false
 			}
 		},
 		"orbit/touch/not-armed-without-a-touchstart": {
@@ -31217,6 +32055,128 @@
 				"isDrawing": false,
 				"isOnboardingVisible": false,
 				"isDirty": false
+			}
+		},
+		"move/empty-layer/move-ref/zoom-2-pan/layer-1": {
+			"trace": [
+				{
+					"ev": "pointerdown 520,410",
+					"actions": [
+						{
+							"type": "SET_DRAWING_ACTIVE",
+							"payload": true
+						}
+					],
+					"prevented": 1,
+					"capture": [
+						"set:1"
+					],
+					"log": [],
+					"refs": {
+						"isDrawing": true,
+						"drawingPointerType": "pen",
+						"move": {
+							"startX": -25,
+							"startY": 15,
+							"offsetX": 0,
+							"offsetY": 0
+						},
+						"activePointerId": 1,
+						"canvasRect": {
+							"left": 20,
+							"top": 10,
+							"width": 1000,
+							"height": 800
+						}
+					}
+				},
+				{
+					"ev": "pointermove 560,435",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"move": {
+							"startX": -25,
+							"startY": 15,
+							"offsetX": 20,
+							"offsetY": 12.5
+						},
+						"hoverGizmoMode": "move"
+					}
+				},
+				{
+					"ev": "pointermove 590,395",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"move": {
+							"startX": -25,
+							"startY": 15,
+							"offsetX": 35,
+							"offsetY": -7.5
+						}
+					}
+				},
+				{
+					"ev": "pointerup 590,395",
+					"actions": [
+						{
+							"type": "SET_DRAWING_ACTIVE",
+							"payload": false
+						},
+						{
+							"type": "MOVE_LAYER",
+							"payload": {
+								"layerIndex": 1,
+								"deltaX": 35,
+								"deltaY": -7.5
+							}
+						}
+					],
+					"prevented": 0,
+					"capture": [
+						"release:1"
+					],
+					"log": [],
+					"refs": {
+						"isDrawing": false,
+						"drawingPointerType": null,
+						"move": null,
+						"activePointerId": null
+					}
+				}
+			],
+			"state": {
+				"mode": "drawing",
+				"tool": "move",
+				"currentLayerIndex": 1,
+				"totalLayers": 2,
+				"shapes": [],
+				"drawingZoom": 2,
+				"drawingPan": {
+					"x": 50,
+					"y": -30
+				},
+				"isLayerSelected": true,
+				"viewZoomOffset": -600,
+				"pointOfInterest": null,
+				"textSession": {
+					"isActive": false,
+					"x": 0,
+					"y": 0,
+					"content": "",
+					"font": "noir",
+					"align": "left"
+				},
+				"historyIndex": 1,
+				"historyLength": 2,
+				"isDrawing": false,
+				"isOnboardingVisible": false,
+				"isDirty": true
 			}
 		},
 		"move/empty-layer/under-0.1/nothing": {
