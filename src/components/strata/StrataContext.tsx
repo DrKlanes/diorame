@@ -61,6 +61,7 @@ import { startTextSession, updateTextSession, commitTextSession, cancelTextSessi
 import { addShape, addShapes } from '../../state/shapes';
 import { setMode, updateCamera, setCinematicType, setCinematicSpeed, setFocalLength, setViewZoomOffset, initCinemaView, setLayerSpacingFactor, toggleHandheld, setHandheldIntensity, setPointOfInterest, clearPointOfInterest } from '../../state/cinema';
 import { setDrawingZoom, resetDrawingView, setFormat, setViewportSize, completeFitToView, toggleGrid } from '../../state/drawView';
+import { setTool, setDrawingActive, toggleSymmetry, toggleDrawBehind, toggleDrawInside, toggleOrganicMode, toggleBlobSmoothing } from '../../state/tool';
 
 // --- Reducer ---
 
@@ -83,39 +84,13 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'TOGGLE_UI':
 			playSound('click');
 			return { ...state, isUIHidden: !state.isUIHidden };
-		case 'SET_DRAWING_ACTIVE':
-			return { ...state, isDrawing: action.payload };
-		case 'TOGGLE_SYMMETRY':
-			return { ...state, isSymmetryEnabled: !state.isSymmetryEnabled };
+		case 'SET_DRAWING_ACTIVE': return setDrawingActive(state, action); // Moved to state/tool.ts
+		case 'TOGGLE_SYMMETRY': return toggleSymmetry(state); // Moved to state/tool.ts
 		case 'TOGGLE_GRID': return toggleGrid(state); // Moved to state/drawView.ts
-		case 'TOGGLE_DRAW_BEHIND':
-			if (state.tool === 'eraser') return state;
-			const willBeBehind = !state.isDrawBehind;
-			return {
-				...state,
-				isDrawBehind: willBeBehind,
-				isDrawInside: willBeBehind ? false : state.isDrawInside
-			};
-		case 'TOGGLE_DRAW_INSIDE':
-			if (state.tool === 'eraser') return state;
-			const willBeInside = !state.isDrawInside;
-			return {
-				...state,
-				isDrawInside: willBeInside,
-				isDrawBehind: willBeInside ? false : state.isDrawBehind
-			};
-		case 'TOGGLE_ORGANIC_MODE':
-			return {
-				...state,
-				isOrganicMode: !state.isOrganicMode,
-				blobSmoothing: state.isOrganicMode ? state.blobSmoothing : false
-			};
-		case 'TOGGLE_BLOB_SMOOTHING':
-			return {
-				...state,
-				blobSmoothing: !state.blobSmoothing,
-				isOrganicMode: state.blobSmoothing ? state.isOrganicMode : false
-			};
+		case 'TOGGLE_DRAW_BEHIND': return toggleDrawBehind(state); // Moved to state/tool.ts
+		case 'TOGGLE_DRAW_INSIDE': return toggleDrawInside(state); // Moved to state/tool.ts
+		case 'TOGGLE_ORGANIC_MODE': return toggleOrganicMode(state); // Moved to state/tool.ts
+		case 'TOGGLE_BLOB_SMOOTHING': return toggleBlobSmoothing(state); // Moved to state/tool.ts
 		case 'SET_PALETTE_MODE': return setPaletteMode(state, action); // Moved to state/palette.ts
 		case 'SET_PALETTE_GRADIENT_ANGLE': return setPaletteGradientAngle(state, action); // Moved to state/palette.ts
 		case 'SET_PALETTE_GRADIENT_INTENSITY': return setPaletteGradientIntensity(state, action); // Moved to state/palette.ts
@@ -129,31 +104,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'UNDO': return undo(state); // Moved to state/history.ts
 		case 'REDO': return redo(state); // Moved to state/history.ts
 		case 'SET_MODE': return setMode(state, action); // Moved to state/cinema.ts
-		case 'SET_TOOL':
-			playSound('click');
-			if (action.payload === 'move') {
-				return {
-					...state,
-					tool: 'move',
-					// Reaching for Move means wanting to transform the layer, so it arrives
-					// selected. The toolbar dispatches SET_TOOL unconditionally (no "already
-					// on this tool" guard in DrawingToolbar), so re-tapping Move while
-					// already in Move runs this again — that is the cheapest way back from a
-					// deselected state, with no extra UI.
-					isLayerSelected: true,
-					isDrawBehind: false,
-					isDrawInside: false,
-					isSymmetryEnabled: false,
-					isOrganicMode: false
-				};
-			}
-			return {
-				...state,
-				tool: action.payload,
-				isDrawBehind: action.payload === 'eraser' ? false : state.isDrawBehind,
-				isDrawInside: action.payload === 'eraser' ? false : state.isDrawInside,
-				isOrganicMode: action.payload === 'brush' ? false : state.isOrganicMode
-			};
+		case 'SET_TOOL': return setTool(state, action); // Moved to state/tool.ts
 		case 'SET_CINEMATIC_TYPE': return setCinematicType(state, action); // Moved to state/cinema.ts
 		case 'SET_COLOR_INDEX': return setColorIndex(state, action); // Moved to state/palette.ts
 		case 'UPDATE_CAMERA': return updateCamera(state, action); // Moved to state/cinema.ts
