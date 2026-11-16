@@ -752,10 +752,10 @@ APIs they import change.
 
 The safety net of the refactor (plan and invariants: `docs/audit-2026-11.md` §3.6, §4, §5). They run the **real** reducer (`appReducer`) and the **real** stroke generators in Node: no DOM, no canvas, no mocks.
 
-- **Run:** `npm test` (`vitest run`; 476 tests in 10 files since v3.26.25, under 1 s of tests, ~1.5 s wall clock). One file: `npx vitest run tests/<file>`. In CI since v3.26.9: a blocking step of `.github/workflows/deploy.yml`, after the typecheck and before the build, so a red test is never deployed.
+- **Run:** `npm test` (`vitest run`; 663 tests in 12 files since v3.26.63 — 476 in 10 at v3.26.25, under 1 s of tests, ~1.5 s wall clock). One file: `npx vitest run tests/<file>`. In CI since v3.26.9: a blocking step of `.github/workflows/deploy.yml`, after the typecheck and before the build, so a red test is never deployed.
 - **Config:** `vitest.config.ts` inherits only `resolve.alias` from `vite.config.ts` (no PWA plugin, no Tailwind, no build entries); `environment: 'node'`. Vitest 4.1.12, pinned: the last line that declares Vite ^6.0 (5.x needs Vite ≥ 6.4). Adding it leaves the production build byte-identical.
 - **Typecheck:** `tsconfig.json` includes `tests`.
-- **What they do NOT cover:** pixels, WebGL, gestures, iPad. That stays with the browser harnesses of `tools/` above.
+- **What they do NOT cover:** pixels, WebGL, iPad. That stays with the browser harnesses of `tools/` above. Gestures: since v3.26.53 `handlers.characterization.test.ts` runs the canvas handlers through scripted pointer / touch events in Node (what each event dispatches and which refs it changes); WHEN the browser delivers an event, React's timing and the real DOM stay with `tools/handlers-golden/desktop-matrix.js` and the iPad.
 
 | File | Lines | Covers |
 |---|---|---|
@@ -1034,7 +1034,7 @@ This section is critical. These actions are **forbidden**:
 
 | File | Lines | Reason |
 |---|---|---|
-| `src/components/strata/StrataCanvas.tsx` | ~855 | Thin React shell after the v3.0.0 extraction; still oversize (phase 6, v3.26.47–3.26.50, took out `commitStroke`, wheel zoom and the Space bar; the pointer/touch handlers, ~800 lines, are their own sprint). Extraction remains the preferred direction, but it is no longer frozen — see CLAUDE.md § "Tocar StrataCanvas.tsx" for what needs an explicit GO. |
+| `src/components/strata/StrataCanvas.tsx` | ~855 | Thin React shell after the v3.0.0 extraction; still oversize (phase 6, v3.26.47–3.26.50, took out `commitStroke`, wheel zoom and the Space bar; the handlers sprint, v3.26.53–3.26.65, took the pointer / touch handlers out to `canvas/`: 1 719 → 853 lines. What is left is refs, effects, `resetGestureState`, the RAF core and JSX). Extraction remains the preferred direction, but it is no longer frozen — see CLAUDE.md § "Tocar StrataCanvas.tsx" for what needs an explicit GO. |
 | `src/components/strata/canvas/renderPipeline.ts` | ~730 | Frame orchestrator. Accepted oversize: its purpose is to sequence all render sub-modules in the correct order. Splitting into smaller files would fragment the orchestration logic without reducing real complexity. |
 
 ---
@@ -1424,9 +1424,24 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.52)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.65)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.53 – 3.26.65 — Sprint de handlers de `StrataCanvas.tsx` (rama `refactor/handlers`)
+
+`StrataCanvas.tsx` 1 719 → 853 líneas. Los handlers de puntero y táctiles salen a `canvas/`, movidos sin reescribir; refs, efectos, `resetGestureState`, el listener nativo del Pencil y el bucle RAF se quedan, idénticos al byte a v3.26.52. Informe, hallazgos y matriz de iPad: `docs/handlers-sprint-report.md`.
+
+- **3.26.53 · test:** `tools/handlers-golden/` ejecuta el texto literal de los handlers con el reducer real y registra, evento a evento, qué se despacha y qué refs cambian. Referencia congelada con el código de v3.26.52 (112 gestos); `tests/handlers.characterization.test.ts` compara contra ella el archivo del árbol de trabajo. Fija como comportamiento actual que un pinch con el centro quieto no hace zoom y, soltado antes de 300 ms, deshace.
+- **3.26.54 / .56 / .58 / .63 · test:** escenarios añadidos al plantar fallos que no hacían saltar nada (112 → 125), siempre regenerando con `--rev v3.26.52`; el de capa oculta, corregido.
+- **3.26.55 · refactor:** `canvas/touchGestures.ts` (umbrales de toque y pinch, matemática del pinch y de la órbita táctil). Matriz de escritorio versionada: `tools/handlers-golden/desktop-matrix.js`.
+- **3.26.57 · refactor:** `canvas/cinemaFraming.ts` (doble clic de CINEMA).
+- **3.26.59 · refactor:** `canvas/pointerMath.ts` (puntero → mundo, temblor orgánico, pan, órbita con ratón, filtro de micro-trazos) y, en `moveGizmoInteraction.ts`, la tabla de selección del Move.
+- **3.26.60 · chore:** el arnés sigue a un handler hasta el módulo al que se mueve.
+- **3.26.61 / .62 / .64 · refactor:** los cuerpos de los handlers a `canvas/touchHandlers.ts`, `canvas/pointerDownHandler.ts` y `canvas/pointerMoveUpHandlers.ts`: fábricas sin hooks, llamadas una vez por render con `handlerEnv` (`canvas/handlerEnv.ts`). 204 + 228 + 226 líneas byte-idénticas a como estaban.
+- **3.26.65 · docs:** informe del sprint, resumen, este apéndice, conteos de CLAUDE.md.
+- **Verificado en cada refactor:** las trazas idénticas a la referencia; 72 fallos plantados cazados; regiones no movidas idénticas al byte; `npm test` 529 → 663, typecheck y build; `text-check` 5/5, `__mergeDriftCheck()`; matriz de escritorio 32/32. **No verificado:** nada en iPad; sin capturas (el panel del navegador estuvo oculto y el `rAF` congelado: la matriz corrió con `requestAnimationFrame` sobre un temporizador).
+- **Hallazgos, sin arreglar:** H12 (el listener nativo de `pointerdown` del Pencil es un no-op: el spread de un `PointerEvent` no copia `pointerType`; verificado en Chrome, por confirmar en Safari), H13 (su `removeEventListener` sin `capture`), H14 (en DRAW los handlers proyectan con `state.focalLength` y el gizmo con `DRAW_FOCAL_LENGTH`; inocuo mientras la cámara esté en el plano de la capa activa).
 
 ### 3.26.52 — H11: la goma espejada lleva su polígono espejado
 

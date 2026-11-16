@@ -1,8 +1,8 @@
-# Refactor de Diorame — estado a v3.26.52 (16 nov 2026)
+# Refactor de Diorame — estado a v3.26.52 en `main` y v3.26.65 en `refactor/handlers` (16 nov 2026)
 
 Resumen autocontenido de todo lo hecho en el refactor, para poner al día a quien no ha seguido la sesión. El detalle, las mediciones y las tablas completas están en `docs/audit-2026-11.md`; este documento no lo sustituye, lo resume.
 
-**Punto de partida:** v3.26.5, commit `2097388`. **Estado actual:** v3.26.52 en `main` (v3.26.52: fix de H11, §5). **Hecho desde la versión anterior de este resumen (v3.26.45):** la fase 6, parte segura (§2, §3 y `docs/audit-2026-11.md`, «Fase 6 (parte segura) — resultado»): `canvas/commitStroke.ts` con su test contra el código de antes del corte, y los hooks `useCanvasWheelZoom` y `useSpacePan`; `StrataCanvas.tsx` 1 922 → 1 719 líneas. **Siguiente:** la ronda de la fase 6 en iPad (§9); después, lo decide Moisés entre la fase 5 y el sprint de los handlers de `StrataCanvas.tsx`. Siguen pendientes el Lab contra producción y la validación visual de «Mixto» y del candado de escala.
+**Punto de partida:** v3.26.5, commit `2097388`. **Estado actual:** v3.26.52 en `main` (v3.26.52: fix de H11, §5). **Hecho desde la versión anterior de este resumen (v3.26.45):** la fase 6, parte segura (§2, §3 y `docs/audit-2026-11.md`, «Fase 6 (parte segura) — resultado»): `canvas/commitStroke.ts` con su test contra el código de antes del corte, y los hooks `useCanvasWheelZoom` y `useSpacePan`; `StrataCanvas.tsx` 1 922 → 1 719 líneas. **Sprint de handlers, hecho en la rama `refactor/handlers` (v3.26.53–3.26.65, sin subir ni fusionar):** `StrataCanvas.tsx` 1 719 → 853 líneas; informe, hallazgos y matriz de iPad en `docs/handlers-sprint-report.md`. **Siguiente:** que Moisés apruebe la fusión, y la ronda en iPad (la de la fase 6 y la del sprint, juntas: §9); después, la fase 5. Siguen pendientes el Lab contra producción y la validación visual de «Mixto» y del candado de escala.
 
 ---
 
@@ -16,6 +16,7 @@ Resumen autocontenido de todo lo hecho en el refactor, para poner al día a quie
 - **Fase 4, hecha:** el grosor que guarda un trazo es el que hay en el lienzo (D3 y D4 aplicadas), y el panel enseña «Mixto» cuando una capa tiene trazos de varios grosores; tocar el slider los unifica. Con ella se cerraron I6, G1, G3–G8 y H8.
 - **Escalado proporcional (v3.26.25):** en una capa «Mixto», un candado elige entre escalar todos los trazos por k (por defecto) o unificarlos.
 - **Fase 6, parte segura (v3.26.47–3.26.50):** de `StrataCanvas.tsx` salen, movidos sin reescribir, la construcción de la forma al soltar (`canvas/commitStroke.ts`, con un test contra la salida del código de antes del corte) y los efectos de la rueda y la barra espaciadora (dos hooks). 1 922 → 1 719 líneas; handlers de puntero / táctil y bucle RAF idénticos al byte.
+- **Sprint de handlers (v3.26.53–3.26.65, rama `refactor/handlers`):** los siete handlers de puntero y táctiles salen de `StrataCanvas.tsx` a `canvas/` — primero su lógica pura (`touchGestures.ts`, `cinemaFraming.ts`, `pointerMath.ts`, la tabla de selección del Move), después sus cuerpos, cortados por script y byte-idénticos (`touchHandlers.ts`, `pointerDownHandler.ts`, `pointerMoveUpHandlers.ts`). 1 719 → **853** líneas. Refs, efectos, `resetGestureState` y el bucle RAF, idénticos al byte a v3.26.52. Red nueva: 125 gestos guionizados contra una referencia congelada con el código de antes del sprint.
 - Nada se ha probado en iPad.
 
 ---
@@ -70,9 +71,22 @@ Resumen autocontenido de todo lo hecho en el refactor, para poner al día a quie
 | v3.26.49 | `ee243d5` | refactor | `hooks/useCanvasWheelZoom.ts` |
 | v3.26.50 | `ac82331` | refactor | `hooks/useSpacePan.ts` |
 | v3.26.51 | `3e9e176` | docs | Cierre de la fase 6 (parte segura): auditoría, REFERENCE, CLAUDE.md y este resumen |
-| v3.26.52 | — | fix | H11: la goma espejada lleva su `eraserPolygon` espejado |
+| v3.26.52 | `ca3cb8f` | fix | H11: la goma espejada lleva su `eraserPolygon` espejado |
+| v3.26.53 | `47d0f16` | test | **Sprint de handlers (rama `refactor/handlers`, tags `-handlers`).** Arnés que ejecuta el texto literal de los handlers + referencia congelada con v3.26.52 |
+| v3.26.54 | `b657cb5` | test | +8 escenarios |
+| v3.26.55 | `3ac8ff9` | refactor | `canvas/touchGestures.ts`; matriz de escritorio versionada |
+| v3.26.56 | `7986ba3` | test | Escenario de capa oculta corregido |
+| v3.26.57 | `91ceb1d` | refactor | `canvas/cinemaFraming.ts` |
+| v3.26.58 | `d2626fa` | test | +3 escenarios (cámara fuera del plano de la capa) |
+| v3.26.59 | `26a49fb` | refactor | `canvas/pointerMath.ts` + decisiones del Move en `moveGizmoInteraction.ts` |
+| v3.26.60 | `c692588` | chore | El arnés sigue a un handler hasta su módulo |
+| v3.26.61 | `b6646a7` | refactor | Handlers táctiles → `canvas/touchHandlers.ts` (+ `canvas/handlerEnv.ts`) |
+| v3.26.62 | `23d407f` | refactor | `handlePointerDown` → `canvas/pointerDownHandler.ts` |
+| v3.26.63 | `a0ed6e4` | test | +1 escenario |
+| v3.26.64 | `e45a538` | refactor | `handlePointerMove` / `Up` → `canvas/pointerMoveUpHandlers.ts` |
+| v3.26.65 | — | docs | Informe del sprint, REFERENCE, CLAUDE.md (conteos) y este resumen |
 
-Todos los tags son anotados y están en el remoto. No se reescribió historia.
+Hasta v3.26.52, todos los tags son anotados y están en el remoto. Los del sprint de handlers (`v3.26.53-handlers` … `v3.26.65-handlers`) son anotados y **locales**: la rama no se ha subido. No se reescribió historia.
 
 ---
 
@@ -97,9 +111,13 @@ Contiene el Provider, `useStrata` y los re-exports. **Re-exporta todo lo que sal
 | Antes del refactor | 1 922 |
 | Tras `commitStroke.ts` (v3.26.48) | 1 824 |
 | Tras `useCanvasWheelZoom` (v3.26.49) | 1 779 |
-| **Tras `useSpacePan` (v3.26.50)** | **1 719** |
+| Tras `useSpacePan` (v3.26.50) | 1 719 |
+| Tras la lógica pura de los handlers (v3.26.59, rama) | 1 496 |
+| **Tras mover los cuerpos de los handlers (v3.26.64, rama)** | **853** |
 
-Lo que salió decide *qué*, nunca *cuándo*: el handler sigue filtrando micro-trazos táctiles, despachando y limpiando en el mismo orden, y cada hook se llama en la posición exacta del `useEffect` que sustituye (mismo orden de efectos y de listeners). Los refs de la barra espaciadora se quedan en el componente porque los leen los handlers de puntero. Quedan ~800 líneas de handlers y el núcleo: sprint propio, con iPad.
+Lo que salió decide *qué*, nunca *cuándo*: el handler sigue filtrando micro-trazos táctiles, despachando y limpiando en el mismo orden, y cada hook se llama en la posición exacta del `useEffect` que sustituye (mismo orden de efectos y de listeners). Los refs de la barra espaciadora se quedan en el componente porque los leen los handlers de puntero.
+
+**Sprint de handlers (rama `refactor/handlers`).** Mismo principio en dos pasos. Primero la lógica pura (umbrales, aritmética, la tabla de selección del Move) a módulos sin refs. Después los cuerpos: cada grupo de handlers es una fábrica sin hooks (`createTouchHandlers(env)` …) que el componente llama una vez por render donde antes los escribía, con un `handlerEnv` que lleva el estado de ese render, `dispatch` y los objetos ref. Como no hay hooks nuevos, el orden de hooks y efectos no cambia; el JSX es idéntico al byte; cada handler sigue leyendo `.current` al llegar su evento. Quedan refs, efectos, `resetGestureState`, el núcleo RAF y el JSX.
 
 ### Archivos nuevos
 
@@ -128,6 +146,13 @@ Lo que salió decide *qué*, nunca *cuándo*: el handler sigue filtrando micro-t
 | `src/components/strata/canvas/commitStroke.ts` | 114 | `buildStrokeShapes`: de las muestras del gesto a la(s) forma(s) (fase 6) |
 | `src/hooks/useCanvasWheelZoom.ts` | 66 | Zoom con rueda en DRAW y en CINEMA órbita (fase 6) |
 | `src/hooks/useSpacePan.ts` | 84 | Barra espaciadora: mantener = pan, toque = resetear vista (fase 6) |
+| `src/components/strata/canvas/touchGestures.ts` | 144 | Umbrales de toque / pinch, matemática del pinch y de la órbita táctil (sprint de handlers) |
+| `src/components/strata/canvas/cinemaFraming.ts` | 153 | Doble clic de CINEMA: `isDoubleClick`, `frameCinemaPoint` (sprint) |
+| `src/components/strata/canvas/pointerMath.ts` | 137 | Puntero → mundo, temblor orgánico, pan, órbita con ratón, filtro de micro-trazos (sprint) |
+| `src/components/strata/canvas/handlerEnv.ts` | 62 | `CanvasHandlerEnv`: el tipo de lo que cierran los handlers (sprint) |
+| `src/components/strata/canvas/touchHandlers.ts` | 228 | `createTouchHandlers`: los cuatro handlers táctiles (sprint) |
+| `src/components/strata/canvas/pointerDownHandler.ts` | 259 | `createPointerDownHandler`: `handlePointerDown` (sprint) |
+| `src/components/strata/canvas/pointerMoveUpHandlers.ts` | 260 | `createPointerMoveUpHandlers`: `handlePointerMove`, `handlePointerUp` (sprint) |
 
 Además: `FIXED_PALETTE` y `ALTERNATIVE_PALETTE` pasaron de `StrataContext.tsx` a `constants/palette.ts` (las necesita `initialState` y no puede importar del reducer). `utils/diorPayload.ts` ganó `buildDiorFields` y `buildAutosaveData`.
 
@@ -145,13 +170,13 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 
 ### Lo que no se ha tocado
 
-`StrataCanvas.tsx` fuera de la fase 6 (handlers de puntero / táctil y núcleo: idénticos), `renderPipeline.ts` (solo su línea de import de `BASE_DEPTH_STEP`, en la 3B), `postProcessing.ts`, `applySuperRiso.ts`, `analytics.ts` y `components/ui/` (4 545 líneas sin usar).
+El núcleo de `StrataCanvas.tsx` (bucle RAF, `buildRenderContext`), sus refs, sus efectos y `resetGestureState` (idénticos al byte también tras el sprint de handlers), `renderPipeline.ts` (solo su línea de import de `BASE_DEPTH_STEP`, en la 3B), `postProcessing.ts`, `applySuperRiso.ts`, `analytics.ts` y `components/ui/` (4 545 líneas sin usar).
 
 ---
 
 ## 4. Red de seguridad
 
-- **`npm test`**: Vitest 4.1.12 (fijada: es la última línea que declara Vite ^6.0; el proyecto fija Vite 6.3.5). Entorno `node`, sin mocks (salvo el contador de `crypto.randomUUID` de `commitStroke.test.ts`). 529 tests, ~1,5 s.
+- **`npm test`**: Vitest 4.1.12 (fijada: es la última línea que declara Vite ^6.0; el proyecto fija Vite 6.3.5). Entorno `node`, sin mocks (salvo el contador de `crypto.randomUUID` de `commitStroke.test.ts`). 529 tests, ~1,5 s (663 en 12 archivos en la rama `refactor/handlers`).
 - **CI**: paso `Test` en `.github/workflows/deploy.yml`, tras el typecheck y antes del build. Un test en rojo no se despliega.
 - **Tests en `tests/`** (fuera de `src/`), incluidos en el typecheck.
 
@@ -167,13 +192,14 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 | `isDirty.test.ts` | Toda acción que cambia lo que guarda el `.dior` marca `isDirty`, salvo una lista explícita |
 | `dior.roundtrip.test.ts` | Guardar → cargar, paridad `.dior` / autoguardado, migración de archivos antiguos |
 | `dior.damaged.test.ts` | Archivos dañados: se descarta lo ilegible y el resto abre |
+| `handlers.characterization.test.ts` | **(rama `refactor/handlers`)** Los handlers de puntero y táctiles: el texto del archivo del árbol de trabajo, ejecutado por `tools/handlers-golden/` con el reducer real, a través de 125 gestos guionizados (trazos en cada herramienta, micro-trazos, pan, toques de 2 y 3 dedos y pinch en sus umbrales, órbita, doble clic de CINEMA, Move), contra una referencia congelada con el código de v3.26.52. No cambió al mover los handlers. Fija `[COMPORTAMIENTO ACTUAL · pinch con el centro quieto]` |
 | `commitStroke.test.ts` | «Muestras del puntero → forma» (fase 6): 46 casos de pincel en los tres modos, blob y goma, con simetría, dentro / detrás y zoom, contra la salida del código EN LÍNEA de antes del corte (`fixtures/commitStroke.golden.json`, congelada en v3.26.47 ejecutando el texto literal del handler). Desde v3.26.52, los 4 de goma con simetría esperan el polígono espejado (H11), con 4 tests de simetría más |
 
 ### Reglas que quedaron escritas en CLAUDE.md
 
 - **Los tests de `tests/` no se modifican en un commit de refactor.** Si un refactor obliga a tocarlos, se para y se reporta.
 - Los tests solo cambian en commits de comportamiento (fix o feature), y ese diff se revisa.
-- Un test con **`[COMPORTAMIENTO ACTUAL · …]`** en el nombre fija lo que la app hace hoy, pendiente de una decisión. Solo cambia en el commit que toma esa decisión. Tras la fase 4 no queda ninguno.
+- Un test con **`[COMPORTAMIENTO ACTUAL · …]`** en el nombre fija lo que la app hace hoy, pendiente de una decisión. Solo cambia en el commit que toma esa decisión. Tras la fase 4 no quedaba ninguno; el sprint de handlers fija uno: el pinch con el centro quieto.
 - Las referencias golden no se regeneran para poner un test en verde.
 - Acción nueva en el reducer → entrada en `tests/helpers/actions.ts`.
 
@@ -224,7 +250,10 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 - **Archivos guardados antes de v3.26.22 con trazos redimensionados:** llevan el número antiguo (dibujado a 20, redimensionado ×2: dice 20, mide 40). No se migran: se ven igual, el slider marca 20 y el primer re-estilado los redibuja al valor elegido. Falta decidir si se deja así o se detecta el desfase al cargar (exacto en Tapered, aproximado en Ink).
 - **Tono de la banda y del tirador de «Mixto»** (`T.purpleLight`): calibrado visual, lo cierra Moisés.
 - Los valores de dentro de `layerGradParams` no se validan al cargar.
-- **Pinch con el centro quieto se lee como toque de dos dedos (deshacer)** (fase 6, comportamiento previo): para el sprint de handlers, caracterizarlo en iPad antes de tocar nada.
+- **Pinch con el centro quieto se lee como toque de dos dedos (deshacer)** (fase 6, comportamiento previo): el sprint de handlers no lo cambió y lo dejó fijado en un test `[COMPORTAMIENTO ACTUAL]`. Falta caracterizarlo en iPad (matriz del informe, B3) y decidir.
+- **H12 · el listener nativo de `pointerdown` del Pencil es un no-op** (sprint de handlers): hace `{ ...e }` sobre un `PointerEvent`, y el spread no copia `pointerType` ni `isPrimary`; el handler sale en la primera guarda. Verificado en Chrome; por confirmar en Safari / iPad. Sin tocar: es registro de listeners.
+- **H13** · ese efecto llama a `removeEventListener` sin `capture`. Menor.
+- **H14 · en DRAW los handlers proyectan el puntero con `state.focalLength` y el gizmo con `DRAW_FOCAL_LENGTH`.** Inocuo mientras la cámara esté en el plano de la capa activa; por confirmar si hay algún camino con la cámara fuera.
 - ~~Desfases de documentación de la auditoría §6~~ — **corregidos en la fase 7 (v3.26.45)**, cada uno verificado contra el código; la tabla está en `docs/audit-2026-11.md`, «Fase 7 — resultado».
 
 ---
@@ -255,10 +284,11 @@ Decisiones tomadas dentro de la fase 4, con su motivo en la auditoría: el redon
 | ~~4. «Mixto»~~ | **Hecha** (v3.26.22–23; escalado proporcional en v3.26.25) | Pendiente solo la validación visual de Moisés, en `localhost:3000` y en iPad |
 | ~~3B. Resto del reducer~~ | **Hecha** (v3.26.26–3.26.39) | Pendiente: abrir un `.dior` en el Lab contra producción (§9) |
 | **5. Archivos de FX** | `canvas/risoV2.ts`, `superRiso/engineHost.ts`, tipos de `renderPipeline.ts` | Núcleo: GO explícito. `pixcheck` 0 px. Una ronda en iPad |
-| ~~6. `StrataCanvas.tsx`, lo seguro~~ | **Hecha** (v3.26.47–3.26.51): `canvas/commitStroke.ts`, `useCanvasWheelZoom`, `useSpacePan` | Pendiente la ronda en iPad. Los handlers de puntero y táctil piden sprint propio con iPad |
+| ~~6. `StrataCanvas.tsx`, lo seguro~~ | **Hecha** (v3.26.47–3.26.51): `canvas/commitStroke.ts`, `useCanvasWheelZoom`, `useSpacePan` | Pendiente la ronda en iPad |
+| ~~Sprint de handlers~~ | **Hecho en la rama `refactor/handlers`** (v3.26.53–3.26.65): `StrataCanvas.tsx` 1 719 → 853 | Pendiente: aprobar la fusión (despliega) y la ronda en iPad — matriz en `docs/handlers-sprint-report.md` §8 |
 | ~~7. Higiene~~ | **Hecha** (v3.26.41–3.26.45): `components/ui/` sin usar fuera (45 archivos), `analytics.ts` y `PreviewPage.tsx` partidos, H10, documentación al día | Pendientes nuevos en `docs/ux-debt.md` (Ink fino, píldora de «Mixto», candado en iPad) |
 
-Queda la fase 5 (la 6, parte segura, y la 7 ya están hechas) y el sprint de los handlers.
+Queda la fase 5 (la 6, parte segura, y la 7 ya están hechas), y fusionar y probar en iPad el sprint de los handlers.
 
 ---
 
@@ -279,6 +309,7 @@ Queda la fase 5 (la 6, parte segura, y la 7 ya están hechas) y el sprint de los
 
 - **Nada se probó en iPad.** Todo lo de navegador se hizo en el navegador integrado de escritorio. La fase 6 toca el camino de cada trazo: es la primera que pide su ronda en iPad antes de darse por cerrada (Pencil en los tres modos, goma, simetría, dentro / detrás, pinch y toques de 2 y 3 dedos).
 - Fase 6: el gizmo de Move solo se probó a mano en traslación; el pinch, con dedos sintéticos.
+- **Sprint de handlers:** todo con eventos sintéticos (Node y navegador de escritorio). El panel del navegador integrado estuvo oculto, con el `rAF` congelado: la matriz de escritorio corrió con `requestAnimationFrame` sobre un temporizador y **no hay capturas** — nadie ha mirado un frame. El gizmo sí se probó entero esta vez (traslación, esquina, lado, rotación), pero con eventos sintéticos. El coste nuevo por render (un objeto de 29 claves) no se ha medido en iPad.
 - **El Lab real no ha abierto el `dior-render.js` de v3.26.39.** En local: mismos exports, mismo nombre, mismos píxeles. En producción cambia con el deploy; la comprobación es de Moisés, en el Lab.
 - Los cambios de persistencia se validaron por los caminos reales (Ctrl+S, abrir archivo, autoguardado, «Continuar trabajo anterior») con las descargas interceptadas: **no se escribió ningún archivo real en disco**. El aviso al salir se comprobó con un evento sintético, no cerrando la pestaña.
 - El único `.dior` real anterior a v2.3.0 que hay en el repo es la escena de ejemplo, y no guarda `tool`; el caso `tool: 'brush'` antiguo se prueba con un archivo construido con las claves de entonces.
