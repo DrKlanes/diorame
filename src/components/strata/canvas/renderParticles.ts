@@ -1,4 +1,4 @@
-import { BASE_DEPTH_STEP } from '../StrataContext';
+import { BASE_DEPTH_STEP } from '../../../constants/layers';
 import type { Projection } from './transformPoint';
 
 /**

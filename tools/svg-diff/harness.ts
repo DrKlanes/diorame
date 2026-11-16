@@ -7,7 +7,8 @@ import { exportAsSVG, svgBounds } from '../../src/components/strata/canvas/svgEx
 import { prepareText, textOutline } from '../../src/components/strata/canvas/svgText';
 import { TEXT_FONTS, type TextFontKey } from '../../src/utils/textLayout';
 import { loadPaper, buildLayerGeometry, smoothPathData } from '../../src/components/strata/canvas/svgGeometry';
-import { initialState, BASE_DEPTH_STEP } from '../../src/components/strata/StrataContext';
+import { initialState } from '../../src/constants/initialState';
+import { BASE_DEPTH_STEP } from '../../src/constants/layers';
 import type { Shape } from '../../src/types/strataTypes';
 
 export type Mask = { w: number; h: number; data: Uint8Array };

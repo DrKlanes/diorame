@@ -1,7 +1,8 @@
 // What the real renderers paint, as ink. The truth every text-check section measures against:
 // never the math under test (a box computed from textMetrics cannot validate textMetrics).
 import { renderTextShape } from '../../src/components/strata/canvas/renderTextShape';
-import { appReducer, initialState } from '../../src/components/strata/StrataContext';
+import { appReducer } from '../../src/state/appReducer';
+import { initialState } from '../../src/constants/initialState';
 import type { Shape } from '../../src/types/strataTypes';
 
 export const INK_SIZE = 3000;

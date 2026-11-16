@@ -3,7 +3,7 @@ import { playSound } from '../../../utils/soundManager';
 import { downloadBlob } from '../../../utils/downloadBlob';
 import { analytics } from '../../../analytics/analytics';
 import { Shape, type AppMode } from '../../../types/strataTypes';
-import { BASE_DEPTH_STEP } from '../StrataContext';
+import { BASE_DEPTH_STEP } from '../../../constants/layers';
 import { loadPaper, buildLayerGeometry } from './svgGeometry';
 import { prepareText, textCorners, type TextEngine, type TextRun } from './svgText';
 import { TEXT_FONTS } from '../../../utils/textLayout';

@@ -1,5 +1,6 @@
 import { hexToRgba, getVibrantVariant } from '../../../utils/colorUtils';
-import { BASE_DEPTH_STEP, GRADIENT_DEFAULTS } from '../StrataContext';
+import { BASE_DEPTH_STEP } from '../../../constants/layers';
+import { GRADIENT_DEFAULTS } from '../../../constants/palette';
 import type { Shape, Point, LayerGradParams } from '../../../types/strataTypes';
 import type { Projection } from './transformPoint';
 import { layoutText } from '../../../utils/textLayout';

@@ -1,4 +1,4 @@
-import { BASE_DEPTH_STEP } from '../StrataContext';
+import { BASE_DEPTH_STEP } from '../../../constants/layers';
 import { CINEMATIC_DEPTH_MULTIPLIER } from './cinematicCamera';
 import { DRAW_FOCAL_LENGTH, NEAR_CLIP } from '../../../constants/renderConstants';
 import { createTransformPoint, createProjectInto, type LayerProjectionParams, type FrameProjectionParams } from './transformPoint';

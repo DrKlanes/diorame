@@ -1,4 +1,4 @@
-import { BASE_DEPTH_STEP } from '../StrataContext';
+import { BASE_DEPTH_STEP } from '../../../constants/layers';
 import { HANDHELD_SWAY_FREQ, HANDHELD_TREMOR_FREQ } from '../../../constants/renderConstants';
 import { Waypoint } from '../../../types/strataTypes';
 

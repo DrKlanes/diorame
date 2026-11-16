@@ -1,5 +1,5 @@
 import React from 'react';
-import { BASE_DEPTH_STEP } from '../StrataContext';
+import { BASE_DEPTH_STEP } from '../../../constants/layers';
 import { RENDER_THROTTLE_MS, NEAR_CLIP } from '../../../constants/renderConstants';
 import { createNoise, consumeNoiseRandoms } from '../../../utils/canvasUtils';
 import type { AppState, Shape, Point, Waypoint } from '../../../types/strataTypes';

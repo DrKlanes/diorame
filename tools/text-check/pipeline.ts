@@ -1,6 +1,7 @@
 // Sections that go through the real render pipeline (renderFrame, via svg-diff's renderReference).
 import { renderReference, calibrate, type Calibration } from '../svg-diff/harness';
-import { appReducer, initialState } from '../../src/components/strata/StrataContext';
+import { appReducer } from '../../src/state/appReducer';
+import { initialState } from '../../src/constants/initialState';
 import type { Shape } from '../../src/types/strataTypes';
 import { reduce, stretch, flip, text, polygon } from './ink';
 import type { Row } from './checks';

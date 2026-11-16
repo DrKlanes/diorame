@@ -14,7 +14,9 @@ import courierUrl from '@fontsource/courier-prime/files/courier-prime-latin-700-
 import cinzelUrl from '@fontsource/cinzel/files/cinzel-latin-700-normal.woff2?url';
 import bangersUrl from '@fontsource/bangers/files/bangers-latin-400-normal.woff2?url';
 import inknutUrl from '@fontsource/inknut-antiqua/files/inknut-antiqua-latin-700-normal.woff2?url';
-import { appReducer, initialState, BASE_DEPTH_STEP } from '../StrataContext';
+import { appReducer } from '../../../state/appReducer';
+import { initialState } from '../../../constants/initialState';
+import { BASE_DEPTH_STEP } from '../../../constants/layers';
 import { DRAW_FOCAL_LENGTH } from '../../../constants/renderConstants';
 import { createProjectMeta, readProjectMeta } from '../../../utils/projectMeta';
 import { TEXT_FONTS, type TextFontKey } from '../../../utils/textLayout';
