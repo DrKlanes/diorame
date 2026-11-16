@@ -234,7 +234,6 @@ export function duplicateLayer(state: AppState, action: Extract<Action, { type: 
 
 	// Sync global
 	const nextBrush = newBrushSettings[newLayerIndex];
-	const nextGradP = newGradParams[newLayerIndex] || GRADIENT_DEFAULTS;
 
 	// Update paletteApplyToAllSnapshot if active
 	let newApplySnapshot = state.paletteApplyToAllSnapshot;
@@ -264,9 +263,6 @@ export function duplicateLayer(state: AppState, action: Extract<Action, { type: 
 		layerBrushSettings: newBrushSettings,
 		paletteApplyToAllSnapshot: newApplySnapshot,
 		paletteMode: newRenderModes[newLayerIndex] || 'flat',
-		paletteGradientAngle: nextGradP.angle,
-		paletteGradientIntensity: nextGradP.intensity,
-		paletteGradientType: nextGradP.gradType || 'solid',
 		currentBrushThickness: nextBrush.thickness,
 		brushMode: nextBrush.mode
 	};

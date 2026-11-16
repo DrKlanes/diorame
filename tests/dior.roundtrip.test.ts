@@ -338,8 +338,6 @@ describe('.dior · ida y vuelta', () => {
 			const survived = Object.keys(afterA).filter(k => JSON.stringify(afterA[k]) !== JSON.stringify(afterNothing[k])).sort();
 			expect(survived).toEqual([
 				'isWelcomeModalOpen',       // session UI (the fixtures close the welcome modal)
-				// Written by ADD_LAYER / NEXT_LAYER / DUPLICATE_LAYER, declared nowhere and read by nobody: dead fields.
-				'paletteGradientAngle', 'paletteGradientIntensity', 'paletteGradientType',
 				'projectMeta',              // a file without meta gets a fresh random identity each time
 				'textSession',              // where the last text was typed; inactive
 			]);

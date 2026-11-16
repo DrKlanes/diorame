@@ -40,7 +40,6 @@ export function nextLayer(state: AppState): AppState {
 		const propagatedMode = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
 		const propagatedParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
 		const newPaletteMode = state.paletteApplyToAllActive ? propagatedMode : 'flat';
-		const newGradP = state.paletteApplyToAllActive ? propagatedParams : GRADIENT_DEFAULTS;
 		const newLayerRenderModes = state.paletteApplyToAllActive
 			? { ...state.layerRenderModes, [nextIndex]: propagatedMode }
 			: state.layerRenderModes;
@@ -66,9 +65,6 @@ export function nextLayer(state: AppState): AppState {
 			layerRenderModes: newLayerRenderModes,
 			layerGradParams: newLayerGradParams,
 			paletteApplyToAllSnapshot: newApplySnapshot,
-			paletteGradientAngle: newGradP.angle,
-			paletteGradientIntensity: newGradP.intensity,
-			paletteGradientType: newGradP.gradType || 'solid',
 			currentBrushThickness: state.currentBrushThickness,
 			brushMode: state.brushMode,
 			// Like ADD_LAYER: the new layer owns the active layer's pair from the start (v3.26.22).
@@ -174,9 +170,6 @@ export function addLayer(state: AppState): AppState {
 		isDrawInside: false,
 		isDrawBehind: false,
 		paletteMode: newPaletteMode,
-		paletteGradientAngle: newGradP.angle,
-		paletteGradientIntensity: newGradP.intensity,
-		paletteGradientType: newGradP.gradType || 'solid',
 		currentBrushThickness: state.currentBrushThickness,
 		brushMode: state.brushMode,
 		isDirty: true,
