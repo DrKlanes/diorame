@@ -1023,7 +1023,7 @@ This section is critical. These actions are **forbidden**:
 
 | File | Lines | Reason |
 |---|---|---|
-| `src/components/strata/StrataCanvas.tsx` | ~1920 | Thin React shell after the v3.0.0 extraction; still oversize. Extraction remains the preferred direction, but it is no longer frozen — see CLAUDE.md § "Tocar StrataCanvas.tsx" for what needs an explicit GO. |
+| `src/components/strata/StrataCanvas.tsx` | ~1720 | Thin React shell after the v3.0.0 extraction; still oversize (phase 6, v3.26.47–3.26.50, took out `commitStroke`, wheel zoom and the Space bar; the pointer/touch handlers, ~800 lines, are their own sprint). Extraction remains the preferred direction, but it is no longer frozen — see CLAUDE.md § "Tocar StrataCanvas.tsx" for what needs an explicit GO. |
 | `src/components/strata/canvas/renderPipeline.ts` | ~730 | Frame orchestrator. Accepted oversize: its purpose is to sequence all render sub-modules in the correct order. Splitting into smaller files would fragment the orchestration logic without reducing real complexity. |
 
 ---
@@ -1413,9 +1413,17 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.46)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.51)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.47 – 3.26.51 — `StrataCanvas.tsx`, la parte segura (fase 6)
+
+- **3.26.47 · test:** referencia «muestras del puntero → forma» (46 casos) congelada ejecutando el texto literal del bloque de `handlePointerUp` (`tools/commit-stroke-golden/generate.mjs`): pincel en los tres modos, blob, goma, simetría, dentro / detrás. Fija como comportamiento actual que la goma espejada lleva el `eraserPolygon` sin espejar (H11).
+- **3.26.48 · refactor:** `canvas/commitStroke.ts` (`buildStrokeShapes`), movido sin reescribir; `tests/commitStroke.test.ts` idéntico a la referencia. El handler conserva el cuándo y el `dispatch`.
+- **3.26.49 · refactor:** `hooks/useCanvasWheelZoom.ts`, llamado donde estaba el efecto.
+- **3.26.50 · refactor:** `hooks/useSpacePan.ts`; los refs siguen en `StrataCanvas` (los leen los handlers de puntero).
+- **3.26.51 · docs:** resultado en `docs/audit-2026-11.md`, resumen, este apéndice. `StrataCanvas.tsx` 1 922 → 1 719 líneas; handlers de puntero / táctil y bucle RAF idénticos al byte a v3.26.46.
 
 ### 3.26.46 — Dependencias huérfanas
 

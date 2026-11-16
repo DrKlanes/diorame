@@ -1,21 +1,22 @@
-# Refactor de Diorame — estado a v3.26.45 (16 nov 2026)
+# Refactor de Diorame — estado a v3.26.51 (16 nov 2026)
 
 Resumen autocontenido de todo lo hecho en el refactor, para poner al día a quien no ha seguido la sesión. El detalle, las mediciones y las tablas completas están en `docs/audit-2026-11.md`; este documento no lo sustituye, lo resume.
 
-**Punto de partida:** v3.26.5, commit `2097388`. **Estado actual:** v3.26.45 en `main`. **Hecho desde la versión anterior de este resumen (v3.26.25):** la fase 3B, el resto del reducer (§2, §3 y `docs/audit-2026-11.md`, «Fase 3B — resultado»): `StrataContext.tsx` queda en 65 líneas y `dior-render.js` ya no lleva React. **Siguiente:** lo decide Moisés entre las fases 5, 6 y 7; antes, comprobar el Lab contra producción (§9) y la validación visual pendiente de «Mixto» y del candado de escala en `localhost:3000` y en iPad.
+**Punto de partida:** v3.26.5, commit `2097388`. **Estado actual:** v3.26.51 en `main`. **Hecho desde la versión anterior de este resumen (v3.26.45):** la fase 6, parte segura (§2, §3 y `docs/audit-2026-11.md`, «Fase 6 (parte segura) — resultado»): `canvas/commitStroke.ts` con su test contra el código de antes del corte, y los hooks `useCanvasWheelZoom` y `useSpacePan`; `StrataCanvas.tsx` 1 922 → 1 719 líneas. **Siguiente:** la ronda de la fase 6 en iPad (§9); después, lo decide Moisés entre la fase 5 y el sprint de los handlers de `StrataCanvas.tsx`. Siguen pendientes el Lab contra producción y la validación visual de «Mixto» y del candado de escala.
 
 ---
 
 ## 1. En una página
 
 - Se auditó `src/` y se confirmó un monolito principal, `StrataContext.tsx` (2 153 líneas, reducer de 89 acciones), y un segundo, `StrataCanvas.tsx` (1 922).
-- Se montó una red de seguridad: Vitest, 476 tests en 10 archivos (451 en 9 al cerrar la fase 4), que ejecutan el reducer y los generadores de trazo reales en Node. Corre en el CI y bloquea el deploy.
+- Se montó una red de seguridad: Vitest, 524 tests en 11 archivos (476 en 10 al cerrar la fase 7; 451 en 9 al cerrar la fase 4), que ejecutan el reducer y los generadores de trazo reales en Node. Corre en el CI y bloquea el deploy.
 - Se arreglaron seis hallazgos de persistencia que la auditoría y los tests destaparon (H1, H6, H7, `TOGGLE_3D_LOCK`, H2, H3).
 - Se partió `StrataContext.tsx` moviendo código sin reescribirlo: 2 153 → 1 314 líneas en la fase 3A y → **65** en la 3B. Lo que salió vive en `constants/`, `types/` y la carpeta nueva `src/state/` (17 módulos; el `switch` en `state/appReducer.ts`). El archivo del contexto solo tiene el Provider, `useStrata` y re-exports.
 - **`dior-render.js` sin React (v3.26.39):** `diorRender.ts` importa el reducer puro; el grafo pasa de 127 539 a 120 829 bytes, con los mismos exports y los mismos píxeles.
 - **Fase 4, hecha:** el grosor que guarda un trazo es el que hay en el lienzo (D3 y D4 aplicadas), y el panel enseña «Mixto» cuando una capa tiene trazos de varios grosores; tocar el slider los unifica. Con ella se cerraron I6, G1, G3–G8 y H8.
 - **Escalado proporcional (v3.26.25):** en una capa «Mixto», un candado elige entre escalar todos los trazos por k (por defecto) o unificarlos.
-- Nada se ha probado en iPad. `StrataCanvas.tsx` solo ha cambiado de indentación.
+- **Fase 6, parte segura (v3.26.47–3.26.50):** de `StrataCanvas.tsx` salen, movidos sin reescribir, la construcción de la forma al soltar (`canvas/commitStroke.ts`, con un test contra la salida del código de antes del corte) y los efectos de la rueda y la barra espaciadora (dos hooks). 1 922 → 1 719 líneas; handlers de puntero / táctil y bucle RAF idénticos al byte.
+- Nada se ha probado en iPad.
 
 ---
 
@@ -62,7 +63,13 @@ Resumen autocontenido de todo lo hecho en el refactor, para poner al día a quie
 | v3.26.42 | `aa919e7` | refactor | `analytics.ts` en `events` / `transport` / `session` + fachada |
 | v3.26.43 | `226fbea` | refactor | `PreviewPage.tsx` en cuatro archivos |
 | v3.26.44 | `57dae0a` | fix | H10: tres campos de gradiente muertos |
-| v3.26.45 | — | docs | Cierre de la fase 7: §6 corregido, Apéndices B y C, ux-debt, auditoría y este resumen |
+| v3.26.45 | `a183248` | docs | Cierre de la fase 7: §6 corregido, Apéndices B y C, ux-debt, auditoría y este resumen |
+| v3.26.46 | `4b5ded1` | chore | Fuera 34 paquetes npm que solo usaba `components/ui/` |
+| v3.26.47 | `a32b998` | test | **Fase 6.** Referencia «muestras del puntero → forma» congelada con el código de antes del corte |
+| v3.26.48 | `4c8593e` | refactor | `canvas/commitStroke.ts` + `tests/commitStroke.test.ts` |
+| v3.26.49 | `ee243d5` | refactor | `hooks/useCanvasWheelZoom.ts` |
+| v3.26.50 | `ac82331` | refactor | `hooks/useSpacePan.ts` |
+| v3.26.51 | — | docs | Cierre de la fase 6 (parte segura): auditoría, REFERENCE, CLAUDE.md y este resumen |
 
 Todos los tags son anotados y están en el remoto. No se reescribió historia.
 
@@ -81,6 +88,17 @@ Todos los tags son anotados y están en el remoto. No se reescribió historia.
 | **Tras la fase 3B** | **65** |
 
 Contiene el Provider, `useStrata` y los re-exports. **Re-exporta todo lo que salió**, `appReducer` incluido, así que sus importadores de React no cambiaron. Los 9 `.ts` sin React de `src/` que importaban de él (`diorRender.ts`, siete módulos de render y `svgExport.ts`) y 3 de `tools/` importan ahora de `state/` y `constants/`: 61 → 52 importadores en `src/`, todos de React. `tests/` sigue importando del contexto: no se toca en un refactor.
+
+### `StrataCanvas.tsx`
+
+| Momento | Líneas |
+|---|---:|
+| Antes del refactor | 1 922 |
+| Tras `commitStroke.ts` (v3.26.48) | 1 824 |
+| Tras `useCanvasWheelZoom` (v3.26.49) | 1 779 |
+| **Tras `useSpacePan` (v3.26.50)** | **1 719** |
+
+Lo que salió decide *qué*, nunca *cuándo*: el handler sigue filtrando micro-trazos táctiles, despachando y limpiando en el mismo orden, y cada hook se llama en la posición exacta del `useEffect` que sustituye (mismo orden de efectos y de listeners). Los refs de la barra espaciadora se quedan en el componente porque los leen los handlers de puntero. Quedan ~800 líneas de handlers y el núcleo: sprint propio, con iPad.
 
 ### Archivos nuevos
 
@@ -106,6 +124,9 @@ Contiene el Provider, `useStrata` y los re-exports. **Re-exporta todo lo que sal
 | `src/state/ui.ts` | 39 | Modal, onboarding, sonidos, UI, modo oscuro, export (3B) |
 | `src/state/project.ts` | 74 | Guardado, nombre, duplicar, lienzo nuevo (3B) |
 | `src/state/appReducer.ts` | 121 | El `switch`: una línea por `case` (3B) |
+| `src/components/strata/canvas/commitStroke.ts` | 114 | `buildStrokeShapes`: de las muestras del gesto a la(s) forma(s) (fase 6) |
+| `src/hooks/useCanvasWheelZoom.ts` | 66 | Zoom con rueda en DRAW y en CINEMA órbita (fase 6) |
+| `src/hooks/useSpacePan.ts` | 84 | Barra espaciadora: mantener = pan, toque = resetear vista (fase 6) |
 
 Además: `FIXED_PALETTE` y `ALTERNATIVE_PALETTE` pasaron de `StrataContext.tsx` a `constants/palette.ts` (las necesita `initialState` y no puede importar del reducer). `utils/diorPayload.ts` ganó `buildDiorFields` y `buildAutosaveData`.
 
@@ -123,13 +144,13 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 
 ### Lo que no se ha tocado
 
-`StrataCanvas.tsx` (solo indentación), `renderPipeline.ts` (solo su línea de import de `BASE_DEPTH_STEP`, en la 3B), `postProcessing.ts`, `applySuperRiso.ts`, `analytics.ts` y `components/ui/` (4 545 líneas sin usar).
+`StrataCanvas.tsx` fuera de la fase 6 (handlers de puntero / táctil y núcleo: idénticos), `renderPipeline.ts` (solo su línea de import de `BASE_DEPTH_STEP`, en la 3B), `postProcessing.ts`, `applySuperRiso.ts`, `analytics.ts` y `components/ui/` (4 545 líneas sin usar).
 
 ---
 
 ## 4. Red de seguridad
 
-- **`npm test`**: Vitest 4.1.12 (fijada: es la última línea que declara Vite ^6.0; el proyecto fija Vite 6.3.5). Entorno `node`, sin mocks. 476 tests, ~1,5 s.
+- **`npm test`**: Vitest 4.1.12 (fijada: es la última línea que declara Vite ^6.0; el proyecto fija Vite 6.3.5). Entorno `node`, sin mocks (salvo el contador de `crypto.randomUUID` de `commitStroke.test.ts`). 524 tests, ~1,5 s.
 - **CI**: paso `Test` en `.github/workflows/deploy.yml`, tras el typecheck y antes del build. Un test en rojo no se despliega.
 - **Tests en `tests/`** (fuera de `src/`), incluidos en el typecheck.
 
@@ -145,6 +166,7 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 | `isDirty.test.ts` | Toda acción que cambia lo que guarda el `.dior` marca `isDirty`, salvo una lista explícita |
 | `dior.roundtrip.test.ts` | Guardar → cargar, paridad `.dior` / autoguardado, migración de archivos antiguos |
 | `dior.damaged.test.ts` | Archivos dañados: se descarta lo ilegible y el resto abre |
+| `commitStroke.test.ts` | «Muestras del puntero → forma» (fase 6): 46 casos de pincel en los tres modos, blob y goma, con simetría, dentro / detrás y zoom, contra la salida del código EN LÍNEA de antes del corte (`fixtures/commitStroke.golden.json`, congelada en v3.26.47 ejecutando el texto literal del handler) |
 
 ### Reglas que quedaron escritas en CLAUDE.md
 
@@ -200,6 +222,8 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 - **Archivos guardados antes de v3.26.22 con trazos redimensionados:** llevan el número antiguo (dibujado a 20, redimensionado ×2: dice 20, mide 40). No se migran: se ven igual, el slider marca 20 y el primer re-estilado los redibuja al valor elegido. Falta decidir si se deja así o se detecta el desfase al cargar (exacto en Tapered, aproximado en Ink).
 - **Tono de la banda y del tirador de «Mixto»** (`T.purpleLight`): calibrado visual, lo cierra Moisés.
 - Los valores de dentro de `layerGradParams` no se validan al cargar.
+- **H11 (fase 6):** con simetría, la goma espejada lleva el `eraserPolygon` SIN espejar del original. El lienzo no lo nota (pinta por `points`); lo usan el export SVG y las transformaciones. Fijado en la referencia de `commitStroke`; arreglarlo es un commit de comportamiento.
+- **Pinch con el centro quieto se lee como toque de dos dedos (deshacer)** (fase 6, comportamiento previo): para el sprint de handlers, caracterizarlo en iPad antes de tocar nada.
 - ~~Desfases de documentación de la auditoría §6~~ — **corregidos en la fase 7 (v3.26.45)**, cada uno verificado contra el código; la tabla está en `docs/audit-2026-11.md`, «Fase 7 — resultado».
 
 ---
@@ -230,10 +254,10 @@ Decisiones tomadas dentro de la fase 4, con su motivo en la auditoría: el redon
 | ~~4. «Mixto»~~ | **Hecha** (v3.26.22–23; escalado proporcional en v3.26.25) | Pendiente solo la validación visual de Moisés, en `localhost:3000` y en iPad |
 | ~~3B. Resto del reducer~~ | **Hecha** (v3.26.26–3.26.39) | Pendiente: abrir un `.dior` en el Lab contra producción (§9) |
 | **5. Archivos de FX** | `canvas/risoV2.ts`, `superRiso/engineHost.ts`, tipos de `renderPipeline.ts` | Núcleo: GO explícito. `pixcheck` 0 px. Una ronda en iPad |
-| **6. `StrataCanvas.tsx`** | `canvas/commitStroke.ts` y dos hooks de efectos | Los handlers de puntero y táctil piden sprint propio con iPad |
+| ~~6. `StrataCanvas.tsx`, lo seguro~~ | **Hecha** (v3.26.47–3.26.51): `canvas/commitStroke.ts`, `useCanvasWheelZoom`, `useSpacePan` | Pendiente la ronda en iPad. Los handlers de puntero y táctil piden sprint propio con iPad |
 | ~~7. Higiene~~ | **Hecha** (v3.26.41–3.26.45): `components/ui/` sin usar fuera (45 archivos), `analytics.ts` y `PreviewPage.tsx` partidos, H10, documentación al día | Pendientes nuevos en `docs/ux-debt.md` (Ink fino, píldora de «Mixto», candado en iPad) |
 
-Las fases 5 y 6 son independientes entre sí (la 7 ya está hecha).
+Queda la fase 5 (la 6, parte segura, y la 7 ya están hechas) y el sprint de los handlers.
 
 ---
 
@@ -252,7 +276,8 @@ Las fases 5 y 6 son independientes entre sí (la 7 ya está hecha).
 
 ## 9. Límites: lo que no está verificado
 
-- **Nada se probó en iPad.** Todo lo de navegador se hizo en el navegador integrado de escritorio.
+- **Nada se probó en iPad.** Todo lo de navegador se hizo en el navegador integrado de escritorio. La fase 6 toca el camino de cada trazo: es la primera que pide su ronda en iPad antes de darse por cerrada (Pencil en los tres modos, goma, simetría, dentro / detrás, pinch y toques de 2 y 3 dedos).
+- Fase 6: el gizmo de Move solo se probó a mano en traslación; el pinch, con dedos sintéticos.
 - **El Lab real no ha abierto el `dior-render.js` de v3.26.39.** En local: mismos exports, mismo nombre, mismos píxeles. En producción cambia con el deploy; la comprobación es de Moisés, en el Lab.
 - Los cambios de persistencia se validaron por los caminos reales (Ctrl+S, abrir archivo, autoguardado, «Continuar trabajo anterior») con las descargas interceptadas: **no se escribió ningún archivo real en disco**. El aviso al salir se comprobó con un evento sintético, no cerrando la pestaña.
 - El único `.dior` real anterior a v2.3.0 que hay en el repo es la escena de ejemplo, y no guarda `tool`; el caso `tool: 'brush'` antiguo se prueba con un archivo construido con las claves de entonces.
