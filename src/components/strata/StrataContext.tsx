@@ -27,11 +27,6 @@ import {
 	generateTaperedStroke, generateUniformStroke, generateInkStroke, generateStrokeForMode,
 } from '../../utils/strokeGenerators';
 
-import {
-	setSoundsEnabled as setSoundsManagerEnabled,
-	persistSoundsPreference,
-	playSound,
-} from '../../utils/soundManager';
 
 import { mergeLayerDown } from '../../utils/mergeLayers';
 
@@ -62,14 +57,14 @@ import { addShape, addShapes } from '../../state/shapes';
 import { setMode, updateCamera, setCinematicType, setCinematicSpeed, setFocalLength, setViewZoomOffset, initCinemaView, setLayerSpacingFactor, toggleHandheld, setHandheldIntensity, setPointOfInterest, clearPointOfInterest } from '../../state/cinema';
 import { setDrawingZoom, resetDrawingView, setFormat, setViewportSize, completeFitToView, toggleGrid } from '../../state/drawView';
 import { setTool, setDrawingActive, toggleSymmetry, toggleDrawBehind, toggleDrawInside, toggleOrganicMode, toggleBlobSmoothing } from '../../state/tool';
+import { toggleWelcomeModal, dismissOnboarding, setSoundsEnabled, toggleUi, toggleDarkMode, requestExport, finishExport } from '../../state/ui';
 
 // --- Reducer ---
 
 // Exported for tools/text-check (runs the real TRANSFORM_LAYER / FLIP_LAYER / LOAD_PROJECT outside React).
 export function appReducer(state: AppState, action: Action): AppState {
 	switch (action.type) {
-		case 'TOGGLE_WELCOME_MODAL':
-			return { ...state, isWelcomeModalOpen: !state.isWelcomeModalOpen };
+		case 'TOGGLE_WELCOME_MODAL': return toggleWelcomeModal(state); // Moved to state/ui.ts
 		case 'MARK_CLEAN':
 			return { ...state, isDirty: false };
 		case 'PROJECT_SAVED':
@@ -77,13 +72,8 @@ export function appReducer(state: AppState, action: Action): AppState {
 		// A new drawing that starts as a copy of this one: new identity, the old one kept as its origin.
 		case 'DUPLICATE_PROJECT':
 			return { ...state, projectName: action.payload.projectName, projectMeta: createProjectMeta(state.projectMeta.projectId), isDirty: true };
-		case 'SET_SOUNDS_ENABLED':
-			setSoundsManagerEnabled(action.payload);
-			persistSoundsPreference(action.payload);
-			return { ...state, soundsEnabled: action.payload };
-		case 'TOGGLE_UI':
-			playSound('click');
-			return { ...state, isUIHidden: !state.isUIHidden };
+		case 'SET_SOUNDS_ENABLED': return setSoundsEnabled(state, action); // Moved to state/ui.ts
+		case 'TOGGLE_UI': return toggleUi(state); // Moved to state/ui.ts
 		case 'SET_DRAWING_ACTIVE': return setDrawingActive(state, action); // Moved to state/tool.ts
 		case 'TOGGLE_SYMMETRY': return toggleSymmetry(state); // Moved to state/tool.ts
 		case 'TOGGLE_GRID': return toggleGrid(state); // Moved to state/drawView.ts
@@ -117,9 +107,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'SET_VIEW_ZOOM_OFFSET': return setViewZoomOffset(state, action); // Moved to state/cinema.ts
 		case 'INIT_CINEMA_VIEW': return initCinemaView(state, action); // Moved to state/cinema.ts
 		case 'SET_DRAWING_ZOOM': return setDrawingZoom(state, action); // Moved to state/drawView.ts
-		case 'TOGGLE_DARK_MODE':
-			playSound('click');
-			return { ...state, isDarkMode: !state.isDarkMode, isDirty: true };
+		case 'TOGGLE_DARK_MODE': return toggleDarkMode(state); // Moved to state/ui.ts
 		case 'SET_FX_INTENSITY': return setFxIntensity(state, action); // Moved to state/fx.ts
 		case 'SET_PARTICLE_TYPE': return setParticleType(state, action); // Moved to state/fx.ts
 		case 'TOGGLE_FX': return toggleFx(state, action); // Moved to state/fx.ts
@@ -127,10 +115,8 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'APPLY_SUPER_RISO_STYLE': return setSuperRisoStyle(state, action); // Moved to state/fx.ts
 		case 'TOGGLE_FX_MASTER': return toggleFxMaster(state); // Moved to state/fx.ts
 		case 'TOGGLE_PALETTE_APPLY_TO_ALL': return togglePaletteApplyToAll(state); // Moved to state/palette.ts
-		case 'REQUEST_EXPORT':
-			return { ...state, exportRequest: action.payload, isExporting: true };
-		case 'FINISH_EXPORT':
-			return { ...state, exportRequest: null, isExporting: false };
+		case 'REQUEST_EXPORT': return requestExport(state, action); // Moved to state/ui.ts
+		case 'FINISH_EXPORT': return finishExport(state); // Moved to state/ui.ts
 		case 'CLEAR_CANVAS':
 			return {
 				...state,
@@ -207,8 +193,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'REORDER_LAYERS': return reorderLayers(state, action); // Moved to state/layerReorder.ts
 		case 'MOVE_LAYER_TO': return moveLayerTo(state, action); // Moved to state/layerReorder.ts
 		case 'DUPLICATE_LAYER': return duplicateLayer(state, action); // Moved to state/layerReorder.ts
-		case 'DISMISS_ONBOARDING':
-			return { ...state, isOnboardingVisible: false };
+		case 'DISMISS_ONBOARDING': return dismissOnboarding(state); // Moved to state/ui.ts
 		case 'SET_ACTIVE_PALETTE': return setActivePalette(state, action); // Moved to state/palette.ts
 		case 'TOGGLE_ANIMATION_MODE': return toggleAnimationMode(state); // Moved to state/animation.ts
 		case 'SET_ANIMATION_PLAYING': return setAnimationPlaying(state, action); // Moved to state/animation.ts
