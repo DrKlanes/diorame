@@ -113,6 +113,22 @@ export type DioramEventMap = {
 	/** Errores de UI capturados. No uses el nombre "error": está reservado. */
 	ui_error: { where: string; message: string };
 
+	/**
+	 * Error no controlado (v3.26.66). Evento recomendado de GA4. `description` ≤100 caracteres:
+	 * mensaje + primer frame útil, sin rutas ni query strings. `fatal` solo true desde un
+	 * ErrorBoundary (hoy no existe). Contexto: versión, modo (draw/cinema), herramienta, clase
+	 * de dispositivo y PWA instalada. Nunca contenido del dibujo ni nada identificable.
+	 */
+	exception: {
+		description: string;
+		fatal: boolean;
+		app_version: string;
+		mode: string;
+		tool: string;
+		device_class: 'ipad' | 'tablet' | 'desktop' | 'mobile';
+		standalone: 'yes' | 'no';
+	};
+
 	/** Resumen de la sesión, enviado una sola vez al salir. */
 	session_depth: {
 		strokes: number;

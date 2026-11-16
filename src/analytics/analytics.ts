@@ -19,6 +19,8 @@
 import type { DioramEventMap } from './events';
 import { track, initInternalTraffic } from './transport';
 import { state, elapsedSeconds, STROKE_MILESTONES } from './session';
+import { createErrorReporter, classifyDevice, rawFromRejection } from './errors';
+import { APP_VERSION } from '../constants/version';
 
 export type { DioramEventMap, DioramEventName } from './events';
 export { track, setAnalyticsConsent } from './transport';
@@ -151,6 +153,12 @@ export const analytics = {
 		track('project_loaded', {});
 	},
 
+	/** Sincroniza modo y herramienta para el contexto de `exception`. NO emite evento. */
+	errorContext(mode: string, tool: string): void {
+		state.mode = mode === 'cinematic' ? 'cinema' : mode === 'drawing' ? 'draw' : mode;
+		state.tool = tool;
+	},
+
 	/** Llamar al pulsar compartir. target: 'link' | 'twitter' | 'download' ... */
 	shareClicked(target: string): void {
 		track('share_clicked', { target });
@@ -223,6 +231,54 @@ function flushSessionDepth(): void {
 	});
 }
 
+/* ===========================================================================
+ * 6b · CAPTURA SILENCIOSA DE ERRORES (evento `exception`)
+ * ---------------------------------------------------------------------------
+ * Ver errors.ts. Sin UI, sin toasts. Todo en try/catch: nunca rompe la app.
+ * ======================================================================== */
+
+function installErrorCapture(): void {
+	try {
+		const { report } = createErrorReporter({
+			send: params => track('exception', params),
+			origin: () => window.location.origin,
+			context: () => ({
+				app_version: APP_VERSION,
+				mode: state.mode,
+				tool: state.tool,
+				device_class: classifyDevice(navigator.userAgent, navigator.maxTouchPoints || 0),
+				standalone: isStandaloneNow() ? 'yes' : 'no',
+			}),
+		});
+
+		window.addEventListener('error', (ev: ErrorEvent) => {
+			try {
+				// Los fallos de carga de recursos (img/script/link) llegan con target ≠ window: ruido de red.
+				if (ev.target && ev.target !== window) return;
+				report({
+					message: ev.message || (ev.error && ev.error.message),
+					stack: ev.error && ev.error.stack,
+					filename: ev.filename,
+					lineno: ev.lineno,
+				});
+			} catch { /* la analítica nunca tumba la app */ }
+		});
+
+		window.addEventListener('unhandledrejection', (ev: PromiseRejectionEvent) => {
+			try { report(rawFromRejection(ev.reason)); } catch { /* idem */ }
+		});
+	} catch { /* idem */ }
+}
+
+function isStandaloneNow(): boolean {
+	try {
+		return window.matchMedia('(display-mode: standalone)').matches
+			|| (navigator as unknown as { standalone?: boolean }).standalone === true;
+	} catch {
+		return false;
+	}
+}
+
 let installed = false;
 
 /**
@@ -233,6 +289,7 @@ export function installAnalytics(): void {
 	installed = true;
 
 	initInternalTraffic();
+	installErrorCapture();
 
 	document.addEventListener('visibilitychange', () => {
 		if (document.visibilityState === 'hidden') flushSessionDepth();

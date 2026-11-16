@@ -58,6 +58,11 @@ function AppContent() {
     analytics.layerCount(state.totalLayers);
   }, [state.totalLayers]);
 
+  // Contexto del evento `exception` (modo y herramienta). Escalares; no emite nada.
+  useEffect(() => {
+    analytics.errorContext(state.mode, state.tool);
+  }, [state.mode, state.tool]);
+
   // .dior abierto desde el sistema (doble clic) en la PWA instalada de escritorio: manifest file_handlers (v3.21.0).
   // Queda enlazado para que «Guardar» escriba sobre él. El autoguardado pendiente no se borra.
   const { handleLoadProject } = useSaveLoad();

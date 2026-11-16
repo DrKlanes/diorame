@@ -38,6 +38,9 @@ export type SessionState = {
 	welcomeModalSent: boolean;
 	/** La pantalla de bloqueo puede remontarse al cruzar los 768px: solo cuenta la primera vez. */
 	mobileGateShownSent: boolean;
+	/** Contexto para el evento `exception`: se sincroniza desde App, no emite nada. */
+	mode: string;
+	tool: string;
 };
 
 export const STROKE_MILESTONES = [10, 50, 200] as const;
@@ -53,6 +56,8 @@ export const state: SessionState = {
 	entrySent: false,
 	welcomeModalSent: false,
 	mobileGateShownSent: false,
+	mode: 'unknown',
+	tool: 'unknown',
 };
 
 export const elapsedSeconds = () => Math.round((Date.now() - state.startedAt) / 1000);
