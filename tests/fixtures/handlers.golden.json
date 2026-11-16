@@ -18866,6 +18866,270 @@
 				"isDirty": false
 			}
 		},
+		"pointer/move-while-a-pinch-is-flagged/no-sample": {
+			"trace": [
+				{
+					"ev": "pointerdown 520,410",
+					"actions": [
+						{
+							"type": "SET_DRAWING_ACTIVE",
+							"payload": true
+						}
+					],
+					"prevented": 1,
+					"capture": [
+						"set:1"
+					],
+					"log": [],
+					"refs": {
+						"isDrawing": true,
+						"drawingPointerType": "pen",
+						"organicPhase": 979.7282677609473,
+						"activePointerId": 1,
+						"points": [
+							{
+								"x": 0,
+								"y": 0,
+								"pressure": 0.5
+							}
+						],
+						"canvasRect": {
+							"left": 20,
+							"top": 10,
+							"width": 1000,
+							"height": 800
+						}
+					}
+				},
+				{
+					"ev": "pointermove 530,410",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"points": [
+							{
+								"x": 0,
+								"y": 0,
+								"pressure": 0.5
+							},
+							{
+								"x": 10,
+								"y": 0,
+								"pressure": 0.5
+							}
+						]
+					}
+				},
+				{
+					"ev": "pointermove 550,415",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {}
+				},
+				{
+					"ev": "pointermove 570,420",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {}
+				},
+				{
+					"ev": "pointermove 590,422",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"points": [
+							{
+								"x": 0,
+								"y": 0,
+								"pressure": 0.5
+							},
+							{
+								"x": 10,
+								"y": 0,
+								"pressure": 0.5
+							},
+							{
+								"x": 70,
+								"y": 12,
+								"pressure": 0.5
+							}
+						]
+					}
+				},
+				{
+					"ev": "pointerup 590,422",
+					"actions": [
+						{
+							"type": "ADD_SHAPE",
+							"payload": {
+								"id": "id-1",
+								"points": [
+									{
+										"x": 0,
+										"y": 0
+									},
+									{
+										"x": 7.887952311114429,
+										"y": 12.320278185165833
+									},
+									{
+										"x": 70,
+										"y": 12.000000000000002
+									},
+									{
+										"x": 70,
+										"y": 11.999999999999998
+									},
+									{
+										"x": 12.112047688885571,
+										"y": -12.320278185165833
+									},
+									{
+										"x": 0,
+										"y": 0
+									}
+								],
+								"color": "#000000",
+								"zIndex": 0,
+								"isEraser": false,
+								"isDrawInside": false,
+								"isDrawBehind": false,
+								"originalPoints": [
+									{
+										"x": 0,
+										"y": 0,
+										"pressure": 0.5
+									},
+									{
+										"x": 10,
+										"y": 0,
+										"pressure": 0.5
+									},
+									{
+										"x": 70,
+										"y": 12,
+										"pressure": 0.5
+									}
+								],
+								"brushThickness": 25,
+								"brushMode": "tapered"
+							}
+						},
+						{
+							"type": "SET_DRAWING_ACTIVE",
+							"payload": false
+						}
+					],
+					"prevented": 0,
+					"capture": [
+						"release:1"
+					],
+					"log": [
+						[
+							"analytics.strokeEnded",
+							"brush"
+						]
+					],
+					"refs": {
+						"isDrawing": false,
+						"drawingPointerType": null,
+						"activePointerId": null,
+						"points": []
+					}
+				}
+			],
+			"state": {
+				"mode": "drawing",
+				"tool": "brush",
+				"currentLayerIndex": 0,
+				"totalLayers": 1,
+				"shapes": [
+					{
+						"id": "id-1",
+						"points": [
+							{
+								"x": 0,
+								"y": 0
+							},
+							{
+								"x": 7.887952311114429,
+								"y": 12.320278185165833
+							},
+							{
+								"x": 70,
+								"y": 12.000000000000002
+							},
+							{
+								"x": 70,
+								"y": 11.999999999999998
+							},
+							{
+								"x": 12.112047688885571,
+								"y": -12.320278185165833
+							},
+							{
+								"x": 0,
+								"y": 0
+							}
+						],
+						"color": "#000000",
+						"zIndex": 0,
+						"isEraser": false,
+						"isDrawInside": false,
+						"isDrawBehind": false,
+						"originalPoints": [
+							{
+								"x": 0,
+								"y": 0,
+								"pressure": 0.5
+							},
+							{
+								"x": 10,
+								"y": 0,
+								"pressure": 0.5
+							},
+							{
+								"x": 70,
+								"y": 12,
+								"pressure": 0.5
+							}
+						],
+						"brushThickness": 25,
+						"brushMode": "tapered",
+						"t": 1700000000000
+					}
+				],
+				"drawingZoom": 1,
+				"drawingPan": {
+					"x": 0,
+					"y": 0
+				},
+				"isLayerSelected": true,
+				"viewZoomOffset": -600,
+				"pointOfInterest": null,
+				"textSession": {
+					"isActive": false,
+					"x": 0,
+					"y": 0,
+					"content": "",
+					"font": "noir",
+					"align": "left"
+				},
+				"historyIndex": 1,
+				"historyLength": 2,
+				"isDrawing": false,
+				"isOnboardingVisible": false,
+				"isDirty": true
+			}
+		},
 		"pointer/pen/while-pinching/clears-the-pinch-and-draws": {
 			"trace": [
 				{

@@ -111,6 +111,7 @@ export const HANDLER_SCENARIOS: readonly HandlerScenario[] = [
 	{ name: 'pointer/mouse/non-primary/ignored', state: brush('tapered'), steps: drag(WAVE, { isPrimary: false }) },
 	{ name: 'pointer/pen/non-primary/draws', state: brush('tapered'), steps: drag(WAVE, { type: 'pen', isPrimary: false }) },
 	{ name: 'pointer/touch/while-pinching/ignored', state: brush('tapered'), steps: [ref('gestureRef', { isPinching: true }, true), ...drag(WAVE, { type: 'touch' })] },
+	{ name: 'pointer/move-while-a-pinch-is-flagged/no-sample', state: brush('tapered'), steps: [p('down', 0, 0, { type: 'pen' }), p('move', 10, 0, { type: 'pen' }), ref('gestureRef', { isPinching: true }, true), p('move', 30, 5, { type: 'pen' }), p('move', 50, 10, { type: 'pen' }), ref('gestureRef', { isPinching: false }, true), p('move', 70, 12, { type: 'pen' }), p('up', 70, 12, { type: 'pen' })] },
 	{ name: 'pointer/pen/while-pinching/clears-the-pinch-and-draws', state: brush('tapered'), steps: [ref('gestureRef', { isPinching: true }, true), ...drag(WAVE, { type: 'pen' })] },
 
 	// Middle button and Space: pan (DRAW) / zoom (CINEMA orbit)
