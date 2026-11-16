@@ -59,6 +59,7 @@ import { reorderLayers, moveLayerTo, duplicateLayer } from '../../state/layerReo
 import { setPaletteMode, setPaletteGradientAngle, setPaletteGradientIntensity, setPaletteGradientType, commitPaletteGradient, setActivePalette, togglePaletteApplyToAll, setColorIndex } from '../../state/palette';
 import { setFxIntensity, setParticleType, toggleFx, setSuperRiso, setSuperRisoStyle, toggleFxMaster } from '../../state/fx';
 import { toggleAnimationMode, setAnimationPlaying, setAnimationFramerate, setAnimationExportLoops, setGifExportScale, toggleOnionSkin, toggleAnimationFlatZ, advanceAnimationFrame, stepAnimationFrame, toggleAnimationPlaybackMode } from '../../state/animation';
+import { startTextSession, updateTextSession, commitTextSession, cancelTextSession } from '../../state/textSession';
 
 // --- Reducer ---
 
@@ -308,63 +309,10 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'FLIP_LAYER': return flipLayer(state, action); // Moved to state/layerTransform.ts
 		case 'DELETE_CURRENT_LAYER': return deleteCurrentLayer(state); // Moved to state/layerNav.ts
 		case 'MERGE_LAYER_DOWN': return mergeLayerDown(state, next => pushHistory(state.history, state.historyIndex, createSnapshot(next)));
-		case 'START_TEXT_SESSION':
-			return {
-				...state,
-				textSession: {
-					isActive: true,
-					x: action.payload.x,
-					y: action.payload.y,
-					content: '',
-					font: 'noir',
-					align: 'left'
-				}
-			};
-		case 'UPDATE_TEXT_SESSION':
-			return {
-				...state,
-				textSession: {
-					...state.textSession,
-					...action.payload
-				}
-			};
-		case 'COMMIT_TEXT_SESSION':
-			if (!state.textSession.isActive || !state.textSession.content.trim()) {
-				return { ...state, textSession: { ...state.textSession, isActive: false } };
-			}
-
-			const textShape: Shape = {
-				id: Date.now().toString(),
-				type: 'text',
-				points: [{ x: state.textSession.x, y: state.textSession.y }],
-				color: state.palette[state.currentColorIndex],
-				zIndex: state.currentLayerIndex * -BASE_DEPTH_STEP,
-				text: state.textSession.content,
-				font: state.textSession.font,
-				align: state.textSession.align,
-				fontSize: 40, // Base font size
-				rotation: 0,
-				isDrawInside: false,
-				isDrawBehind: false,
-				t: Date.now(),
-			};
-
-			const shapesWithText = [...state.shapes, textShape];
-			const { history: textHistory, index: textIndex } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: shapesWithText }));
-
-			return {
-				...state,
-				shapes: shapesWithText,
-				history: textHistory,
-				historyIndex: textIndex,
-				textSession: { ...state.textSession, isActive: false, content: '' },
-				isDirty: true,
-			};
-		case 'CANCEL_TEXT_SESSION':
-			return {
-				...state,
-				textSession: { ...state.textSession, isActive: false, content: '' }
-			};
+		case 'START_TEXT_SESSION': return startTextSession(state, action); // Moved to state/textSession.ts
+		case 'UPDATE_TEXT_SESSION': return updateTextSession(state, action); // Moved to state/textSession.ts
+		case 'COMMIT_TEXT_SESSION': return commitTextSession(state); // Moved to state/textSession.ts
+		case 'CANCEL_TEXT_SESSION': return cancelTextSession(state); // Moved to state/textSession.ts
 		case 'SET_POINT_OF_INTEREST':
 			return { ...state, pointOfInterest: action.payload, isDirty: true };
 		case 'CLEAR_POINT_OF_INTEREST':
