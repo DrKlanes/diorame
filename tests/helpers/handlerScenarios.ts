@@ -88,6 +88,8 @@ export const HANDLER_SCENARIOS: readonly HandlerScenario[] = [
 	{ name: 'draw/blob/draw-behind', state: { isDrawBehind: true }, setup: [add(square('sq', 0))], steps: drag(WAVE) },
 	{ name: 'draw/brush/zoom-2-pan', state: brush('tapered', { drawingZoom: 2, drawingPan: { x: 50, y: -30 } }), steps: drag(WAVE) },
 	{ name: 'draw/brush/layer-2', state: brush('uniform'), setup: [{ type: 'ADD_LAYER' }, { type: 'ADD_LAYER' }], steps: drag(WAVE) },
+	// state.camera.z normally sits on the active layer's plane (scale 1). Off it, the layer's projected scale is not 1.
+	{ name: 'draw/brush/camera-off-the-layer-plane', state: brush('uniform', { camera: { x: 0, y: 0, z: -100, rotation: 0 } }), steps: drag(WAVE, { type: 'pen' }) },
 	{ name: 'draw/sample-spacing/3px-is-not-enough', state: brush('uniform'), steps: drag([[0, 0], [3, 0], [3, 3], [6.01, 3], [6.01, 3]]) },
 	{ name: 'draw/pointerleave-ends-the-stroke', state: brush('tapered'), steps: drag(WAVE, {}, 'leave') },
 	{ name: 'draw/pointercancel-discards-the-stroke', state: brush('tapered'), steps: drag(WAVE, { type: 'pen' }, 'cancel') },
@@ -208,6 +210,8 @@ export const HANDLER_SCENARIOS: readonly HandlerScenario[] = [
 	{ name: 'move/no-handles-yet/legacy-path', ...moveSetup, steps: drag([[180, 160], [230, 190], [260, 140]]) },
 	{ name: 'move/empty-layer/move-ref', state: { tool: 'move' }, steps: drag([[0, 0], [40, 25], [70, -15]]) },
 	{ name: 'move/empty-layer/move-ref/zoom-2-pan/layer-1', state: { tool: 'move', drawingZoom: 2, drawingPan: { x: 50, y: -30 } }, setup: [{ type: 'ADD_LAYER' }], steps: drag([[0, 0], [40, 25], [70, -15]], { type: 'pen' }) },
+	{ name: 'move/empty-layer/move-ref/camera-off-the-layer-plane', state: { tool: 'move', camera: { x: 0, y: 0, z: 120, rotation: 0 } }, steps: drag([[0, 0], [40, 25], [70, -15]]) },
+	{ name: 'move/selected/inside/drag/camera-off-the-layer-plane', state: { tool: 'move', camera: { x: 0, y: 0, z: 120, rotation: 0 } }, setup: moveSetup.setup, steps: [withHandles, ...drag([[180, 160], [230, 190], [260, 140]])] },
 	{ name: 'move/empty-layer/under-0.1/nothing', state: { tool: 'move' }, steps: drag([[0, 0], [0.05, 0.05]]) },
 	{ name: 'move/empty-layer/orphaned-transform-is-made-inert', state: { tool: 'move' }, steps: [ref('transformRef', { isActive: true, mode: 'rotate', engaged: true, currentTransform: { x: 50, y: 50, scale: 2, rotation: 1 } }, true), ...drag([[0, 0], [40, 25]])] },
 	{ name: 'move/drag/second-finger-abandons-it', ...moveSetup, steps: [withHandles, p('down', 180, 160, { type: 'touch' }), p('move', 230, 190, { type: 'touch' }), touch('start', [230, 190], [300, 300]), p('move', 260, 200, { type: 'touch' }), tick(500), touch('end'), p('up', 260, 200, { type: 'touch' })] },
