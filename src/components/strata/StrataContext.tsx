@@ -5,7 +5,7 @@ import {
 	TextSession, HistorySnapshot, AppState, LayerGradParams,
 } from '../../types/strataTypes';
 import { createProjectMeta } from '../../utils/projectMeta';
-import { resolveLayerBrush, withInkSeed } from '../../utils/layerBrush';
+import { withInkSeed } from '../../utils/layerBrush';
 
 export type {
 	Point, Shape, AppMode, ToolType, CinematicType, ExportType, BrushMode,
@@ -34,7 +34,6 @@ import {
 	playSound,
 } from '../../utils/soundManager';
 
-import { getAnimationFrames } from '../../utils/animationFrames';
 import { mergeLayerDown } from '../../utils/mergeLayers';
 import { fitViewToRect, frameInView } from '../../utils/formatFrame';
 
@@ -59,6 +58,7 @@ import { nextLayer, prevLayer, addLayer, setLayerSelected, setCurrentLayer, dele
 import { reorderLayers, moveLayerTo, duplicateLayer } from '../../state/layerReorder';
 import { setPaletteMode, setPaletteGradientAngle, setPaletteGradientIntensity, setPaletteGradientType, commitPaletteGradient, setActivePalette, togglePaletteApplyToAll, setColorIndex } from '../../state/palette';
 import { setFxIntensity, setParticleType, toggleFx, setSuperRiso, setSuperRisoStyle, toggleFxMaster } from '../../state/fx';
+import { toggleAnimationMode, setAnimationPlaying, setAnimationFramerate, setAnimationExportLoops, setGifExportScale, toggleOnionSkin, toggleAnimationFlatZ, advanceAnimationFrame, stepAnimationFrame, toggleAnimationPlaybackMode } from '../../state/animation';
 
 // --- Reducer ---
 
@@ -393,98 +393,16 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'DISMISS_ONBOARDING':
 			return { ...state, isOnboardingVisible: false };
 		case 'SET_ACTIVE_PALETTE': return setActivePalette(state, action); // Moved to state/palette.ts
-		case 'TOGGLE_ANIMATION_MODE': {
-			const entering = !state.isAnimationMode;
-			if (entering) {
-				return {
-					...state,
-					isAnimationMode: true,
-					layerIndexBeforeAnimation: state.currentLayerIndex,
-				};
-			} else {
-				const restored = state.layerIndexBeforeAnimation;
-				const safeIndex = (restored != null && restored >= 0 && restored < state.totalLayers)
-					? restored
-					: state.currentLayerIndex;
-				return {
-					...state,
-					isAnimationMode: false,
-					isAnimationPlaying: false,
-					currentLayerIndex: safeIndex,
-					layerIndexBeforeAnimation: null,
-				};
-			}
-		}
-		case 'SET_ANIMATION_PLAYING':
-			return { ...state, isAnimationPlaying: action.payload };
-		case 'SET_ANIMATION_FRAMERATE':
-			return { ...state, animationFramerate: action.payload };
-		case 'SET_ANIMATION_EXPORT_LOOPS':
-			return { ...state, animationExportLoops: action.payload };
-		case 'SET_GIF_EXPORT_SCALE':
-			return { ...state, gifExportScale: action.payload };
-		case 'TOGGLE_ONION_SKIN':
-			return { ...state, isOnionSkinEnabled: !state.isOnionSkinEnabled };
-		case 'TOGGLE_ANIMATION_FLAT_Z':
-			return { ...state, isAnimationFlatZ: !state.isAnimationFlatZ };
-		case 'ADVANCE_ANIMATION_FRAME': {
-			const frames = getAnimationFrames(state);
-			if (frames.length === 0) return state;
-			const currentPos = frames.indexOf(state.currentLayerIndex);
-			if (state.animationPlaybackMode !== 'pingpong' || frames.length < 2) {
-				// Loop mode (or single frame): always forward, wrap to start
-				const nextIndex = currentPos === -1
-					? frames[0]
-					: frames[(currentPos + 1) % frames.length];
-				return { ...state, currentLayerIndex: nextIndex };
-			}
-			// Ping-pong mode: advance by current direction, reverse at extremities
-			const dir = state.animationDirection;
-			const pos = currentPos === -1 ? 0 : currentPos;
-			let nextPos = pos + dir;
-			let nextDir = dir;
-			if (nextPos >= frames.length) {
-				nextDir = -1;
-				nextPos = frames.length - 2; // skip back, don't replay last frame
-			} else if (nextPos < 0) {
-				nextDir = 1;
-				nextPos = 1; // skip forward, don't replay first frame
-			}
-			return { ...state, currentLayerIndex: frames[nextPos], animationDirection: nextDir as 1 | -1 };
-		}
-		case 'STEP_ANIMATION_FRAME': {
-			// Navigate the real frame sequence with circular wrap, never creating layers.
-			// Used by the pill buttons (frame-back / frame-fwd).
-			// Keyboard shortcuts [/] keep PREV_LAYER/NEXT_LAYER (construct in DRAW).
-			const dir = action.payload;
-			const frames = getAnimationFrames(state);
-			if (frames.length === 0) return state;
-			const pos = frames.indexOf(state.currentLayerIndex);
-			// If current layer is empty/hidden (not in sequence): go to first or last frame
-			const nextPos = pos === -1
-				? (dir > 0 ? 0 : frames.length - 1)
-				: (pos + dir + frames.length) % frames.length;
-			const nextIndex = frames[nextPos];
-			const newZ = nextIndex * -BASE_DEPTH_STEP;
-			const hasShapesInNewLayer = state.shapes.some(s => s.zIndex === newZ);
-			const nextBrush = resolveLayerBrush(state.shapes, nextIndex, state.layerBrushSettings[nextIndex]) || { thickness: state.currentBrushThickness, mode: state.brushMode };
-			return {
-				...state,
-				currentLayerIndex: nextIndex,
-				camera: { ...state.camera, z: newZ, rotation: 0 },
-				isDrawInside: hasShapesInNewLayer ? state.isDrawInside : false,
-				isDrawBehind: hasShapesInNewLayer ? state.isDrawBehind : false,
-				paletteMode: state.layerRenderModes[nextIndex] || 'flat',
-				currentBrushThickness: nextBrush.thickness,
-				brushMode: nextBrush.mode,
-			};
-		}
-		case 'TOGGLE_ANIMATION_PLAYBACK_MODE':
-			return {
-				...state,
-				animationPlaybackMode: state.animationPlaybackMode === 'loop' ? 'pingpong' : 'loop',
-				animationDirection: 1, // reset direction when switching modes
-			};
+		case 'TOGGLE_ANIMATION_MODE': return toggleAnimationMode(state); // Moved to state/animation.ts
+		case 'SET_ANIMATION_PLAYING': return setAnimationPlaying(state, action); // Moved to state/animation.ts
+		case 'SET_ANIMATION_FRAMERATE': return setAnimationFramerate(state, action); // Moved to state/animation.ts
+		case 'SET_ANIMATION_EXPORT_LOOPS': return setAnimationExportLoops(state, action); // Moved to state/animation.ts
+		case 'SET_GIF_EXPORT_SCALE': return setGifExportScale(state, action); // Moved to state/animation.ts
+		case 'TOGGLE_ONION_SKIN': return toggleOnionSkin(state); // Moved to state/animation.ts
+		case 'TOGGLE_ANIMATION_FLAT_Z': return toggleAnimationFlatZ(state); // Moved to state/animation.ts
+		case 'ADVANCE_ANIMATION_FRAME': return advanceAnimationFrame(state); // Moved to state/animation.ts
+		case 'STEP_ANIMATION_FRAME': return stepAnimationFrame(state, action); // Moved to state/animation.ts
+		case 'TOGGLE_ANIMATION_PLAYBACK_MODE': return toggleAnimationPlaybackMode(state); // Moved to state/animation.ts
 		default:
 			return state;
 	}
