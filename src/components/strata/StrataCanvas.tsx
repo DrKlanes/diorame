@@ -7,7 +7,7 @@ import type { CanvasHandlerEnv } from './canvas/handlerEnv';
 import { createPointerMoveUpHandlers } from './canvas/pointerMoveUpHandlers';
 import { createPointerDownHandler } from './canvas/pointerDownHandler';
 import { createTouchHandlers } from './canvas/touchHandlers';
-import { Shape, Point, Waypoint, GestureState, CanvasPointerInput } from '../../types/strataTypes';
+import { Shape, Point, Waypoint, GestureState } from '../../types/strataTypes';
 import paperTexture from "figma:asset/texture-paper.png";
 import grungeTexture from "figma:asset/texture-grunge.png";
 import { cn } from '../ui/utils';
@@ -221,41 +221,23 @@ export const StrataCanvas = () => {
 		canvas.focus();
 	}, [state.mode]);
 
-	// iOS Palm Rejection Fix: Native listeners intercept Apple Pencil events
-	// to prevent iOS from canceling them due to palm contact detection
+	// Native touchstart, cancelled (protected: see CLAUDE.md «Comportamientos protegidos»).
+	// Its preventDefault blocks Safari's compatibility mouse events and native gestures.
+	// It does NOT block pointer events on iPad: the Pencil stroke starts in React's
+	// onPointerDown. useAutoSave relies on the canvas cancelling touchstart (REFERENCE.md §10).
+	// v3.26.69: removed the native pointerdown re-dispatch, a no-op since the baseline (H12).
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
-		const nativePointerDown = (e: PointerEvent) => {
-			// For Apple Pencil on iOS: manually trigger the React handler
-			// because preventDefault on touchstart blocks pointer events
-			if (e.pointerType === 'pen') {
-				// Create a synthetic React event
-				const syntheticEvent = {
-					...e,
-					currentTarget: canvas,
-					preventDefault: () => e.preventDefault(),
-					stopPropagation: () => e.stopPropagation(),
-					nativeEvent: e
-				} as CanvasPointerInput;
-
-				handlePointerDown(syntheticEvent);
-			}
-		};
-
 		const nativeTouchStart = (e: TouchEvent) => {
-			// Prevent iOS palm rejection from cancelling pencil events
-			// This will block the pointer event, but we handle it manually above
 			e.preventDefault();
 		};
 
-		canvas.addEventListener('pointerdown', nativePointerDown, { capture: true });
 		canvas.addEventListener('touchstart', nativeTouchStart, { capture: true, passive: false });
 
 		return () => {
-			canvas.removeEventListener('pointerdown', nativePointerDown);
-			canvas.removeEventListener('touchstart', nativeTouchStart);
+			canvas.removeEventListener('touchstart', nativeTouchStart, { capture: true });
 		};
 	}, []);
 

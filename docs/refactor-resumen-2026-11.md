@@ -251,8 +251,8 @@ El núcleo de `StrataCanvas.tsx` (bucle RAF, `buildRenderContext`), sus refs, su
 - **Tono de la banda y del tirador de «Mixto»** (`T.purpleLight`): calibrado visual, lo cierra Moisés.
 - Los valores de dentro de `layerGradParams` no se validan al cargar.
 - **Pinch con el centro quieto se lee como toque de dos dedos (deshacer)** (fase 6, comportamiento previo): el sprint de handlers no lo cambió y lo dejó fijado en un test `[COMPORTAMIENTO ACTUAL]`. Falta caracterizarlo en iPad (matriz del informe, B3) y decidir.
-- **H12 · el listener nativo de `pointerdown` del Pencil es un no-op** (sprint de handlers): hace `{ ...e }` sobre un `PointerEvent`, y el spread no copia `pointerType` ni `isPrimary`; el handler sale en la primera guarda. Verificado en Chrome; por confirmar en Safari / iPad. Sin tocar: es registro de listeners.
-- **H13** · ese efecto llama a `removeEventListener` sin `capture`. Menor.
+- ~~**H12 · el listener nativo de `pointerdown` del Pencil es un no-op**~~ — **resuelto en v3.26.69** (opción A): eliminado el relanzamiento (no-op desde el commit base); el `touchstart` cancelado se queda y pasa a comportamiento protegido. Falta la mini-ronda de iPad.
+- ~~**H13** · `removeEventListener` sin `capture`~~ — **resuelto en v3.26.69**.
 - **H14 · en DRAW los handlers proyectan el puntero con `state.focalLength` y el gizmo con `DRAW_FOCAL_LENGTH`.** Inocuo mientras la cámara esté en el plano de la capa activa; por confirmar si hay algún camino con la cámara fuera.
 - ~~Desfases de documentación de la auditoría §6~~ — **corregidos en la fase 7 (v3.26.45)**, cada uno verificado contra el código; la tabla está en `docs/audit-2026-11.md`, «Fase 7 — resultado».
 
