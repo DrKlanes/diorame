@@ -1,1 +1,1 @@
-import{frameOf as f,parseDior as i,renderDior as m}from"./assets/diorRender-B3QUXm2d.js";import"./assets/inknut-antiqua-latin-700-normal-D44wSkKY.js";export{f as frameOf,i as parseDior,m as renderDior};
+import{frameOf as f,parseDior as i,renderDior as m}from"./assets/diorRender-C2qFQoHB.js";import"./assets/inknut-antiqua-latin-700-normal-B0-P6O8e.js";export{f as frameOf,i as parseDior,m as renderDior};
