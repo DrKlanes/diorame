@@ -232,3 +232,64 @@ export const isSignificantTransform = (t: Transform): boolean =>
 	Math.abs(t.x) > 0.1 || Math.abs(t.y) > 0.1 || Math.abs(t.scale - 1) > 0.001 || Math.abs(t.rotation) > 0.001
 	|| (t.scaleX !== undefined && Math.abs(t.scaleX - 1) > 0.001)
 	|| (t.scaleY !== undefined && Math.abs(t.scaleY - 1) > 0.001);
+
+/**
+ * What a Move-tool pointerdown means for the selection (v3.17.8; out of StrataCanvas's
+ * handlePointerDown in v3.26.58, the conditions as they were):
+ *
+ *                | inside the box               | outside
+ *   selected     | 'drag'                       | 'deselect-on-release'
+ *   deselected   | 'select-and-drag'            | 'ignore'
+ *
+ * `handles === null` means no gizmo is possible at all (empty layer, or the very first frame
+ * before the RAF has projected one): nothing to select or deselect, so it is always 'drag'.
+ *
+ * Handles only count when the gizmo is actually VISIBLE. Deselected, drawGizmo still computes
+ * them (that is what makes the containment test possible) but draws nothing — and an invisible
+ * handle must not be grabbable, least of all the rotate one sitting ~120px above a box the user
+ * cannot see. Selected, a grabbed handle is a 'drag' even when it lies outside the box.
+ *
+ * It only DECIDES. The caller keeps the consequences: a deselection is recorded and confirmed on
+ * the release (pendingDeselectRef), never committed at pointerdown.
+ */
+export type MoveSelectionOutcome = 'drag' | 'deselect-on-release' | 'select-and-drag' | 'ignore';
+
+export const decideMoveSelection = (
+	pointerX: number,
+	pointerY: number,
+	handles: GizmoHandles | null,
+	wasSelected: boolean,
+): MoveSelectionOutcome => {
+	if (handles) {
+		const insideBox = isPointInsideGizmoBox(pointerX, pointerY, handles);
+		const grabbedHandle = wasSelected
+			&& hitTestGizmo(pointerX, pointerY, handles) !== 'move';
+
+		if (wasSelected) {
+			if (!grabbedHandle && !insideBox) {
+				return 'deselect-on-release';
+			}
+		} else {
+			if (!insideBox) return 'ignore';
+			return 'select-and-drag';
+		}
+	}
+	return 'drag';
+};
+
+/** Payload of the TRANSFORM_LAYER that a finished gizmo drag commits. */
+export const transformLayerPayload = (layerIndex: number, ct: Transform, centerX: number, centerY: number) => ({
+	layerIndex,
+	transform: {
+		rotation: ct.rotation, scale: ct.scale, dx: ct.x, dy: ct.y,
+		// scaleX/scaleY present only for side-handle drags → triggers
+		// the reducer's non-uniform path. undefined for corners → uniform.
+		scaleX: ct.scaleX, scaleY: ct.scaleY,
+		centerX,
+		centerY
+	}
+});
+
+/** Whether a plain layer move (empty layer, no gizmo) went far enough to be committed. */
+export const isSignificantMove = (offsetX: number, offsetY: number): boolean =>
+	Math.abs(offsetX) > 0.1 || Math.abs(offsetY) > 0.1;

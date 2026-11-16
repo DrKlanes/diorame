@@ -12,7 +12,7 @@ import { cn } from '../ui/utils';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOverlayConnected';
 import { generateRisoGrain } from './canvas/postProcessing';
-import { PARTICLE_COUNT, MIN_TOUCH_STROKE_POINTS } from '../../constants/renderConstants';
+import { PARTICLE_COUNT } from '../../constants/renderConstants';
 import { exportAsPNG, exportAsMP4 } from './canvas/exportHandlers';
 import { exportAsTimelapse } from './canvas/timelapseExport';
 import { registerThumbnailSource } from './canvas/projectThumbnail';
@@ -23,7 +23,8 @@ import { exportAsPNGSequence } from './canvas/pngSequenceHandler';
 import { exportAsGIF } from './canvas/gifHandler';
 import { useTranslation } from '../../i18n';
 import { getLayerBoundingBox } from './canvas/transformUtils';
-import { hitTestGizmo, isPointInsideGizmoBox, computeMoveTransform, isSignificantTransform, isDragEngaged, type TransformMode } from './canvas/moveGizmoInteraction';
+import { hitTestGizmo, computeMoveTransform, isSignificantTransform, isDragEngaged, decideMoveSelection, transformLayerPayload, isSignificantMove, type TransformMode } from './canvas/moveGizmoInteraction';
+import { clientToWorld, organicWiggle, dragPan, orbitDragZoomOffset, orbitPointerDrag, isTouchMicroStroke } from './canvas/pointerMath';
 import { cursorClassForGizmoMode } from './canvas/gizmoCursor';
 import { getAnimationFrames } from '../../utils/animationFrames';
 import { isDoubleClick, frameCinemaPoint } from './canvas/cinemaFraming';
@@ -839,24 +840,17 @@ export const StrataCanvas = () => {
 		const cx = rect.width / 2;
 		const cy = rect.height / 2;
 
-		// Calculate World Coordinates
-		const screenX = e.clientX - rect.left - cx; // Centered (for World Calc)
-		const screenY = e.clientY - rect.top - cy;
+		// Calculate World Coordinates (maths extracted to canvas/pointerMath.ts)
 		const pointerX = e.clientX - rect.left; // Top-Left (for Gizmo Hit Test)
 		const pointerY = e.clientY - rect.top;
 
 		const currentZoom = state.mode === 'drawing' ? state.drawingZoom : 1;
 		const currentPan = state.mode === 'drawing' ? state.drawingPan : { x: 0, y: 0 };
-		const drawX = (screenX - currentPan.x) / currentZoom;
-		const drawY = (screenY - currentPan.y) / currentZoom;
 
 		const activeZ = getActiveZ(state.currentLayerIndex);
 		const FL = state.focalLength;
 		const camZ = state.camera.z;
-		const dz = activeZ - camZ;
-		const scale = FL / (FL + dz);
-		const worldX = drawX / scale;
-		const worldY = drawY / scale;
+		const { worldX, worldY } = clientToWorld(e.clientX, e.clientY, rect, currentZoom, currentPan, FL, camZ, activeZ);
 
 		if (state.mode === 'cinematic') {
 			const now = Date.now();
@@ -909,41 +903,31 @@ export const StrataCanvas = () => {
 				// deselect there, so the legacy path runs untouched.
 				const handles = transformHandlesRef.current;
 				const wasSelected = state.isLayerSelected;
-				if (handles) {
-					const insideBox = isPointInsideGizmoBox(pointerX, pointerY, handles);
-					// Handles only count when the gizmo is actually VISIBLE. Deselected,
-					// drawGizmo still computes them (that is what makes the containment
-					// test possible) but draws nothing — and an invisible handle must not
-					// be grabbable, least of all the rotate one sitting ~120px above a box
-					// the user cannot see.
-					const grabbedHandle = wasSelected
-						&& hitTestGizmo(pointerX, pointerY, handles) !== 'move';
-
-					if (wasSelected) {
-						if (!grabbedHandle && !insideBox) {
-							// Deselecting is a TAP, and at pointerdown we cannot yet know
-							// whether this finger is the first of a two-finger gesture. So it
-							// is recorded and confirmed on the release, which is where every
-							// other tap in this app is decided (two-finger undo, three-finger
-							// redo, Space-tap to centre). Committing it here made every pinch
-							// and every undo tap whose first finger landed outside the box
-							// deselect the layer, after which the Move tool looked dead until
-							// you touched inside the box again — measured, isLayerSelected
-							// going true → false on a single touch pointerdown, and invisible
-							// on desktop because no desktop gesture has a second pointer.
-							// The cell itself is unchanged: same condition, same outcome, same
-							// early return with no capture, no isDrawing and no transform.
-							pendingDeselectRef.current = true;
-							return;
-						}
-					} else {
-						if (!insideBox) return;
-						// Select AND drag in the SAME gesture (Figma model). The dispatch
-						// only flips a view flag that makes the gizmo paint; the drag itself
-						// runs from refs set below in this very event, so nothing waits on
-						// React and the user perceives one continuous action.
-						dispatch({ type: 'SET_LAYER_SELECTED', payload: true });
-					}
+				// The table itself (conditions) extracted to canvas/moveGizmoInteraction.ts
+				const selection = decideMoveSelection(pointerX, pointerY, handles, wasSelected);
+				if (selection === 'deselect-on-release') {
+					// Deselecting is a TAP, and at pointerdown we cannot yet know
+					// whether this finger is the first of a two-finger gesture. So it
+					// is recorded and confirmed on the release, which is where every
+					// other tap in this app is decided (two-finger undo, three-finger
+					// redo, Space-tap to centre). Committing it here made every pinch
+					// and every undo tap whose first finger landed outside the box
+					// deselect the layer, after which the Move tool looked dead until
+					// you touched inside the box again — measured, isLayerSelected
+					// going true → false on a single touch pointerdown, and invisible
+					// on desktop because no desktop gesture has a second pointer.
+					// The cell itself is unchanged: same condition, same outcome, same
+					// early return with no capture, no isDrawing and no transform.
+					pendingDeselectRef.current = true;
+					return;
+				}
+				if (selection === 'ignore') return;
+				if (selection === 'select-and-drag') {
+					// Select AND drag in the SAME gesture (Figma model). The dispatch
+					// only flips a view flag that makes the gizmo paint; the drag itself
+					// runs from refs set below in this very event, so nothing waits on
+					// React and the user perceives one continuous action.
+					dispatch({ type: 'SET_LAYER_SELECTED', payload: true });
 				}
 
 				e.currentTarget.setPointerCapture(e.pointerId);
@@ -1021,19 +1005,14 @@ export const StrataCanvas = () => {
 			}
 
 			// In Orbit mode with middle button, use vertical movement for zoom
+			// (maths of both branches extracted to canvas/pointerMath.ts)
 			if (state.mode === 'cinematic' && state.cinematicType === 'orbit') {
-				const zoomSensitivity = 10; // 10 units per pixel
-				const newOffset = Math.min(Math.max(gestureRef.current.startZoom - dy * zoomSensitivity, -5000), 2000);
-				dispatch({ type: 'SET_VIEW_ZOOM_OFFSET', payload: newOffset });
+				dispatch({ type: 'SET_VIEW_ZOOM_OFFSET', payload: orbitDragZoomOffset(gestureRef.current.startZoom, dy) });
 				return;
 			}
 
 			// Drawing mode: pan
-			// World-space clamp (v3.25.5), same as the wheel and the pinch.
-			const panLimit = MAX_PAN * (state.drawingZoom || 1);
-			let newPanX = Math.max(-panLimit, Math.min(panLimit, gestureRef.current.startPan.x + dx));
-			let newPanY = Math.max(-panLimit, Math.min(panLimit, gestureRef.current.startPan.y + dy));
-			dispatch({ type: 'SET_DRAWING_ZOOM', payload: { zoom: state.drawingZoom, pan: { x: newPanX, y: newPanY } } });
+			dispatch({ type: 'SET_DRAWING_ZOOM', payload: { zoom: state.drawingZoom, pan: dragPan(gestureRef.current.startPan, dx, dy, state.drawingZoom, MAX_PAN) } });
 			return;
 		}
 
@@ -1104,22 +1083,15 @@ export const StrataCanvas = () => {
 
 		if (state.mode === 'drawing') {
 			const rect = canvasRectRef.current || canvasRef.current!.getBoundingClientRect();
-			const cx = rect.width / 2;
-			const cy = rect.height / 2;
-			const screenX = e.clientX - rect.left - cx;
-			const screenY = e.clientY - rect.top - cy;
 
 			const currentZoom = state.drawingZoom;
 			const currentPan = state.drawingPan;
-			const drawX = (screenX - currentPan.x) / currentZoom;
-			const drawY = (screenY - currentPan.y) / currentZoom;
 
 			const activeZ = getActiveZ(state.currentLayerIndex);
 			const FL = state.focalLength;
 			const camZ = state.camera.z;
-			const scale = FL / (FL + (activeZ - camZ));
-			const worldX = drawX / scale;
-			const worldY = drawY / scale;
+			// Maths extracted to canvas/pointerMath.ts
+			const { worldX, worldY } = clientToWorld(e.clientX, e.clientY, rect, currentZoom, currentPan, FL, camZ, activeZ);
 
 			if (state.tool === 'move' && moveRef.current) {
 				moveRef.current.offsetX = worldX - moveRef.current.startX;
@@ -1135,22 +1107,11 @@ export const StrataCanvas = () => {
 			let finalY = worldY;
 
 			if (state.isOrganicMode && (state.tool === 'blob' || state.tool === 'eraser')) {
-				const rawDist = Math.hypot(worldX - lastPoint.x, worldY - lastPoint.y);
-				organicPhaseRef.current += rawDist * 0.25; // Increased frequency for more "nervous" line
-
-				const amp = 8.0; // Doubled amplitude
-				// Added a third harmonic for more complexity/randomness
-				finalX += (
-					Math.sin(organicPhaseRef.current) +
-					Math.cos(organicPhaseRef.current * 0.43) * 1.2 +
-					Math.sin(organicPhaseRef.current * 2.7) * 0.4
-				) * amp;
-
-				finalY += (
-					Math.cos(organicPhaseRef.current * 0.87) +
-					Math.sin(organicPhaseRef.current * 0.37) * 1.2 +
-					Math.cos(organicPhaseRef.current * 2.3) * 0.4
-				) * amp;
+				// Maths extracted to canvas/pointerMath.ts
+				const wiggled = organicWiggle(organicPhaseRef.current, worldX, worldY, lastPoint);
+				organicPhaseRef.current = wiggled.phase;
+				finalX = wiggled.finalX;
+				finalY = wiggled.finalY;
 			}
 
 			const dist = Math.hypot(finalX - lastPoint.x, finalY - lastPoint.y);
@@ -1168,22 +1129,9 @@ export const StrataCanvas = () => {
 			// Normal Drag = Pan camera (move X, Y)
 			// Alt + Drag = Elevation control
 
-			if (e.shiftKey) {
-				// Orbit mode: rotate around center
-				const sensitivity = 0.005;
-				orbitRef.current.targetAzimuth -= e.movementX * sensitivity;
-				orbitRef.current.targetElevation = Math.max(-1.5, Math.min(1.5, orbitRef.current.targetElevation + e.movementY * sensitivity));
-			} else if (e.altKey) {
-				// Elevation control only
-				const elevSensitivity = 0.006;
-				orbitRef.current.targetElevation = Math.max(-1.5, Math.min(1.5, orbitRef.current.targetElevation + e.movementY * elevSensitivity));
-			} else {
-				// Pan mode: move camera in world space
-				// Use orbitRef offset to avoid being overwritten by animation loop
-				const panSensitivity = 2.0;
-				orbitRef.current.panOffsetX -= e.movementX * panSensitivity;
-				orbitRef.current.panOffsetY -= e.movementY * panSensitivity;
-			}
+
+			// Maths extracted to canvas/pointerMath.ts. Written onto the same object, field by field.
+			Object.assign(orbitRef.current, orbitPointerDrag(orbitRef.current, e.movementX, e.movementY, e.shiftKey, e.altKey));
 		}
 	};
 
@@ -1220,24 +1168,15 @@ export const StrataCanvas = () => {
 					if (isSignificantTransform(ct)) {
 						dispatch({
 							type: 'TRANSFORM_LAYER',
-							payload: {
-								layerIndex: state.currentLayerIndex,
-								transform: {
-									rotation: ct.rotation, scale: ct.scale, dx: ct.x, dy: ct.y,
-									// scaleX/scaleY present only for side-handle drags → triggers
-									// the reducer's non-uniform path. undefined for corners → uniform.
-									scaleX: ct.scaleX, scaleY: ct.scaleY,
-									centerX: transformRef.current.centerX,
-									centerY: transformRef.current.centerY
-								}
-							}
+							// Payload built in canvas/moveGizmoInteraction.ts
+							payload: transformLayerPayload(state.currentLayerIndex, ct, transformRef.current.centerX, transformRef.current.centerY)
 						});
 					}
 					transformRef.current.isActive = false;
 					transformRef.current.mode = 'none';
 				} else if (moveRef.current) {
 					const { offsetX, offsetY } = moveRef.current;
-					if (Math.abs(offsetX) > 0.1 || Math.abs(offsetY) > 0.1) {
+					if (isSignificantMove(offsetX, offsetY)) {
 						dispatch({
 							type: 'MOVE_LAYER',
 							payload: { layerIndex: state.currentLayerIndex, deltaX: offsetX, deltaY: offsetY }
@@ -1250,7 +1189,7 @@ export const StrataCanvas = () => {
 
 			if (currentPointsRef.current.length > 0) {
 				// Discard micro-strokes from finger/palm touches (not pen or mouse)
-					if (drawingPointerTypeRef.current === 'touch' && currentPointsRef.current.length <= MIN_TOUCH_STROKE_POINTS) {
+					if (isTouchMicroStroke(drawingPointerTypeRef.current, currentPointsRef.current.length)) {
 						currentPointsRef.current = [];
 						setIsDrawing(false);
 						drawingPointerTypeRef.current = null;
