@@ -134,7 +134,8 @@ export const runHandlers = async (source) => {
 		writeFileSync(entryFile, entrySource(source));
 		const outFile = join(dir, 'out.mjs');
 		await build({ entryPoints: [entryFile], bundle: true, platform: 'node', format: 'esm', outfile: outFile, logLevel: 'error', plugins: [standIns] });
-		const { results } = await import(pathToFileURL(outFile).href);
+		// @vite-ignore: under Vitest on Windows, Vite's analysis of a non-literal import() hung the load of this module (v3.26.67).
+		const { results } = await import(/* @vite-ignore */ pathToFileURL(outFile).href);
 		return JSON.parse(JSON.stringify(results));
 	} finally {
 		rmSync(dir, { recursive: true, force: true });

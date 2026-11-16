@@ -753,7 +753,7 @@ APIs they import change.
 
 The safety net of the refactor (plan and invariants: `docs/audit-2026-11.md` §3.6, §4, §5). They run the **real** reducer (`appReducer`) and the **real** stroke generators in Node: no DOM, no canvas, no mocks.
 
-- **Run:** `npm test` (`vitest run`; 688 tests in 13 files since v3.26.66 (663 in 12 at v3.26.63) — 476 in 10 at v3.26.25, under 1 s of tests, ~1.5 s wall clock). One file: `npx vitest run tests/<file>`. In CI since v3.26.9: a blocking step of `.github/workflows/deploy.yml`, after the typecheck and before the build, so a red test is never deployed.
+- **Run:** `npm test` (`vitest run`; 688 tests in 13 files since v3.26.66 (663 in 12 at v3.26.63; the handlers suite hung under Vitest on Windows until v3.26.67) — 476 in 10 at v3.26.25, under 1 s of tests, ~1.5 s wall clock). One file: `npx vitest run tests/<file>`. In CI since v3.26.9: a blocking step of `.github/workflows/deploy.yml`, after the typecheck and before the build, so a red test is never deployed.
 - **Config:** `vitest.config.ts` inherits only `resolve.alias` from `vite.config.ts` (no PWA plugin, no Tailwind, no build entries); `environment: 'node'`. Vitest 4.1.12, pinned: the last line that declares Vite ^6.0 (5.x needs Vite ≥ 6.4). Adding it leaves the production build byte-identical.
 - **Typecheck:** `tsconfig.json` includes `tests`.
 - **What they do NOT cover:** pixels, WebGL, iPad. That stays with the browser harnesses of `tools/` above. Gestures: since v3.26.53 `handlers.characterization.test.ts` runs the canvas handlers through scripted pointer / touch events in Node (what each event dispatches and which refs it changes); WHEN the browser delivers an event, React's timing and the real DOM stay with `tools/handlers-golden/desktop-matrix.js` and the iPad.
@@ -1426,9 +1426,13 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.66)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.67)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.67 · test(infra): `tests/handlers.characterization.test.ts` ya no se cuelga en Windows
+
+- Causa: Vite, al analizar `tools/handlers-golden/harness.mjs` bajo Vitest en Windows, se quedaba colgado en el `import(pathToFileURL(outFile).href)` no literal (el módulo nunca terminaba de cargar; esbuild y el harness estaban bien: 75 ms con node plano). Arreglo: `/* @vite-ignore */` en ese `import()`. Referencia y expectativas intactas; `npm test` completo ~1,6 s en Windows.
 
 ### 3.26.66 · feat(analytics): captura silenciosa de errores
 
