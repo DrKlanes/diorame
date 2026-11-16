@@ -34,7 +34,6 @@ import {
 } from '../../utils/soundManager';
 
 import { mergeLayerDown } from '../../utils/mergeLayers';
-import { fitViewToRect, frameInView } from '../../utils/formatFrame';
 
 export {
 	generateTaperedStroke, generateUniformStroke, generateInkStroke, generateStrokeForMode,
@@ -61,6 +60,7 @@ import { toggleAnimationMode, setAnimationPlaying, setAnimationFramerate, setAni
 import { startTextSession, updateTextSession, commitTextSession, cancelTextSession } from '../../state/textSession';
 import { addShape, addShapes } from '../../state/shapes';
 import { setMode, updateCamera, setCinematicType, setCinematicSpeed, setFocalLength, setViewZoomOffset, initCinemaView, setLayerSpacingFactor, toggleHandheld, setHandheldIntensity, setPointOfInterest, clearPointOfInterest } from '../../state/cinema';
+import { setDrawingZoom, resetDrawingView, setFormat, setViewportSize, completeFitToView, toggleGrid } from '../../state/drawView';
 
 // --- Reducer ---
 
@@ -87,11 +87,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 			return { ...state, isDrawing: action.payload };
 		case 'TOGGLE_SYMMETRY':
 			return { ...state, isSymmetryEnabled: !state.isSymmetryEnabled };
-		case 'TOGGLE_GRID': {
-			const newValue = !state.gridEnabled;
-			try { window.localStorage.setItem('diorame-grid-enabled', String(newValue)); } catch (_) { /* private mode */ }
-			return { ...state, gridEnabled: newValue };
-		}
+		case 'TOGGLE_GRID': return toggleGrid(state); // Moved to state/drawView.ts
 		case 'TOGGLE_DRAW_BEHIND':
 			if (state.tool === 'eraser') return state;
 			const willBeBehind = !state.isDrawBehind;
@@ -125,22 +121,9 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'SET_PALETTE_GRADIENT_INTENSITY': return setPaletteGradientIntensity(state, action); // Moved to state/palette.ts
 		case 'SET_PALETTE_GRADIENT_TYPE': return setPaletteGradientType(state, action); // Moved to state/palette.ts
 		case 'COMMIT_PALETTE_GRADIENT': return commitPaletteGradient(state); // Moved to state/palette.ts
-		case 'RESET_DRAWING_VIEW': {
-			// With a format frame (v3.25.5), "Centrar vista" fits it as seen from the active layer (frameInView, v3.25.28);
-			// without one, zoom 1 at the origin as always.
-			const { w, h } = state.viewportSize;
-			if (state.format && w > 0 && h > 0) {
-				const fit = fitViewToRect(frameInView(state.format, state.camera.z, state.isAnimationMode), w, h);
-				return { ...state, drawingZoom: fit.zoom, drawingPan: fit.pan };
-			}
-			return { ...state, drawingZoom: 1, drawingPan: { x: 0, y: 0 } };
-		}
-		case 'SET_FORMAT':
-			// View state, outside undo; a user choice that is saved, so it dirties the project.
-			return { ...state, format: action.payload, isDirty: true };
-		case 'SET_VIEWPORT_SIZE':
-			if (state.viewportSize.w === action.payload.w && state.viewportSize.h === action.payload.h) return state;
-			return { ...state, viewportSize: action.payload };
+		case 'RESET_DRAWING_VIEW': return resetDrawingView(state); // Moved to state/drawView.ts
+		case 'SET_FORMAT': return setFormat(state, action); // Moved to state/drawView.ts
+		case 'SET_VIEWPORT_SIZE': return setViewportSize(state, action); // Moved to state/drawView.ts
 		case 'ADD_SHAPE': return addShape(state, action); // Moved to state/shapes.ts
 		case 'ADD_SHAPES': return addShapes(state, action); // Moved to state/shapes.ts
 		case 'UNDO': return undo(state); // Moved to state/history.ts
@@ -182,12 +165,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'SET_FOCAL_LENGTH': return setFocalLength(state, action); // Moved to state/cinema.ts
 		case 'SET_VIEW_ZOOM_OFFSET': return setViewZoomOffset(state, action); // Moved to state/cinema.ts
 		case 'INIT_CINEMA_VIEW': return initCinemaView(state, action); // Moved to state/cinema.ts
-		case 'SET_DRAWING_ZOOM':
-			return {
-				...state,
-				drawingZoom: action.payload.zoom,
-				drawingPan: action.payload.pan || state.drawingPan
-			};
+		case 'SET_DRAWING_ZOOM': return setDrawingZoom(state, action); // Moved to state/drawView.ts
 		case 'TOGGLE_DARK_MODE':
 			playSound('click');
 			return { ...state, isDarkMode: !state.isDarkMode, isDirty: true };
@@ -249,8 +227,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 				isDirty: false,
 			}
 		case 'LOAD_PROJECT': return loadProject(state, action); // Moved to state/loadProject.ts
-		case 'COMPLETE_FIT_TO_VIEW':
-			return { ...state, shouldFitToView: false };
+		case 'COMPLETE_FIT_TO_VIEW': return completeFitToView(state); // Moved to state/drawView.ts
 		case 'TOGGLE_LAYER_VISIBILITY': return toggleLayerVisibility(state, action); // Moved to state/layerNav.ts
 		case 'TOGGLE_3D_LOCK': return toggle3dLock(state, action); // Moved to state/layerNav.ts
 		case 'MOVE_LAYER': return moveLayer(state, action); // Moved to state/layerTransform.ts
