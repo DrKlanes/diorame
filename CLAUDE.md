@@ -44,7 +44,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 |---|---|
 | Constantes / datos puros | `src/constants/<name>.ts` |
 | Utilidades / helpers | `src/utils/<name>.ts` |
-| Lógica del reducer (las acciones de un mismo asunto) | `src/state/<name>.ts` — una función por acción; el `switch` de `appReducer` se queda en `StrataContext.tsx` y delega |
+| Lógica del reducer (las acciones de un mismo asunto) | `src/state/<name>.ts` — una función por acción; el `switch` vive en `state/appReducer.ts` (desde v3.26.38) y delega con una línea por `case`. `StrataContext.tsx` solo tiene Provider, `useStrata` y re-exports: un módulo sin React importa de `state/` y `constants/`, nunca del contexto (`dior-render.js` no lleva React desde v3.26.39) |
 | Lógica de canvas modular | `src/components/strata/canvas/<Name>.ts` |
 | Hooks React | `src/hooks/use<Name>.ts` |
 | Sub-componentes UI | `src/components/strata/<Name>.tsx` |
