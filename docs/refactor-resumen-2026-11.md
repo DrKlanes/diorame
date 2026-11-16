@@ -1,8 +1,8 @@
-# Refactor de Diorame — estado a v3.26.40 (16 nov 2026)
+# Refactor de Diorame — estado a v3.26.45 (16 nov 2026)
 
 Resumen autocontenido de todo lo hecho en el refactor, para poner al día a quien no ha seguido la sesión. El detalle, las mediciones y las tablas completas están en `docs/audit-2026-11.md`; este documento no lo sustituye, lo resume.
 
-**Punto de partida:** v3.26.5, commit `2097388`. **Estado actual:** v3.26.40 en `main`. **Hecho desde la versión anterior de este resumen (v3.26.25):** la fase 3B, el resto del reducer (§2, §3 y `docs/audit-2026-11.md`, «Fase 3B — resultado»): `StrataContext.tsx` queda en 65 líneas y `dior-render.js` ya no lleva React. **Siguiente:** lo decide Moisés entre las fases 5, 6 y 7; antes, comprobar el Lab contra producción (§9) y la validación visual pendiente de «Mixto» y del candado de escala en `localhost:3000` y en iPad.
+**Punto de partida:** v3.26.5, commit `2097388`. **Estado actual:** v3.26.45 en `main`. **Hecho desde la versión anterior de este resumen (v3.26.25):** la fase 3B, el resto del reducer (§2, §3 y `docs/audit-2026-11.md`, «Fase 3B — resultado»): `StrataContext.tsx` queda en 65 líneas y `dior-render.js` ya no lleva React. **Siguiente:** lo decide Moisés entre las fases 5, 6 y 7; antes, comprobar el Lab contra producción (§9) y la validación visual pendiente de «Mixto» y del candado de escala en `localhost:3000` y en iPad.
 
 ---
 
@@ -57,7 +57,12 @@ Resumen autocontenido de todo lo hecho en el refactor, para poner al día a quie
 | v3.26.37 | `bab63fb` | refactor | `state/project.ts` |
 | v3.26.38 | `96f9f7f` | refactor | `state/appReducer.ts`: el `switch` sale de `StrataContext.tsx` |
 | v3.26.39 | `e940202` | refactor | `diorRender.ts` y los `.ts` sin React importan de `state/` y `constants/`: React fuera de `dior-render.js` |
-| v3.26.40 | — | docs | Cierre de la fase 3B: auditoría, CLAUDE.md y este resumen |
+| v3.26.40 | `aa9e8f6` | docs | Cierre de la fase 3B: auditoría, CLAUDE.md y este resumen |
+| v3.26.41 | `4f6dbdb` | chore | **Fase 7.** Fuera 45 archivos sin importadores de `components/ui/` |
+| v3.26.42 | `aa919e7` | refactor | `analytics.ts` en `events` / `transport` / `session` + fachada |
+| v3.26.43 | `226fbea` | refactor | `PreviewPage.tsx` en cuatro archivos |
+| v3.26.44 | `57dae0a` | fix | H10: tres campos de gradiente muertos |
+| v3.26.45 | — | docs | Cierre de la fase 7: §6 corregido, Apéndices B y C, ux-debt, auditoría y este resumen |
 
 Todos los tags son anotados y están en el remoto. No se reescribió historia.
 
@@ -188,14 +193,14 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 
 | # | Hallazgo | Cuándo |
 |---|---|---|
-| H10 | Tres campos de gradiente se escriben en el estado sin declararse ni leerse | Fase 7 |
+| H10 | Tres campos de gradiente se escribían en el estado sin declararse ni leerse | **Resuelto en v3.26.44** (fase 7) |
 
 ### Abiertos, sin decisión
 
 - **Archivos guardados antes de v3.26.22 con trazos redimensionados:** llevan el número antiguo (dibujado a 20, redimensionado ×2: dice 20, mide 40). No se migran: se ven igual, el slider marca 20 y el primer re-estilado los redibuja al valor elegido. Falta decidir si se deja así o se detecta el desfase al cargar (exacto en Tapered, aproximado en Ink).
 - **Tono de la banda y del tirador de «Mixto»** (`T.purpleLight`): calibrado visual, lo cierra Moisés.
 - Los valores de dentro de `layerGradParams` no se validan al cargar.
-- Desfases de documentación listados en la auditoría §6 (Apéndice C de REFERENCE.md parado en 3.25.29, atajos del Apéndice B, tabla de primitivas Di*…). No se corrigieron, salvo los que tocaba cada commit.
+- ~~Desfases de documentación de la auditoría §6~~ — **corregidos en la fase 7 (v3.26.45)**, cada uno verificado contra el código; la tabla está en `docs/audit-2026-11.md`, «Fase 7 — resultado».
 
 ---
 
@@ -226,9 +231,9 @@ Decisiones tomadas dentro de la fase 4, con su motivo en la auditoría: el redon
 | ~~3B. Resto del reducer~~ | **Hecha** (v3.26.26–3.26.39) | Pendiente: abrir un `.dior` en el Lab contra producción (§9) |
 | **5. Archivos de FX** | `canvas/risoV2.ts`, `superRiso/engineHost.ts`, tipos de `renderPipeline.ts` | Núcleo: GO explícito. `pixcheck` 0 px. Una ronda en iPad |
 | **6. `StrataCanvas.tsx`** | `canvas/commitStroke.ts` y dos hooks de efectos | Los handlers de puntero y táctil piden sprint propio con iPad |
-| **7. Higiene** | Borrar `components/ui/` sin usar, partir `analytics.ts` y `PreviewPage.tsx`, H10, sincronizar documentación | — |
+| ~~7. Higiene~~ | **Hecha** (v3.26.41–3.26.45): `components/ui/` sin usar fuera (45 archivos), `analytics.ts` y `PreviewPage.tsx` partidos, H10, documentación al día | Pendientes nuevos en `docs/ux-debt.md` (Ink fino, píldora de «Mixto», candado en iPad) |
 
-Las fases 5, 6 y 7 son independientes entre sí.
+Las fases 5 y 6 son independientes entre sí (la 7 ya está hecha).
 
 ---
 

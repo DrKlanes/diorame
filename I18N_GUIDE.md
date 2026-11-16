@@ -170,8 +170,8 @@ t('fx.nonexistent.key')  // → 'fx.nonexistent.key' (literal)
 | `detectLanguage.ts` | `getInitialLanguage()` + `persistLanguage()` (localStorage) |
 | `LanguageContext.tsx` | Provider + `useLanguage()` hook (throws si fuera de provider) |
 | `useTranslation.ts` | Hook principal — retorna `{ t, language }` |
-| `dictionaries/en.ts` | Diccionario inglés (~290 keys) |
-| `dictionaries/es.ts` | Diccionario español (~290 keys, paridad exacta con EN) |
+| `dictionaries/en.ts` | Diccionario inglés (~650 keys) |
+| `dictionaries/es.ts` | Diccionario español (~650 keys, paridad exacta con EN) |
 
 El `LanguageProvider` está montado en `src/main.tsx` como **provider más externo**, envolviendo a `<App />`. Esto garantiza que **todos los paths de la app** (preview, mobile, tablet/desktop) tengan acceso a `t()`, incluyendo componentes que se renderizan fuera del `StrataProvider` (como `MobileBlockScreenV2`).
 

@@ -169,7 +169,7 @@ Super Riso (`superRiso = fxEnabled ? superRisoLoaded : null`). No hace falta una
    los haría brillar. Ver §8.
 5. **Super Riso en DRAW = retener siempre en reposo, en todos los niveles.** Si no, en escritorio el motor corre en cada RAF
    (3–5 ms de GPU a 1366–1920) para una imagen fija. En DRAW basta el camino «refinado» (nivel completo, res 1, `STILL_MS = 300`);
-   el nivel *preview* a .75 sobra y la vista coincide con el export. **`applySuperRiso.ts` está a 398/400 líneas: hay que partirlo
+   el nivel *preview* a .75 sobra y la vista coincide con el export. **`applySuperRiso.ts` está a 393/400 líneas: hay que partirlo
    ANTES** (regla dorada 2), sin cambiar comportamiento (0 px de diferencia en CINEMA). El gancho `beginSuperRisoFrame` antes de la
    fase 1 y la ranura `applyRisoV2` de la fase 3 están protegidos: no mover, envolver ni reordenar (CLAUDE.md).
 6. **El RAF de DRAW recompone todas las capas en cada frame aunque nada se mueva** (`StrataCanvas.tsx`, bucle RAF). Con resplandor o

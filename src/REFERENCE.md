@@ -73,7 +73,7 @@ These principles are the foundation of every decision:
 ### Color & Typography
 - **Fixed Palettes**: 24 colors per palette (Primary, Alternative). No custom colors.
 - **Palette Consistency**: Switching palettes re-maps shapes by index, preserving composition
-- **UI Theme**: Light mode only. Soft grays, minimal shadows, clean typography (Manrope font family)
+- **UI Theme**: Light and dark (`isDarkMode`, `TOGGLE_DARK_MODE`, Shift+D, saved in the `.dior`). Soft grays, minimal shadows, clean typography (Manrope font family)
 
 ---
 
@@ -134,24 +134,25 @@ These principles are the foundation of every decision:
    - Disables all drawing modifiers when active
 
 ### Drawing Modes & Modifiers
-- **Symmetry** (Shift + S): Horizontal mirroring across canvas center
-- **Draw Inside** (Shift + I): Alpha-lock mode (draw only where existing shapes exist)
-- **Draw Behind** (Shift + B): Draw behind existing shapes on the same layer
-- **Organic/Fluid** (Shift + O): Adds subtle randomness to blob strokes
+- **Symmetry**: Horizontal mirroring across canvas center
+- **Draw Inside**: Alpha-lock mode (draw only where existing shapes exist)
+- **Draw Behind**: Draw behind existing shapes on the same layer
+- **Organic/Fluid**: Adds subtle randomness to blob strokes
+- The four are toggles in the drawing UI; none has a keyboard shortcut (the real ones are in Appendix B)
 
 ### Operational Modes
-1. **DRAW Mode** (Shortcut: D)
-   - 2D view with shallow parallax (~3 % per layer, see §7)
+1. **DRAW Mode** (`mode: 'drawing'`; switched from the UI, no key)
+   - 2D view with shallow parallax (~1.5 % per layer, see §7)
    - Camera locked to active layer
    - Zoom and pan controls for precision
    - All drawing tools available
 
-2. **VIEW Mode** (Shortcut: V)
+2. **CINEMA Mode** (`mode: 'cinematic'`; the name «VIEW» in older notes means this; switched from the UI, no key)
    - 3D perspective with parallax
    - Orbital camera controls (click-drag to orbit)
    - Post-processing effects enabled
    - Drawing tools disabled
-   - UI can be hidden (Shift + H)
+   - UI can be hidden (the «show UI» button brings it back; no key)
 
 ---
 
@@ -163,8 +164,8 @@ These principles are the foundation of every decision:
 - **No Custom Colors**: Artists must work within constraints (part of the Riso philosophy)
 
 ### Palette Behavior
-- **Index-Based Mapping**: Shapes store color by palette index, not hex value
-- **Palette Switching**: Changing palettes re-colors all shapes based on their index
+- **Hex Colors, Index Remap**: `Shape.color` is a hex string. Changing palettes remaps each shape through `oldPalette.indexOf(color)` (`state/palette.ts`), so the composition keeps its slots
+- **Palette Switching**: Changing palettes re-colors all shapes by that index
 - **Gradient Mode**: Optional per-layer gradient overlay with configurable parameters:
   - **Gradient Type**: Solid-to-solid or Solid-to-transparent (fade)
   - **Gradient Angle**: Configurable direction in degrees (default 90 - vertical)
@@ -205,18 +206,18 @@ Two distinct actions create layers — they are **not** interchangeable:
 
 `MERGE_LAYER_DOWN` (`utils/mergeLayers.ts`), button after Duplicate in the rail and in the open panel, Shift+M. Merges the active layer A (index i) onto B (index i−1). One undo step with the final state. Since v3.25.24 the merge first stamps the shapes with no `t` (files from before v3.25.16) with a negative one that keeps their array order: the merge moves A to the end of the array, and without it the timelapse (ranked by `t`) showed the upper layer last whatever the drawing order. Already-merged old files cannot be recovered. `__timelapseCheck` has the 3-layer case (untimed shapes, merge 1→0, layer 2 untouched + one new timed shape → `c1 b1 a1 c2 b2 a2 new`; its self-check, stamping restricted to the merged layers, must give another order).
 
-**Plane change on merge (v3.25.28).** A and the layers above move one plane down, rescaled around the world origin by `planeScale` so they keep their look from **A's camera** (the one the user drew with): `kA = (F + z_B − z_A) / F`, ~1.03. What was drawn touching B — or the format frame, which lives on layer 0's plane — keeps touching it: merging into layer 0 is exact (0 px against layer-0 ink and against the frame). A cascade (3→2→1→0) leaves a second-order residual (~0.1 % of the distance to the origin): a plane change keeps the look from one camera only. Until v3.25.27 the scale came from B's camera (`F / (F − 150)`), and with the frame on the active plane every merge put the merged ink ~3 % off the frame (×1.03ⁿ in a cascade, 23–190 px measured). Harness: `tools/draw-stress/harness/mergedrift.js`.
+**Plane change on merge (v3.25.28).** A and the layers above move one plane down, rescaled around the world origin by `planeScale` so they keep their look from **A's camera** (the one the user drew with): `kA = (F + z_B − z_A) / F`, ~1.015 with F = 10000 (~1.03 with F = 5000, until v3.25.28). What was drawn touching B — or the format frame, which lives on layer 0's plane — keeps touching it: merging into layer 0 is exact (0 px against layer-0 ink and against the frame). A cascade (3→2→1→0) leaves a second-order residual (~0.1 % of the distance to the origin): a plane change keeps the look from one camera only. Until v3.25.27 the scale came from B's camera (`F / (F − 150)`), and with the frame on the active plane every merge put the merged ink ~3 % off the frame (×1.03ⁿ in a cascade, 23–190 px measured). Harness: `tools/draw-stress/harness/mergedrift.js`.
 
 - **Guards** (`canMergeDown`, same for button, shortcut and reducer): i > 0; A not empty (`isLayerEmpty`); A and B visible; no open text session (it blocks: the text is never committed for the user); no stroke in progress; no animation playback.
 - **Isolation:** eraser, drawInside and drawBehind act on all that is painted on a layer's canvas. If A contains any (nested groups included), all its shapes get `group = [newId, ...(s.group ?? [])]` and keep acting on A alone. If not, they join B with no group. A's shapes go after all of B's, in order. Whatever is drawn later has no group and acts on the whole layer.
-- **Plane change [VERIFICADO]:** DRAW projects each layer at `5000 / (5000 + z − camera.z)` around the world origin, ~3 % per layer, so moving shapes to another `zIndex` displaces them. A and the layers above it are rescaled around the origin (points, `originalPoints`, `eraserPolygon`, `brushThickness`, text matrix) so they stay put **with the camera on the merged layer**. B and the layers below are not touched.
+- **Plane change [VERIFICADO]:** DRAW projects each layer at `F / (F + z − camera.z)` (F = `DRAW_FOCAL_LENGTH` = 10000; 5000 until v3.25.28) around the world origin, ~1.5 % per layer (~3 % with F = 5000), so moving shapes to another `zIndex` displaces them. A and the layers above it are rescaled around the origin (points, `originalPoints`, `eraserPolygon`, `brushThickness`, text matrix) so they stay put **with the camera on the merged layer**. B and the layers below are not touched.
 - **What the merge shows:** the camera moves from A to B, so the whole view shifts as it does with `[`. Compared with B active before the merge, the live canvas differs by Δ1/255 in ~110 px of 1.4 M, the same as two renders of the same state. A plane cannot reproduce two planes from every camera: with the camera elsewhere (Lab, thumbnail, other active layer) A slides against B by ~0.1 % at low layers and up to ~1 % at layers 8–9. CINEMA loses A's own depth: that is the point of a merge.
 - **Resulting layer:** B's render mode, gradient, brush settings and pin. Toast only if that repaints A's ink (render modes differ, or both in gradient with different parameters). Layers above move down one index in `hiddenLayers`, `locked3DLayers`, `layerRenderModes`, `layerGradParams`, `layerBrushSettings`, `paletteApplyToAllSnapshot` and `focusTargetLayer`.
 - **Undo:** hidden/pinned/DoF indices follow their content (v3.24.1, §11). A's pin is dropped by the merge and does not come back on undo.
 
 ### 3D Depth & Parallax
-- **DRAW Mode**: Shallow parallax, `5000 / (5000 + z − camera.z)` (~3 % per layer), camera at active layer Z. Not orthographic
-- **VIEW Mode**: Perspective projection, full parallax based on layer depth
+- **DRAW Mode**: Shallow parallax, `DRAW_FOCAL_LENGTH / (DRAW_FOCAL_LENGTH + z − camera.z)` = `10000 / (10000 + z − camera.z)` (~1.5 % per layer; ~3 % with the 5000 of v3.25.28 and before), camera at active layer Z. Not orthographic
+- **CINEMA Mode**: Perspective projection, full parallax based on layer depth
 - **Layer Spacing Factor**: Adjustable multiplier (0.00-2.00) to compress/expand depth; value of 0 produces a flat 2D visualization
 
 ### 3D Lock (Per-Layer)
@@ -235,7 +236,7 @@ Two distinct actions create layers — they are **not** interchangeable:
 
 ### DRAW Mode (2D)
 - **Purpose**: Focused drawing experience
-- **Camera**: Locked to active layer, no parallax
+- **Camera**: Locked to the active layer's Z; the other layers show shallow parallax (~1.5 % per layer, §6), so DRAW is not orthographic
 - **Controls**:
   - Scroll Wheel: Zoom in/out
   - Middle Mouse + Drag: Pan
@@ -245,14 +246,13 @@ Two distinct actions create layers — they are **not** interchangeable:
 - **Layer Navigation**: `[` and `]` keys to switch layers
 - **FX**: none today (`fxEnabled` is CINEMA-only). Bringing them to DRAW is a paused project with its decisions and plan in `docs/fx-in-draw.md`
 
-### VIEW Mode (3D)
+### CINEMA Mode (3D)
 - **Purpose**: Cinematic preview and composition evaluation
 - **Camera**: Free orbit, full parallax
 - **Controls**:
   - Click + Drag: Pan camera
   - Shift + Drag: Orbit camera
   - Scroll Wheel / MMB: Zoom in/out
-  - Arrow Keys: Manual camera pan
   - Double-Click: Set Point of Interest (camera focus target)
 - **Touch Controls**: 1-finger pan, 2-finger orbit, pinch zoom
 - **Cinematic Moves**: 11 preset camera animations (Forward, Spiral, Yoyo, Pulse, Twist, Arc, Crane, Truck, Orbit, Zoom, Storytelling)
@@ -303,7 +303,7 @@ Two distinct actions create layers — they are **not** interchangeable:
   - Damaged content (v3.26.20): a shape that cannot be drawn — not an object, without at least one point, with a point whose `x` / `y` is not a finite number, or without a finite `zIndex` — is left out and the rest of the drawing opens (`readableShapes`, `state/loadProject.ts`). A damaged `originalPoints` or `eraserPolygon` is dropped and the shape stays with its outline. `hiddenLayers` / `locked3DLayers` keep only positions of layers that exist, each once; `layerRenderModes` only `'flat'` / `'grad'` under a layer position. The «N shapes» toast counts what was loaded; a second toast says on screen how many were left out (v3.26.22: «Parte del archivo no se pudo leer», 8 s), and the console logs it too. Until then everything went into the state as it came: a `null` in `shapes` threw inside `LOAD_PROJECT`, and a shape without points on the first move, transform or flip of its layer. Not validated yet: the values inside `layerGradParams`
   - Gaps take the defaults, never the previous project's values: since v3.26.8 also `isDarkMode` and `projectName` (a file without them used to open with the theme and the name of the project that was open)
   - `tool` by generation of the file (v3.26.8): until v2.3.0 the saved values were `'brush'` (the blob) and `'line'` (the brush); that release renamed them and, in the same commit, the keys saved next to them (`lineMode` / `currentLineThickness` → `brushMode` / `currentBrushThickness`). A file with the new keys (every save since v2.3.0, v1 or v2 format, and the autosave) is read as is; only an older one is translated. Before, every `'brush'` was translated, so a project saved with the brush active reopened with the blob
-- **Saved data** (besides `meta`): shapes (each with its creation time `t` since v3.25.16 — when the timelapse shows it, never its paint order), palette, layers, dark mode, post-processing settings (v3.20.5: also the FX master switch `fxMasterEnabled` and the OFF-snapshot `postProcessingSnapshot`: with the master off every flag is false and the look that was on is the snapshot, which `LOAD_PROJECT` restores only with the master off and sanitised to one boolean per known FX), hidden/locked layers, project name, per-layer render modes, gradient params, brush settings, line mode, active palette ID, CINEMA view, point of interest
+- **Saved data** (besides `meta`): shapes (each with its creation time `t` since v3.25.16 — when the timelapse shows it, never its paint order), palette, layer count (`totalLayers`), dark mode, post-processing settings (v3.20.5: also the FX master switch `fxMasterEnabled` and the OFF-snapshot `postProcessingSnapshot`: with the master off every flag is false and the look that was on is the snapshot, which `LOAD_PROJECT` restores only with the master off and sanitised to one boolean per known FX), hidden/locked layers, project name, per-layer render modes, gradient params, brush settings (the global pair `currentBrushThickness` / `brushMode`, plus `layerBrushSettings` since v3.26.22), active tool (`tool`), active palette ID, the «apply to all layers» switch and its snapshot (`paletteApplyToAllActive`, `paletteApplyToAllSnapshot`), `postProcessingEnabled`, CINEMA view (`focalLength`, `viewZoomOffset`, `layerSpacingFactor`, `cinematicType`), `cinematicSpeed`, handheld (`isHandheldEnabled`, `handheldIntensity`), point of interest, DRAW format guide (`format`). The list lives in `utils/diorPayload.ts` (`buildDiorFields`), shared by the `.dior` and the autosave
 - **Additive fields (v3.26.22)** — optional, ignored by older apps, and a file without them opens as before: `layerBrushSettings` (thickness and mode of each layer; a layer with strokes still answers with theirs, so this is what lets an EMPTY layer keep the pair chosen for it; entries for layers that do not exist, with a thickness that is not positive or an unknown mode are dropped on load), and per Ink stroke `inkSeed` (the seed of its noise) and `inkMirrored` (flipped an odd number of times). The `.dior` has 30 top-level keys with `layerBrushSettings`. `dior-render.js` opens files with and without them: it goes through the same `LOAD_PROJECT`.
 - **Project Name**: Editable via the UI; asked for at the first save of an untitled project
 
@@ -320,7 +320,7 @@ Two distinct actions create layers — they are **not** interchangeable:
 ### `dior-render.js` — `.dior` for the Super Riso Lab (v3.22.0)
 Public ES module at `https://diorame.dumaker.com/dior-render.js` (second build entry, `src/dior-render.ts` → `canvas/diorRender.ts`; regenerated on every deploy). The Lab (`https://super-riso.dumaker.com`, GitHub Pages) imports it cross-origin; GitHub Pages serves every file with `Access-Control-Allow-Origin: *` and JS as `application/javascript`. It does not mount the app, register a service worker or set globals; it adds the drawing fonts to `document.fonts` (canvas text needs them). Contract — **do not change without the Lab**:
 - `parseDior(ArrayBuffer) → Promise<project>`: `.dior` v1, v2 and `.dior.json` (all JSON); throws on anything without a `shapes` array. Loads the fonts the project's text uses, so `frameOf` measures with them.
-- `frameOf(project) → {width, height, x0, y0}` (x0/y0 since v3.23.0): the frame in px of the DRAW PNG at 1×. The `.dior` keeps no DRAW view (infinite canvas, window size per device), so the frame is the **ink of the visible layers** (`getLayerBoundingBox` per layer × the DRAW parallax `5000/(5000+z)`, zoom 1) plus a margin of 4 % of the long side, minimum 32 px, each side; integer and the same on every device (Moisés's decision). Empty project or no visible layers → `Error('vacío')`.
+- `frameOf(project) → {width, height, x0, y0}` (x0/y0 since v3.23.0): the frame in px of the DRAW PNG at 1×. The `.dior` keeps no DRAW view (infinite canvas, window size per device), so the frame is the **ink of the visible layers** (`getLayerBoundingBox` per layer × the DRAW parallax `F/(F+z)`, F = `DRAW_FOCAL_LENGTH` = 10000 since v3.25.29, zoom 1) plus a margin of 4 % of the long side, minimum 32 px, each side; integer and the same on every device (Moisés's decision). Empty project or no visible layers → `Error('vacío')`.
   `x0, y0` = where the frame's corner falls in DRAW coordinates (zoom 1, camera 0, offset from the world origin): the origin `renderDior` adds to `view`, exposed so an app can express a DRAW view in frame coordinates.
 - `renderDior(project, {width, view}) → Promise<HTMLCanvasElement>`: `view = {x,y,w,h}` in `frameOf` coordinates or `null` (all). Output `width × round(width·h/w)`, through `renderDrawSnapshot` (paper background, no FX, no Super Riso) with `renderScale = width / view.w`: the vector re-drawn at that resolution (up to 8192). Above 4096² px it probes the largest canvas the device draws and shrinks keeping the aspect. The state comes from the real `LOAD_PROJECT` (`appReducer`), in DRAW at zoom 1 with every FX flag off.
 - Built with `preserveEntrySignatures: 'strict'`: `dior-render.js` (~3 kB) only re-exports from hashed chunks. Without it Rollup put the shared code in the unhashed file and the app imported from it.
@@ -382,7 +382,7 @@ Performance is a first-class concern. Any change that degrades performance is re
 
 ### Performance Metrics to Preserve
 - **Draw Latency**: < 10ms from pointer down to first render
-- **Frame Rate**: Consistent 60 fps in DRAW mode, 30+ fps in VIEW mode
+- **Frame Rate**: Consistent 60 fps in DRAW mode, 30+ fps in CINEMA mode
 - **Memory Usage**: No memory leaks, stable heap over time
 
 ---
@@ -395,9 +395,9 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 
 | File | Lines | Purpose |
 |---|---|---|
-| `StrataCanvas.tsx` | ~1865 | Thin React shell: render loop, event handlers, gesture input. **Not frozen** (that rule described the pre-v3.0.0 file): normal discipline in the handlers, explicit GO only for the core — RAF loop, `buildRenderContext`, refs↔render sync, live-stroke timing. See CLAUDE.md § "Tocar StrataCanvas.tsx". Gesture/pointer types live in `types/strataTypes.ts` (`GestureState`, `CanvasPointerInput`); the move-tool transform type in `canvas/renderPipeline.ts` (`TransformRefState`). The main `<canvas>` carries `data-drawing-canvas` (v3.17.34) — a stable selector so `LayersDiscoveryTooltip`'s click-outside listener can tell "the user is drawing" from "the user touched other UI" without a ref threaded across sibling component trees. v3.25.10: the rAF loop asks `idleGuard.shouldRender(rc)` before `renderFrame` (idle-skip in DRAW; the loop itself keeps ticking); the guard is created/disposed with the loop and `contextrestored` marks it dirty. |
+| `StrataCanvas.tsx` | ~1920 | Thin React shell: render loop, event handlers, gesture input. **Not frozen** (that rule described the pre-v3.0.0 file): normal discipline in the handlers, explicit GO only for the core — RAF loop, `buildRenderContext`, refs↔render sync, live-stroke timing. See CLAUDE.md § "Tocar StrataCanvas.tsx". Gesture/pointer types live in `types/strataTypes.ts` (`GestureState`, `CanvasPointerInput`); the move-tool transform type in `canvas/renderPipeline.ts` (`TransformRefState`). The main `<canvas>` carries `data-drawing-canvas` (v3.17.34) — a stable selector so `LayersDiscoveryTooltip`'s click-outside listener can tell "the user is drawing" from "the user touched other UI" without a ref threaded across sibling component trees. v3.25.10: the rAF loop asks `idleGuard.shouldRender(rc)` before `renderFrame` (idle-skip in DRAW; the loop itself keeps ticking); the guard is created/disposed with the loop and `contextrestored` marks it dirty. |
 | `StrataContext.tsx` | ~65 | React Context: `StrataProvider` (`useReducer(appReducer, initialState)`) and `useStrata`, plus re-exports of everything that used to live here, so its importers did not change: all types; the layer constants → `constants/layers.ts`, the `Action` union → `types/strataActions.ts`, `initialState` → `constants/initialState.ts`, the two palette hex lists → `constants/palette.ts` (refactor phase 2, v3.26.12–3.26.14); and `appReducer` → `state/appReducer.ts` (phase 3B, v3.26.38), whose actions live by subject in `src/state/` (phases 3A and 3B, v3.26.15–3.26.37; see «Reducer modules»). A module without React imports from those files, not from here. Tabs since v3.26.11. `appReducer` is re-exported for the code that still takes it from here (`tests/`, `tools/draw-stress/harness/mergedrift.js`); `canvas/diorRender.ts` and `tools/text-check` import it from `state/appReducer.ts` since v3.26.39. Super Riso (v3.17.74): `SET_SUPER_RISO` (partial, sanitised), `APPLY_SUPER_RISO_STYLE`, `TOGGLE_FX 'superRiso'` exclusive with Riso, sanitised merge in `LOAD_PROJECT`. v3.20.5–3.20.7: `LOAD_PROJECT` restores `fxMasterEnabled` + `postProcessingSnapshot` (only with the master off, one boolean per FX) and no longer inherits the previous project's snapshot; `TOGGLE_DARK_MODE`, the CINEMA view params (preset, speed, handheld, focal, zoom, spacing), the POI, `TOGGLE_LAYER_VISIBILITY` and `SET_PROJECT_NAME` mark `isDirty` (never the animation: the CINEMA tick writes `cameraRef`, it does not dispatch); `INIT_CINEMA_VIEW` does not mark it and applies only to a new project (`cinemaViewInitialized` false: transient, not serialized; `CLEAR_CANVAS` clears it). **`LOAD_PROJECT` fills every camera field the file lacks with `CINEMA_VIEW_DEFAULTS` / `initialState` (v3.20.11) — never with the previous project's value — and sets `cinemaViewInitialized`**; the save payload (`.dior` and autosave) writes the defaults while a project has no view of its own (`cinemaViewForSave`) |
-| `ControlsV2.tsx` | ~160 | Thin root compositor for both modes. Mounts all UI atoms; enforces `isUIHidden`; hosts 2 global side-effects (keyboard shortcuts, mode-change camera reset; the first CINEMA entry of a NEW project dispatches `INIT_CINEMA_VIEW` with `CINEMA_VIEW_DEFAULTS`; an opened project already has its view from `LOAD_PROJECT`, v3.20.11). |
+| `ControlsV2.tsx` | ~160 | Thin root compositor for both modes. Mounts all UI atoms; enforces `isUIHidden`; hosts 5 global side-effects (unsaved-changes warning `useBeforeUnload`, animation-playback interval, keyboard shortcuts, mode-change camera reset; the first CINEMA entry of a NEW project dispatches `INIT_CINEMA_VIEW` with `CINEMA_VIEW_DEFAULTS`; an opened project already has its view from `LOAD_PROJECT`, v3.20.11). |
 
 **Drawing mode atoms (`topbar/`, `bottombar/`, `layers/`, `colorpalette/`, `drawing/`, `viewport/`, `text/`):**
 
@@ -413,7 +413,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `topbar/ProjectNameButton.tsx` | Inline-editable project name; fixed-width pill to prevent layout shift on edit |
 | `topbar/InfoButton.tsx` | Opens welcome modal (`TOGGLE_WELCOME_MODAL`); shortcut Shift+? |
 | `topbar/AnimationPlayerUI.tsx` | Collapsible animation pill: bounce toggle + play/pause + frame nav + X/N counter + FPS (4/6/8) + loop/ping-pong + onion skin (DRAW) + zero-Z depth toggle (CINEMA) |
-| `topbar/ModeSwitchPill.tsx` | DRAW / VIEW / hide-UI mode toggle |
+| `topbar/ModeSwitchPill.tsx` | DRAW / Cinema mode toggle and the Hide UI button |
 | `topbar/ThemeTogglePill.tsx` | Light/dark paper toggle |
 | `bottombar/BottomBar.tsx` | Slot router: DrawingToolbar (draw) / CameraBar (view) |
 | `bottombar/DrawingToolbar.tsx` | 5-tool selector + modifiers + LineModeButton (line tool) |
@@ -428,7 +428,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `viewport/FormatPill.tsx` | ~125 · DRAW format guide (v3.25.5): `format-frame` button in the bottom-left ViewPills (between grid and reset) + `DiSelectorPopover` (placement top): Libre · A · 16:9 · 4:3 · 4:5 · 1:1, orientation (A, 16:9 and 4:3), «Ajustar a la vista» (re-places the frame at ~88 % of the view), «Quitar». A new frame fits the current view; another type/orientation keeps the centre and is sized for the current view (v3.25.7). v3.25.28: the view is taken to the frame's plane (`toFramePlane`), so a frame made from an upper layer also fills ~88 % of what is on screen. The popover is keyed by its row layout: it measures its height only when it opens, so it remounts when rows appear |
 | `viewport/PerfHud.tsx` | ~100 · `?perf=1` only (v3.25.4, `tools/draw-stress`): DOM box with avg fps + p95 frame interval over 5 s, gaps > 50 ms since Reset, shape count, and the autosave's synchronous clone (timed by wrapping `IDBObjectStore.put` for `AUTOSAVE_KEY`, also logged as `[perf] autosave clone`). Its own `requestAnimationFrame`, never the StrataCanvas loop. Mounted by `ControlsV2` outside the hidden-UI block v3.25.10: «renders/s» (renderFrame calls per second from `idleGuard.renderStats`) and «idle-skip on/OFF». |
 | `text/TextSessionPanel.tsx` | Text input overlay: fonts, textarea, align, confirm/cancel |
-| `fx/FXPanel.tsx` | FX panel (VIEW mode): 12 effects in 3 groups + the Super Riso group (v3.18.0, fourth, `SuperRisoBlock`); toggling Super Riso on without WebGL2 shows a toast and does nothing, master toggle FXMasterBtn, snapshot/restore. The expanded panel sits in a wrapper that spans the band between the TopBar and the camera bar (`utils/panelLayout.ts`, v3.20.3; before: `maxHeight: vh − 80`, which at 1180×820 covered the export pill and the camera bar). All effects work on every browser since 3.12.0 (no capability gate). The collapsed pill duplicates the catalog by hand — a new FX must be added in both places |
+| `fx/FXPanel.tsx` | FX panel (CINEMA mode): 12 effects in 3 groups + the Super Riso group (v3.18.0, fourth, `SuperRisoBlock`); toggling Super Riso on without WebGL2 shows a toast and does nothing, master toggle FXMasterBtn, snapshot/restore. The expanded panel sits in a wrapper that spans the band between the TopBar and the camera bar (`utils/panelLayout.ts`, v3.20.3; before: `maxHeight: vh − 80`, which at 1180×820 covered the export pill and the camera bar). All effects work on every browser since 3.12.0 (no capability gate). The collapsed pill duplicates the catalog by hand — a new FX must be added in both places |
 | `fx/FXRow.tsx` | Per-effect row: toggle + slider/discrete/composite control |
 | `fx/SuperRisoBlock.tsx` | Super Riso group (v3.18.0; v3.19.0 adds the **Technique** segment Riso / Fotocopia above the styles: the style grid shows the technique's styles and, with Fotocopia, `XeroxControls` replaces the Riso controls; v3.19.2: Reprint, the collapsible «Print settings» block (same five controls, same order, same components) and the `fullQuality` notice are shared by both techniques — only the values they hold differ; v3.20.0: third technique **Stencil** — `StencilControls`, its 8 styles, and in the print settings Support (7 swatches) · Surface texture (in the slot of Screen) · Droplet size · Sloppiness · Resolution): header toggle; visible block = 2×2 style chips (`DiChip`; lit only while the controls still match the style) · Inks (Drawing / CMYK / Riso, full name in tooltip) · number of inks 1–8 · Reprint (Off/4/6/8/12); collapsible «Print settings» (closed by default) = paper swatches · screen · screen size · imperfection · resolution; `fullQuality` chip + notice only when `isSuperRisoPreviewDevice()` (`useSyncExternalStore`). Same master-OFF snapshot contract as `FXRow` (muted, click wakes) |
 | `fx/XeroxControls.tsx` | Fotocopia controls (v3.19.0; the colour block reworked in v3.19.1, see §14 «Colour model»), the lab's macro panel, the visible part: **Copiadora** (Darkness · Toner black · Generations 1–6; Mode and Dirt moved to the shared print settings in v3.19.2) · **Color a mano** (none / marker / watercolour; with colour: What it colours = Colour patches / White gaps; patches: Colours own/kit («Rotuladores» or «Acuarelas» by medium), one row per ZONE `[zone swatch] → [colour] name ↺`, «Zones coloured N of M»; gaps: «Otro reparto», gaps coloured, the box with add/remove; Sloppiness; header count «N colores» / «N en la caja» / «blanco y negro»; rows read from `xeroxPalette.ts`, inline picker of the 16 markers) No fine-tuning sliders. Paper, Screen, Screen size, Dirt and Resolution live in the shared print settings |
@@ -464,7 +464,7 @@ The codebase has been modularized through a multi-phase refactoring (phases 1–
 | `timelapseEncode.ts` | ~75 | Timelapse video (v3.25.17): `timelapseCodec(W, H, fps)` → the first H.264 codec string `VideoEncoder.isConfigSupported` accepts (High then Main, lowest level ≥ 4.0 that holds the size: 4.0 / 4.2 / 5.0 / 5.1), null = no timelapse (no VP9/WebM fallback); odd sizes refused. `createMp4Writer(canvas, codec, fps)`: Mediabunny `Output` + `Mp4OutputFormat({fastStart: 'in-memory'})` + `BufferTarget` + `CanvasSource` (`QUALITY_HIGH`, `latencyMode: 'quality'`); `add(i)` awaits the encoder's backpressure. Mediabunny destructured right on `import('mediabunny')` so Rollup tree-shakes the chunk (279 KB, 65 KB gzip, measured in an isolated build) v3.25.20: `TIMELAPSE_FPS` = 15 (default rate). The H.264 level the file declares is the encoder's (Chrome: `avc1.64001f` at 1080×810 / 15 fps): ≥ 4.0 only gates what is requested. |
 | `idleGuard.ts` | ~105 | **Idle-skip in DRAW (v3.25.10).** `createIdleGuard()` → `shouldRender(rc)`: a DRAW tick repaints only if something changed in the last 500 ms, or if a change is newer than the last painted tick (so a frame slower than 500 ms never skips a change). Changes = the state object, mode, canvas size / DPR, async assets by identity (paper, grunge, riso grain — assigned in `onload`, already drawable), the live stroke (points, drawing flag), input on `window` (pointer, touch, wheel, key — capture, passive; no handler touched), `visibilitychange` / `pageshow` / `resize`, `document.fonts` `loadingdone`, and `markDirty()` (context restored). Always paints in CINEMA, while exporting (`exportRequest` / `isExporting`: the DRAW MP4 records the live canvas) and while the flipbook plays. Nothing in the DRAW render depends on time (wiggle, particles, handheld, POI marker, camera tick are CINEMA-only). **Kill switch:** `?idle=0` turns it off and persists it (`localStorage` `diorame_idle_off`, console warning), `?idle=1` back on. `renderStats {count, reason}` feeds the HUD. Exports never go through it (they call `renderFrame` on their own canvases) v3.25.19 (GO Moisés): an export repaints every tick EXCEPT the timelapse (`exportRequest === 'timelapse'`): it renders off the loop, so the live canvas stays idle while it encodes (measured: 1 repaint in 2.5 s of encoding). |
 | `diorRender.ts` | ~175 | `.dior` renderer of `dior-render.js` (v3.22.0, §8): `parseDior`, `frameOf` (ink box of the visible layers in the DRAW projection + 4 % margin, min 32 px, with its corner `x0, y0` since v3.23.0; `Error('vacío')`), `renderDior` (`renderDrawSnapshot` at `renderScale = width / view.w`, paper background, FX off, state from `appReducer` + `LOAD_PROJECT`; since v3.26.39 `appReducer` comes from `state/appReducer.ts` and the constants from `constants/`, so no React in its graph). Paper and fonts resolved against `import.meta.url`; canvas size probed above 4096² |
-| `exportHandlers.ts` | ~260 | `exportAsPNG`, `exportAsMP4`. CINEMA PNG: device upscale or HQ re-render (`renderSnapshotAtScale`, unchanged). DRAW PNG (v3.17.66): always a re-render (`renderDrawSnapshot`, in `drawSnapshot.ts` since v3.22.0) of the exact view framing — screen = scale 1, HQ = ×2 — with onion skin forced off, hidden layers skipped by the pipeline, and no gizmo/grid/guide (the export builds its own RenderContext with `skipLiveStroke`/`skipCinematicOverlays`). Background (`setNextPNGBackground`): `paper` = the pipeline canvas as is; `solid` = the layer buffer composed over `#ffffff` (multiply) / `#000000` (source-over); `transparent` = the layer buffer alone (in DRAW the buffer is already transparent: only `drawBackground` paints beneath it). Known: the ink grain pattern is regenerated with a new random instance in any re-render (±15 levels inside ink, identical outside it); since v3.20.8 its cell size is `renderScale` px, so HQ has the same grain as the screen v3.25.7: `setNextPNGFormatSize({width,height})` (reset after each export) → DRAW PNG of the format frame through `renderFormatSnapshot`, after `canvasFits` (a canvas the device refuses comes back blank: error toast instead of an empty PNG); analytics `png_format`. v3.25.9: `setNextPNGDrawingLongSide(long)` → «Dibujo completo»: `drawingBounds` measured again at export time, `sizeForLongSide`, `canvasFits`, `renderRectSnapshot`; nothing visible → error toast; analytics `png_drawing`. v3.25.11: the DRAW framing (view ×1/HQ, Formato, Dibujo completo) is resolved once into a `LayerRender` function; the single PNG calls it once, `setNextPNGLayersZip(true)` → `exportLayersZip` calls it per layer (always transparent); ZIP `<project> capas.zip` (`projectFileStem`), analytics `png_layers_zip`. |
+| `exportHandlers.ts` | ~315 | `exportAsPNG`, `exportAsMP4`. CINEMA PNG: device upscale or HQ re-render (`renderSnapshotAtScale`, unchanged). DRAW PNG (v3.17.66): always a re-render (`renderDrawSnapshot`, in `drawSnapshot.ts` since v3.22.0) of the exact view framing — screen = scale 1, HQ = ×2 — with onion skin forced off, hidden layers skipped by the pipeline, and no gizmo/grid/guide (the export builds its own RenderContext with `skipLiveStroke`/`skipCinematicOverlays`). Background (`setNextPNGBackground`): `paper` = the pipeline canvas as is; `solid` = the layer buffer composed over `#ffffff` (multiply) / `#000000` (source-over); `transparent` = the layer buffer alone (in DRAW the buffer is already transparent: only `drawBackground` paints beneath it). Known: the ink grain pattern is regenerated with a new random instance in any re-render (±15 levels inside ink, identical outside it); since v3.20.8 its cell size is `renderScale` px, so HQ has the same grain as the screen v3.25.7: `setNextPNGFormatSize({width,height})` (reset after each export) → DRAW PNG of the format frame through `renderFormatSnapshot`, after `canvasFits` (a canvas the device refuses comes back blank: error toast instead of an empty PNG); analytics `png_format`. v3.25.9: `setNextPNGDrawingLongSide(long)` → «Dibujo completo»: `drawingBounds` measured again at export time, `sizeForLongSide`, `canvasFits`, `renderRectSnapshot`; nothing visible → error toast; analytics `png_drawing`. v3.25.11: the DRAW framing (view ×1/HQ, Formato, Dibujo completo) is resolved once into a `LayerRender` function; the single PNG calls it once, `setNextPNGLayersZip(true)` → `exportLayersZip` calls it per layer (always transparent); ZIP `<project> capas.zip` (`projectFileStem`), analytics `png_layers_zip`. |
 | `svgExport.ts` | ~200 | `exportAsSVG` (+ SVGZ): `svgBounds` (exported — `tools/svg-diff` frames with it; text counts by its whole block since v3.17.52, not its anchor), one `<g id="layer-N">` per layer (back to front, same order as `renderFrame`), live `<text>` only for words that could not become outlines (placed with `transform="matrix(…)"` = the text's matrix, v3.17.57), download, and warning toasts: characters left as live text, and geometry fallbacks (masked pieces or shapes that failed; before v3.17.59 only `console.warn`). Geometry comes from `svgGeometry.ts` — **no masks** (Illustrator's Ctrl+Y and Pathfinder only see paths). Yields every ~30 ms through `MessageChannel`. Fidelity measured by `tools/svg-diff` |
 | `svgGeometry.ts` | ~375 | Real-geometry layers with **paper.js** (lazy `import()` → own chunk, precached by the SW, works offline). An isolated group (`Shape.group`, v3.24.0) is resolved apart and its pieces enter the parent run as ordinary pieces. Per layer in draw order: eraser = subtract from earlier pieces, drawInside = intersect with the layer's ink (per crossing piece), drawBehind = piece at the bottom. `nesting()` settles non-crossing pairs with one point per contour (holes included) — no running union (that cost 100 s on the onboarding scene). Self-crossing outlines are flattened before resolving (paper.js loses area on curves that cross themselves many times). Tapered tap = disc; uniform brush = ribbons + discs along the drawSmoothLine curve. Eraser crumbs < 4 units² dropped. Text arrives as glyph outlines from `svgText.ts` and follows the same rules (split into one solid piece per glyph when an eraser/drawInside reaches it). Fallbacks (live-text words an eraser reaches; failed boolean op; an eraser subtract that comes back empty while leaving ink — retried once rotated first) keep a mask/clip for that one piece and are counted (shown in a toast since v3.17.59). **Invariantes: ver bloque bajo esta tabla** |
 | `svgText.ts` | ~270 | Text → outlines for the SVG export (v3.17.52). Layout from `utils/textLayout.ts` (same as the Canvas renderer) and placement from the text's matrix (`utils/textTransform.ts`: rotation, stretch, mirror — glyph outlines, live-text runs and `runBounds` all use it since v3.17.57); glyphs from the SAME woff2 the app renders with (`?url` imports, no duplicate assets), read by **fontkit** (lazy chunk, precached). Words shaped like Chrome (per word, no kerning across spaces, no ligatures when letter-spacing ≠ 0), placed with Canvas `measureText`. **Every word is checked against Canvas at export**; a mismatch or a missing glyph → live `<text>` + counted. Composite glyphs re-composed per the TrueType spec (fontkit transposes the matrix). `textCorners(shape)` (frame: the block measured by `utils/textMetrics.ts` + slack, mapped by the text's matrix; no layout or width estimate of its own since v3.17.55) and `runBounds` (deliberately generous 1-em-per-char box, only to decide whether an eraser reaches a live-text run) for framing and eraser reach. Invariants below |
@@ -657,6 +657,29 @@ Primitives are documented in CLAUDE.md («Design System»); only the ones with n
 | `useOpenPrompt.ts` | ~30 | v3.25.3: shared state of the Open guard (`useSyncExternalStore`, like `useSavePrompt`): the validated file waiting for the user's answer (`apply`) and `afterSave`, the same load waiting for «Save first» to finish writing |
 | `useSavePrompt.ts` | Shared state of the save flow's questions (`{ step: 'empty' or 'name', intent: 'save', 'saveAs' or 'duplicate' }`, `useSyncExternalStore`): `useSaveLoad` runs in several components, the dialogs are mounted once (v3.21.0) |
 
+### App shell, i18n and files without a group above
+
+Rows added in v3.26.45 (docs/audit-2026-11.md §6 listed them as missing). Line counts approximate.
+
+| File | Lines | Purpose |
+|---|---|---|
+| `main.tsx` | ~17 | Entry: `installAnalytics()` once before the first render, `LanguageProvider`, `fonts.ts`, `index.css` |
+| `App.tsx` | ~205 | `App` (`?preview=true` → `PreviewPage` in dev only; otherwise `StrataProvider` + `ToastProvider` + `PwaUpdatePrompt` + the mobile gate) and `AppContent`: autosave recovery, welcome and tour modals, sounds, theme on `html`/`body`, file drop and launched files, the export-progress modals |
+| `fonts.ts` | ~35 | Self-hosted `@fontsource` fonts, latin subset only (UI: Manrope, Sora; canvas text fonts), registered at the entry point so the service worker precaches them |
+| `components/PwaUpdatePrompt.tsx` | ~40 | Service-worker lifecycle as a Sonner toast (`registerType: 'prompt'`: a new SW waits until the user presses «Recargar»); inert in `npm run dev` |
+| `components/ui/` | 5 files | What is left of the shadcn folder after v3.26.41: `utils.ts` (`cn`), `button.tsx`, `ripple-button.tsx`, `enhanced-tooltip.tsx` (the tooltip every `Di*` icon button uses) and `toast-provider.tsx` (the Sonner `Toaster`). Imported by `App.tsx` and `design-system/` only |
+| `components/figma/ImageWithFallback.tsx` | ~18 | `<img>` with a fallback, from the Figma Make scaffold |
+| `i18n/` | 6 files + 2 dictionaries | `LanguageContext.tsx` (`LanguageProvider`, `useLanguage`), `detectLanguage.ts` (saved choice → `navigator.language` → `en`; key `diorame-language`), `interpolate.ts` (`{key}` placeholders), `types.ts` (`Language`, `Dictionary`), `useTranslation.ts` (`t(key, params)`; a missing key returns the key), `index.ts`. `dictionaries/en.ts` and `es.ts` hold the same keys (650 each at v3.26.44) and are exempt from the 400-line limit (data, CLAUDE.md rule 2) |
+| `design-system/` (rest) | — | `DiPill`, `DiVSep`, `DiMiniSlider`, `DiActionButton`, `DiBadge`, `DiButton`, `DiDivider`, `DiIconButton`, `DiPanel`, `DiSlider`, `DiToggleSlider` (primitives, table in CLAUDE.md), `Ico.tsx` + `icons.ts` (the icon set as data, `ICONS` / `ICON_SECTIONS`), `tokens.ts` (`T`, `TYPE`, `SPACE`, `RADIUS`, `SHADOW`, `BLUR`, `Z_INDEX`, `dk`, `diTokens`), `useTheme.ts`, `Wordmark.tsx`, `LanguageToggle.tsx`, `index.ts` (the public API) |
+| `modals/DiModal*.tsx`, `DiModalContext.ts` | ~19–170 each | The pieces of the `DiModal` compound component: `DiModal` (shell), `DiModalBackdrop`, `DiModalHeader`, `DiModalBody`, `DiModalFooter`, `DiModalActions` (`PrimaryAction`, `SecondaryAction`, `TertiaryAction`), `DiModalCloseButton`, `DiModalContext` |
+| `modals/useModalBehavior.ts` | ~87 | Behaviour shared by the `DiModal` variants: Escape (`closeOnEsc`), focus trap over the focusable elements, initial focus, and per-variant scroll lock / backdrop rules |
+| `bottombar/_shared.tsx` | — | Tool and layer buttons shared by the bottom-bar zones |
+| `bottombar/Camera{Presets,Sliders,Speed}Zone.tsx` | — | The three zones of the CINEMA `CameraBar`: preset buttons, focal / distance / spacing sliders, speed and handheld |
+| `colorpalette/{GradientControls,PaletteHeader,SwatchGrid}.tsx` | — | Gradient angle / intensity sliders (commit on release), the flat / gradient / fade segment and palette switch, and the 24 swatches (organic blob paths, contrast ring on dark colours) |
+| `viewport/{GridTogglePill,ShowUIButton}.tsx` | — | The composition-guide toggle, and the eye button that brings the UI back when `isUIHidden` (sonar pulse on mount) |
+| `pixelArtPalettes.ts` | — | Pixel-art palettes and the 4×4 Bayer matrix, extracted from `StrataCanvas.tsx` |
+| `tools/dior-file-icon/` | — | `make_dior_file_icons.py` (generates the `.dior` file icons, 16–256 px, with Pillow) and `set-windows-file-icon.ps1` (writes the icon into HKCU for the installed PWA: Chrome ignores the manifest's `file_handlers` icons) |
+
 ### Analytics (`src/analytics/`)
 
 | File | Lines | Purpose |
@@ -692,7 +715,7 @@ decisions that the code cannot express on its own.
 
 ### Dev Tools (`tools/`)
 
-Dev-only pages served by `npm run dev`, never bundled: `vite build` only takes `index.html`
+Dev-only pages served by `npm run dev`, never bundled: `vite build` takes two entries, `index.html` and `src/dior-render.ts` (the latter emits `dior-render.js`, §8)
 as input. Typechecked by `npm run typecheck` (`tsconfig.json` includes `tools` since v3.17.51 —
 before that it only included `src`, and this claim was false), so they break loudly if the
 APIs they import change.
@@ -994,7 +1017,7 @@ This section is critical. These actions are **forbidden**:
 
 | File | Lines | Reason |
 |---|---|---|
-| `src/components/strata/StrataCanvas.tsx` | ~1865 | Thin React shell after the v3.0.0 extraction; still oversize. Extraction remains the preferred direction, but it is no longer frozen — see CLAUDE.md § "Tocar StrataCanvas.tsx" for what needs an explicit GO. |
+| `src/components/strata/StrataCanvas.tsx` | ~1920 | Thin React shell after the v3.0.0 extraction; still oversize. Extraction remains the preferred direction, but it is no longer frozen — see CLAUDE.md § "Tocar StrataCanvas.tsx" for what needs an explicit GO. |
 | `src/components/strata/canvas/renderPipeline.ts` | ~730 | Frame orchestrator. Accepted oversize: its purpose is to sequence all render sub-modules in the correct order. Splitting into smaller files would fragment the orchestration logic without reducing real complexity. |
 
 ---
@@ -1337,7 +1360,7 @@ The **Super Riso Lab** (`C:\Users\Usuario\Desktop\Diorame\lab`, outside the repo
 BASE_DEPTH_STEP = 150           // Z-units per layer
 MAX_LAYERS = 10                 // Maximum number of layers
 MAX_HISTORY_STEPS = 50          // Undo/redo limit
-CINEMATIC_DEPTH_MULTIPLIER = 3  // VIEW mode depth scaling
+CINEMATIC_DEPTH_MULTIPLIER = 3  // CINEMA mode depth scaling
 DRAW_FOCAL_LENGTH = 10000       // DRAW focal length (shallow parallax, not orthographic; ~1.5 % per layer since v3.25.29, 5000 before)
 NEAR_CLIP = 50                  // Near clipping plane
 MAX_PAN = 1500                  // Maximum pan offset
@@ -1365,28 +1388,86 @@ APP_VERSION                     // → src/constants/version.ts (single source; 
 
 | Shortcut | Action |
 |---|---|
-| **D** | DRAW mode |
-| **V** | VIEW mode |
-| **Shift + D** | Toggle dark canvas |
-| **Shift + H** | Hide/Show UI (VIEW mode only) |
-| **Shift + S** | Symmetry mode |
-| **Shift + I** | Draw Inside mode |
-| **Shift + B** | Draw Behind mode |
-| **Shift + O** | Organic/Fluid mode |
-| **[** / **]** | Previous / Next layer |
-| **Shift + M** | Merge down (DRAW) |
-| **Cmd/Ctrl + Z** | Undo |
-| **Cmd/Ctrl + Shift + Z** | Redo |
+| **Cmd/Ctrl + S** | Save project |
+| **Cmd/Ctrl + Shift + S** | Save as (only where the browser can overwrite files, `canOverwriteFiles`) |
 | **Cmd/Ctrl + E** | Export SVG |
 | **Cmd/Ctrl + Shift + E** | Export SVGZ |
-| **Space** | Hand tool (pan in DRAW mode) |
-| **Arrow Keys** | Camera pan (VIEW mode) |
+| **Cmd/Ctrl + Z** | Undo |
+| **Cmd/Ctrl + Y** | Redo (there is no Shift + Z) |
+| **Shift + D** | Toggle dark mode |
+| **Shift + ?** | Open the Welcome modal (shortcuts list) |
+| **B** / **L** / **E** / **T** / **M** | Tool: blob / brush / eraser / text / move (DRAW only) |
+| **[** / **]** | Previous / Next layer (DRAW only) |
+| **Shift + M** | Merge down (DRAW only) |
+| **Space** (hold) | Pan the canvas (DRAW) |
+| **Space** (tap) | Center the view (`RESET_DRAWING_VIEW`) |
+| **Esc** | Cancel the gesture in progress |
+
+Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the Welcome modal shows), `hooks/useKeyboardShortcuts.ts` and, for Space and Esc, `StrataCanvas.tsx`. There are no keys for the mode (D/V), for hiding the UI, for the drawing modifiers or for camera pan. Shortcuts are ignored while a text session is open, while an input has focus and during animation playback in DRAW (`shouldIgnoreGlobalKey`).
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.25.29)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.45)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.45 — Documentación al día tras el refactor (fase 7)
+
+**docs** — Se corrigen los desfases de `docs/audit-2026-11.md` §6, cada uno verificado contra el código antes de tocarlo. REFERENCE: atajos (Apéndice B: no existen `D`/`V`, `Shift+H`, `Shift+S/I/B/O`, `Cmd+Shift+Z` ni flechas; sí `Ctrl+S`, `Ctrl+Y`, `Shift+?`, `B/L/E/T/M` y Espacio), paralaje de DRAW con foco 10000 (~1,5 % por capa; `kA` ~1,015), «VIEW Mode» → «CINEMA Mode», tema claro y oscuro, `Shape.color` como hex, campos guardados del `.dior`, filas de §10 que faltaban (`App.tsx`, `main.tsx`, `i18n/`, `components/ui/`, piezas de `DiModal`, …) y este Apéndice, que estaba parado en 3.25.29. CLAUDE.md: exención de los diccionarios i18n a la regla de 400 líneas, deuda declarada (`StrataCanvas.tsx`, `postProcessing.ts`), tabs con sus excepciones, tabla de primitivas Di* completa, `T` frente a `diTokens`, convención de imágenes. Tres pendientes nuevos en `docs/ux-debt.md`.
+
+### 3.26.44 — H10: tres campos de gradiente que nadie leía
+
+**fix(state)** — `ADD_LAYER`, `NEXT_LAYER` y `DUPLICATE_LAYER` escribían `paletteGradientAngle`, `paletteGradientIntensity` y `paletteGradientType` en el estado: no están en `AppState`, ni el `.dior`, ni el autoguardado, ni `dior-render.js` ni el Lab los leen. Se quita la escritura (y las dos variables locales que solo la alimentaban). Cambio de comportamiento, así que el test `dior.roundtrip` pierde esas tres claves de su lista de excepciones. 476/476.
+
+### 3.26.41 – 3.26.43 — Higiene (fase 7)
+
+- **3.26.41 · chore(ui):** fuera 45 archivos de `components/ui/` (5 013 líneas) sin ningún importador; quedan `utils`, `button`, `ripple-button`, `enhanced-tooltip` y `toast-provider`. Los chunks JS del build no cambian de tamaño (solo 24 bytes de nombres con hash); `dior-render.js` idéntico.
+- **3.26.42 · refactor(analytics):** `analytics.ts` (535 líneas) → fachada de ~240 + `events.ts`, `transport.ts`, `session.ts`. Código movido; los importadores no cambian (la fachada reexporta `track`, `setAnalyticsConsent` y los tipos). Mismos eventos GA4, mismos nombres, comprobado en dev con `?internal=1`.
+- **3.26.43 · refactor(preview):** `PreviewPage.tsx` (957 líneas, solo dev) → cuatro archivos (`PreviewPage`, `previewModalsSection`, `previewSeededSections`, `previewHelpers`). Código movido; misma página (36 encabezados, 199 botones).
+
+### 3.26.26 – 3.26.40 — Reducer fuera de `StrataContext.tsx` (fase 3B)
+
+**refactor(state)** — El resto del reducer, un módulo por commit y sin reescribir: `layerNav`, `layerReorder`, `palette`, `fx`, `animation`, `textSession`, `shapes`, `cinema`, `drawView`, `tool`, `ui`, `project` y, al final, `appReducer.ts` (el `switch`). `StrataContext.tsx` baja de 1 314 a ~65 líneas (Provider, `useStrata` y reexports). `canvas/diorRender.ts` y los demás `.ts` sin React importan de `state/` y `constants/`: **React sale del grafo de `dior-render.js`** (127 539 → 120 829 bytes, mismos exports, mismos píxeles). Tests sin tocar. Detalle: `docs/audit-2026-11.md`, «Fase 3B — resultado».
+
+### 3.26.25 — Escalado proporcional de una capa «Mixto»
+
+**feat(brush)** — En una capa con trazos de varios grosores, un candado junto al valor elige entre escalar todos los trazos por k (por defecto, `SCALE_LAYER_THICKNESS_PREVIEW`) o unificarlos (tocar el slider). El gesto se cierra con `COMMIT_BRUSH_THICKNESS`: un paso de undo, ninguno si k acaba en 1. `SET_BRUSH_SCALE_PROPORTIONAL` es preferencia de UI: ni `.dior`, ni historial, ni `isDirty`. 91 acciones. Pendientes de validación en `docs/ux-debt.md`.
+
+### 3.26.22 – 3.26.24 — El grosor guardado es el que se ve; «Mixto» (fase 4)
+
+**feat(brush)** — Decisiones D3 y D4 de la auditoría. Al redimensionar, `brushThickness` escala con la geometría en los tres modos (Uniform pasa a engordar: cambio visible aceptado; con estirado no uniforme, la media geométrica √(sx·sy)); lo no entero se guarda exacto y se redondea solo al mostrar. Cada trazo de Ink lleva su semilla (`inkSeed`, `inkMirrored`) para que un restyle tras mover o voltear conserve el patrón. La capa guarda su par (`layerBrushSettings`, campo opcional del `.dior`). 3.26.23: el panel de grosor muestra «Mixto» cuando una capa tiene trazos de varios grosores. 3.26.24: cierre de la fase (auditoría, deuda de UX, resumen). Con ellas se cierran I6, G1, G3–G8 y H8.
+
+### 3.26.19 – 3.26.20 — Persistencia: una lista de campos y archivos dañados
+
+**fix(persistence)** — 3.26.19 (H2): el `.dior` y el autoguardado comparten una sola lista, `buildDiorFields` (`utils/diorPayload.ts`). 3.26.20 (H3): `LOAD_PROJECT` deja fuera lo que no se puede dibujar (`readableShapes`: objeto, al menos un punto, `x`/`y` finitos, `zIndex` finito), recorta `hiddenLayers` / `locked3DLayers` a capas que existen y acepta en `layerRenderModes` solo `'flat'` / `'grad'`; el toast cuenta lo cargado y avisa de lo descartado.
+
+### 3.26.9 – 3.26.18 — Red de seguridad, indentación y primeros cortes del reducer
+
+- **3.26.9 · ci:** `npm test` es un paso bloqueante del deploy, tras el typecheck y antes del build.
+- **3.26.10 · docs:** decisiones D3 y D4 de la auditoría.
+- **3.26.11 · style:** `StrataContext.tsx` y `StrataCanvas.tsx` a tabs; commit solo de espacios (`git diff -w` vacío, bundle byte-idéntico).
+- **3.26.12 – 3.26.14 · refactor:** `constants/layers.ts` (fuera las 8 copias de `BASE_DEPTH_STEP`), `types/strataActions.ts` (la unión `Action`), `constants/initialState.ts`.
+- **3.26.15 – 3.26.18 · refactor:** primeros módulos de `src/state/`: `history`, `loadProject`, `brush`, `layerTransform`.
+
+### 3.26.8 — Lagunas de `isDirty` y de `LOAD_PROJECT`
+
+**fix(persistence)** — H1: `SET_BRUSH_MODE`, `SET_PALETTE_MODE`, `COMMIT_PALETTE_GRADIENT`, `SET_ACTIVE_PALETTE`, `ADD_LAYER`, `NEXT_LAYER` (cuando crea capa), `TOGGLE_PALETTE_APPLY_TO_ALL` y `TOGGLE_3D_LOCK` marcan `isDirty`. H6: un archivo sin `isDarkMode` o `projectName` toma los defaults, no los del proyecto anterior. H7: `tool` se traduce solo en archivos anteriores a v2.3.0 (antes, un proyecto guardado con el pincel reabría con el blob). Navegar entre capas y `SET_TOOL` siguen sin ensuciar, por decisión.
+
+### 3.26.6 – 3.26.7 — Auditoría y Vitest
+
+**docs / test** — 3.26.6: `docs/audit-2026-11.md` (monolitos, modelo de grosor, plan). 3.26.7: Vitest con tests en `tests/` que ejecutan el reducer y los generadores de trazo reales en Node (humo de las acciones, referencias golden de `strokeGenerators`, caracterización de historial, grosor, carga y acoplado). `src/` sin cambios.
+
+### 3.26.3 – 3.26.5 — Undo del grosor por capa, Ink en curva
+
+- **3.26.3 · fix(undo):** el grosor de una capa solo se mueve con el undo/redo de su propio restyle. Dos causas apiladas: la fuga por el global `currentBrushThickness` (una capa sin entrada caía al valor de la última visitada) y el commit que solo ocurría en `pointerup` (el teclado nunca confirmaba). `utils/layerBrush.ts`; el slider confirma con el evento `change`. Contrato de undo híbrido (v3.11.3) intacto.
+- **3.26.4 · fix(ink):** los trazos rápidos de Ink se cierran en curva, no en facetas. `_inkDensify` coloca los puntos intermedios sobre la Catmull-Rom centrípeta (`_crCentripetal`); `_inkSmoothPass`, el wobble, el contorno y la semilla no se tocan. Los trazos anteriores conservan sus facetas hasta que se regeneran.
+- **3.26.5 · docs(ux-debt):** grosor frente al slider, grosor de capa vacía, facetas de Ink anteriores a 3.26.4 y la vista previa del trazo en vivo.
+
+### 3.26.0 – 3.26.2 — Pantalla de bloqueo móvil
+
+- **3.26.0 · feat(mobile):** la pantalla de bloqueo convierte el clic en una visita futura: «Envíame el enlace» (Web Share; si no, portapapeles + toast, con `location.href` completo para conservar utm), vídeo de presentación en el idioma de la app, enlace a la landing y eventos GA4 `mobile_*`.
+- **3.26.1 · fix(mobile):** los CTAs de la pantalla usan la geometría de píldora de los botones del Welcome (`RADIUS.pill`, 44 px).
+- **3.26.2 · fix(i18n):** «comprimido» / «compressed» en minúscula en la opción de exportación SVG. Entre 3.26.2 y 3.26.3, sin versión: icono propio para los `.dior` vía `file_handlers` y la herramienta `tools/dior-file-icon/` (Chrome ignora esos iconos en Windows).
 
 ### 3.25.29 — Paralaje de DRAW a la mitad
 
@@ -2920,9 +3001,10 @@ Full replacement of the legacy monolithic controls (Controls.tsx + ControlsDrawi
 - `ExportProgressV2` — banner variant (sin backdrop, sin scroll lock)
 - `OnboardingOverlayV2` — componente propio (no usa primitivo), conectado al state global vía adapter
 - `MobileBlockScreenV2` — componente propio, `prefers-color-scheme` autónomo
+- Añadidos después de la Fase 8: `TourModalV2` (tour de la interfaz, primera vez), `SaveDialogsV2` (preguntas del flujo de guardado), `TimelapseProgressV2` (progreso del vídeo timelapse) y `FileDropOverlay` (soltar un `.dior` sobre la ventana)
 
 **Popovers** (vía primitivo `DiSelectorPopover`):
-- SVG Export options en `ControlsDrawing.tsx` (SVG / SVG Compressed)
+- Export options (SVG / SVG Compressed) en `topbar/ExportPill.tsx`; el mismo primitivo lo usan hoy `DocumentPill`, `FormatPill` y `LayersPanel`
 
 **Patrón adapter (introducido en 8.6):**
 `OnboardingOverlayConnected.tsx` aísla la conexión al state global (`useStrata`, `useLoadExampleScene`, 4 condiciones de visibilidad, localStorage persistence) del componente puro V2. Permite mantener `StrataCanvas.tsx` con un cambio de 1 línea (swap de import con alias) y deja el componente V2 testable con props puras. Patrón aplicable a futuros V2 que necesiten lectura compleja de state global.

@@ -22,7 +22,7 @@ export interface Shape {
   textMatrix?: TextMatrix; // stretched/mirrored text (v3.17.56); absent = rotation only
   originalPoints?: Point[]; // Store spine for re-generation
   brushThickness?: number; // Store thickness value
-  brushMode?: BrushMode; // Store brush mode (tapered or uniform)
+  brushMode?: BrushMode; // Store brush mode (tapered, uniform or ink)
   inkSeed?: number; // Seed of an Ink stroke's noise (v3.26.22): stamped when the stroke is added, kept through moves, flips, resizes and re-styles. Absent = older stroke: it gets one, from its coordinates at that moment, the first time it is transformed or re-styled
   inkMirrored?: boolean; // The stroke was flipped an odd number of times since its seed was set (v3.26.22): its noise is drawn mirrored, so a re-style after a flip keeps the pattern. Absent = not mirrored
   eraserPolygon?: Point[]; // Expanded polygon for SVG mask export
@@ -33,7 +33,7 @@ export interface Shape {
 export type AppMode = 'drawing' | 'cinematic';
 // Background of a DRAW PNG export: the paper as seen on screen, a plain white/black, or none (alpha).
 export type ExportBackground = 'paper' | 'solid' | 'transparent';
-// DRAW format guide (v3.25.5): a frame on the active layer's plane (scale 1 there), in world units.
+// DRAW format guide (v3.25.5): a frame on layer 0's plane (scale 1 there; on the active layer's plane until v3.25.27), in world units.
 // 'A' = ISO 216 (√2). A, 16:9 and 4:3 (v3.25.8) have an orientation; 1:1 ignores it; 4:5 is portrait only.
 export type FormatType = 'A' | '16:9' | '4:3' | '4:5' | '1:1';
 export type FormatOrientation = 'portrait' | 'landscape';

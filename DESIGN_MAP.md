@@ -1,7 +1,8 @@
 # Diorame UI v2 — Mapa canónico del rediseño
 
-**Estado:** documento canónico de referencia para Fase 10.  
-Si código o decisión contradice este mapa, gana el mapa. Ediciones requieren acuerdo explícito.
+**Estado:** documento canónico de referencia para Fase 10 (v2.0.0). **Desde entonces el código ha ido por delante: ante cualquier contradicción, manda el código** (y `src/REFERENCE.md` §10, que lo describe). Este mapa se conserva como registro de las decisiones de diseño del rediseño v2; ya no se actualiza archivo a archivo.
+
+**Nombres que cambiaron desde v2.0.0:** `FileControlsPill` → `DocumentPill` (nuevo / abrir / guardar / deshacer / rehacer / nombre) y `ExportPill` (exportar); `SnapshotRecordPill` → la captura de DRAW vive en `DrawCaptureSection` y `TimelapseSection` dentro de `ExportPill`. **No recoge** el marco de Formato (`FormatPill`), el timelapse ni Super Riso: ver REFERENCE.md §4, §7, §8 y §14 y `docs/super-riso.md`.
 
 **Estado:** release v2.0.0 (feat/ui-redesign-v2 lista para merge a main)
 

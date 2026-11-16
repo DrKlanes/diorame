@@ -43,6 +43,9 @@ disparador salvo `stroke_milestone` (automático: 10/50/200 trazos),
 | `mobile_link_copied` | `MobileBlockScreenV2.tsx` | No | Sin Web Share, o falló: el enlace acabó en el portapapeles |
 | `mobile_video_opened` | `MobileBlockScreenV2.tsx` | No | Pulsó «Ver cómo funciona» (vídeo de presentación en su idioma) |
 | `mobile_landing_opened` | `MobileBlockScreenV2.tsx` | No | Pulsó «Conocer Diorame» (diorame.com/es|en) |
+| `layers_tooltip_shown` | `hooks/useLayersDiscoveryTooltip.ts` | Propio | Se mostró el tooltip de descubrimiento de capas (primera sesión real, dibujando sin haber añadido capa). Params `shapes_at_trigger`, `seconds_at_trigger`. Cruzar con `layer_added` de la misma sesión |
+| `layers_tooltip_dismissed` | `hooks/useLayersDiscoveryTooltip.ts` | Propio | Cierre del tooltip. `method`: `layer_added` (conversión), `timeout` (indiferencia), `close_button` (rechazo activo), `click_outside` |
+| `ui_error` | — (definido en el contrato `DioramEventMap`; `analytics.uiError(where, message)` no tiene ningún llamador hoy) | — | Reservado para errores de UI capturados. No se llama `error` porque el nombre está reservado por GA4 |
 | `session_depth` | `visibilitychange` + `pagehide`, registrados por `installAnalytics()` en `src/main.tsx` | Propio (`depthSent`) | Resumen de sesión al salir |
 
 ### `artwork_exported` — valores de `format`

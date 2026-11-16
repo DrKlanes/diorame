@@ -490,7 +490,7 @@ Atmósfera y Super Riso), con el estado en `localStorage`. No se hizo: solo se p
 entero a píldora, y la subsección «Ajustes de impresión» de Super Riso. Con los 12 FX activos el
 panel ya hacía scroll a 1920×1080; con el cuarto grupo desplegado hace más. Pendiente.
 
-### `applySuperRiso.ts` está a 398 de 400 líneas
+### `applySuperRiso.ts` está a 393 de 400 líneas
 
 Cualquier adición exige partirlo antes (regla dorada 2). El corte natural: el camino síncrono y
 el de retención/refinado a módulos propios; las rutas de depuración (`srpipe`, `srhold`,
@@ -677,3 +677,21 @@ El contorno se hornea en `shape.points` al confirmar el trazo (REFERENCE.md §4)
 ### La vista previa del trazo en vivo no coincide al 100 % con el trazo comprometido
 
 El trazo en vivo se pinta con ancho constante, sin vaivén ni variación de Ink; al soltar, el trazo comprometido lleva el estilo completo. Comportamiento conocido, no bug.
+
+---
+
+## Pendientes de la fase 7 del refactor (v3.26.45): sin decidir
+
+**Estado:** registrados al cerrar la fase 7. Ninguno está programado; los tres esperan una decisión o una validación de Moisés.
+
+### Ink fino (< 7,5 px) redimensionado y re-estilado se desvía hasta 4 px por los suelos en px del generador
+
+Un trazo de Ink fino (por debajo de ~7,5 px) que se redimensiona y después se re-estila (cambio de grosor o de modo de su capa) se regenera con los suelos en píxeles del generador, que no escalan con el grosor, y su contorno se desvía hasta ~4 px respecto de lo que daría escalar la geometría. **No se toca:** el generador es el estilo de Ink y sus referencias golden (`tests/fixtures/strokes.golden.json`, `ink-slow-pre-3.26.4.json`) están protegidas; mover un suelo es cambiar el estilo y lo decide Moisés.
+
+### La píldora de grosor se ensancha 46 px al entrar en «Mixto»
+
+Al entrar en «Mixto» (candado de proporción junto al valor, v3.26.25) la píldora de grosor gana 46 px de ancho. **Pendiente de validación de Moisés** en `localhost:3000`: aceptar el salto, reservar el hueco siempre o recolocar el candado.
+
+### Candado de proporción a 30×30 px (Apple recomienda 44 pt)
+
+El candado de «Mixto» mide 30×30 px; la guía de Apple recomienda 44 pt para un objetivo táctil. **Pendiente de validación en iPad:** comprobar si se acierta con el dedo y, si no, agrandar el área táctil (lo que se cruza con el ancho de la píldora del punto anterior).

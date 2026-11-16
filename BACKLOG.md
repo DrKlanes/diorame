@@ -1,6 +1,6 @@
 # Diorame — Backlog técnico
 
-**Actualizado:** 2026-08-13 — Post v3.13.1
+**Actualizado:** 2026-11-16 — cabecera y Item 10 al día con v3.26.45. El resto del documento describe el estado de v3.13.1 (2026-08-13) y no se ha vuelto a repasar; la cola real del refactor vive en `docs/audit-2026-11.md` y `docs/refactor-resumen-2026-11.md`, y la deuda de UX en `docs/ux-debt.md`.
 
 ---
 
@@ -44,7 +44,7 @@ Completado en commit `b2b9942`. `ToolType = 'blob' | 'eraser' | 'text' | 'move' 
 **Riesgo:** high
 **Origen:** deuda preexistente, agendada post-rediseño UI
 
-Monolito de alto riesgo. Render loop, gestos, proyección 3D. Refactor diferido hasta post-Fase 8 (ya completado) porque la nueva UI informaría la refactorización necesaria. Ahora que la UI V2 está en producción, el refactor puede planificarse con contexto real.
+Archivo grande y de alto riesgo: ~1 920 líneas, de ellas ~990 de handlers de puntero, táctil y teclado, más el bucle RAF y ~50 refs. No es el «shell fino» que sugería CLAUDE.md. La auditoría de nov 2026 (`docs/audit-2026-11.md` §3.2) lo confirmó como el segundo monolito; su partición es la **fase 6 del refactor** (lo seguro: `canvas/commitStroke.ts` con test y los dos hooks de efectos; los handlers, sprint aparte con GO explícito). Sigue sin hacerse.
 
 ---
 

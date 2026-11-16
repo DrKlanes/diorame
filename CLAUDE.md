@@ -1,7 +1,7 @@
 # CLAUDE.md — Diorame Collaboration Guide
 
 Fuente canónica de instrucciones para sesiones de Claude Code.
-Reemplaza: `src/guidelines/Guidelines.md`, `memory/MEMORY.md` (ambos deprecados).
+Sustituyó a `src/guidelines/Guidelines.md` y `memory/MEMORY.md`; ninguno de los dos existe ya.
 Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 ---
@@ -33,9 +33,9 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 ### Reglas doradas
 
-1. **StrataCanvas.tsx: shell fino con núcleo protegido** — Ya NO está congelado. Disciplina normal en los handlers; GO explícito solo para el núcleo. Ver «Tocar StrataCanvas.tsx».
-2. **Máximo 400 líneas por archivo** — Si un archivo nuevo se acerca al límite, dividirlo antes de continuar. Excepción documentada: `renderPipeline.ts` como orquestador de frame (aceptado en v3.0.0) — tamaño vivo en REFERENCE.md §12.
-3. **Tabs para indentación** — El codebase entero usa tabs. Nunca mezclar spaces.
+1. **StrataCanvas.tsx: ya no está congelado, con núcleo protegido** — Disciplina normal en los handlers; GO explícito solo para el núcleo. Ver «Tocar StrataCanvas.tsx». No es un archivo pequeño: ~1 920 líneas, de ellas ~990 de handlers de puntero, táctil y teclado; su partición es la fase 6 del refactor (`docs/audit-2026-11.md` §3.2).
+2. **Máximo 400 líneas por archivo** — Si un archivo nuevo se acerca al límite, dividirlo antes de continuar. Excepciones documentadas: `renderPipeline.ts` como orquestador de frame (aceptado en v3.0.0; tamaño vivo en REFERENCE.md §12) y los diccionarios `src/i18n/dictionaries/{en,es}.ts` (~810 y ~775 líneas: son datos tipados con `Dictionary`, sin lógica que partir; partirlos solo dispersaría las claves). **Deuda abierta, sin exención:** `StrataCanvas.tsx` (~1 920, fase 6 del refactor) y `canvas/postProcessing.ts` (~430).
+3. **Tabs para indentación** — El codebase usa tabs (normalizado en v3.26.11). Nunca mezclar spaces. Quedan con espacios, heredados y sin tocar: `types/strataTypes.ts`, `App.tsx`, `main.tsx`, `components/ui/{button,ripple-button,enhanced-tooltip}.tsx`, `components/figma/ImageWithFallback.tsx`, `utils/strokeGenerators.ts` (mixto; sus referencias golden están protegidas) y el GLSL de `canvas/superRiso/shaders*.ts`. En ellos, respetar la indentación que ya tienen; un commit solo de espacios sería un refactor aparte.
 4. **No abstracciones especulativas** — Tres líneas similares son mejores que una abstracción prematura.
 
 ### Dónde poner código nuevo
@@ -55,8 +55,8 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 - Toasts: usar `sonner@2.0.3`
 - Descargas de archivo: siempre vía `downloadBlob()` (`src/utils/downloadBlob.ts`) — blob URL + anchor insertado en el DOM + revoke diferido. Nunca `toDataURL` + `<a>.click()` desacoplado ni `revokeObjectURL` síncrono: iPadOS WebKit los descarta en silencio con toast de falso éxito (v3.11.1)
-- Imágenes raster: importar con `figma:asset/...` (sin prefijo de ruta)
-- SVGs: van en `/imports`, usar rutas relativas
+- Imágenes raster dentro del bundle: `figma:asset/<nombre>.png`, resuelto por un alias explícito en `vite.config.ts` hacia `src/assets/` (hoy `texture-paper`, `texture-grunge` y `logo-symbol`): una imagen nueva necesita su alias. Lo que se sirve tal cual (iconos, vídeos, texturas de Super Riso, ejemplos) va en `public/`.
+- No hay SVGs importados: los iconos son datos en `design-system/icons.ts` y se pintan con `Ico`
 - Arrays, paletas y matrices de datos readonly: preferir tipos `readonly` (`as const` o `Readonly<>`)
 - **Altura de los paneles laterales (columna derecha): `rightPanelInsets()` de `src/utils/panelLayout.ts` es la fuente única** (banda libre entre el TopBar y la barra inferior, safe-area incluido; `useIsCameraBarCompact` da el alto de la CameraBar). Nunca `maxHeight: calc(var(--app-h) − N)` ni `vh` fijos: en 1180×820 el FXPanel con `vh − 80` pisaba Exportar y la CameraBar (v3.20.3)
 - **`isDirty` y persistencia (v3.20.5–3.20.7):** toda acción del USUARIO que cambie un campo que se guarda (`.dior` y autoguardado) marca `isDirty`, también cuando es una selección pura sin paso de undo (v3.26.8). Excepción decidida: elegir herramienta (`SET_TOOL`) y navegar entre capas no ensucian — cambian dónde está el usuario, no el dibujo, aunque el archivo lleve la herramienta y el par de grosor de la capa activa. La lista completa de excepciones, con su motivo, es `tests/isDirty.test.ts`: una acción nueva que cambie el `.dior` sin ensuciar lo hace fallar; el campo nuevo se añade en UN sitio, `buildDiorFields` (`utils/diorPayload.ts`: la lista que comparten el `.dior` y el autoguardado desde v3.26.19), y a su lector, `LOAD_PROJECT` (`state/loadProject.ts`). **Nunca la animación**: el tick de CINEMA escribe `cameraRef`, no despacha; una acción despachada desde el RAF dejaría el autoguardado disparándose sin parar. Los despachos de inicialización automática (`INIT_CINEMA_VIEW`) no ensucian. Las escrituras programadas del autoguardado no corren durante un gesto (pointer/touch/rueda): el clon estructurado de la escena es síncrono (35–50 ms en escritorio); no añadir trabajo síncrono pesado en el camino de la interacción
@@ -73,7 +73,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 
 ### Editar archivos con tabs
 
-El tool `Edit` (str_replace nativo) funciona correctamente con indentación de tabs en todos los archivos del codebase. Usarlo directamente — no se necesita Python para ediciones de código.
+El tool `Edit` (str_replace nativo) funciona correctamente con indentación de tabs; en los pocos archivos heredados con espacios (regla dorada 3), copiar la indentación exacta. Usarlo directamente — no se necesita Python para ediciones de código.
 
 **Cuándo usar Python:** solo para escritura completa de archivos o reemplazos masivos en loops (>3 archivos). En esos casos aplicar el patrón atomic write per file documentado abajo.
 
@@ -163,9 +163,9 @@ Ahí están documentados: el árbol de `src/components/strata/` (Core + átomos 
 
 ### Tokens (`tokens.ts`)
 
-`diTokens` — objeto `as const` con 35+ claves Tailwind. **Fuente única para todos los valores visuales de la UI.** Todos los componentes importan directamente desde aquí; no hay prop drilling de `uiTheme`.
+`tokens.ts` tiene dos capas. La que usa casi toda la UI son los valores crudos: `T` (colores de marca, de modo claro y de modo oscuro; ~50 archivos lo importan), `TYPE`, `SPACE`, `RADIUS`, `SHADOW`, `BLUR`, `Z_INDEX`, y el helper `dk(dark, claro, oscuro)` que elige por tema. `diTokens` es la segunda capa: un objeto `as const` con 35+ claves Tailwind, y hoy solo lo importan `DiBadge`, `DiDivider`, `DiSlider` y `DiToggleSlider`. Los componentes reciben `dark` como prop (o lo leen con `useTheme()`); no hay un `uiTheme` que se pase hacia abajo.
 
-Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`), texto (`textPrimary`, `textMuted`, `textSubtle`), interacción (`hoverAlt`), sliders/toggles, spinners, brand, dialog, layers (`layerBgActive`, `layerBorderActive`), segmentos.
+Categorías de `diTokens`: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`), texto (`textPrimary`, `textMuted`, `textSubtle`), interacción (`hoverAlt`), sliders/toggles, spinners, brand, dialog, layers (`layerBgActive`, `layerBorderActive`), segmentos.
 
 ### Primitivas Di*
 
@@ -180,7 +180,11 @@ Categorías: superficies (`bgPanel`, `bgAlt`), bordes (`border`, `borderSubtle`)
 | `DiBadge` | Status pill con icono opcional |
 | `DiActionButton` | Botón icono con props `disabled` y `danger`. Sustituye al IconBtn legacy. Usado en LayersPanel V2, top bar pills, y bottom bars. (Añadido en 9.8) |
 | `DiChip` | Chip seleccionable con muestra de color opcional y tooltip (estilos y papeles de Super Riso). (Añadido en 3.18.0) |
-| `DiModal` | Compound component para modales: `DiModal.Header`, `.Body`, `.Footer`, `.PrimaryAction`, etc. Variants: dialog/alert/banner. |
+| `DiPill` | Contenedor flex con forma de píldora (`dark`, `height`, `padding`, `gap`): la base de las píldoras de las barras |
+| `DiVSep` | Separador vertical dentro de una píldora (`tall` = 36 px, si no 18 px) |
+| `DiMiniSlider` | Slider compacto con `label` y valor formateado opcionales |
+| `DiSegmentControl` | Control segmentado; opciones como primitivo o `{ value, label }` (value estable, label traducible), `small`, tooltip y `disabled` por opción |
+| `DiModal` | **No está en `design-system/`: vive en `components/strata/modals/`** (`DiModal.tsx` y sus piezas). Compound component: `DiModal.Header`, `.Body`, `.Footer`, `.PrimaryAction`, etc. Variants: dialog/alert/banner. |
 
 **Tailwind CSS 4 JIT:** Los class strings deben ser strings estáticos literales — nunca template literals. El scanner JIT no evalúa expresiones.
 
