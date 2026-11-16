@@ -663,6 +663,17 @@ Primitives are documented in CLAUDE.md («Design System»); only the ones with n
 |---|---|---|
 | `analytics.ts` | ~240 | Sole contact point with GA4 (split in v3.26.42 into four files; importers still use only `analytics.ts`, which re-exports `track`, `setAnalyticsConsent` and the types). `analytics.*` API, `flushSessionDepth` and `installAnalytics()`. Sibling files: `events.ts` (~130, the typed `DioramEventMap` contract and the global `window.gtag` typing), `transport.ts` (~135, config, internal-traffic flag, `sanitize`, `track`, `setAnalyticsConsent`), `session.ts` (~60, module-level session counters — never React state, to avoid a re-render per stroke). Consumes the existing `window.gtag` from `index.html`; never calls `gtag('config')` nor injects the tag. Silent no-op when `window.gtag` is absent (ad blockers, offline) and in dev or on any host other than `diorame.dumaker.com` (v3.17.67: `index.html` only injects `gtag.js` there) unless `VITE_GA_DEBUG=1`. `installAnalytics()` is called once from `main.tsx`. `artwork_exported` carries `mode` (`'drawing' | 'cinematic'`) since v3.17.66 — a DRAW PNG and a CINEMA PNG share `format` — and `background` only for the DRAW PNG. Also owns the internal-traffic flag (`diorame_internal` in localStorage, armed via `?internal=1`), which tags every event with `traffic_type: 'internal'`. `layers_tooltip_shown`/`layers_tooltip_dismissed` (v3.17.31) instrument the layers-discovery tooltip introduced in v3.17.32 — cross with `layer_added` in the same session to measure conversion. `layers_tooltip_dismissed.method` is `'close_button' \| 'click_outside' \| 'timeout' \| 'layer_added'` (v3.17.33 — replaced `'started_drawing'`, dropped when drawing stopped auto-closing the tooltip): `layer_added` is conversion, `timeout` is indifference, `close_button` is active rejection. |
 
+### Design-system preview (`src/preview/`)
+
+Dev-only page, reached with `?preview=true` (`App.tsx`). Split in v3.26.43 from a single 957-line file; code moved, not rewritten.
+
+| File | Lines | Purpose |
+|---|---|---|
+| `PreviewPage.tsx` | ~340 | `PreviewPage` (provider) and `PreviewPageContent`: header, theme switch, the primitives, the live bar/panel sections and the icon gallery. |
+| `previewModalsSection.tsx` | ~250 | `PreviewModalsSection`: the `DiModal` variants, the modal/overlay triggers and `DiSelectorPopover`, with the open/close state they need. |
+| `previewSeededSections.tsx` | ~290 | Layers, FX, Text Session and Integrated UI sections, each in its own `StrataProvider` seeded with a `Partial<AppState>`. |
+| `previewHelpers.tsx` | ~105 | `Section`, `Subsection`, `LabelledItem`, `IconGroup`. |
+
 ### Project Docs (`docs/`)
 
 Prose docs that live outside `src/`. Not code, but part of the file map: they hold
