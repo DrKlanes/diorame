@@ -60,6 +60,7 @@ import { setFxIntensity, setParticleType, toggleFx, setSuperRiso, setSuperRisoSt
 import { toggleAnimationMode, setAnimationPlaying, setAnimationFramerate, setAnimationExportLoops, setGifExportScale, toggleOnionSkin, toggleAnimationFlatZ, advanceAnimationFrame, stepAnimationFrame, toggleAnimationPlaybackMode } from '../../state/animation';
 import { startTextSession, updateTextSession, commitTextSession, cancelTextSession } from '../../state/textSession';
 import { addShape, addShapes } from '../../state/shapes';
+import { setMode, updateCamera, setCinematicType, setCinematicSpeed, setFocalLength, setViewZoomOffset, initCinemaView, setLayerSpacingFactor, toggleHandheld, setHandheldIntensity, setPointOfInterest, clearPointOfInterest } from '../../state/cinema';
 
 // --- Reducer ---
 
@@ -144,9 +145,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'ADD_SHAPES': return addShapes(state, action); // Moved to state/shapes.ts
 		case 'UNDO': return undo(state); // Moved to state/history.ts
 		case 'REDO': return redo(state); // Moved to state/history.ts
-		case 'SET_MODE':
-			playSound('modeSwitch');
-			return { ...state, mode: action.payload };
+		case 'SET_MODE': return setMode(state, action); // Moved to state/cinema.ts
 		case 'SET_TOOL':
 			playSound('click');
 			if (action.payload === 'move') {
@@ -172,34 +171,17 @@ export function appReducer(state: AppState, action: Action): AppState {
 				isDrawInside: action.payload === 'eraser' ? false : state.isDrawInside,
 				isOrganicMode: action.payload === 'brush' ? false : state.isOrganicMode
 			};
-		case 'SET_CINEMATIC_TYPE':
-			playSound('click');
-			return { ...state, cinematicType: action.payload, isDirty: state.isDirty || action.payload !== state.cinematicType };
+		case 'SET_CINEMATIC_TYPE': return setCinematicType(state, action); // Moved to state/cinema.ts
 		case 'SET_COLOR_INDEX': return setColorIndex(state, action); // Moved to state/palette.ts
-		case 'UPDATE_CAMERA':
-			return { ...state, camera: { ...state.camera, ...action.payload } };
+		case 'UPDATE_CAMERA': return updateCamera(state, action); // Moved to state/cinema.ts
 		case 'NEXT_LAYER': return nextLayer(state); // Moved to state/layerNav.ts
 		case 'PREV_LAYER': return prevLayer(state); // Moved to state/layerNav.ts
 		case 'ADD_LAYER': return addLayer(state); // Moved to state/layerNav.ts
 		case 'SET_LAYER_SELECTED': return setLayerSelected(state, action); // Moved to state/layerNav.ts
 		case 'SET_CURRENT_LAYER': return setCurrentLayer(state, action); // Moved to state/layerNav.ts
-		case 'SET_FOCAL_LENGTH':
-			return { ...state, focalLength: action.payload, isDirty: state.isDirty || action.payload !== state.focalLength };
-		case 'SET_VIEW_ZOOM_OFFSET':
-			return { ...state, viewZoomOffset: action.payload, isDirty: state.isDirty || action.payload !== state.viewZoomOffset };
-		// First CINEMA view of a session (ControlsV2): app defaults, not a user change — never dirty.
-		case 'INIT_CINEMA_VIEW':
-			// Only a new project reaches here with nothing of its own: an opened project is already `cinemaViewInitialized`
-			// (LOAD_PROJECT filled its gaps), so its saved view stands.
-			if (state.cinemaViewInitialized) return state;
-			return {
-				...state,
-				cinemaViewInitialized: true,
-				focalLength: action.payload.focalLength,
-				viewZoomOffset: action.payload.viewZoomOffset,
-				layerSpacingFactor: action.payload.layerSpacingFactor,
-				cinematicType: action.payload.cinematicType,
-			};
+		case 'SET_FOCAL_LENGTH': return setFocalLength(state, action); // Moved to state/cinema.ts
+		case 'SET_VIEW_ZOOM_OFFSET': return setViewZoomOffset(state, action); // Moved to state/cinema.ts
+		case 'INIT_CINEMA_VIEW': return initCinemaView(state, action); // Moved to state/cinema.ts
 		case 'SET_DRAWING_ZOOM':
 			return {
 				...state,
@@ -280,26 +262,18 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'UPDATE_TEXT_SESSION': return updateTextSession(state, action); // Moved to state/textSession.ts
 		case 'COMMIT_TEXT_SESSION': return commitTextSession(state); // Moved to state/textSession.ts
 		case 'CANCEL_TEXT_SESSION': return cancelTextSession(state); // Moved to state/textSession.ts
-		case 'SET_POINT_OF_INTEREST':
-			return { ...state, pointOfInterest: action.payload, isDirty: true };
-		case 'CLEAR_POINT_OF_INTEREST':
-			playSound('click');
-			return { ...state, pointOfInterest: null, isDirty: state.isDirty || state.pointOfInterest !== null };
-		case 'SET_CINEMATIC_SPEED':
-			return { ...state, cinematicSpeed: action.payload, isDirty: state.isDirty || action.payload !== state.cinematicSpeed };
+		case 'SET_POINT_OF_INTEREST': return setPointOfInterest(state, action); // Moved to state/cinema.ts
+		case 'CLEAR_POINT_OF_INTEREST': return clearPointOfInterest(state); // Moved to state/cinema.ts
+		case 'SET_CINEMATIC_SPEED': return setCinematicSpeed(state, action); // Moved to state/cinema.ts
 		case 'SET_BRUSH_THICKNESS': return setBrushThickness(state, action); // Moved to state/brush.ts
 		case 'SET_BRUSH_THICKNESS_PREVIEW': return setBrushThicknessPreview(state, action); // Moved to state/brush.ts
 		case 'COMMIT_BRUSH_THICKNESS': return commitBrushThickness(state); // Moved to state/brush.ts
 		case 'SCALE_LAYER_THICKNESS_PREVIEW': return scaleLayerThicknessPreview(state, action);
 		case 'SET_BRUSH_SCALE_PROPORTIONAL': return setBrushScaleProportional(state, action);
-		case 'TOGGLE_HANDHELD':
-			playSound('click');
-			return { ...state, isHandheldEnabled: !state.isHandheldEnabled, isDirty: true };
-		case 'SET_HANDHELD_INTENSITY':
-			return { ...state, handheldIntensity: action.payload, isDirty: state.isDirty || action.payload !== state.handheldIntensity };
+		case 'TOGGLE_HANDHELD': return toggleHandheld(state); // Moved to state/cinema.ts
+		case 'SET_HANDHELD_INTENSITY': return setHandheldIntensity(state, action); // Moved to state/cinema.ts
 		case 'SET_BRUSH_MODE': return setBrushMode(state, action); // Moved to state/brush.ts
-		case 'SET_LAYER_SPACING_FACTOR':
-			return { ...state, layerSpacingFactor: action.payload, isDirty: state.isDirty || action.payload !== state.layerSpacingFactor };
+		case 'SET_LAYER_SPACING_FACTOR': return setLayerSpacingFactor(state, action); // Moved to state/cinema.ts
 		case 'SET_PROJECT_NAME':
 			return { ...state, projectName: action.payload, isDirty: state.isDirty || action.payload !== state.projectName };
 		case 'REORDER_LAYERS': return reorderLayers(state, action); // Moved to state/layerReorder.ts
