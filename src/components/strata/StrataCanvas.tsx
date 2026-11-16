@@ -4,6 +4,7 @@ import { useCanvasRecovery } from '../../hooks/useCanvasRecovery';
 import { useCanvasWheelZoom } from '../../hooks/useCanvasWheelZoom';
 import { useSpacePan } from '../../hooks/useSpacePan';
 import { buildStrokeShapes } from './canvas/commitStroke';
+import { twoTouchMetrics, threeTouchCenter, hasTapMoved, canStartPinch, tapGestureAction, pinchZoom, pinchPan, orbitTouchPan, orbitTouchRotation, orbitPinchZoomOffset } from './canvas/touchGestures';
 import { Shape, Point, Waypoint, GestureState, CanvasPointerInput } from '../../types/strataTypes';
 import paperTexture from "figma:asset/texture-paper.png";
 import grungeTexture from "figma:asset/texture-grunge.png";
@@ -577,12 +578,9 @@ export const StrataCanvas = () => {
 				// gesture cancels it for the same reason it cancels the drag above — this
 				// was never the tap the table thought it was.
 				pendingDeselectRef.current = false;
-				const t1 = e.touches[0];
-				const t2 = e.touches[1];
-				const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+				// Maths extracted to canvas/touchGestures.ts
+				const { dist, cx, cy } = twoTouchMetrics(e.touches[0], e.touches[1]);
 				drawingPointerTypeRef.current = null; // Clear to prevent orphan touch strokes
-				const cx = (t1.clientX + t2.clientX) / 2;
-				const cy = (t1.clientY + t2.clientY) / 2;
 				gestureRef.current = {
 					...gestureRef.current,
 					startDist: dist,
@@ -602,11 +600,7 @@ export const StrataCanvas = () => {
 				transformRef.current.mode = 'none';
 				transformRef.current.engaged = false;
 				pendingDeselectRef.current = false;
-				const t1 = e.touches[0];
-				const t2 = e.touches[1];
-				const t3 = e.touches[2];
-				const cx = (t1.clientX + t2.clientX + t3.clientX) / 3;
-				const cy = (t1.clientY + t2.clientY + t3.clientY) / 3;
+				const { cx, cy } = threeTouchCenter(e.touches[0], e.touches[1], e.touches[2]);
 				gestureRef.current = {
 					...gestureRef.current,
 					startCenter: { x: cx, y: cy },
@@ -632,11 +626,7 @@ export const StrataCanvas = () => {
 				};
 			} else if (e.touches.length === 2) {
 				// Two touches: Orbit rotation or pinch zoom
-				const t1 = e.touches[0];
-				const t2 = e.touches[1];
-				const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-				const cx = (t1.clientX + t2.clientX) / 2;
-				const cy = (t1.clientY + t2.clientY) / 2;
+				const { dist, cx, cy } = twoTouchMetrics(e.touches[0], e.touches[1]);
 
 				gestureRef.current = {
 					...gestureRef.current,
@@ -656,63 +646,34 @@ export const StrataCanvas = () => {
 	const handleTouchMove = (e: React.TouchEvent) => {
 		if (state.mode === 'drawing') {
 			if (e.touches.length === 2) {
+				// Thresholds and pinch maths extracted to canvas/touchGestures.ts
 				if (!gestureRef.current.tapMoved) {
-					const t1 = e.touches[0];
-					const t2 = e.touches[1];
-					const cx = (t1.clientX + t2.clientX) / 2;
-					const cy = (t1.clientY + t2.clientY) / 2;
-					if (Math.hypot(cx - gestureRef.current.startCenter.x, cy - gestureRef.current.startCenter.y) > 10) {
+					const { cx, cy } = twoTouchMetrics(e.touches[0], e.touches[1]);
+					if (hasTapMoved(gestureRef.current.startCenter, cx, cy)) {
 						gestureRef.current.tapMoved = true;
-						if (gestureRef.current.startDist >= 5) {
+						if (canStartPinch(gestureRef.current.startDist)) {
 							gestureRef.current.isPinching = true;
 						}
 					}
 				}
 				if (gestureRef.current.isPinching) {
 					e.preventDefault();
-					const t1 = e.touches[0];
-					const t2 = e.touches[1];
-					const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-					const cx = (t1.clientX + t2.clientX) / 2;
-					const cy = (t1.clientY + t2.clientY) / 2;
+					const { dist, cx, cy } = twoTouchMetrics(e.touches[0], e.touches[1]);
 
-					const startDist = gestureRef.current.startDist || 1;
-					const scaleChange = dist / startDist;
-					if (!Number.isFinite(scaleChange)) return;
-
-					let newZoom = Math.min(Math.max(gestureRef.current.startZoom * scaleChange, 0.5), 3.0); // Allow zoom out to 0.5x
+					const newZoom = pinchZoom(gestureRef.current, dist);
+					if (newZoom === null) return;
 
 					const rect = canvasRef.current?.getBoundingClientRect();
 					if (!rect) return;
-					const centerX = rect.width / 2;
-					const centerY = rect.height / 2;
-					const startScreenX = gestureRef.current.startCenter.x - rect.left - centerX;
-					const startScreenY = gestureRef.current.startCenter.y - rect.top - centerY;
-					const currScreenX = cx - rect.left - centerX;
-					const currScreenY = cy - rect.top - centerY;
-
-					const worldX = (startScreenX - gestureRef.current.startPan.x) / gestureRef.current.startZoom;
-					const worldY = (startScreenY - gestureRef.current.startPan.y) / gestureRef.current.startZoom;
-
-					let newPanX = currScreenX - (worldX * newZoom);
-					let newPanY = currScreenY - (worldY * newZoom);
-
-					// World-space clamp (v3.25.5), same as the wheel.
-					newPanX = Math.max(-MAX_PAN * newZoom, Math.min(MAX_PAN * newZoom, newPanX));
-					newPanY = Math.max(-MAX_PAN * newZoom, Math.min(MAX_PAN * newZoom, newPanY));
 
 					dispatch({
 						type: 'SET_DRAWING_ZOOM',
-						payload: { zoom: newZoom, pan: { x: newPanX, y: newPanY } }
+						payload: { zoom: newZoom, pan: pinchPan(gestureRef.current, newZoom, cx, cy, rect, MAX_PAN) }
 					});
 				}
 			} else if (e.touches.length === 3 && !gestureRef.current.tapMoved) {
-				const t1 = e.touches[0];
-				const t2 = e.touches[1];
-				const t3 = e.touches[2];
-				const cx = (t1.clientX + t2.clientX + t3.clientX) / 3;
-				const cy = (t1.clientY + t2.clientY + t3.clientY) / 3;
-				if (Math.hypot(cx - gestureRef.current.startCenter.x, cy - gestureRef.current.startCenter.y) > 10) {
+				const { cx, cy } = threeTouchCenter(e.touches[0], e.touches[1], e.touches[2]);
+				if (hasTapMoved(gestureRef.current.startCenter, cx, cy)) {
 					gestureRef.current.tapMoved = true;
 				}
 			}
@@ -720,44 +681,22 @@ export const StrataCanvas = () => {
 			e.preventDefault();
 
 			if (e.touches.length === 1) {
-				// Single touch: Pan camera
-				const t = e.touches[0];
-				const dx = t.clientX - gestureRef.current.orbitTouchLastPos.x;
-				const dy = t.clientY - gestureRef.current.orbitTouchLastPos.y;
-
-				const panSensitivity = 2.0;
-				orbitRef.current.panOffsetX = gestureRef.current.orbitTouchStartPanX - dx * panSensitivity;
-				orbitRef.current.panOffsetY = gestureRef.current.orbitTouchStartPanY - dy * panSensitivity;
+				// Single touch: Pan camera (maths extracted to canvas/touchGestures.ts)
+				const pan = orbitTouchPan(gestureRef.current, e.touches[0]);
+				orbitRef.current.panOffsetX = pan.panOffsetX;
+				orbitRef.current.panOffsetY = pan.panOffsetY;
 
 			} else if (e.touches.length === 2) {
 				// Two touches: Calculate both orbit rotation and pinch zoom
-				const t1 = e.touches[0];
-				const t2 = e.touches[1];
-				const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-				const cx = (t1.clientX + t2.clientX) / 2;
-				const cy = (t1.clientY + t2.clientY) / 2;
+				const { dist, cx, cy } = twoTouchMetrics(e.touches[0], e.touches[1]);
 
-				// Orbit rotation (using center movement)
-				const dx = cx - gestureRef.current.orbitTouchLastPos.x;
-				const dy = cy - gestureRef.current.orbitTouchLastPos.y;
-
-				const orbitSensitivity = 0.005;
-				orbitRef.current.targetAzimuth = gestureRef.current.orbitTouchStartAzimuth - dx * orbitSensitivity;
-				orbitRef.current.targetElevation = Math.max(-1.5, Math.min(1.5,
-					gestureRef.current.orbitTouchStartElevation + dy * orbitSensitivity
-				));
+				const rotation = orbitTouchRotation(gestureRef.current, cx, cy);
+				orbitRef.current.targetAzimuth = rotation.targetAzimuth;
+				orbitRef.current.targetElevation = rotation.targetElevation;
 
 				// Pinch zoom
 				if (gestureRef.current.isPinching && gestureRef.current.startDist > 0) {
-					const scaleChange = dist / gestureRef.current.startDist;
-					// Invert zoom direction: pinch out = zoom in (negative offset)
-					const zoomRange = 7000; // Total zoom range
-					const zoomDelta = (1 - scaleChange) * zoomRange;
-					const newOffset = Math.min(Math.max(
-						gestureRef.current.orbitTouchStartZoom + zoomDelta,
-						-5000
-					), 2000);
-					dispatch({ type: 'SET_VIEW_ZOOM_OFFSET', payload: newOffset });
+					dispatch({ type: 'SET_VIEW_ZOOM_OFFSET', payload: orbitPinchZoomOffset(gestureRef.current, dist) });
 				}
 			}
 		}
@@ -768,8 +707,9 @@ export const StrataCanvas = () => {
 			if (e.touches.length === 0) {
 				const { tapMoved, tapStartTime, tapTouchCount } = gestureRef.current;
 				if (!tapMoved && !state.textSession.isActive) {
-					const elapsed = Date.now() - tapStartTime;
-					if (tapTouchCount === 2 && elapsed < 300) {
+					// Decision extracted to canvas/touchGestures.ts
+					const tap = tapGestureAction(tapTouchCount, Date.now() - tapStartTime);
+					if (tap === 'UNDO') {
 						gestureRef.current.tapStartTime = 0;
 						gestureRef.current.tapMoved = false;
 						gestureRef.current.tapTouchCount = 0;
@@ -777,7 +717,7 @@ export const StrataCanvas = () => {
 						dispatch({ type: 'UNDO' });
 						return;
 					}
-					if (tapTouchCount === 3 && elapsed < 250) {
+					if (tap === 'REDO') {
 						gestureRef.current.tapStartTime = 0;
 						gestureRef.current.tapMoved = false;
 						gestureRef.current.tapTouchCount = 0;
