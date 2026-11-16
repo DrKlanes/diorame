@@ -19,7 +19,6 @@ export { BASE_DEPTH_STEP, MAX_LAYERS, MAX_HISTORY_STEPS }; // Moved to constants
 export { APP_VERSION } from '../../constants/version'; // Moved to constants/version.ts
 
 import { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS, FIXED_PALETTE, ALTERNATIVE_PALETTE } from '../../constants/palette';
-import { applySuperRisoStyle, patchSuperRiso } from '../../constants/superRiso';
 export type { PaletteColor } from '../../constants/palette';
 export { PALETTE_PRIMARY, PALETTE_ALTERNATIVE, GRADIENT_DEFAULTS };
 
@@ -59,6 +58,7 @@ import { moveLayer, transformLayer, flipLayer } from '../../state/layerTransform
 import { nextLayer, prevLayer, addLayer, setLayerSelected, setCurrentLayer, deleteCurrentLayer, toggleLayerVisibility, toggle3dLock } from '../../state/layerNav';
 import { reorderLayers, moveLayerTo, duplicateLayer } from '../../state/layerReorder';
 import { setPaletteMode, setPaletteGradientAngle, setPaletteGradientIntensity, setPaletteGradientType, commitPaletteGradient, setActivePalette, togglePaletteApplyToAll, setColorIndex } from '../../state/palette';
+import { setFxIntensity, setParticleType, toggleFx, setSuperRiso, setSuperRisoStyle, toggleFxMaster } from '../../state/fx';
 
 // --- Reducer ---
 
@@ -241,80 +241,12 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'TOGGLE_DARK_MODE':
 			playSound('click');
 			return { ...state, isDarkMode: !state.isDarkMode, isDirty: true };
-		case 'SET_FX_INTENSITY':
-			return {
-				...state,
-				isDirty: true,
-				postProcessing: {
-					...state.postProcessing,
-					[action.payload.fx]: action.payload.value
-				}
-			};
-		case 'SET_PARTICLE_TYPE':
-			return {
-				...state,
-				isDirty: true,
-				postProcessing: {
-					...state.postProcessing,
-					particleType: action.payload
-				}
-			};
-		case 'TOGGLE_FX': {
-			playSound('click');
-			const turningOn = !state.postProcessingEnabled[action.payload];
-			return {
-				...state,
-				isDirty: true,
-				postProcessingEnabled: {
-					...state.postProcessingEnabled,
-					[action.payload]: turningOn,
-					// Super Riso and Riso exclude each other: switching one on switches the other off.
-					...(turningOn && action.payload === 'superRiso' ? { riso: false } : {}),
-					...(turningOn && action.payload === 'riso' ? { superRiso: false } : {}),
-				},
-				postProcessingSnapshot: null,
-				fxMasterEnabled: true,
-			};
-		}
-		case 'SET_SUPER_RISO':
-			return {
-				...state,
-				isDirty: true,
-				postProcessing: { ...state.postProcessing, superRiso: patchSuperRiso(state.postProcessing.superRiso, action.payload) },
-			};
-		case 'APPLY_SUPER_RISO_STYLE':
-			return {
-				...state,
-				isDirty: true,
-				postProcessing: { ...state.postProcessing, superRiso: applySuperRisoStyle(state.postProcessing.superRiso, action.payload) },
-			};
-		case 'TOGGLE_FX_MASTER': {
-			playSound('click');
-			const px = state.postProcessingEnabled;
-			const hasActiveEffects = Object.values(px).some(v => v);
-			if (hasActiveEffects && state.postProcessingSnapshot === null) {
-				const allOff = Object.fromEntries(
-					Object.keys(px).map(k => [k, false])
-				) as PostProcessingEnabled;
-				return {
-					...state,
-					isDirty: true,
-					postProcessingSnapshot: { ...px } as PostProcessingEnabled,
-					postProcessingEnabled: allOff,
-					fxMasterEnabled: false,
-				};
-			} else if (state.postProcessingSnapshot !== null) {
-				return {
-					...state,
-					isDirty: true,
-					postProcessingEnabled: state.postProcessingSnapshot,
-					postProcessingSnapshot: null,
-					fxMasterEnabled: Object.values(state.postProcessingSnapshot).some(v => v),
-				};
-			} else {
-				return state;
-			}
-		}
+		case 'SET_FX_INTENSITY': return setFxIntensity(state, action); // Moved to state/fx.ts
+		case 'SET_PARTICLE_TYPE': return setParticleType(state, action); // Moved to state/fx.ts
+		case 'TOGGLE_FX': return toggleFx(state, action); // Moved to state/fx.ts
+		case 'SET_SUPER_RISO': return setSuperRiso(state, action); // Moved to state/fx.ts
+		case 'APPLY_SUPER_RISO_STYLE': return setSuperRisoStyle(state, action); // Moved to state/fx.ts
+		case 'TOGGLE_FX_MASTER': return toggleFxMaster(state); // Moved to state/fx.ts
 		case 'TOGGLE_PALETTE_APPLY_TO_ALL': return togglePaletteApplyToAll(state); // Moved to state/palette.ts
 		case 'REQUEST_EXPORT':
 			return { ...state, exportRequest: action.payload, isExporting: true };
