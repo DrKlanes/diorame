@@ -667,7 +667,7 @@ Rows added in v3.26.45 (docs/audit-2026-11.md §6 listed them as missing). Line 
 | `App.tsx` | ~205 | `App` (`?preview=true` → `PreviewPage` in dev only; otherwise `StrataProvider` + `ToastProvider` + `PwaUpdatePrompt` + the mobile gate) and `AppContent`: autosave recovery, welcome and tour modals, sounds, theme on `html`/`body`, file drop and launched files, the export-progress modals |
 | `fonts.ts` | ~35 | Self-hosted `@fontsource` fonts, latin subset only (UI: Manrope, Sora; canvas text fonts), registered at the entry point so the service worker precaches them |
 | `components/PwaUpdatePrompt.tsx` | ~40 | Service-worker lifecycle as a Sonner toast (`registerType: 'prompt'`: a new SW waits until the user presses «Recargar»); inert in `npm run dev` |
-| `components/ui/` | 5 files | What is left of the shadcn folder after v3.26.41: `utils.ts` (`cn`), `button.tsx`, `ripple-button.tsx`, `enhanced-tooltip.tsx` (the tooltip every `Di*` icon button uses) and `toast-provider.tsx` (the Sonner `Toaster`). Imported by `App.tsx` and `design-system/` only |
+| `components/ui/` | 5 files | What is left of the shadcn folder after v3.26.41 (the 34 npm packages only the deleted files used went in v3.26.46; of Radix only `react-slot` and `react-tooltip` remain): `utils.ts` (`cn`), `button.tsx`, `ripple-button.tsx`, `enhanced-tooltip.tsx` (the tooltip every `Di*` icon button uses) and `toast-provider.tsx` (the Sonner `Toaster`). Imported by `App.tsx` and `design-system/` only |
 | `components/figma/ImageWithFallback.tsx` | ~18 | `<img>` with a fallback, from the Figma Make scaffold |
 | `i18n/` | 6 files + 2 dictionaries | `LanguageContext.tsx` (`LanguageProvider`, `useLanguage`), `detectLanguage.ts` (saved choice → `navigator.language` → `en`; key `diorame-language`), `interpolate.ts` (`{key}` placeholders), `types.ts` (`Language`, `Dictionary`), `useTranslation.ts` (`t(key, params)`; a missing key returns the key), `index.ts`. `dictionaries/en.ts` and `es.ts` hold the same keys (650 each at v3.26.44) and are exempt from the 400-line limit (data, CLAUDE.md rule 2) |
 | `design-system/` (rest) | — | `DiPill`, `DiVSep`, `DiMiniSlider`, `DiActionButton`, `DiBadge`, `DiButton`, `DiDivider`, `DiIconButton`, `DiPanel`, `DiSlider`, `DiToggleSlider` (primitives, table in CLAUDE.md), `Ico.tsx` + `icons.ts` (the icon set as data, `ICONS` / `ICON_SECTIONS`), `tokens.ts` (`T`, `TYPE`, `SPACE`, `RADIUS`, `SHADOW`, `BLUR`, `Z_INDEX`, `dk`, `diTokens`), `useTheme.ts`, `Wordmark.tsx`, `LanguageToggle.tsx`, `index.ts` (the public API) |
@@ -1407,9 +1407,13 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.45)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.46)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.46 — Dependencias huérfanas
+
+**chore(deps)** — Tras borrar `components/ui/` (3.26.41), `npm uninstall` de 34 paquetes que ya no importaba nadie: 24 `@radix-ui/*` (quedan `react-slot` y `react-tooltip`), `cmdk`, `embla-carousel-react`, `input-otp`, `lucide-react`, `next-themes`, `react-day-picker`, `react-hook-form`, `react-resizable-panels`, `recharts` y `vaul`; y sus alias en `vite.config.ts` y `paths` en `tsconfig.json`. Paquetes en `node_modules`: 566 → 463. JS del build idéntico (mismos nombres con hash y tamaños, `diorRender-*.js` incluido).
 
 ### 3.26.45 — Documentación al día tras el refactor (fase 7)
 
