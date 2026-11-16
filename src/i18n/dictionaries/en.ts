@@ -810,4 +810,7 @@ export const en: Dictionary = {
 	'common.off': 'off',
 	'common.loading': 'Loading…',
 	'common.pleaseRetry': 'Please try again',
+	'error.boundary.title': 'Something went wrong',
+	'error.boundary.body': 'Your work can be recovered: reload and choose “Continue previous work”.',
+	'error.boundary.reload': 'Reload',
 };

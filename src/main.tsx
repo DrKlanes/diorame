@@ -1,6 +1,7 @@
 
   import { createRoot } from "react-dom/client";
   import App from "./App";
+  import { AppErrorBoundary } from "./components/AppErrorBoundary";
   import { LanguageProvider } from "./i18n";
   import { installAnalytics } from "./analytics/analytics";
   import "./fonts";
@@ -12,6 +13,8 @@
 
   createRoot(document.getElementById("root")!).render(
     <LanguageProvider>
-      <App />
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
     </LanguageProvider>
   );

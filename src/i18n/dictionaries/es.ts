@@ -772,4 +772,7 @@ export const es: Dictionary = {
 	'common.off': 'apagado',
 	'common.loading': 'Cargando…',
 	'common.pleaseRetry': 'Inténtalo de nuevo',
+	'error.boundary.title': 'Algo ha fallado',
+	'error.boundary.body': 'Tu trabajo se puede recuperar: recarga y elige «Continuar trabajo anterior».',
+	'error.boundary.reload': 'Recargar',
 };

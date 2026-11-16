@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
 	createErrorReporter, buildDescription, cleanText, firstStackFrame, classifyDevice,
-	rawFromRejection, MAX_DESCRIPTION, MAX_ERRORS_PER_SESSION,
+	rawFromRejection, reportBoundaryError, MAX_DESCRIPTION, MAX_ERRORS_PER_SESSION,
 	type ExceptionParams, type ErrorContext,
 } from '../src/analytics/errors';
 
@@ -136,5 +136,35 @@ describe('clase de dispositivo', () => {
 		expect(classifyDevice('Mozilla/5.0 (Linux; Android 14; SM-X) Chrome', 5)).toBe('tablet');
 		expect(classifyDevice('Mozilla/5.0 (Linux; Android 14; Pixel) Mobile', 5)).toBe('mobile');
 		expect(classifyDevice('Mozilla/5.0 (Windows NT 10.0)', 0)).toBe('desktop');
+	});
+});
+
+describe('ErrorBoundary (fatal: true)', () => {
+	it('reporta exception con fatal=true, contexto y limpieza', () => {
+		const r = make();
+		const err = new Error('render roto en C:\\Users\\Moises\\x.tsx');
+		err.stack = 'Error: render roto\n    at Foo (https://diorame.dumaker.com/assets/index-abc.js?v=1:12:34)';
+		expect(reportBoundaryError(r.report, err)).toBe(true);
+		expect(r.sent[0]).toMatchObject({ ...CTX, fatal: true });
+		expect(r.sent[0].description).not.toMatch(/Users|\?v=/);
+		expect(r.sent[0].description).toContain('index-abc.js:12');
+	});
+	it('mismo dedupe y tope que el resto', () => {
+		const r = make();
+		const err = new Error('x');
+		err.stack = 'at f (https://diorame.dumaker.com/a.js:1:1)';
+		expect(reportBoundaryError(r.report, err)).toBe(true);
+		expect(reportBoundaryError(r.report, err)).toBe(false);
+	});
+	it('un fallo del reporter no rompe el boundary', () => {
+		const boom = () => { throw new Error('reporter roto'); };
+		expect(() => reportBoundaryError(boom, new Error('x'))).not.toThrow();
+		expect(reportBoundaryError(boom, new Error('x'))).toBe(false);
+	});
+	it('un valor lanzado que no es Error no lanza ni se serializa', () => {
+		const r = make();
+		expect(() => reportBoundaryError(r.report, { secreto: 'dibujo' })).not.toThrow();
+		expect(r.sent[0].description).toBe('Render error (non-error)');
+		expect(() => reportBoundaryError(r.report, null)).not.toThrow();
 	});
 });

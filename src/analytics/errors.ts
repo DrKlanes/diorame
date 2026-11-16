@@ -174,3 +174,17 @@ export function rawFromRejection(reason: unknown): RawError {
 	if (typeof reason === 'string') return { message: reason };
 	return { message: 'Unhandled rejection (non-error)' };
 }
+
+/** Error de render capturado por un ErrorBoundary → `exception` con fatal: true. Nunca lanza. */
+export function reportBoundaryError(report: (raw: RawError) => boolean, error: unknown): boolean {
+	try {
+		const e = error as { message?: unknown; stack?: unknown } | null;
+		return report({
+			message: e && typeof e.message === 'string' ? e.message : 'Render error (non-error)',
+			stack: e && typeof e.stack === 'string' ? e.stack : '',
+			fatal: true,
+		});
+	} catch {
+		return false;
+	}
+}

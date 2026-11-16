@@ -19,8 +19,11 @@
 import type { DioramEventMap } from './events';
 import { track, initInternalTraffic } from './transport';
 import { state, elapsedSeconds, STROKE_MILESTONES } from './session';
-import { createErrorReporter, classifyDevice, rawFromRejection } from './errors';
+import { createErrorReporter, classifyDevice, rawFromRejection, reportBoundaryError, type RawError } from './errors';
 import { APP_VERSION } from '../constants/version';
+
+/** Reporter de `exception` (lo crea installErrorCapture). Null hasta entonces: reportar es no-op. */
+let reportRaw: ((raw: RawError) => boolean) | null = null;
 
 export type { DioramEventMap, DioramEventName } from './events';
 export { track, setAnalyticsConsent } from './transport';
@@ -153,6 +156,11 @@ export const analytics = {
 		track('project_loaded', {});
 	},
 
+	/** Error de render atrapado por el ErrorBoundary raíz: `exception` con fatal: true. Nunca lanza. */
+	reportBoundaryError(error: unknown): void {
+		try { if (reportRaw) reportBoundaryError(reportRaw, error); } catch { /* idem */ }
+	},
+
 	/** Sincroniza modo y herramienta para el contexto de `exception`. NO emite evento. */
 	errorContext(mode: string, tool: string): void {
 		state.mode = mode === 'cinematic' ? 'cinema' : mode === 'drawing' ? 'draw' : mode;
@@ -250,6 +258,8 @@ function installErrorCapture(): void {
 				standalone: isStandaloneNow() ? 'yes' : 'no',
 			}),
 		});
+
+		reportRaw = report;
 
 		window.addEventListener('error', (ev: ErrorEvent) => {
 			try {
