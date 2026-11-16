@@ -5,7 +5,6 @@ import {
 	TextSession, HistorySnapshot, AppState, LayerGradParams,
 } from '../../types/strataTypes';
 import { createProjectMeta } from '../../utils/projectMeta';
-import { withInkSeed } from '../../utils/layerBrush';
 
 export type {
 	Point, Shape, AppMode, ToolType, CinematicType, ExportType, BrushMode,
@@ -60,6 +59,7 @@ import { setPaletteMode, setPaletteGradientAngle, setPaletteGradientIntensity, s
 import { setFxIntensity, setParticleType, toggleFx, setSuperRiso, setSuperRisoStyle, toggleFxMaster } from '../../state/fx';
 import { toggleAnimationMode, setAnimationPlaying, setAnimationFramerate, setAnimationExportLoops, setGifExportScale, toggleOnionSkin, toggleAnimationFlatZ, advanceAnimationFrame, stepAnimationFrame, toggleAnimationPlaybackMode } from '../../state/animation';
 import { startTextSession, updateTextSession, commitTextSession, cancelTextSession } from '../../state/textSession';
+import { addShape, addShapes } from '../../state/shapes';
 
 // --- Reducer ---
 
@@ -140,41 +140,8 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'SET_VIEWPORT_SIZE':
 			if (state.viewportSize.w === action.payload.w && state.viewportSize.h === action.payload.h) return state;
 			return { ...state, viewportSize: action.payload };
-		case 'ADD_SHAPE': {
-			if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
-			// Creation time stamped here, not in the pointer handler (v3.25.16): the timelapse's clock.
-			// An Ink stroke gets the seed of its noise here too (v3.26.22): the one its outline was just drawn with.
-			const newShapes = [...state.shapes, withInkSeed({ ...action.payload, t: Date.now() })];
-			const snapshot = createSnapshot({ ...state, shapes: newShapes });
-			const { history, index } = pushHistory(state.history, state.historyIndex, snapshot);
-
-			return {
-				...state,
-				shapes: newShapes,
-				// The layer's brush pair, materialized in the state too (not only in the snapshot): a
-				// later patchCurrentSnapshot copies this map over the snapshot and must not drop it.
-				layerBrushSettings: snapshot.layerBrushSettings,
-				history,
-				historyIndex: index,
-				isDirty: true,
-			};
-		}
-		case 'ADD_SHAPES': {
-			if (state.tool === 'blob' || state.tool === 'brush') playSound('brushStroke');
-			const t = Date.now();
-			const newShapes = [...state.shapes, ...action.payload.map(s => withInkSeed({ ...s, t }))];
-			const snapshot = createSnapshot({ ...state, shapes: newShapes });
-			const { history, index } = pushHistory(state.history, state.historyIndex, snapshot);
-
-			return {
-				...state,
-				shapes: newShapes,
-				layerBrushSettings: snapshot.layerBrushSettings,
-				history,
-				historyIndex: index,
-				isDirty: true,
-			};
-		}
+		case 'ADD_SHAPE': return addShape(state, action); // Moved to state/shapes.ts
+		case 'ADD_SHAPES': return addShapes(state, action); // Moved to state/shapes.ts
 		case 'UNDO': return undo(state); // Moved to state/history.ts
 		case 'REDO': return redo(state); // Moved to state/history.ts
 		case 'SET_MODE':
