@@ -52,12 +52,13 @@ import type { Action } from '../../types/strataActions'; // Moved to types/strat
 import { initialState } from '../../constants/initialState';
 export { initialState }; // Moved to constants/initialState.ts
 
-import { pushHistory, createSnapshot, patchCurrentSnapshot, undo, redo } from '../../state/history'; // Moved to state/history.ts
+import { pushHistory, createSnapshot, undo, redo } from '../../state/history'; // Moved to state/history.ts
 import { loadProject } from '../../state/loadProject';
 import { setBrushThickness, setBrushThicknessPreview, commitBrushThickness, setBrushMode, scaleLayerThicknessPreview, setBrushScaleProportional } from '../../state/brush';
 import { moveLayer, transformLayer, flipLayer } from '../../state/layerTransform';
 import { nextLayer, prevLayer, addLayer, setLayerSelected, setCurrentLayer, deleteCurrentLayer, toggleLayerVisibility, toggle3dLock } from '../../state/layerNav';
 import { reorderLayers, moveLayerTo, duplicateLayer } from '../../state/layerReorder';
+import { setPaletteMode, setPaletteGradientAngle, setPaletteGradientIntensity, setPaletteGradientType, commitPaletteGradient, setActivePalette, togglePaletteApplyToAll, setColorIndex } from '../../state/palette';
 
 // --- Reducer ---
 
@@ -117,106 +118,11 @@ export function appReducer(state: AppState, action: Action): AppState {
 				blobSmoothing: !state.blobSmoothing,
 				isOrganicMode: state.blobSmoothing ? state.isOrganicMode : false
 			};
-		case 'SET_PALETTE_MODE': {
-			playSound('click');
-			if (state.paletteApplyToAllActive) {
-				const allModes: Record<number, 'flat' | 'grad'> = {};
-				for (let i = 0; i < state.totalLayers; i++) allModes[i] = action.payload;
-				const nextState = { ...state, paletteMode: action.payload, layerRenderModes: allModes, isDirty: true };
-				// No shapes anywhere → pure selection: no undo step, last-writer-wins.
-				if (state.shapes.length === 0) {
-					return { ...nextState, history: patchCurrentSnapshot(state.history, state.historyIndex, { layerRenderModes: allModes }) };
-				}
-				const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(nextState));
-				return { ...nextState, history, historyIndex: index };
-			}
-			const nextLayerRenderModes = { ...state.layerRenderModes, [state.currentLayerIndex]: action.payload };
-			const nextState = { ...state, paletteMode: action.payload, layerRenderModes: nextLayerRenderModes, isDirty: true };
-			// Current layer has no shapes to re-render → pure selection: no undo step, last-writer-wins.
-			const hasLayerShapes = state.shapes.some(s => s.zIndex === state.currentLayerIndex * -BASE_DEPTH_STEP);
-			if (!hasLayerShapes) {
-				return { ...nextState, history: patchCurrentSnapshot(state.history, state.historyIndex, { layerRenderModes: nextLayerRenderModes }) };
-			}
-			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(nextState));
-			return { ...nextState, history, historyIndex: index };
-		}
-		// The three gradient setters mutate layerGradParams live and stay OUT of the
-		// history: they are the drag preview, same role as SET_BRUSH_THICKNESS_PREVIEW.
-		// The undo step (or the last-writer-wins patch) lands on release, in
-		// COMMIT_PALETTE_GRADIENT — see the hybrid contract in CLAUDE.md.
-		case 'SET_PALETTE_GRADIENT_ANGLE': {
-			const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
-			if (state.paletteApplyToAllActive) {
-				const allParams: Record<number, LayerGradParams> = {};
-				for (let i = 0; i < state.totalLayers; i++) {
-					allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), angle: action.payload };
-				}
-				return { ...state, layerGradParams: allParams, gradParamsPendingCommit: true };
-			}
-			return {
-				...state,
-				gradParamsPendingCommit: true,
-				layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, angle: action.payload } }
-			};
-		}
-		case 'SET_PALETTE_GRADIENT_INTENSITY': {
-			const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
-			if (state.paletteApplyToAllActive) {
-				const allParams: Record<number, LayerGradParams> = {};
-				for (let i = 0; i < state.totalLayers; i++) {
-					allParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), intensity: action.payload };
-				}
-				return { ...state, layerGradParams: allParams, gradParamsPendingCommit: true };
-			}
-			return {
-				...state,
-				gradParamsPendingCommit: true,
-				layerGradParams: { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, intensity: action.payload } }
-			};
-		}
-		case 'SET_PALETTE_GRADIENT_TYPE': {
-			const currentParams = state.layerGradParams[state.currentLayerIndex] || GRADIENT_DEFAULTS;
-			let nextParams: Record<number, LayerGradParams>;
-			if (state.paletteApplyToAllActive) {
-				nextParams = {};
-				for (let i = 0; i < state.totalLayers; i++) {
-					nextParams[i] = { ...(state.layerGradParams[i] || GRADIENT_DEFAULTS), gradType: action.payload };
-				}
-			} else {
-				nextParams = { ...state.layerGradParams, [state.currentLayerIndex]: { ...currentParams, gradType: action.payload } };
-			}
-			// TYPE only ever arrives right behind SET_PALETTE_MODE (PaletteHeader fires
-			// both for one tap), and MODE already applied the contract for that gesture.
-			// Patching completes its post-change pair instead of opening a second undo
-			// step for what the user felt as a single action.
-			return {
-				...state,
-				layerGradParams: nextParams,
-				history: patchCurrentSnapshot(state.history, state.historyIndex, { layerGradParams: nextParams })
-			};
-		}
-		case 'COMMIT_PALETTE_GRADIENT': {
-			// Release with nothing dragged (a tap on the track that landed on the same
-			// value) → neither a step nor a patch.
-			if (!state.gradParamsPendingCommit) return state;
-			const hasShapes = state.paletteApplyToAllActive
-				? state.shapes.length > 0
-				: state.shapes.some(s => s.zIndex === state.currentLayerIndex * -BASE_DEPTH_STEP);
-			if (hasShapes) {
-				// Material: the gradient repaints existing ink, so the whole drag folds
-				// into ONE undo step whose snapshot already holds the post-drag params.
-				const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot(state));
-				return { ...state, gradParamsPendingCommit: false, history, historyIndex: index, isDirty: true };
-			}
-			// Nothing to repaint → pure selection: last-writer-wins onto the current
-			// snapshot so no later undo resurrects the old gradient.
-			return {
-				...state,
-				gradParamsPendingCommit: false,
-				history: patchCurrentSnapshot(state.history, state.historyIndex, { layerGradParams: state.layerGradParams }),
-				isDirty: true,
-			};
-		}
+		case 'SET_PALETTE_MODE': return setPaletteMode(state, action); // Moved to state/palette.ts
+		case 'SET_PALETTE_GRADIENT_ANGLE': return setPaletteGradientAngle(state, action); // Moved to state/palette.ts
+		case 'SET_PALETTE_GRADIENT_INTENSITY': return setPaletteGradientIntensity(state, action); // Moved to state/palette.ts
+		case 'SET_PALETTE_GRADIENT_TYPE': return setPaletteGradientType(state, action); // Moved to state/palette.ts
+		case 'COMMIT_PALETTE_GRADIENT': return commitPaletteGradient(state); // Moved to state/palette.ts
 		case 'RESET_DRAWING_VIEW': {
 			// With a format frame (v3.25.5), "Centrar vista" fits it as seen from the active layer (frameInView, v3.25.28);
 			// without one, zoom 1 at the origin as always.
@@ -301,8 +207,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'SET_CINEMATIC_TYPE':
 			playSound('click');
 			return { ...state, cinematicType: action.payload, isDirty: state.isDirty || action.payload !== state.cinematicType };
-		case 'SET_COLOR_INDEX':
-			return { ...state, currentColorIndex: action.payload };
+		case 'SET_COLOR_INDEX': return setColorIndex(state, action); // Moved to state/palette.ts
 		case 'UPDATE_CAMERA':
 			return { ...state, camera: { ...state.camera, ...action.payload } };
 		case 'NEXT_LAYER': return nextLayer(state); // Moved to state/layerNav.ts
@@ -410,49 +315,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 				return state;
 			}
 		}
-		case 'TOGGLE_PALETTE_APPLY_TO_ALL': {
-			playSound('click');
-			if (!state.paletteApplyToAllActive) {
-				const activeMode = state.layerRenderModes[state.currentLayerIndex] ?? 'flat';
-				const activeParams = state.layerGradParams[state.currentLayerIndex] ?? GRADIENT_DEFAULTS;
-				const allModes: Record<number, 'flat' | 'grad'> = {};
-				const allParams: Record<number, LayerGradParams> = {};
-				for (let i = 0; i < state.totalLayers; i++) {
-					allModes[i] = activeMode;
-					allParams[i] = { ...activeParams };
-				}
-				return {
-					...state,
-					paletteApplyToAllActive: true,
-					paletteApplyToAllSnapshot: {
-						layerRenderModes: { ...state.layerRenderModes },
-						layerGradParams: { ...state.layerGradParams },
-					},
-					layerRenderModes: allModes,
-					layerGradParams: allParams,
-					isDirty: true,
-				};
-			} else {
-				const snap = state.paletteApplyToAllSnapshot!;
-				const restoredModes = {
-					...snap.layerRenderModes,
-					[state.currentLayerIndex]: state.layerRenderModes[state.currentLayerIndex],
-				};
-				const restoredParams = {
-					...snap.layerGradParams,
-					[state.currentLayerIndex]: state.layerGradParams[state.currentLayerIndex],
-				};
-				return {
-					...state,
-					paletteApplyToAllActive: false,
-					paletteApplyToAllSnapshot: null,
-					layerRenderModes: restoredModes,
-					layerGradParams: restoredParams,
-					paletteMode: state.layerRenderModes[state.currentLayerIndex] ?? 'flat',
-					isDirty: true,
-				};
-			}
-		}
+		case 'TOGGLE_PALETTE_APPLY_TO_ALL': return togglePaletteApplyToAll(state); // Moved to state/palette.ts
 		case 'REQUEST_EXPORT':
 			return { ...state, exportRequest: action.payload, isExporting: true };
 		case 'FINISH_EXPORT':
@@ -597,53 +460,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'DUPLICATE_LAYER': return duplicateLayer(state, action); // Moved to state/layerReorder.ts
 		case 'DISMISS_ONBOARDING':
 			return { ...state, isOnboardingVisible: false };
-		case 'SET_ACTIVE_PALETTE': {
-			playSound('click');
-			const newId = action.payload;
-			if (newId === state.activePaletteId) return state;
-
-			const newPalette = newId === 'alternative' ? ALTERNATIVE_PALETTE : FIXED_PALETTE;
-			const oldPalette = state.palette;
-
-			// Map shapes to new palette colors based on index
-			let anyRemapped = false;
-			const newShapes = state.shapes.map(shape => {
-				// Find index in OLD palette
-				const idx = oldPalette.indexOf(shape.color);
-
-				// If color exists in old palette and we have a corresponding color in new palette
-				if (idx !== -1 && idx < newPalette.length && newPalette[idx] !== shape.color) {
-					anyRemapped = true;
-					return { ...shape, color: newPalette[idx] };
-				}
-				return shape;
-			});
-
-			// No shape colors remapped → pure selection: no undo step, last-writer-wins
-			// onto the current snapshot so a later undo never reverts this choice.
-			if (!anyRemapped) {
-				return {
-					...state,
-					activePaletteId: newId,
-					palette: newPalette,
-					history: patchCurrentSnapshot(state.history, state.historyIndex, { activePaletteId: newId }),
-					isDirty: true,
-				};
-			}
-
-			// Material remap → undo step; snapshot the POST-change pair (shapes + palette id).
-			const { history, index } = pushHistory(state.history, state.historyIndex, createSnapshot({ ...state, shapes: newShapes, activePaletteId: newId }));
-
-			return {
-				...state,
-				activePaletteId: newId,
-				palette: newPalette,
-				shapes: newShapes,
-				history,
-				historyIndex: index,
-				isDirty: true,
-			};
-		}
+		case 'SET_ACTIVE_PALETTE': return setActivePalette(state, action); // Moved to state/palette.ts
 		case 'TOGGLE_ANIMATION_MODE': {
 			const entering = !state.isAnimationMode;
 			if (entering) {
