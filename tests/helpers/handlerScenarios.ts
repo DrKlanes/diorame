@@ -176,7 +176,9 @@ export const HANDLER_SCENARIOS: readonly HandlerScenario[] = [
 	{ name: 'poi/double-click/hits-the-mid-layer', state: cinema('forward'), setup: threeLayers, steps: [p('down', -40, -20), p('up', -40, -20), tick(120), p('down', -40, -20), p('up', -40, -20)] },
 	{ name: 'poi/double-click/over-the-back-layer-only', state: cinema('forward'), setup: threeLayers, steps: [p('down', 200, -150), tick(120), p('down', 200, -150)] },
 	{ name: 'poi/double-click/nothing-under-it/mid-plane', state: cinema('forward'), setup: threeLayers, steps: [p('down', 420, -330), p('up', 420, -330), tick(120), p('down', 420, -330), p('up', 420, -330)] },
-	{ name: 'poi/double-click/hidden-layer-is-skipped', state: cinema('forward', { hiddenLayers: [2] }), setup: threeLayers, steps: [p('down', 60, 40), tick(100), p('down', 60, 40)] },
+	// Hidden AFTER the layers exist: ADD_LAYER shifts the indices of hiddenLayers, so a `state` patch would hide nothing here.
+	{ name: 'poi/double-click/hidden-layer-is-skipped', state: cinema('forward'), setup: [...threeLayers, { type: 'TOGGLE_LAYER_VISIBILITY', payload: 2 }], steps: [p('down', 60, 40), tick(100), p('down', 60, 40)] },
+	{ name: 'poi/double-click/empty-layers-around-the-content', state: cinema('forward'), setup: [{ type: 'ADD_LAYER' }, { type: 'ADD_LAYER' }, { type: 'ADD_LAYER' }, add(square('only', 1, -120, -90, 140, 110))], steps: [p('down', 30, 20), tick(100), p('down', 30, 20), tick(500), p('down', 420, -330), tick(100), p('down', 420, -330)] },
 	{ name: 'poi/double-click/299ms', state: cinema('forward'), setup: threeLayers, steps: [p('down', 60, 40), tick(299), p('down', 60, 40)] },
 	{ name: 'poi/double-click/300ms/re-arms', state: cinema('forward'), setup: threeLayers, steps: [p('down', 60, 40), tick(300), p('down', 60, 40), tick(100), p('down', 60, 40)] },
 	{ name: 'poi/double-click/40px-apart', state: cinema('forward'), setup: threeLayers, steps: [p('down', 60, 40), tick(100), p('down', 100, 40)] },

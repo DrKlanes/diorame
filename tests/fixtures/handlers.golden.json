@@ -26981,9 +26981,9 @@
 						{
 							"type": "SET_POINT_OF_INTEREST",
 							"payload": {
-								"x": 60,
-								"y": 40,
-								"z": -300
+								"x": 127.5,
+								"y": 85,
+								"z": 0
 							}
 						}
 					],
@@ -27091,9 +27091,9 @@
 				"isLayerSelected": true,
 				"viewZoomOffset": -600,
 				"pointOfInterest": {
-					"x": 60,
-					"y": 40,
-					"z": -300
+					"x": 127.5,
+					"y": 85,
+					"z": 0
 				},
 				"textSession": {
 					"isActive": false,
@@ -27105,6 +27105,143 @@
 				},
 				"historyIndex": 5,
 				"historyLength": 6,
+				"isDrawing": false,
+				"isOnboardingVisible": false,
+				"isDirty": true
+			}
+		},
+		"poi/double-click/empty-layers-around-the-content": {
+			"trace": [
+				{
+					"ev": "pointerdown 550,430",
+					"actions": [],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"lastClickTime": 1700000000000,
+						"lastClickPos": {
+							"x": 530,
+							"y": 420
+						},
+						"activePointerId": 1,
+						"canvasRect": {
+							"left": 20,
+							"top": 10,
+							"width": 1000,
+							"height": 800
+						}
+					}
+				},
+				{
+					"ev": "pointerdown 550,430",
+					"actions": [
+						{
+							"type": "SET_POINT_OF_INTEREST",
+							"payload": {
+								"x": 52.5,
+								"y": 35,
+								"z": -150
+							}
+						}
+					],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"lastClickTime": 0
+					}
+				},
+				{
+					"ev": "pointerdown 940,80",
+					"actions": [],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"lastClickTime": 1700000000600,
+						"lastClickPos": {
+							"x": 920,
+							"y": 70
+						}
+					}
+				},
+				{
+					"ev": "pointerdown 940,80",
+					"actions": [
+						{
+							"type": "SET_POINT_OF_INTEREST",
+							"payload": {
+								"x": 735,
+								"y": -577.5,
+								"z": -150
+							}
+						}
+					],
+					"prevented": 1,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"lastClickTime": 0
+					}
+				}
+			],
+			"state": {
+				"mode": "cinematic",
+				"tool": "blob",
+				"currentLayerIndex": 3,
+				"totalLayers": 4,
+				"shapes": [
+					{
+						"id": "only",
+						"color": "#222222",
+						"zIndex": -150,
+						"points": [
+							{
+								"x": -120,
+								"y": -90
+							},
+							{
+								"x": 140,
+								"y": -90
+							},
+							{
+								"x": 140,
+								"y": 110
+							},
+							{
+								"x": -120,
+								"y": 110
+							}
+						],
+						"isEraser": false,
+						"isDrawInside": false,
+						"isDrawBehind": false,
+						"t": 1700000000000
+					}
+				],
+				"drawingZoom": 1,
+				"drawingPan": {
+					"x": 0,
+					"y": 0
+				},
+				"isLayerSelected": true,
+				"viewZoomOffset": -600,
+				"pointOfInterest": {
+					"x": 735,
+					"y": -577.5,
+					"z": -150
+				},
+				"textSession": {
+					"isActive": false,
+					"x": 0,
+					"y": 0,
+					"content": "",
+					"font": "noir",
+					"align": "left"
+				},
+				"historyIndex": 4,
+				"historyLength": 5,
 				"isDrawing": false,
 				"isOnboardingVisible": false,
 				"isDirty": true
