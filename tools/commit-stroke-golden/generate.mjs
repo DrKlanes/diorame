@@ -45,6 +45,7 @@ for (let i = start + OPEN.length - 1; i < source.length; i++) {
 }
 const block = source.slice(start, end);
 if (!block.includes('analytics.strokeEnded(state.tool);')) throw new Error('Block boundaries look wrong');
+if (block.includes('buildStrokeShapes(')) throw new Error('This StrataCanvas.tsx calls canvas/commitStroke.ts (v3.26.48+): the inline block is gone. Use --rev v3.26.47 to re-run the code from before the cut');
 
 const entry = `
 import { generateStrokeForMode } from ${JSON.stringify(join(ROOT, 'src/utils/strokeGenerators.ts'))};

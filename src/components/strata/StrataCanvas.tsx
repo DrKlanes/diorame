@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useStrata, BASE_DEPTH_STEP } from './StrataContext';
 import { useCanvasRecovery } from '../../hooks/useCanvasRecovery';
-import { generateStrokeForMode } from '../../utils/strokeGenerators';
+import { buildStrokeShapes } from './canvas/commitStroke';
 import { Shape, Point, Waypoint, GestureState, CanvasPointerInput } from '../../types/strataTypes';
 import paperTexture from "figma:asset/texture-paper.png";
 import grungeTexture from "figma:asset/texture-grunge.png";
@@ -1463,107 +1463,9 @@ export const StrataCanvas = () => {
 						drawingPointerTypeRef.current = null;
 						return;
 					}
-					// Ensure visibility for small shapes (dots/lines) since fill() requires area
-				let finalPoints = [...currentPointsRef.current];
-				const isBrushTool = state.tool === 'brush';
-
-				if ((state.tool === 'blob' || state.tool === 'eraser') && state.blobSmoothing && finalPoints.length >= 4) {
-					const decimate = (pts: Point[], n: number): Point[] => {
-						if (pts.length <= 4) return pts;
-						const result: Point[] = [pts[0]];
-						for (let i = n; i < pts.length - 1; i += n) {
-							result.push(pts[i]);
-						}
-						result.push(pts[pts.length - 1]);
-						return result;
-					};
-					const chaikinSmooth = (pts: Point[], iterations = 2): Point[] => {
-						for (let iter = 0; iter < iterations; iter++) {
-							const smoothed: Point[] = [pts[0]];
-							for (let i = 0; i < pts.length - 1; i++) {
-								smoothed.push({
-									x: 0.75 * pts[i].x + 0.25 * pts[i + 1].x,
-									y: 0.75 * pts[i].y + 0.25 * pts[i + 1].y
-								});
-								smoothed.push({
-									x: 0.25 * pts[i].x + 0.75 * pts[i + 1].x,
-									y: 0.25 * pts[i].y + 0.75 * pts[i + 1].y
-								});
-							}
-							smoothed.push(pts[pts.length - 1]);
-							pts = smoothed;
-						}
-						return pts;
-					};
-					finalPoints = chaikinSmooth(decimate(finalPoints, 3), 3);
-				}
-
-				let originalPoints: Point[] = [];
-
-				if (isBrushTool) {
-					if (finalPoints.length === 1) {
-						const p = finalPoints[0];
-						finalPoints.push({ ...p, x: p.x + 0.1, y: p.y + 0.1 });
-					}
-					originalPoints = [...finalPoints];
-					const thicknessVal = state.currentBrushThickness;
-					finalPoints = generateStrokeForMode(state.brushMode, finalPoints, thicknessVal);
-				} else if (finalPoints.length < 3) {
-					const offset = 1.5 / (state.drawingZoom || 1);
-					const last = finalPoints[finalPoints.length - 1];
-					if (finalPoints.length === 1) {
-						finalPoints.push({ ...last, x: last.x + offset, y: last.y + offset });
-						finalPoints.push({ ...last, x: last.x - offset, y: last.y + offset });
-					} else if (finalPoints.length === 2) {
-						// Turn line into thin triangle
-						finalPoints.push({ ...last, x: last.x + offset, y: last.y + offset });
-					}
-				}
-
-				const newZ = getActiveZ(state.currentLayerIndex);
-				const isEraserTool = state.tool === 'eraser';
-				const eraserPolygon = isEraserTool
-					? generateStrokeForMode('tapered', finalPoints, state.currentBrushThickness)
-					: undefined;
-				const shapeProps = {
-					color: state.palette[state.currentColorIndex],
-					zIndex: newZ,
-					isEraser: isEraserTool,
-					isDrawInside: state.isDrawInside,
-					isDrawBehind: state.isDrawBehind,
-					originalPoints: isBrushTool ? originalPoints : undefined,
-					brushThickness: (isBrushTool || isEraserTool) ? state.currentBrushThickness : undefined,
-					brushMode: isBrushTool ? state.brushMode : undefined,
-					eraserPolygon: isEraserTool ? eraserPolygon : undefined,
-				};
-				const shapeOriginal: Shape = {
-					id: crypto.randomUUID(),
-					points: finalPoints,
-					...shapeProps
-				};
-
-				if (state.isSymmetryEnabled) {
-					// For lines, we mirror the original points and then regenerate the taper
-					let shapeMirrored: Shape;
-
-					if (isBrushTool) {
-						const mirroredOriginals = originalPoints.map(p => ({ ...p, x: -p.x }));
-						const thicknessVal = state.currentBrushThickness;
-						const mirroredFinals = generateStrokeForMode(state.brushMode, mirroredOriginals, thicknessVal);
-						shapeMirrored = {
-							id: crypto.randomUUID(),
-							points: mirroredFinals,
-							...shapeProps,
-							originalPoints: mirroredOriginals
-					};
-					} else {
-						shapeMirrored = {
-							id: crypto.randomUUID(),
-							points: finalPoints.map(p => ({ ...p, x: -p.x })),
-							...shapeProps
-						};
-					}
-
+				// Extracted to canvas/commitStroke.ts
+				const { shapeOriginal, shapeMirrored } = buildStrokeShapes(currentPointsRef.current, state, getActiveZ(state.currentLayerIndex));
+				if (shapeMirrored) {
 					dispatch({ type: 'ADD_SHAPES', payload: [shapeOriginal, shapeMirrored] });
 				} else {
 					dispatch({ type: 'ADD_SHAPE', payload: shapeOriginal });
