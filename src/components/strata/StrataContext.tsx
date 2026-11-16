@@ -4,7 +4,6 @@ import {
 	PostProcessingSettings, PostProcessingEnabled, HandheldIntensity,
 	TextSession, HistorySnapshot, AppState, LayerGradParams,
 } from '../../types/strataTypes';
-import { createProjectMeta } from '../../utils/projectMeta';
 
 export type {
 	Point, Shape, AppMode, ToolType, CinematicType, ExportType, BrushMode,
@@ -58,6 +57,7 @@ import { setMode, updateCamera, setCinematicType, setCinematicSpeed, setFocalLen
 import { setDrawingZoom, resetDrawingView, setFormat, setViewportSize, completeFitToView, toggleGrid } from '../../state/drawView';
 import { setTool, setDrawingActive, toggleSymmetry, toggleDrawBehind, toggleDrawInside, toggleOrganicMode, toggleBlobSmoothing } from '../../state/tool';
 import { toggleWelcomeModal, dismissOnboarding, setSoundsEnabled, toggleUi, toggleDarkMode, requestExport, finishExport } from '../../state/ui';
+import { markClean, projectSaved, setProjectName, duplicateProject, clearCanvas } from '../../state/project';
 
 // --- Reducer ---
 
@@ -65,13 +65,9 @@ import { toggleWelcomeModal, dismissOnboarding, setSoundsEnabled, toggleUi, togg
 export function appReducer(state: AppState, action: Action): AppState {
 	switch (action.type) {
 		case 'TOGGLE_WELCOME_MODAL': return toggleWelcomeModal(state); // Moved to state/ui.ts
-		case 'MARK_CLEAN':
-			return { ...state, isDirty: false };
-		case 'PROJECT_SAVED':
-			return { ...state, projectMeta: action.payload, isDirty: false };
-		// A new drawing that starts as a copy of this one: new identity, the old one kept as its origin.
-		case 'DUPLICATE_PROJECT':
-			return { ...state, projectName: action.payload.projectName, projectMeta: createProjectMeta(state.projectMeta.projectId), isDirty: true };
+		case 'MARK_CLEAN': return markClean(state); // Moved to state/project.ts
+		case 'PROJECT_SAVED': return projectSaved(state, action); // Moved to state/project.ts
+		case 'DUPLICATE_PROJECT': return duplicateProject(state, action); // Moved to state/project.ts
 		case 'SET_SOUNDS_ENABLED': return setSoundsEnabled(state, action); // Moved to state/ui.ts
 		case 'TOGGLE_UI': return toggleUi(state); // Moved to state/ui.ts
 		case 'SET_DRAWING_ACTIVE': return setDrawingActive(state, action); // Moved to state/tool.ts
@@ -117,52 +113,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'TOGGLE_PALETTE_APPLY_TO_ALL': return togglePaletteApplyToAll(state); // Moved to state/palette.ts
 		case 'REQUEST_EXPORT': return requestExport(state, action); // Moved to state/ui.ts
 		case 'FINISH_EXPORT': return finishExport(state); // Moved to state/ui.ts
-		case 'CLEAR_CANVAS':
-			return {
-				...state,
-				// A new canvas is a new drawing.
-				projectMeta: createProjectMeta(),
-				cinemaViewInitialized: false,
-				shapes: [],
-				history: [{
-					shapes: [],
-					totalLayers: 1,
-					layerRenderModes: {},
-					layerGradParams: {},
-					layerBrushSettings: {},
-					activePaletteId: state.activePaletteId
-				}],
-				historyIndex: 0,
-				currentLayerIndex: 0,
-				totalLayers: 1,
-				camera: { x: 0, y: 0, z: 0, rotation: 0 },
-				exportRequest: null,
-				isExporting: false,
-				hiddenLayers: [],
-				locked3DLayers: [],
-				isLayerSelected: true,
-				drawingZoom: 1,
-				drawingPan: { x: 0, y: 0 },
-				layerRenderModes: {},
-				layerGradParams: {},
-				layerBrushSettings: {},
-				paletteMode: 'flat',
-				focalLength: initialState.focalLength,
-				viewZoomOffset: initialState.viewZoomOffset,
-				layerSpacingFactor: initialState.layerSpacingFactor,
-				cinematicSpeed: initialState.cinematicSpeed,
-				isHandheldEnabled: initialState.isHandheldEnabled,
-				handheldIntensity: initialState.handheldIntensity,
-				cinematicType: initialState.cinematicType,
-				postProcessing: initialState.postProcessing,
-				postProcessingEnabled: initialState.postProcessingEnabled,
-				fxMasterEnabled: initialState.fxMasterEnabled,
-				postProcessingSnapshot: null,
-				paletteApplyToAllActive: false,
-				paletteApplyToAllSnapshot: null,
-				format: null,
-				isDirty: false,
-			}
+		case 'CLEAR_CANVAS': return clearCanvas(state); // Moved to state/project.ts
 		case 'LOAD_PROJECT': return loadProject(state, action); // Moved to state/loadProject.ts
 		case 'COMPLETE_FIT_TO_VIEW': return completeFitToView(state); // Moved to state/drawView.ts
 		case 'TOGGLE_LAYER_VISIBILITY': return toggleLayerVisibility(state, action); // Moved to state/layerNav.ts
@@ -188,8 +139,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 		case 'SET_HANDHELD_INTENSITY': return setHandheldIntensity(state, action); // Moved to state/cinema.ts
 		case 'SET_BRUSH_MODE': return setBrushMode(state, action); // Moved to state/brush.ts
 		case 'SET_LAYER_SPACING_FACTOR': return setLayerSpacingFactor(state, action); // Moved to state/cinema.ts
-		case 'SET_PROJECT_NAME':
-			return { ...state, projectName: action.payload, isDirty: state.isDirty || action.payload !== state.projectName };
+		case 'SET_PROJECT_NAME': return setProjectName(state, action); // Moved to state/project.ts
 		case 'REORDER_LAYERS': return reorderLayers(state, action); // Moved to state/layerReorder.ts
 		case 'MOVE_LAYER_TO': return moveLayerTo(state, action); // Moved to state/layerReorder.ts
 		case 'DUPLICATE_LAYER': return duplicateLayer(state, action); // Moved to state/layerReorder.ts
