@@ -1,15 +1,15 @@
-# Refactor de Diorame — estado a v3.26.51 (16 nov 2026)
+# Refactor de Diorame — estado a v3.26.52 (16 nov 2026)
 
 Resumen autocontenido de todo lo hecho en el refactor, para poner al día a quien no ha seguido la sesión. El detalle, las mediciones y las tablas completas están en `docs/audit-2026-11.md`; este documento no lo sustituye, lo resume.
 
-**Punto de partida:** v3.26.5, commit `2097388`. **Estado actual:** v3.26.51 en `main`. **Hecho desde la versión anterior de este resumen (v3.26.45):** la fase 6, parte segura (§2, §3 y `docs/audit-2026-11.md`, «Fase 6 (parte segura) — resultado»): `canvas/commitStroke.ts` con su test contra el código de antes del corte, y los hooks `useCanvasWheelZoom` y `useSpacePan`; `StrataCanvas.tsx` 1 922 → 1 719 líneas. **Siguiente:** la ronda de la fase 6 en iPad (§9); después, lo decide Moisés entre la fase 5 y el sprint de los handlers de `StrataCanvas.tsx`. Siguen pendientes el Lab contra producción y la validación visual de «Mixto» y del candado de escala.
+**Punto de partida:** v3.26.5, commit `2097388`. **Estado actual:** v3.26.52 en `main` (v3.26.52: fix de H11, §5). **Hecho desde la versión anterior de este resumen (v3.26.45):** la fase 6, parte segura (§2, §3 y `docs/audit-2026-11.md`, «Fase 6 (parte segura) — resultado»): `canvas/commitStroke.ts` con su test contra el código de antes del corte, y los hooks `useCanvasWheelZoom` y `useSpacePan`; `StrataCanvas.tsx` 1 922 → 1 719 líneas. **Siguiente:** la ronda de la fase 6 en iPad (§9); después, lo decide Moisés entre la fase 5 y el sprint de los handlers de `StrataCanvas.tsx`. Siguen pendientes el Lab contra producción y la validación visual de «Mixto» y del candado de escala.
 
 ---
 
 ## 1. En una página
 
 - Se auditó `src/` y se confirmó un monolito principal, `StrataContext.tsx` (2 153 líneas, reducer de 89 acciones), y un segundo, `StrataCanvas.tsx` (1 922).
-- Se montó una red de seguridad: Vitest, 524 tests en 11 archivos (476 en 10 al cerrar la fase 7; 451 en 9 al cerrar la fase 4), que ejecutan el reducer y los generadores de trazo reales en Node. Corre en el CI y bloquea el deploy.
+- Se montó una red de seguridad: Vitest, 529 tests en 11 archivos (476 en 10 al cerrar la fase 7; 451 en 9 al cerrar la fase 4), que ejecutan el reducer y los generadores de trazo reales en Node. Corre en el CI y bloquea el deploy.
 - Se arreglaron seis hallazgos de persistencia que la auditoría y los tests destaparon (H1, H6, H7, `TOGGLE_3D_LOCK`, H2, H3).
 - Se partió `StrataContext.tsx` moviendo código sin reescribirlo: 2 153 → 1 314 líneas en la fase 3A y → **65** en la 3B. Lo que salió vive en `constants/`, `types/` y la carpeta nueva `src/state/` (17 módulos; el `switch` en `state/appReducer.ts`). El archivo del contexto solo tiene el Provider, `useStrata` y re-exports.
 - **`dior-render.js` sin React (v3.26.39):** `diorRender.ts` importa el reducer puro; el grafo pasa de 127 539 a 120 829 bytes, con los mismos exports y los mismos píxeles.
@@ -69,7 +69,8 @@ Resumen autocontenido de todo lo hecho en el refactor, para poner al día a quie
 | v3.26.48 | `4c8593e` | refactor | `canvas/commitStroke.ts` + `tests/commitStroke.test.ts` |
 | v3.26.49 | `ee243d5` | refactor | `hooks/useCanvasWheelZoom.ts` |
 | v3.26.50 | `ac82331` | refactor | `hooks/useSpacePan.ts` |
-| v3.26.51 | — | docs | Cierre de la fase 6 (parte segura): auditoría, REFERENCE, CLAUDE.md y este resumen |
+| v3.26.51 | `3e9e176` | docs | Cierre de la fase 6 (parte segura): auditoría, REFERENCE, CLAUDE.md y este resumen |
+| v3.26.52 | — | fix | H11: la goma espejada lleva su `eraserPolygon` espejado |
 
 Todos los tags son anotados y están en el remoto. No se reescribió historia.
 
@@ -150,7 +151,7 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 
 ## 4. Red de seguridad
 
-- **`npm test`**: Vitest 4.1.12 (fijada: es la última línea que declara Vite ^6.0; el proyecto fija Vite 6.3.5). Entorno `node`, sin mocks (salvo el contador de `crypto.randomUUID` de `commitStroke.test.ts`). 524 tests, ~1,5 s.
+- **`npm test`**: Vitest 4.1.12 (fijada: es la última línea que declara Vite ^6.0; el proyecto fija Vite 6.3.5). Entorno `node`, sin mocks (salvo el contador de `crypto.randomUUID` de `commitStroke.test.ts`). 529 tests, ~1,5 s.
 - **CI**: paso `Test` en `.github/workflows/deploy.yml`, tras el typecheck y antes del build. Un test en rojo no se despliega.
 - **Tests en `tests/`** (fuera de `src/`), incluidos en el typecheck.
 
@@ -166,7 +167,7 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 | `isDirty.test.ts` | Toda acción que cambia lo que guarda el `.dior` marca `isDirty`, salvo una lista explícita |
 | `dior.roundtrip.test.ts` | Guardar → cargar, paridad `.dior` / autoguardado, migración de archivos antiguos |
 | `dior.damaged.test.ts` | Archivos dañados: se descarta lo ilegible y el resto abre |
-| `commitStroke.test.ts` | «Muestras del puntero → forma» (fase 6): 46 casos de pincel en los tres modos, blob y goma, con simetría, dentro / detrás y zoom, contra la salida del código EN LÍNEA de antes del corte (`fixtures/commitStroke.golden.json`, congelada en v3.26.47 ejecutando el texto literal del handler) |
+| `commitStroke.test.ts` | «Muestras del puntero → forma» (fase 6): 46 casos de pincel en los tres modos, blob y goma, con simetría, dentro / detrás y zoom, contra la salida del código EN LÍNEA de antes del corte (`fixtures/commitStroke.golden.json`, congelada en v3.26.47 ejecutando el texto literal del handler). Desde v3.26.52, los 4 de goma con simetría esperan el polígono espejado (H11), con 4 tests de simetría más |
 
 ### Reglas que quedaron escritas en CLAUDE.md
 
@@ -206,6 +207,7 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 | G7 | El grosor por capa no viajaba en el `.dior` | `layerBrushSettings`, campo aditivo y opcional | v3.26.22 |
 | G8 | Una capa creada en medio de la pila heredaba el par de la que ocupaba su sitio | Toma el de la capa activa | v3.26.22 |
 | H8 | Mover y voltear no transformaban `eraserPolygon` | Lo transforman | v3.26.22 |
+| H11 | Con simetría, la goma espejada guardaba el `eraserPolygon` del original sin espejar. Solo lo lee `svgBounds`: el marco del SVG se quedaba corto hasta medio grosor en el lado espejado; ni el lienzo ni la geometría del SVG cambiaban | Pasa por el mismo espejo que sus `points`. Archivos ya guardados: no se migran (solo afecta a ese margen del marco) | v3.26.52 |
 
 **Criterio de H7** (se pidió usar la versión/`meta` y no bastaba): el renombrado de herramientas es de v2.3.0, commit `b2b9942`, que renombró a la vez las claves que el archivo guarda al lado (`lineMode` / `currentLineThickness` → `brushMode` / `currentBrushThickness`). Un archivo con las claves nuevas se lee tal cual; solo se traduce el que no las tiene. El `meta` no sirve: los archivos de v2.3.0 a v3.20.x no lo tienen y el autoguardado no lleva `formatVersion`.
 
@@ -222,7 +224,6 @@ Unificarlas era reescribir, no mover. La segunda se hizo en la fase 4, que es un
 - **Archivos guardados antes de v3.26.22 con trazos redimensionados:** llevan el número antiguo (dibujado a 20, redimensionado ×2: dice 20, mide 40). No se migran: se ven igual, el slider marca 20 y el primer re-estilado los redibuja al valor elegido. Falta decidir si se deja así o se detecta el desfase al cargar (exacto en Tapered, aproximado en Ink).
 - **Tono de la banda y del tirador de «Mixto»** (`T.purpleLight`): calibrado visual, lo cierra Moisés.
 - Los valores de dentro de `layerGradParams` no se validan al cargar.
-- **H11 (fase 6):** con simetría, la goma espejada lleva el `eraserPolygon` SIN espejar del original. El lienzo no lo nota (pinta por `points`); lo usan el export SVG y las transformaciones. Fijado en la referencia de `commitStroke`; arreglarlo es un commit de comportamiento.
 - **Pinch con el centro quieto se lee como toque de dos dedos (deshacer)** (fase 6, comportamiento previo): para el sprint de handlers, caracterizarlo en iPad antes de tocar nada.
 - ~~Desfases de documentación de la auditoría §6~~ — **corregidos en la fase 7 (v3.26.45)**, cada uno verificado contra el código; la tabla está en `docs/audit-2026-11.md`, «Fase 7 — resultado».
 

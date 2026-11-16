@@ -105,7 +105,9 @@ export const buildStrokeShapes = (points: Point[], state: CommitStrokeState, new
 			shapeMirrored = {
 				id: crypto.randomUUID(),
 				points: finalPoints.map(p => ({ ...p, x: -p.x })),
-				...shapeProps
+				...shapeProps,
+				// H11 (v3.26.52): the eraser's polygon goes through the same mirror as its points.
+				eraserPolygon: shapeProps.eraserPolygon?.map(p => ({ ...p, x: -p.x }))
 			};
 		}
 		return { shapeOriginal, shapeMirrored };
