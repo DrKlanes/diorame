@@ -7,7 +7,7 @@ CONFIRMAR] está sin comprobar. Versión de partida: 3.20.1; F0 cerró en 3.20.1
 Documentos relacionados: `docs/super-riso.md` y `src/REFERENCE.md` §14 (Super Riso), `docs/ux-debt.md` (deuda), `CLAUDE.md`
 (reglas de núcleo y de FX: «FX: criterio de ingeniería gráfica», «Tocar StrataCanvas.tsx»).
 
-> **2026-11-24:** `docs/flat-view-proposal.md` propone la vista «Plana» en CINEMA, que cubre buena parte de este objetivo sin abrir la puerta de FX de DRAW. Antes de retomar F1, leerla (su D8).
+> **2026-11-24 · EN PAUSA HASTA PROBAR PLANA (decisión D8 de Moisés).** La vista «Plana» de CINEMA (v3.26.77, `docs/flat-view-proposal.md`) cubre buena parte de este objetivo — ilustración plana con FX, encuadre directo de DRAW, PNG con Formato — sin abrir la puerta de FX de DRAW. F1 no se retoma hasta que Moisés la haya usado y decida qué falta. Nada más de este documento cambia.
 
 ---
 

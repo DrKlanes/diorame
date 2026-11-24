@@ -1,8 +1,9 @@
 # Vista frontal plana en CINEMA — investigación y propuesta
 
-**Estado (2026-11-24): PROPUESTA, sin implementar.** Partida: v3.26.69 (`b99a871`), 692 tests en verde. Toca núcleo (proyección en
-`renderFrame` / `renderLayerBody`; handlers del lienzo): ciclo completo investigar → proponer → **GO de Moisés** → implementar.
-[VERIFICADO] = leído en el código con archivo:línea; [POR MEDIR] = deducido del código, pendiente de arnés o del ojo de Moisés.
+**Estado (2026-11-24): HECHO — v3.26.71 → v3.26.78, publicado.** Implementado según la opción C con las decisiones D1–D8 de
+Moisés (§10); lo hecho, los resultados de cada criterio y las decisiones tomadas durante la implementación, en §12. **Falta la ronda
+de iPad (§11, ordenada por riesgo) y el juicio a ojo de Moisés.** Las secciones 0–9 son la propuesta tal como se aprobó (v3.26.70);
+donde la implementación se apartó, lo dice §12.3. [VERIFICADO] = leído en el código o medido; [POR MEDIR] = pendiente.
 
 Documentos relacionados: `docs/fx-in-draw.md` (proyecto en pausa que persigue casi el mismo objetivo, ver §9), REFERENCE.md §10
 («Render Pipeline Architecture»), CLAUDE.md («Tocar StrataCanvas.tsx», «Comportamientos protegidos»).
@@ -316,16 +317,106 @@ C3 y C7 condicionado a sus criterios (§7).
 | Guardar `.dior` con Plana → reabrir | Vuelve en Plana; Formato intacto |
 | Distorsión activa | Sin efecto en Plana, chip atenuado |
 
-**iPad** (Safari, PWA y pestaña privada, versión confirmada; tras el push de C6/C7):
+**iPad** (Safari, pestaña privada o PWA tras aceptar «Recargar», versión **3.26.78** confirmada en pantalla). Ordenada por riesgo:
+lo de arriba puede romper el trabajo; lo de abajo es juicio estético.
 
-| Caso | Esperado |
-|---|---|
-| Pinch y pan de 2 dedos | Como en DRAW, sin tirones |
-| Toque de 2 dedos / 3 dedos | Deshacer / rehacer |
-| 1 dedo y Pencil arrastrando | Pan (D3) o nada |
-| Palma sobre el lienzo durante un pinch | Sin saltos (el `touchstart` nativo cancelado sigue igual) |
-| Centrar vista desde las `ViewPills` | Encaja el Formato |
-| Super Riso en Plana durante y después de un pinch | *Preview* durante el gesto, refinado al soltar |
-| Export PNG Formato A4 300 ppp con Super Riso | Sale, sin lienzo en blanco (`canvasFits`) |
-| Reproducción de animación en Plana | Fluida; sin parpadeo |
-| Coste sostenido con Super Riso en reposo | Igual que cualquier preset de CINEMA |
+| # | Riesgo | Caso | Esperado |
+|---|---|---|---|
+| 1 | Alto | **1 dedo arrastrando y llega el 2.º (pinch)** | El pinch toma el relevo sin saltos; al levantar un dedo, nada salta. (Cubierto solo en Node, ad hoc: §12.2) |
+| 2 | Alto | **Pencil arrastrando (pan) con la palma apoyada** | El pan sigue al Pencil; la palma no lo reinicia ni lo mueve |
+| 3 | Alto | Pinch y pan de 2 dedos en Plana | Como en DRAW, sin tirones; tras el pinch, un dedo no deja «trazo fantasma» (no hay trazos en CINEMA) |
+| 4 | Alto | Toque de 2 dedos / 3 dedos en Plana | Deshacer / rehacer, como en DRAW (afecta al dibujo, visible en Plana) |
+| 5 | Alto | **1180×820 horizontal (iPad Air / Pro 11")** | La barra de cámara va ahora en **dos filas en TODOS los presets** (umbral 1100 → 1300, §12.3); nada solapado; el panel de FX cabe encima |
+| 6 | Medio | Píldora de encuadre: Formato (popover) y Centrar vista con el dedo | El popover se abre dentro de pantalla; Centrar vista encaja el marco |
+| 7 | Medio | Super Riso en Plana durante y después de un pinch | *Preview* durante el gesto, refinado al soltar; sin tirones |
+| 8 | Medio | Export PNG Formato A4 300 ppp con Super Riso | Sale, sin lienzo en blanco (`canvasFits`), con el encuadre del marco |
+| 9 | Medio | Reproducción de animación en Plana (con niebla y DoF activos) | Fluida y **sin parpadeo** de niebla/DoF entre fotogramas |
+| 10 | Bajo | Coste sostenido en Plana con Super Riso en reposo | Igual que cualquier preset de CINEMA (Plana no tiene el *idle-skip* de DRAW) |
+| 11 | Juicio | **Niebla en Plana** (por capa, con la distancia de CINEMA: D5) | Moisés decide si la perspectiva atmosférica sobre la lámina plana se ve bien; plan B: neutralizarla en Plana |
+| 12 | Juicio | **DoF en Plana** (enfoca la capa elegida) | Ídem; plan B: DoF neutro en Plana |
+| 13 | Juicio | **Partículas en Plana** (proyectadas sin escala por profundidad) | Moisés decide si se ven bien en plano |
+| 14 | Juicio | **Super Riso (Riso / Fotocopia / Stencil) en Plana** | La «impresión» de la ilustración plana: el objetivo del preset |
+| 15 | Juicio | **Pan/zoom compartido con DRAW (D4)** | Volver a DRAW deja la vista que se ajustó en Plana: ¿se siente natural? |
+| 16 | Juicio | Icono `cam-flat` (provisional) y textos «Plana · de frente, como en Dibujo, con los FX» / «Arrastra · pellizca para zoom» | Moisés dibuja el icono definitivo |
+
+---
+
+## 12 · Implementación (2026-11-24, sesión autónoma)
+
+### 12.1 · Commits
+
+Orden decidido (§10): C1 → C2 → C3 → C4 → C6 → C7 → C5 → C8. Cada uno con bump, tag anotado, `npm test` + typecheck + build en verde,
+push y CI verde antes del siguiente. Hasta C5 la feature fue invisible: ningún control llevaba a `cinematicType = 'flat'`.
+
+| Versión | Paso | Qué |
+|---|---|---|
+| 3.26.71 | C1 | `'flat'` (tipo, `LOAD_PROJECT`), tick estático sin cámara en mano, `utils/flatView.ts`, `tests/flatView.test.ts` |
+| 3.26.72 | C2 | 12 escenarios `flat/*` congelados con el código de 3.26.71 |
+| 3.26.73 | C3 | Render: proyección de DRAW + FX de CINEMA; «Centrar vista»; arnés `flatcheck.js` |
+| 3.26.74 | C4 | Gestos de DRAW + arrastre simple = pan |
+| 3.26.75 | C6 | PNG Vista / Formato en Plana (`FlatCaptureSection`) |
+| 3.26.76 | C7 | Animación sin parpadeo; botón de profundidad atenuado |
+| 3.26.77 | C5 | UI: el preset, atenuados, píldora de encuadre, cursor, umbral de la barra compacta |
+| 3.26.78 | C8 | Docs |
+
+C6 y C7 no dependieron de nada de C5: su UI propia (`FlatCaptureSection`, el botón de profundidad atenuado) solo se pinta con Plana
+activa, inalcanzable hasta C5.
+
+### 12.2 · Resultados de los criterios [VERIFICADO]
+
+Página de desarrollo recién cargada, `Math.random` sembrado, mismo procedimiento antes y después.
+
+| Criterio | C3 | C7 |
+|---|---|---|
+| `__flatCheck()`: Plana (FX maestro apagado, cámara de CINEMA descentrada y girada) = DRAW | 7/7 a 0 px, mismo SHA-256; antes del cambio fallaba 7/7 | 7/7 |
+| Autocomprobación con `forward` | difiere 7/7 | difiere 7/7 |
+| `__pixcheck` / `__pixcheck2` before → after | 7/7 y 7/7 a 0 px | 7/7 y 7/7 a 0 px |
+| `__alphaLeakCheck()` / `__timelapseCheck()` | `pass: true` / `pass: true` | ídem |
+| `__cinemaHash` (forward, orbit, storytelling, arc + distorsión, zoom + pixel art, HQ ×2, animación con y sin Z plana) | 8/8 a 0 px | 8/8 a 0 px (y Plana estática 0 px) |
+| `__diorRenderHash` (contrato del Lab) | 2/2 mismo SHA-256 | 2/2 |
+| `__flatAnimCheck()` (5 fotogramas iguales con niebla + DoF) | — | 0/0/0/0 px (antes 68 201 – 94 029 px) |
+| Plana no lee `cameraRef` (R2) | demostrado: cámara de CINEMA en (300, −200, 500, giro 0,3) y 0 px | ídem |
+
+Gestos (C4): los 125 escenarios previos idénticos; cambian solo los 11 `flat/*` que cambiaban (el del botón central ya hacía pan) y
+cada traza hace lo que dice su nombre. Ad hoc, sin commitear (la regla no permite escenarios nuevos en un commit de comportamiento):
+un dedo en pan y llega el segundo → el pinch toma el relevo; palma bajo un pan de Pencil → no lo reinicia. En el navegador: rueda =
+zoom al cursor, toque de Espacio = Centrar vista (con un botón enfocado, Espacio se reserva para el botón, como en DRAW), `forward`
+sigue ignorando ambas. **Matriz de escritorio 28/32 con y sin C4** (A/B en las mismas condiciones): las 4 que fallan son del Move de
+DRAW y necesitan el `rAF` vivo, que iba a ~7 fps con la ventana fuera de la vista; no es una regresión, pero **conviene repetirla con
+la ventana delante**.
+
+Export (C6): por `exportAsPNG` real con las descargas interceptadas y el PNG decodificado: Formato 1080×1350 de Plana (FX apagados) =
+Formato de DRAW, 0 px; con FX cambia todo el lienzo; Vista ×1 y HQ = DRAW, 0 px.
+
+UI (C5): 1180×820, 820×1180, 1366×1024 y 1920×1080, claro y oscuro: ninguna píldora inferior solapada ni fuera de pantalla (Plana y
+`forward`); clic real en el primer preset → Plana con la vista de DRAW heredada; Centrar vista encaja el Formato; el popover de Formato
+se abre dentro de pantalla; distorsión y controles de cámara atenuados. A ojo, solo para cazar algo roto (no es juicio del efecto):
+Super Riso, Pixel Art (el dibujo no salta al hacer zoom), niebla, grano y viñeta se ven en Plana; volver a DRAW conserva la vista (D4).
+
+### 12.3 · Decisiones tomadas durante la implementación (no estaban en la propuesta)
+
+1. **«Centrar vista» y Formato no van en las `ViewPills` de abajo a la izquierda** (propuesta §3.2/§6): medidas, quedaban a 2 px de la
+   barra de cámara a 1366 y encima de ella a 1180 y 820. En Plana, la píldora de POI (el sitio de «encuadrar» en CINEMA) pasa a ser la
+   **píldora de encuadre**: pista «Arrastra · pellizca para zoom» + Formato + Centrar vista, dentro de la barra.
+2. **Umbral de la barra compacta 1100 → 1300 px** (`useIsCameraBarCompact`). Con el 12.º preset la fila única mide 1034 px + la píldora
+   de encuadre (240) = 1284 px: a 1180×820 se salía por los dos lados **con cualquier preset** (con `forward`, 9 px por lado; sin el botón
+   nuevo cabía con 7 px). 1180×820 usa ahora las dos filas que ya existían; 1366 y 1920 siguen en una. **Cambio visible en todos los
+   presets a 1180×820: lo valida Moisés en el iPad (§11 #5).**
+3. **El PNG «Vista» de Plana se re-renderiza** (como DRAW) en vez de copiar el lienzo vivo (como el resto de CINEMA): el lienzo vivo
+   lleva pintado el marco de Formato, que es una ayuda y nunca debe exportarse.
+4. **El primer dedo de un pinch suelta su pan**: con D3, un dedo ya está haciendo pan cuando llega el segundo; una línea detrás de
+   `isFlatView` en `touchHandlers` lo termina (DRAW no tiene ese pan que terminar).
+5. **Un puntero que aterriza a mitad de un pan no lo reinicia** (palma bajo el Pencil).
+6. **`FormatPill` usa la cámara de DRAW** en Plana para «Ajustar a la vista» y los cambios de tipo (si no, leería la del preset).
+7. **Cursor de mano** en Plana (`cursor-grab` / `cursor-grabbing`): antes CINEMA siempre era `cursor-default`.
+8. **Textos:** tooltip del preset «Plana · de frente, como en Dibujo, con los FX» / «Flat · head-on, as in Draw, with the FX»; pista
+   «Arrastra · pellizca para zoom» / «Drag to pan · pinch to zoom»; ayuda del PNG «Vista plana: con los FX, siempre sobre el papel».
+9. **Icono `cam-flat` provisional:** un rectángulo (la hoja de frente) con dos líneas, trazo 1,5 como el resto del grupo. **Moisés dibuja
+   el definitivo.**
+
+### 12.4 · Lo que queda
+
+- La ronda de iPad (§11) y el juicio a ojo (§11 #11–16). Si niebla, DoF o partículas no convencen en plano: neutralizarlas en Plana es
+  una condición detrás de `isFlatView`, sin tocar los demás presets.
+- La matriz de escritorio con la ventana delante (las 4 del Move de DRAW).
+- `fx-in-draw.md` sigue **en pausa hasta probar Plana** (D8).

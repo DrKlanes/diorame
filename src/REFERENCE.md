@@ -255,7 +255,7 @@ Two distinct actions create layers — they are **not** interchangeable:
   - Scroll Wheel / MMB: Zoom in/out
   - Double-Click: Set Point of Interest (camera focus target)
 - **Touch Controls**: 1-finger pan, 2-finger orbit, pinch zoom
-- **Cinematic Moves**: 11 preset camera animations (Forward, Spiral, Yoyo, Pulse, Twist, Arc, Crane, Truck, Orbit, Zoom, Storytelling)
+- **Cinematic Moves**: 12 camera presets: **Flat** («Plana», v3.26.77: the scene head-on as in DRAW, pixel for pixel, with the FX; DRAW's pan and zoom; static) and 11 animations (Forward, Spiral, Yoyo, Pulse, Twist, Arc, Crane, Truck, Orbit, Zoom, Storytelling)
 - **Speed Control**: Adjustable cinematic speed (0.1-1.0)
 - **Handheld Shake**: Optional camera shake (Low, Medium, High)
 
@@ -1430,13 +1430,23 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.70)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.78)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
 
-### 3.26.70 · docs: propuesta de vista frontal plana en CINEMA
+### 3.26.70 → 3.26.78 · Vista frontal plana «Plana» / «Flat» en CINEMA
 
-- `docs/flat-view-proposal.md` (nuevo): investigación y propuesta, sin código. Preset nuevo «Plana» / «Flat», el primero de CINEMA: la escena de frente, como en DRAW, con los FX de CINEMA. Recomendación ⭐: proyectar la geometría con la rama de DRAW de `transformPoint` (y su cámara: la capa activa) sin tocar la puerta de FX, con niebla/DoF leyendo la distancia de la cámara de CINEMA en reposo; gestos de DRAW por condiciones ampliadas, sin cambiar el timing de los handlers; zoom/pan compartido con DRAW; `flat` aditivo en `LOAD_PROJECT`. Hallazgo: DRAW no es ortográfico (`DRAW_FOCAL_LENGTH` 10000, ~1,5 %/capa), así que «sin paralaje» e «igual que DRAW» no coinciden: decide Moisés (D1). Plan en 8 commits, riesgos, decisiones D1–D8 y matriz de escritorio + iPad. Pendiente de GO.
+Preset nuevo, el primero de CINEMA: la escena de frente, **idéntica al píxel a DRAW** (no ortográfica: DRAW conserva su ~1,5 %/capa), con los FX de CINEMA. Propuesta, decisiones D1–D8 y resultados: `docs/flat-view-proposal.md`.
+
+- **3.26.70 · docs:** la propuesta (opción C ⭐: la geometría por la rama de DRAW de `transformPoint`, la puerta de FX intacta).
+- **3.26.71 · C1:** `'flat'` en `CinematicType` y en la lista de `LOAD_PROJECT` (aditivo); tick estático sin cámara en mano (D7); `utils/flatView.ts` (`isFlatView`, `flatViewCamera` = la cámara de DRAW); `tests/flatView.test.ts`.
+- **3.26.72 · C2 (test):** 12 escenarios `flat/*` del arnés de handlers, congelados con el código de 3.26.71; los 125 previos idénticos.
+- **3.26.73 · C3 (núcleo, GO condicionado):** `renderFrame` toma la cámara de DRAW del estado (nunca `cameraRef`), el zoom/pan de DRAW, el marco de Formato y sin POI; `renderLayerBody` proyecta como DRAW (`projCinematic`) y solo la profundidad de niebla/DoF sigue la regla de CINEMA (D5); «Centrar vista» por la cámara de DRAW. `flatcheck` 7/7 a 0 px con el mismo SHA-256 que DRAW (autocomprobación con `forward` falla 7/7); `pixcheck`/`pixcheck2`, `alphaleak`, timelapse, hashes de CINEMA y `dior-render.js`, idénticos.
+- **3.26.74 · C4:** los gestos de DRAW (rueda, Espacio, pinch, pan de dos dedos, toques de deshacer/rehacer) y arrastre simple = pan (D3), solo con condiciones ampliadas o ramas detrás de `flat`; 125 escenarios idénticos, cambian solo los 11 `flat/*` previstos.
+- **3.26.75 · C6:** PNG de Plana con los encuadres Vista (re-render ×1 / HQ) y Formato de DRAW, siempre sobre papel (`FlatCaptureSection`); vídeo con el encuadre de pantalla (D6).
+- **3.26.76 · C7 (núcleo, GO condicionado):** animación sin parpadeo — en Plana + animación la niebla/DoF toman la profundidad de Z plana (`__flatAnimCheck`: 5 fotogramas idénticos; antes 68–94 mil px).
+- **3.26.77 · C5 (UI, expone la feature):** «Plana» primera de la barra (icono `cam-flat` PROVISIONAL), cámara/velocidad/cámara en mano y distorsión atenuadas, la píldora de POI pasa a ser la de encuadre (pista + Formato + Centrar vista), cursor de mano; `useIsCameraBarCompact` 1100 → 1300 px (con 12 presets la barra de una fila ya no cabía a 1180×820 con ningún preset).
+- **3.26.78 · C8 (docs):** este resumen, CLAUDE.md, `fx-in-draw.md` (D8: en pausa hasta probar Plana) y la propuesta en estado HECHO con la matriz de iPad por riesgo.
 
 ### 3.26.69 · fix(canvas): fuera el relanzamiento nativo del `pointerdown` del Pencil (H12, H13)
 
