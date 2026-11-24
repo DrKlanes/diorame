@@ -420,3 +420,131 @@ Super Riso, Pixel Art (el dibujo no salta al hacer zoom), niebla, grano y viñet
   una condición detrás de `isFlatView`, sin tocar los demás presets.
 - La matriz de escritorio con la ventana delante (las 4 del Move de DRAW).
 - `fx-in-draw.md` sigue **en pausa hasta probar Plana** (D8).
+
+---
+
+## 13 · Distorsión en Plana (petición de Moisés, 2026-11-24)
+
+**Estado: PARADO (2026-11-24) — pendiente de decisión de Moisés (§13.6).** Los criterios formales pasan, pero la fórmula se pliega a la vista en Plana; `main` no cambia (la distorsión sigue atenuada en Plana) y el trabajo está en la rama local `wip/flat-distortion` (§13.7). Decisiones de diseño tomadas por Moisés: la misma distorsión que en los demás presets
+de CINEMA (misma función, mismos parámetros e intensidad del panel), aplicada a la geometría ya proyectada con la fórmula de DRAW,
+solo con `isFlatView` y la distorsión activa con intensidad > 0; nunca un warp de bitmap. Centro: el del marco de Formato si lo hay,
+si no el del viewport. El export (PNG Vista, Formato, HQ, GIF / secuencia) sale con la misma distorsión que la pantalla; el marco guía
+ni se distorsiona ni se exporta. En la UI deja de estar atenuada.
+
+### 13.1 · Cómo se aplica hoy en CINEMA [VERIFICADO]
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Coeficiente | `renderPipeline.ts:564-565` | `fxDistortion` = intensidad del panel si `fxEnabled` y el FX está activo; `distortionK = |d| > 0,01 ? (d · −0,8) · (500 / FL) : 0`. Depende de la focal (`FL`, la del preset `zoom` si aplica) |
+| Paso a la capa | `renderPipeline.ts:575` (`pfc.distortionK`), `renderLayerBody.ts:91, 175-184` | `FrameProjectionParams` lleva `distortionK` y el centro de normalización LÓGICO (`distortCenterX/Y` = mitad del viewport lógico, para que el HQ ×S salga igual) |
+| La fórmula | `transformPoint.ts:130-137` (rama CINEMA) | Sobre el desplazamiento respecto al centro de pantalla, antes de `viewZoom/viewPan`: `nx = sx / cx`, `ny = sy / cy` (anisótropo: mitad de ancho y mitad de alto), `f = 1 + k · (nx² + ny²)`, `sx *= f`, `sy *= f`. Las capas fijadas (`isLocked3D`) no se distorsionan |
+| Quién la recibe | todo lo que pasa por `transformPoint` / `createProjectInto` | trazos, rellenos, partículas, el ancla del texto (los glifos no se deforman) y el marcador de POI (`renderPipeline.ts:705-706`) |
+| Inversa | `cinemaFraming.ts:78-114`, `unprojectPoint.ts` (Newton) | El doble toque de POI deshace la distorsión. Plana no tiene POI: no aplica |
+| Rama de DRAW | `transformPoint.ts:101-111` | No la aplica: por eso hoy no hace nada en Plana, y el panel la atenúa (`FXPanel.tsx`, v3.26.77) |
+
+### 13.2 · Dónde encaja en la rama plana
+
+- **Fórmula:** la misma `f = 1 + k · (nx² + ny²)`, con el mismo `k` (`pfc.distortionK`, que en Plana ya se calcula: `fxEnabled` es el de
+  CINEMA), aplicada en la rama de DRAW de `createProjectInto` **después** de proyectar: `out = C + (out − C) · f`. En CINEMA, con
+  `viewZoom = S` y `viewPan = 0`, `(out − C) / (cx · S)` es exactamente su `sx / cx`: misma distorsión.
+- **Centro C y normalización (hx, hy):**
+  - sin Formato: C = centro del viewport, (hx, hy) = medio viewport (en px de dispositivo), como CINEMA;
+  - con Formato: C = centro del marco en pantalla (`frameInView` con la cámara de Plana, `· viewZoom + viewPan`) y **(hx, hy) = medio
+    marco en pantalla**. **Razón técnica de la normalización (no estaba en la decisión, que solo fijaba el centro):** el PNG Formato
+    re-renderiza un lienzo que ES el marco (`renderRectSnapshot`: zoom 1, el marco llena el lienzo). Si en pantalla se normalizara por
+    el medio viewport y en el export por el medio marco (que ahí es el viewport), la curvatura sería distinta y el export no coincidiría
+    con lo que se ve. Normalizando siempre por el marco, la distorsión queda **pegada al marco**: igual en pantalla, en el PNG Formato
+    y en el HQ, y ni el pan ni el zoom la hacen «nadar» dentro del encuadre. Consecuencia visible: fuera del marco (zona velada), con
+    un marco pequeño, la distorsión crece rápido (∝ r²).
+- **Qué capas:** las mismas que en CINEMA: las fijadas (`locked3DLayers`) no se distorsionan.
+- **Animación:** el marco vive en el plano activo (`frameInView` con `isAnimationMode`), y todos los fotogramas comparten centro y
+  normalización: no introduce parpadeo.
+- **Marco guía:** `drawFormatFrame` (fase 4) no pasa por `transformPoint`: no se distorsiona; y nunca se exporta.
+
+### 13.3 · Qué toca del núcleo
+
+- `transformPoint.ts`: un campo opcional en `FrameProjectionParams` (`flatDistort`: centro, mitades, k) y tres líneas en la rama de DRAW
+  detrás de `if (frame.flatDistort)`. DRAW y los demás presets nunca lo llevan: su aritmética no cambia.
+- `renderLayerBody.ts`: construye `flatDistort` solo con `isFlat && pfc.distortionK !== 0` y la capa no fijada. **No cambia
+  `RenderContext` ni `PerFrameComputed`**: lee `pfc.distortionK`, `viewZoom`, `viewPan`, el centro de pantalla y la cámara de Plana.
+- La lógica pura (activación y centro / normalización) va en `utils/flatView.ts`, con tests de Node.
+- La puerta de FX, el gancho de Super Riso, el orden de capas y la composición: intactos.
+
+### 13.4 · El caso nuevo de verificación: cómo hacerlo sólido [VERIFICADO]
+
+«El PNG Formato coincide al píxel con el contenido del marco en pantalla» **no se cumple hoy ni en DRAW puro**, sin nada de Plana: la
+pantalla (1366×1024) y su propio PNG Formato (480×600) difieren aunque la geometría sea la misma. Medido, por causas, en
+`tools/draw-stress/harness/flatcheck.js` (`__flatDistortCheck`, en la rama `wip/flat-distortion`):
+
+| Causa | Diferencia | Cómo se neutraliza en la prueba |
+|---|---|---|
+| La textura de tinta sale de `Math.random` **después** de `consumeNoiseRandoms(w, h)`: lienzos de tamaño distinto, texturas distintas con la misma semilla | 121 247 px | `Math.random` constante (textura uniforme e igual en los dos) |
+| Chrome elige GPU o CPU por lienzo y su antialiasing difiere (trampa ya documentada en CLAUDE.md) | 520 px (≤ 27 niveles) | todo contexto 2D con `willReadFrequently` (como `onCpu` de `timelapse.js`) |
+| El rasterizador trabaja en float32 en posiciones absolutas: la misma curva en `x + 556` o en `x + 300` antialiasa distinto en el último bit | 136 px (≤ 7 niveles) en trazos interiores | el marco en (0, 0) también en pantalla |
+| Skia elige el antialiasing de cada trazo según cómo lo recorta el lienzo: un trazo que cruza el borde del PNG no cruza el de la pantalla | 1 610 px (≤ 24 niveles) | solo los trazos que caen enteros dentro del marco (margen 60 px: 101 trazos de la escena de ejemplo) |
+
+Con eso, **sin distorsión la comparación da 0 px** (la prueba es sólida); el marco sigue lejos del centro del viewport (240, 300 frente a
+683, 512), así que una distorsión centrada en el viewport fallaría (autocomprobación). La escena completa se sigue midiendo como dato
+contra el suelo de DRAW (923 px en esa configuración).
+
+### 13.5 · Resultados de los criterios con la versión decidida [VERIFICADO]
+
+Página recién cargada; `pixcheck`/`pixcheck2` en primera pasada (ver la nota).
+
+| Criterio | Resultado |
+|---|---|
+| `flatcheck` (Plana con FX apagados = DRAW) | 7/7 a 0 px, mismo SHA-256 |
+| `pixcheck` / `pixcheck2` (DRAW) | 7/7 y 7/7 a 0 px |
+| `alphaleak` / `__timelapseCheck()` | `pass: true` / `pass: true` |
+| Hashes de CINEMA (8 sin Plana, incluido arc con distorsión) | 8/8 a 0 px |
+| `dior-render.js` | mismo SHA-256 (2/2) |
+| Arnés de handlers | 137/137 idénticos (`npm test`, 722 tests en la rama) |
+| Parpadeo de animación en Plana con distorsión 0,6 | 0/0/0/0 px |
+| `__flatDistortCheck` (PNG Formato = marco en pantalla) | 0 px con distorsión 0,6, −0,5 y 1; sin distorsión 0 px; con / sin distorsión difieren (15 818 px); autocomprobación difiere (36 877 px) |
+| Tests de Node (centro y normalización con y sin Formato, activación solo en Plana, equivalencia pantalla ↔ PNG desde la capa 0, la 3 y en animación, la fórmula) | 7 nuevos en verde |
+
+**Nota sobre `pixcheck2`:** su caso de la vista previa del Move dio una vez 582 984 px al ejecutarse tras otros arneses en la misma página.
+A/B en página recién cargada: con el código de HEAD **sin** este cambio, la segunda pasada también difiere (38 019 px en otro caso del
+Move) y la primera da 0 px; con este cambio, la primera pasada da 0 px. Es inestabilidad anterior del arnés en segundas pasadas, no una
+regresión. Se mide siempre en primera pasada.
+
+### 13.6 · Hallazgo: la fórmula de CINEMA se pliega en Plana — **PARADO, decide Moisés**
+
+Todos los criterios formales pasan, pero **el efecto se rompe a la vista** y no se ha publicado. Con k < 0 (distorsión positiva, barril),
+`f = 1 + k·r²` se vuelve negativa cuando r² > 1/|k|: un vértice más allá **atraviesa el centro y aparece al otro lado**. En CINEMA esa zona
+casi nunca se alcanza, porque la perspectiva encoge la escena y se normaliza por medio viewport. En Plana la geometría va a escala de
+DRAW, se puede hacer zoom y, con Formato, se normaliza por un marco pequeño. Resultado: los vértices lejanos de las formas grandes de
+fondo se pliegan **dentro del encuadre**, en pantalla **y en el PNG** (el export usa la misma fórmula).
+
+- k = −0,8 · d · 500 / FL; con la focal por defecto (FL 3840), |k| ≈ 0,104·d. Hay pliegue para r > 1/√|k|: d = 0,8 → r > 3,5; d = 0,3 →
+  r > 5,7 (r en medios marcos o medios viewports). Las formas de fondo de la escena de ejemplo tienen vértices a miles de unidades.
+- **No es solo el marco:** sin Formato, a zoom 1,6 y d = 0,8 también se pliega (captura 2). CINEMA (`forward`) con la misma d: barril
+  suave, sin pliegue (captura 3).
+
+Capturas (1366×1024, escena de ejemplo, d = 0,8): `docs/media/flat-distortion-1-formato-sin-limite.jpg` (Formato, versión decidida),
+`-2-zoom-sin-limite.jpg` (sin Formato, zoom 1,6), `-3-cinema-forward.jpg` (CINEMA, referencia), `-4-zoom-con-limite.jpg` y
+`-5-formato-con-limite.jpg` (opción A).
+
+**Opciones:**
+
+| | Qué | A favor | En contra |
+|---|---|---|---|
+| ⭐ **A · límite monótono** | Con k < 0, r² se limita a 1/(3|k|), justo donde la curva `r·(1 + k·r²)` deja de crecer. Una línea en la rama plana | Idéntica a la función de CINEMA dentro de ese radio (a la focal por defecto, todo el marco hasta d ≈ 1,6); sin pliegues en ningún caso; el PNG sigue = pantalla (mismos criterios en verde; la escena completa queda más cerca del suelo de DRAW: 1 130 px frente a 923, contra 2 757 sin límite) | Ya no es literalmente «la misma función» en la zona donde CINEMA también se rompería; fuera del marco (velado, no exportado) el contenido se comprime hacia el centro con un factor fijo (2/3) |
+| B · la versión decidida | `f = 1 + k·r²` sin límite | Literalmente la misma función | Se pliega a la vista con barril moderado-fuerte o con zoom (capturas 1 y 2); el pliegue sale en el export |
+| C · normalizar por el viewport también con Formato | Centro en el marco, escala la del viewport, como CINEMA | Se pliega menos con marco pequeño | No evita el pliegue con zoom (captura 2 es sin Formato); y para que el PNG coincida con la pantalla tendría que normalizar por el viewport del dispositivo del momento: el mismo `.dior` exportaría distinto en el iPad y en el PC |
+
+**Recomendación: A.** Es la única que no se rompe a la vista y conserva el export idéntico a la pantalla y la fórmula de CINEMA en la
+zona donde CINEMA no está roto. Cambia la decisión «misma función» solo donde esa función ya no tiene sentido; por eso decide Moisés.
+
+### 13.7 · Estado y dónde está el trabajo
+
+- **`main` no cambia el comportamiento:** en Plana la distorsión sigue atenuada y sin efecto (v3.26.77).
+- Rama **local, sin publicar**: `wip/flat-distortion` (desde `f5a01de`), dos commits:
+  1. `01d6e08` — la versión decidida (B): `utils/flatView.ts` (`flatDistortionApplies`, `flatDistortFrame`), `transformPoint.ts`
+     (`flatDistort` en la rama de DRAW), `renderLayerBody.ts`, `FXPanel.tsx` sin atenuar, 7 tests de Node, `__flatDistortCheck` y
+     `__flatAnimCheck` con FX extra en `flatcheck.js`.
+  2. `9a11c96` — la opción A encima (una línea en `transformPoint.ts`).
+- Para cerrar con A: sobre la rama, repetir los criterios de §13.5 (los de Plana ya pasan con A: `flatcheck` 7/7, `__flatDistortCheck`
+  0 px, parpadeo 0 px), REFERENCE.md §10 + Apéndice C, bump, merge a `main`, push. Con B: lo mismo sin el segundo commit.
+- Lo que Moisés juzga a ojo en el iPad, una vez decidido: la distorsión con pan y zoom, con Formato (el barril queda pegado al marco),
+  el PNG Formato y HQ frente a la pantalla, y con Super Riso encima.

@@ -1430,9 +1430,13 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.78)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.79)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.79 · docs: distorsión en Plana — investigada, parada
+
+- `docs/flat-view-proposal.md` §13: cómo se aplica la distorsión en CINEMA y cómo encaja en Plana. Implementada y con todos los criterios formales en verde, pero **no publicada**: la fórmula de CINEMA (`f = 1 + k·r²`) se pliega en Plana con barril moderado-fuerte o con zoom (los vértices lejanos atraviesan el centro y entran en el encuadre y en el PNG). Opciones y capturas (`docs/media/flat-distortion-*.jpg`); recomendada A, un límite monótono. Decide Moisés; el trabajo está en la rama local `wip/flat-distortion`. Además: por qué el PNG Formato no coincide al píxel con la pantalla ni en DRAW puro (textura tras `consumeNoiseRandoms`, GPU/CPU, float32 en posición absoluta, antialiasing que sigue al recorte) y cómo hacer sólida esa comparación.
 
 ### 3.26.70 → 3.26.78 · Vista frontal plana «Plana» / «Flat» en CINEMA
 
