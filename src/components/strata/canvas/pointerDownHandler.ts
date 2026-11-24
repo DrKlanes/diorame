@@ -6,6 +6,7 @@ import { getLayerBoundingBox } from './transformUtils';
 import { hitTestGizmo, decideMoveSelection } from './moveGizmoInteraction';
 import { clientToWorld } from './pointerMath';
 import { isDoubleClick, frameCinemaPoint } from './cinemaFraming';
+import { isFlatView } from '../../../utils/flatView';
 
 /**
  * The pointerdown handler of the canvas: which pointers may start a gesture (pen priority, pinch
@@ -88,8 +89,25 @@ export const createPointerDownHandler = (env: CanvasHandlerEnv) => {
 		// the canvas follow exactly from where the user put the pen down.
 		// Reuses the middle-button pan wholesale — same refs, same pointermove branch,
 		// same pointerup teardown. Nothing new to maintain.
-		if (isSpaceDownRef.current && state.mode === 'drawing') {
+		if (isSpaceDownRef.current && (state.mode === 'drawing' || isFlatView(state))) {
 			e.preventDefault();
+			isPanningRef.current = true;
+			setCursorOverride('cursor-grabbing');
+			gestureRef.current = {
+				...gestureRef.current,
+				startPan: { ...state.drawingPan },
+				startCenter: { x: e.clientX, y: e.clientY },
+			};
+			e.currentTarget.setPointerCapture(e.pointerId);
+			return;
+		}
+
+		// Flat front view (v3.26.74, decision D3): nothing is drawn in CINEMA, so a plain drag (mouse, finger, Pencil)
+		// pans like the middle button — same refs, same pointermove branch, same pointerup teardown. A pointer that lands
+		// while a pan is already running (a palm under the Pencil) does not re-seed it. No POI: there is no camera to aim.
+		if (isFlatView(state)) {
+			e.preventDefault();
+			if (isPanningRef.current) return;
 			isPanningRef.current = true;
 			setCursorOverride('cursor-grabbing');
 			gestureRef.current = {

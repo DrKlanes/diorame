@@ -1,5 +1,5 @@
 {
-	"_provenance": "Trace of the pointer/touch handlers of src/components/strata/StrataCanvas.tsx (git blob 8b990b64eeeb0ec7b476597d7d12ac49589d70a2, rev v3.26.52), run by tools/handlers-golden/generate.mjs. Frozen with the handlers of v3.26.52, before any of their logic moved to a module: never regenerate to turn the test green. The flat/* scenarios (v3.26.72) were frozen with the handlers of v3.26.71 (rev 9281521, v3.26.71), the 125 earlier ones coming out identical.",
+	"_provenance": "Trace of the pointer/touch handlers of src/components/strata/StrataCanvas.tsx (git blob 8b990b64eeeb0ec7b476597d7d12ac49589d70a2, rev v3.26.52), run by tools/handlers-golden/generate.mjs. Frozen with the handlers of v3.26.52, before any of their logic moved to a module: never regenerate to turn the test green. The flat/* scenarios (v3.26.72) were frozen with the handlers of v3.26.71 (rev 9281521); v3.26.74 gives the flat view DRAW's gestures and inverts 11 of them (flat/middle-button/pans already panned), the 125 earlier ones coming out identical.",
 	"cases": {
 		"draw/brush-tapered/mouse": {
 			"trace": [
@@ -35762,26 +35762,56 @@
 					"ev": "pointerdown 520,410",
 					"actions": [],
 					"prevented": 1,
-					"capture": [],
+					"capture": [
+						"set:1"
+					],
 					"log": [],
 					"refs": {
-						"lastClickTime": 1700000000000,
-						"lastClickPos": {
-							"x": 500,
-							"y": 400
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 12,
+								"y": -7
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
 						},
+						"isPanning": true,
 						"activePointerId": 1,
-						"canvasRect": {
-							"left": 20,
-							"top": 10,
-							"width": 1000,
-							"height": 800
-						}
+						"cursorOverride": "cursor-grabbing"
 					}
 				},
 				{
 					"ev": "pointermove 522,410",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 14,
+									"y": -7
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -35789,15 +35819,39 @@
 				},
 				{
 					"ev": "pointermove 523,410",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 15,
+									"y": -7
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
-					"refs": {}
+					"refs": {
+						"spacePanEngaged": true
+					}
 				},
 				{
 					"ev": "pointermove 560,380",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 52,
+									"y": -37
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -35805,7 +35859,18 @@
 				},
 				{
 					"ev": "pointermove 521,410",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 13,
+									"y": -7
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -35815,10 +35880,14 @@
 					"ev": "pointerup 521,410",
 					"actions": [],
 					"prevented": 0,
-					"capture": [],
+					"capture": [
+						"release:1"
+					],
 					"log": [],
 					"refs": {
-						"activePointerId": null
+						"isPanning": false,
+						"activePointerId": null,
+						"cursorOverride": "cursor-grab"
 					}
 				}
 			],
@@ -35830,7 +35899,7 @@
 				"shapes": [],
 				"drawingZoom": 1,
 				"drawingPan": {
-					"x": 12,
+					"x": 13,
 					"y": -7
 				},
 				"isLayerSelected": true,
@@ -35981,26 +36050,56 @@
 					"ev": "pointerdown 520,410",
 					"actions": [],
 					"prevented": 1,
-					"capture": [],
+					"capture": [
+						"set:1"
+					],
 					"log": [],
 					"refs": {
-						"lastClickTime": 1700000000000,
-						"lastClickPos": {
-							"x": 500,
-							"y": 400
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 12,
+								"y": -7
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
 						},
+						"isPanning": true,
 						"activePointerId": 1,
-						"canvasRect": {
-							"left": 20,
-							"top": 10,
-							"width": 1000,
-							"height": 800
-						}
+						"cursorOverride": "cursor-grabbing"
 					}
 				},
 				{
 					"ev": "pointermove 560,435",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 52,
+									"y": 18
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36008,7 +36107,18 @@
 				},
 				{
 					"ev": "pointermove 430,470",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": -78,
+									"y": 53
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36018,10 +36128,14 @@
 					"ev": "pointerup 430,470",
 					"actions": [],
 					"prevented": 0,
-					"capture": [],
+					"capture": [
+						"release:1"
+					],
 					"log": [],
 					"refs": {
-						"activePointerId": null
+						"isPanning": false,
+						"activePointerId": null,
+						"cursorOverride": null
 					}
 				}
 			],
@@ -36033,8 +36147,8 @@
 				"shapes": [],
 				"drawingZoom": 1,
 				"drawingPan": {
-					"x": 12,
-					"y": -7
+					"x": -78,
+					"y": 53
 				},
 				"isLayerSelected": true,
 				"viewZoomOffset": -600,
@@ -36060,26 +36174,56 @@
 					"ev": "pointerdown 520,410",
 					"actions": [],
 					"prevented": 1,
-					"capture": [],
+					"capture": [
+						"set:1"
+					],
 					"log": [],
 					"refs": {
-						"lastClickTime": 1700000000000,
-						"lastClickPos": {
-							"x": 500,
-							"y": 400
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
 						},
+						"isPanning": true,
 						"activePointerId": 1,
-						"canvasRect": {
-							"left": 20,
-							"top": 10,
-							"width": 1000,
-							"height": 800
-						}
+						"cursorOverride": "cursor-grabbing"
 					}
 				},
 				{
 					"ev": "pointermove 2520,-3590",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 2,
+								"pan": {
+									"x": 2000,
+									"y": -3000
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36087,7 +36231,18 @@
 				},
 				{
 					"ev": "pointermove 3620,411",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 2,
+								"pan": {
+									"x": 3000,
+									"y": 1
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36097,10 +36252,14 @@
 					"ev": "pointerup 3620,411",
 					"actions": [],
 					"prevented": 0,
-					"capture": [],
+					"capture": [
+						"release:1"
+					],
 					"log": [],
 					"refs": {
-						"activePointerId": null
+						"isPanning": false,
+						"activePointerId": null,
+						"cursorOverride": null
 					}
 				}
 			],
@@ -36112,8 +36271,8 @@
 				"shapes": [],
 				"drawingZoom": 2,
 				"drawingPan": {
-					"x": 0,
-					"y": 0
+					"x": 3000,
+					"y": 1
 				},
 				"isLayerSelected": true,
 				"viewZoomOffset": -600,
@@ -36147,26 +36306,56 @@
 					"ev": "pointerdown 520,410",
 					"actions": [],
 					"prevented": 1,
-					"capture": [],
+					"capture": [
+						"set:1"
+					],
 					"log": [],
 					"refs": {
-						"lastClickTime": 1700000000000,
-						"lastClickPos": {
-							"x": 500,
-							"y": 400
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
 						},
+						"isPanning": true,
 						"activePointerId": 1,
-						"canvasRect": {
-							"left": 20,
-							"top": 10,
-							"width": 1000,
-							"height": 800
-						}
+						"cursorOverride": "cursor-grabbing"
 					}
 				},
 				{
 					"ev": "pointermove 550,390",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 30,
+									"y": -20
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36174,7 +36363,18 @@
 				},
 				{
 					"ev": "pointermove 595,420",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 75,
+									"y": 10
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36184,10 +36384,14 @@
 					"ev": "pointerup 595,420",
 					"actions": [],
 					"prevented": 0,
-					"capture": [],
+					"capture": [
+						"release:1"
+					],
 					"log": [],
 					"refs": {
-						"activePointerId": null
+						"isPanning": false,
+						"activePointerId": null,
+						"cursorOverride": null
 					}
 				},
 				{
@@ -36207,8 +36411,8 @@
 				"shapes": [],
 				"drawingZoom": 1,
 				"drawingPan": {
-					"x": 0,
-					"y": 0
+					"x": 75,
+					"y": 10
 				},
 				"isLayerSelected": true,
 				"viewZoomOffset": -600,
@@ -36234,26 +36438,56 @@
 					"ev": "pointerdown 520,410",
 					"actions": [],
 					"prevented": 1,
-					"capture": [],
+					"capture": [
+						"set:1"
+					],
 					"log": [],
 					"refs": {
-						"lastClickTime": 1700000000000,
-						"lastClickPos": {
-							"x": 500,
-							"y": 400
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
 						},
+						"isPanning": true,
 						"activePointerId": 1,
-						"canvasRect": {
-							"left": 20,
-							"top": 10,
-							"width": 1000,
-							"height": 800
-						}
+						"cursorOverride": "cursor-grabbing"
 					}
 				},
 				{
 					"ev": "pointermove 550,390",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 30,
+									"y": -20
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36261,7 +36495,18 @@
 				},
 				{
 					"ev": "pointermove 595,420",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 75,
+									"y": 10
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36271,10 +36516,14 @@
 					"ev": "pointerup 595,420",
 					"actions": [],
 					"prevented": 0,
-					"capture": [],
+					"capture": [
+						"release:1"
+					],
 					"log": [],
 					"refs": {
-						"activePointerId": null
+						"isPanning": false,
+						"activePointerId": null,
+						"cursorOverride": null
 					}
 				}
 			],
@@ -36286,8 +36535,8 @@
 				"shapes": [],
 				"drawingZoom": 1,
 				"drawingPan": {
-					"x": 0,
-					"y": 0
+					"x": 75,
+					"y": 10
 				},
 				"isLayerSelected": true,
 				"viewZoomOffset": -600,
@@ -36315,7 +36564,34 @@
 					"prevented": 0,
 					"capture": [],
 					"log": [],
-					"refs": {}
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 100,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 1700000000000,
+							"tapMoved": false,
+							"tapTouchCount": 2
+						}
+					}
 				},
 				{
 					"ev": "touchmove 2",
@@ -36327,11 +36603,49 @@
 				},
 				{
 					"ev": "touchmove 2",
-					"actions": [],
-					"prevented": 0,
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 2.5,
+								"pan": {
+									"x": 5,
+									"y": 40
+								}
+							}
+						}
+					],
+					"prevented": 1,
 					"capture": [],
 					"log": [],
-					"refs": {}
+					"refs": {
+						"gesture": {
+							"isPinching": true,
+							"startDist": 100,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 1700000000000,
+							"tapMoved": true,
+							"tapTouchCount": 2
+						}
+					}
 				},
 				{
 					"ev": "touchend 1",
@@ -36339,7 +36653,35 @@
 					"prevented": 0,
 					"capture": [],
 					"log": [],
-					"refs": {}
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 100,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 1700000000000,
+							"tapMoved": true,
+							"tapTouchCount": 2
+						},
+						"pinchEnd": 1700000000000
+					}
 				},
 				{
 					"ev": "touchend 0",
@@ -36347,7 +36689,34 @@
 					"prevented": 0,
 					"capture": [],
 					"log": [],
-					"refs": {}
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 100,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						}
+					}
 				}
 			],
 			"state": {
@@ -36438,10 +36807,10 @@
 						"t": 1700000000000
 					}
 				],
-				"drawingZoom": 1,
+				"drawingZoom": 2.5,
 				"drawingPan": {
-					"x": 0,
-					"y": 0
+					"x": 5,
+					"y": 40
 				},
 				"isLayerSelected": true,
 				"viewZoomOffset": -600,
@@ -36469,15 +36838,80 @@
 					"prevented": 0,
 					"capture": [],
 					"log": [],
-					"refs": {}
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 400,
+							"startZoom": 1,
+							"startPan": {
+								"x": 700,
+								"y": -700
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 1700000000000,
+							"tapMoved": false,
+							"tapTouchCount": 2
+						}
+					}
 				},
 				{
 					"ev": "touchmove 2",
-					"actions": [],
-					"prevented": 0,
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 0.5,
+								"pan": {
+									"x": 750,
+									"y": -750
+								}
+							}
+						}
+					],
+					"prevented": 1,
 					"capture": [],
 					"log": [],
-					"refs": {}
+					"refs": {
+						"gesture": {
+							"isPinching": true,
+							"startDist": 400,
+							"startZoom": 1,
+							"startPan": {
+								"x": 700,
+								"y": -700
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 1700000000000,
+							"tapMoved": true,
+							"tapTouchCount": 2
+						}
+					}
 				},
 				{
 					"ev": "touchend 0",
@@ -36485,7 +36919,35 @@
 					"prevented": 0,
 					"capture": [],
 					"log": [],
-					"refs": {}
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 400,
+							"startZoom": 1,
+							"startPan": {
+								"x": 700,
+								"y": -700
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						},
+						"pinchEnd": 1700000000000
+					}
 				}
 			],
 			"state": {
@@ -36494,10 +36956,10 @@
 				"currentLayerIndex": 0,
 				"totalLayers": 1,
 				"shapes": [],
-				"drawingZoom": 1,
+				"drawingZoom": 0.5,
 				"drawingPan": {
-					"x": 700,
-					"y": -700
+					"x": 750,
+					"y": -750
 				},
 				"isLayerSelected": true,
 				"viewZoomOffset": -600,
@@ -36525,145 +36987,73 @@
 					"prevented": 0,
 					"capture": [],
 					"log": [],
-					"refs": {}
-				},
-				{
-					"ev": "touchend 0",
-					"actions": [],
-					"prevented": 0,
-					"capture": [],
-					"log": [],
-					"refs": {}
-				}
-			],
-			"state": {
-				"mode": "cinematic",
-				"tool": "blob",
-				"currentLayerIndex": 0,
-				"totalLayers": 1,
-				"shapes": [
-					{
-						"id": "a",
-						"color": "#222222",
-						"zIndex": 0,
-						"points": [
-							{
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 100,
+							"startZoom": 1,
+							"startPan": {
 								"x": 0,
 								"y": 0
 							},
-							{
-								"x": 20,
-								"y": 0
+							"startCenter": {
+								"x": 520,
+								"y": 410
 							},
-							{
-								"x": 20,
-								"y": 20
-							},
-							{
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
 								"x": 0,
-								"y": 20
-							}
-						],
-						"isEraser": false,
-						"isDrawInside": false,
-						"isDrawBehind": false,
-						"t": 1700000000000
-					},
-					{
-						"id": "b",
-						"color": "#222222",
-						"zIndex": 0,
-						"points": [
-							{
-								"x": 30,
 								"y": 0
 							},
-							{
-								"x": 50,
-								"y": 0
-							},
-							{
-								"x": 50,
-								"y": 20
-							},
-							{
-								"x": 30,
-								"y": 20
-							}
-						],
-						"isEraser": false,
-						"isDrawInside": false,
-						"isDrawBehind": false,
-						"t": 1700000000000
-					},
-					{
-						"id": "c",
-						"color": "#222222",
-						"zIndex": 0,
-						"points": [
-							{
-								"x": 60,
-								"y": 0
-							},
-							{
-								"x": 80,
-								"y": 0
-							},
-							{
-								"x": 80,
-								"y": 20
-							},
-							{
-								"x": 60,
-								"y": 20
-							}
-						],
-						"isEraser": false,
-						"isDrawInside": false,
-						"isDrawBehind": false,
-						"t": 1700000000000
+							"tapStartTime": 1700000000000,
+							"tapMoved": false,
+							"tapTouchCount": 2
+						}
 					}
-				],
-				"drawingZoom": 1,
-				"drawingPan": {
-					"x": 0,
-					"y": 0
-				},
-				"isLayerSelected": true,
-				"viewZoomOffset": -600,
-				"pointOfInterest": null,
-				"textSession": {
-					"isActive": false,
-					"x": 0,
-					"y": 0,
-					"content": "",
-					"font": "noir",
-					"align": "left"
-				},
-				"historyIndex": 3,
-				"historyLength": 4,
-				"isDrawing": false,
-				"isOnboardingVisible": false,
-				"isDirty": true
-			}
-		},
-		"flat/touch3/tap/redo": {
-			"trace": [
-				{
-					"ev": "touchstart 3",
-					"actions": [],
-					"prevented": 0,
-					"capture": [],
-					"log": [],
-					"refs": {}
 				},
 				{
 					"ev": "touchend 0",
-					"actions": [],
+					"actions": [
+						{
+							"type": "UNDO"
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
-					"refs": {}
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 100,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						}
+					}
 				}
 			],
 			"state": {
@@ -36750,67 +37140,276 @@
 				"isDirty": true
 			}
 		},
+		"flat/touch3/tap/redo": {
+			"trace": [
+				{
+					"ev": "touchstart 3",
+					"actions": [],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 423.3333333333333
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 1700000000000,
+							"tapMoved": false,
+							"tapTouchCount": 3
+						}
+					}
+				},
+				{
+					"ev": "touchend 0",
+					"actions": [
+						{
+							"type": "REDO"
+						}
+					],
+					"prevented": 0,
+					"capture": [],
+					"log": [],
+					"refs": {
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 520,
+								"y": 423.3333333333333
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
+						}
+					}
+				}
+			],
+			"state": {
+				"mode": "cinematic",
+				"tool": "blob",
+				"currentLayerIndex": 0,
+				"totalLayers": 1,
+				"shapes": [
+					{
+						"id": "a",
+						"color": "#222222",
+						"zIndex": 0,
+						"points": [
+							{
+								"x": 0,
+								"y": 0
+							},
+							{
+								"x": 20,
+								"y": 0
+							},
+							{
+								"x": 20,
+								"y": 20
+							},
+							{
+								"x": 0,
+								"y": 20
+							}
+						],
+						"isEraser": false,
+						"isDrawInside": false,
+						"isDrawBehind": false,
+						"t": 1700000000000
+					},
+					{
+						"id": "b",
+						"color": "#222222",
+						"zIndex": 0,
+						"points": [
+							{
+								"x": 30,
+								"y": 0
+							},
+							{
+								"x": 50,
+								"y": 0
+							},
+							{
+								"x": 50,
+								"y": 20
+							},
+							{
+								"x": 30,
+								"y": 20
+							}
+						],
+						"isEraser": false,
+						"isDrawInside": false,
+						"isDrawBehind": false,
+						"t": 1700000000000
+					},
+					{
+						"id": "c",
+						"color": "#222222",
+						"zIndex": 0,
+						"points": [
+							{
+								"x": 60,
+								"y": 0
+							},
+							{
+								"x": 80,
+								"y": 0
+							},
+							{
+								"x": 80,
+								"y": 20
+							},
+							{
+								"x": 60,
+								"y": 20
+							}
+						],
+						"isEraser": false,
+						"isDrawInside": false,
+						"isDrawBehind": false,
+						"t": 1700000000000
+					}
+				],
+				"drawingZoom": 1,
+				"drawingPan": {
+					"x": 0,
+					"y": 0
+				},
+				"isLayerSelected": true,
+				"viewZoomOffset": -600,
+				"pointOfInterest": null,
+				"textSession": {
+					"isActive": false,
+					"x": 0,
+					"y": 0,
+					"content": "",
+					"font": "noir",
+					"align": "left"
+				},
+				"historyIndex": 3,
+				"historyLength": 4,
+				"isDrawing": false,
+				"isOnboardingVisible": false,
+				"isDirty": true
+			}
+		},
 		"flat/double-click/no-poi": {
 			"trace": [
 				{
 					"ev": "pointerdown 580,450",
 					"actions": [],
 					"prevented": 1,
-					"capture": [],
+					"capture": [
+						"set:1"
+					],
 					"log": [],
 					"refs": {
-						"lastClickTime": 1700000000000,
-						"lastClickPos": {
-							"x": 560,
-							"y": 440
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 580,
+								"y": 450
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
 						},
+						"isPanning": true,
 						"activePointerId": 1,
-						"canvasRect": {
-							"left": 20,
-							"top": 10,
-							"width": 1000,
-							"height": 800
-						}
+						"cursorOverride": "cursor-grabbing"
 					}
 				},
 				{
 					"ev": "pointerup 580,450",
 					"actions": [],
 					"prevented": 0,
-					"capture": [],
+					"capture": [
+						"release:1"
+					],
 					"log": [],
 					"refs": {
-						"activePointerId": null
+						"isPanning": false,
+						"activePointerId": null,
+						"cursorOverride": null
 					}
 				},
 				{
 					"ev": "pointerdown 580,450",
-					"actions": [
-						{
-							"type": "SET_POINT_OF_INTEREST",
-							"payload": {
-								"x": 60,
-								"y": 40,
-								"z": -300
-							}
-						}
-					],
+					"actions": [],
 					"prevented": 1,
-					"capture": [],
+					"capture": [
+						"set:1"
+					],
 					"log": [],
 					"refs": {
-						"lastClickTime": 0,
-						"activePointerId": 1
+						"isPanning": true,
+						"activePointerId": 1,
+						"cursorOverride": "cursor-grabbing"
 					}
 				},
 				{
 					"ev": "pointerup 580,450",
 					"actions": [],
 					"prevented": 0,
-					"capture": [],
+					"capture": [
+						"release:1"
+					],
 					"log": [],
 					"refs": {
-						"activePointerId": null
+						"isPanning": false,
+						"activePointerId": null,
+						"cursorOverride": null
 					}
 				}
 			],
@@ -36909,11 +37508,7 @@
 				},
 				"isLayerSelected": true,
 				"viewZoomOffset": -600,
-				"pointOfInterest": {
-					"x": 60,
-					"y": 40,
-					"z": -300
-				},
+				"pointOfInterest": null,
 				"textSession": {
 					"isActive": false,
 					"x": 0,
@@ -36935,26 +37530,56 @@
 					"ev": "pointerdown 420,410",
 					"actions": [],
 					"prevented": 1,
-					"capture": [],
+					"capture": [
+						"set:1"
+					],
 					"log": [],
 					"refs": {
-						"lastClickTime": 1700000000000,
-						"lastClickPos": {
-							"x": 400,
-							"y": 400
+						"gesture": {
+							"isPinching": false,
+							"startDist": 0,
+							"startZoom": 1,
+							"startPan": {
+								"x": 0,
+								"y": 0
+							},
+							"startCenter": {
+								"x": 420,
+								"y": 410
+							},
+							"isOrbitTouch": false,
+							"orbitTouchStartAzimuth": 0,
+							"orbitTouchStartElevation": 0,
+							"orbitTouchStartPanX": 0,
+							"orbitTouchStartPanY": 0,
+							"orbitTouchStartZoom": 0,
+							"orbitTouchLastPos": {
+								"x": 0,
+								"y": 0
+							},
+							"tapStartTime": 0,
+							"tapMoved": false,
+							"tapTouchCount": 0
 						},
+						"isPanning": true,
 						"activePointerId": 1,
-						"canvasRect": {
-							"left": 20,
-							"top": 10,
-							"width": 1000,
-							"height": 800
-						}
+						"cursorOverride": "cursor-grabbing"
 					}
 				},
 				{
 					"ev": "pointermove 440,422",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 20,
+									"y": 12
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36962,7 +37587,18 @@
 				},
 				{
 					"ev": "pointermove 465,430",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 45,
+									"y": 20
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36970,7 +37606,18 @@
 				},
 				{
 					"ev": "pointermove 490,418",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 70,
+									"y": 8
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36978,7 +37625,18 @@
 				},
 				{
 					"ev": "pointermove 520,400",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 100,
+									"y": -10
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36986,7 +37644,18 @@
 				},
 				{
 					"ev": "pointermove 550,388",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 130,
+									"y": -22
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -36994,7 +37663,18 @@
 				},
 				{
 					"ev": "pointermove 580,405",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 160,
+									"y": -5
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -37002,7 +37682,18 @@
 				},
 				{
 					"ev": "pointermove 615,425",
-					"actions": [],
+					"actions": [
+						{
+							"type": "SET_DRAWING_ZOOM",
+							"payload": {
+								"zoom": 1,
+								"pan": {
+									"x": 195,
+									"y": 15
+								}
+							}
+						}
+					],
 					"prevented": 0,
 					"capture": [],
 					"log": [],
@@ -37012,10 +37703,14 @@
 					"ev": "pointerup 615,425",
 					"actions": [],
 					"prevented": 0,
-					"capture": [],
+					"capture": [
+						"release:1"
+					],
 					"log": [],
 					"refs": {
-						"activePointerId": null
+						"isPanning": false,
+						"activePointerId": null,
+						"cursorOverride": null
 					}
 				}
 			],
@@ -37027,8 +37722,8 @@
 				"shapes": [],
 				"drawingZoom": 1,
 				"drawingPan": {
-					"x": 0,
-					"y": 0
+					"x": 195,
+					"y": 15
 				},
 				"isLayerSelected": true,
 				"viewZoomOffset": -600,

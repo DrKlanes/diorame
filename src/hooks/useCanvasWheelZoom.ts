@@ -1,5 +1,6 @@
 import { useEffect, type Dispatch, type RefObject } from 'react';
 import type { AppState } from '../types/strataTypes';
+import { isFlatView } from '../utils/flatView';
 import type { Action } from '../types/strataActions';
 
 /**
@@ -22,7 +23,8 @@ export function useCanvasWheelZoom({ canvasRef, state, dispatch, MAX_PAN }: {
 
 		const onWheel = (e: WheelEvent) => {
 			// Support wheel zoom in both Drawing mode and Orbit (Free View) mode
-			if (state.mode !== 'drawing' && !(state.mode === 'cinematic' && state.cinematicType === 'orbit')) return;
+			// The flat view (v3.26.74) zooms as in DRAW: it falls through to the drawing-mode branch.
+			if (state.mode !== 'drawing' && !isFlatView(state) && !(state.mode === 'cinematic' && state.cinematicType === 'orbit')) return;
 			e.preventDefault();
 
 			// Handle Orbit (Free View) mode zoom differently

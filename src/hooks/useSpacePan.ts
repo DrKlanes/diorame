@@ -1,6 +1,7 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 import { shouldIgnoreGlobalKey } from '../utils/keyboardShortcuts';
 import type { AppState } from '../types/strataTypes';
+import { isFlatView } from '../utils/flatView';
 import type { Action } from '../types/strataActions';
 
 /**
@@ -11,7 +12,7 @@ import type { Action } from '../types/strataActions';
  * sat, so effect order and listener registration order are unchanged.
  */
 export function useSpacePan({ state, dispatch, isDrawingRef, isPanningRef, isSpaceDownRef, spacePanEngagedRef, setCursorOverride }: {
-	state: Pick<AppState, 'mode' | 'textSession' | 'isAnimationMode' | 'isAnimationPlaying'>;
+	state: Pick<AppState, 'mode' | 'cinematicType' | 'textSession' | 'isAnimationMode' | 'isAnimationPlaying'>;
 	dispatch: Dispatch<Action>;
 	isDrawingRef: MutableRefObject<boolean>;
 	isPanningRef: MutableRefObject<boolean>;
@@ -45,7 +46,7 @@ export function useSpacePan({ state, dispatch, isDrawingRef, isPanningRef, isSpa
 				textSessionActive: state.textSession.isActive,
 				animationBlocking: state.isAnimationMode && state.isAnimationPlaying && state.mode === 'drawing',
 			})) return;
-			if (state.mode !== 'drawing') return;
+			if (state.mode !== 'drawing' && !isFlatView(state)) return; // the flat view pans as DRAW (v3.26.74)
 			// Mid-stroke: the pen is down and points are being collected. Taking over now
 			// would pan the canvas out from under an unfinished stroke and bake the jump
 			// into its geometry. Ignore the press entirely — no armed state, so the keyup
@@ -80,5 +81,5 @@ export function useSpacePan({ state, dispatch, isDrawingRef, isPanningRef, isSpa
 			window.removeEventListener('keyup', handleSpaceUp);
 			window.removeEventListener('blur', handleBlur);
 		};
-	}, [dispatch, state.mode, state.textSession.isActive, state.isAnimationMode, state.isAnimationPlaying]);
+	}, [dispatch, state.mode, state.cinematicType, state.textSession.isActive, state.isAnimationMode, state.isAnimationPlaying]);
 }

@@ -1,5 +1,6 @@
 import type React from 'react';
 import type { CanvasHandlerEnv } from './handlerEnv';
+import { isFlatView } from '../../../utils/flatView';
 import { twoTouchMetrics, threeTouchCenter, hasTapMoved, canStartPinch, tapGestureAction, pinchZoom, pinchPan, orbitTouchPan, orbitTouchRotation, orbitPinchZoomOffset } from './touchGestures';
 
 /**
@@ -17,18 +18,20 @@ import { twoTouchMetrics, threeTouchCenter, hasTapMoved, canStartPinch, tapGestu
  * two-finger tap — current behaviour, pinned by tests/handlers.characterization.test.ts.
  */
 export const createTouchHandlers = (env: CanvasHandlerEnv) => {
-	const { state, dispatch, canvasRef, currentPointsRef, isDrawingRef, drawingPointerTypeRef, gestureRef, pinchEndTimestampRef, orbitRef, transformRef, pendingDeselectRef, setIsDrawing, MAX_PAN } = env;
+	const { state, dispatch, canvasRef, currentPointsRef, isDrawingRef, drawingPointerTypeRef, gestureRef, pinchEndTimestampRef, isPanningRef, orbitRef, transformRef, pendingDeselectRef, setIsDrawing, MAX_PAN } = env;
 
 	const handleTouchStart = (e: React.TouchEvent) => {
 		if (state.textSession.isActive) return;
-		// Support both drawing mode and orbit (free view) mode
-		if (state.mode === 'drawing') {
+		// Support both drawing mode and orbit (free view) mode; the flat view (v3.26.74) takes DRAW's gestures.
+		if (state.mode === 'drawing' || isFlatView(state)) {
 			// Protect Pen Drawing: If we are already drawing with a pen, ignore touch gestures (palm rejection)
 			if (isDrawingRef.current && drawingPointerTypeRef.current === 'pen') return;
 
 			if (e.touches.length === 2) {
 				setIsDrawing(false);
 				currentPointsRef.current = [];
+				// Flat view: the first finger's plain-drag pan gives way to the pinch (DRAW has no such pan to end).
+				if (isFlatView(state)) isPanningRef.current = false;
 				// A second finger turns this into a multi-touch gesture, so the
 				// single-pointer gizmo drag is ABANDONED — never committed. Same contract
 				// as pointercancel and as Escape: TRANSFORM_LAYER only fires on pointerup,
@@ -59,6 +62,7 @@ export const createTouchHandlers = (env: CanvasHandlerEnv) => {
 			} else if (e.touches.length === 3) {
 				setIsDrawing(false);
 				currentPointsRef.current = [];
+				if (isFlatView(state)) isPanningRef.current = false;
 				drawingPointerTypeRef.current = null;
 				// Same abandonment as the 2-touch branch above.
 				transformRef.current.isActive = false;
@@ -109,7 +113,7 @@ export const createTouchHandlers = (env: CanvasHandlerEnv) => {
 	};
 
 	const handleTouchMove = (e: React.TouchEvent) => {
-		if (state.mode === 'drawing') {
+		if (state.mode === 'drawing' || isFlatView(state)) {
 			if (e.touches.length === 2) {
 				// Thresholds and pinch maths extracted to canvas/touchGestures.ts
 				if (!gestureRef.current.tapMoved) {
@@ -168,7 +172,7 @@ export const createTouchHandlers = (env: CanvasHandlerEnv) => {
 	};
 
 	const handleTouchEnd = (e: React.TouchEvent) => {
-		if (state.mode === 'drawing') {
+		if (state.mode === 'drawing' || isFlatView(state)) {
 			if (e.touches.length === 0) {
 				const { tapMoved, tapStartTime, tapTouchCount } = gestureRef.current;
 				if (!tapMoved && !state.textSession.isActive) {
