@@ -71,6 +71,32 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 st=vec2(uVoteMm*uPxMm*.25)/uRes;
   vec4 A=vec4(0), B=vec4(0); if(bi>=0) put(A,B,bi,1.);                              // mayoría: el color de la zona, no el del borde
   oA=A; oB=B; }`;
 
+// XEDGE (solo rotulador): la zona de cada rotulador A RESOLUCIÓN COMPLETA. La máscara a ¼ (el voto de XID) ya no dibuja
+// ningún borde: solo decide la IDENTIDAD (qué rotulador pinta por aquí, con la misma regla de siempre). DÓNDE cae el borde lo
+// dice el original, píxel a píxel: cada píxel toma la etiqueta de los texels a ¼ vecinos cuyo color se parece al SUYO
+// (ampliación bilateral conjunta). Un píxel del lado de la mancha se queda con la mancha y uno del lado del papel, con el
+// papel, aunque compartan texel; un píxel de antialiasing queda a medias. Después se desenfoca a resolución completa (motor)
+// y XCOLOR lee ese campo. B.b lleva el PESO: 0 donde el original es negro seguro (lo pondrá el tóner); el campo se normaliza
+// por el peso desenfocado, así el color llega por debajo de la línea o del sólido negro en vez de dejar papel a su lado.
+export const FS_XEDGE = HEADX+OKLAB+MRT+`
+uniform sampler2D uPrep, uPS, uLA, uLB, uIdMap; uniform int uNk, uUseMap; uniform vec3 uSrcPaperL; uniform float uMinL;
+void main(){ vec2 uv=gl_FragCoord.xy/uRes;
+  vec3 L=oklabL(s2l(clamp(texture(uPrep,uv).rgb,0.,1.)));
+  float lit=max(smoothstep(uMinL-.04,uMinL+.04,L.x), smoothstep(.09,.15,length(L.yz)));   // 0 = negro: tóner
+  vec4 A=vec4(0), B=vec4(0);
+  if(uUseMap==1){ vec2 g=gpx()/uImg; ivec2 sz=textureSize(uIdMap,0);                    // huecos blancos: zonas decididas en CPU
+    ivec2 q=clamp(ivec2(g*vec2(sz)),ivec2(0),sz-1); int v=int(floor(texelFetch(uIdMap,q,0).r*255./36.+.5))-1;
+    for(int i=0;i<6;i++){ if(i<uNk && i==v) put(A,B,i,1.); } }
+  else { ivec2 qs=textureSize(uLA,0); vec2 t=gl_FragCoord.xy*.25-.5; ivec2 c0=ivec2(floor(t+.5)); float ws=0.;
+    for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++){ ivec2 q=c0+ivec2(x,y); vec2 d=t-vec2(q); q=clamp(q,ivec2(0),qs-1);
+      vec3 e=oklabL(s2l(clamp(texelFetch(uPS,q,0).rgb,0.,1.)))-L; e.x*=.6;
+      float w=exp(-dot(d,d)/1.3)*(exp(-dot(e,e)/.0025)+.02);                             // cerca Y del mismo color
+      A+=texelFetch(uLA,q,0)*w; B+=texelFetch(uLB,q,0)*w; ws+=w; }
+    float np=smoothstep(.025,.055,length(L-oklabL(uSrcPaperL)));                        // el papel no se pinta, píxel a píxel (holgado: el grano del relleno no abre huecos)
+    A*=np/ws; B*=np/ws; }
+  A*=lit; B.rg*=lit; B.b=lit; B.a=1.;
+  oA=A; oB=B; }`;
+
 // XCOLOR: el color a mano.
 //  ROTULADOR: trazos individuales (no bandas): cada pasada tiene ancho, ángulo y curva propios; cada trazo empieza y acaba
 //  (extremos redondos), se pasa o se queda corto del contorno, acumula tinta en sus bordes, carga al arrancar y se seca al final.
@@ -79,14 +105,18 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 st=vec2(uVoteMm*uPxMm*.25)/uRes;
 //  que sigue la textura del papel, el pigmento se acumula abajo y pincel seco en las crestas del papel.
 export const FS_XCOLOR = HEADX+`
 out vec4 o;
-uniform sampler2D uMA, uMB, uOri; uniform vec2 uSheetMm; uniform vec3 uMk[6]; uniform int uNk, uMed; uniform vec2 uCOff[6];
+uniform sampler2D uMA, uMB, uFA, uFB, uOri; uniform vec2 uSheetMm; uniform vec3 uMk[6]; uniform int uNk, uMed; uniform vec2 uCOff[6];
 uniform float uWobble, uCover, uStroke, uAng, uOverlap, uStrength, uSlop, uDry, uWobMm, uGran, uDryB, uBloom, uFast;
 float fbm(vec2 p){ float a=.5,s=0.; for(int i=0;i<4;i++){ s+=a*vnoise(p); p=p*2.07+11.3; a*=.5; } return s/.9375; }
 float mkA(int i, vec2 pmm){ vec2 q=(pmm*uPxMm-uOff)/uRes; return pick(texture(uMA,q),texture(uMB,q),i); }
+// rotulador: campo de zona a resolución completa (XEDGE desenfocado), normalizado por su peso. Ningún borde lee la rejilla a ¼.
+float mkF(int i, vec2 pmm){ vec2 q=(pmm*uPxMm-uOff)/uRes; vec4 b=texture(uFB,q); return pick(texture(uFA,q),b,i)/max(b.b,.12); }
+// cuánto hay de los OTROS rotuladores en este punto (0 = papel o mi zona; 1 = zona de otro)
+float othF(int i, vec2 pmm){ vec2 q=(pmm*uPxMm-uOff)/uRes; vec4 a=texture(uFA,q), b=texture(uFB,q); return (a.r+a.g+a.b+a.a+b.r+b.g-pick(a,b,i))/max(b.b,.12); }
 // Trazo de rotulador de punta biselada, calibrado con trazos reales (Moisés, 24-oct): extremos casi rectos con esquinas romas,
 // banda oscura al FINAL (la punta se para y descarga) y filo fino al empezar; filo oscuro estrecho en los bordes largos (marca
 // las costuras al solapar); grano fino de tinta; estrías claras cuando va seco; pulso imperfecto; casi siempre el mismo sentido.
-float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zdir, float lim, float tidy){
+float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zdir, float lim, float tidy, float ct){
   vec2 dir=vec2(cos(ang),sin(ang)), nr=vec2(-dir.y,dir.x);
   float u=dot(p,dir), v=dot(p,nr);
   float W=uStroke, sp=W*(1.-uOverlap);
@@ -108,15 +138,15 @@ float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zd
       float vcc=vc+slope*(u-um)+cur*(u-um)*(u-um)+(vnoise(vec2(u/9.,k*3.+fi))-.5)*.22;   // el pulso no es perfecto
       float dv=v-vcc; if(abs(dv)>wk*.6) continue;
       vec2 pc=dir*u+nr*vcc;
-      float m=mkA(i,pc), g=(mkA(i,pc+dir*.7)-mkA(i,pc-dir*.7))/1.4;
+      float m=mkF(i,pc), g=(mkF(i,pc+dir*.7)-mkF(i,pc-dir*.7))/1.4;
       float thr=.5+(h12(vec2(k+j*.37,fi+4.4))-.5)*.2;                              // umbral estable: un hueco del original no corta pasadas
       float eM=(m-thr)/max(abs(g),.025)+(h12(vec2(k*1.7+j,fi+6.1))-.42)*2.6*uSlop;   // en el contorno: unas pasadas se pasan ~1,5 mm, otras no llegan
       float sk=dv*kcut;                                                         // bisel: corte recto, algo inclinado, igual en los dos extremos
       // el final contra el contorno sigue la forma EN ESTE PÍXEL (no solo en el eje del trazo): en contornos curvos u oblicuos el corte
       // a escuadra de cada pasada dibujaba una escalera del ancho del rotulador. Se conserva un 10 % del corte biselado (carácter de punta)
       // y el mismo pasarse/quedarse corto de cada pasada.
-      vec2 gp=vec2(mkA(i,p+vec2(.6,0.))-mkA(i,p-vec2(.6,0.)), mkA(i,p+vec2(0.,.6))-mkA(i,p-vec2(0.,.6)))/1.2;
-      float eP=(mkA(i,p)-thr)/max(length(gp),.025)+(h12(vec2(k*1.7+j,fi+6.1))-.42)*2.6*uSlop+(vnoise(p/1.1+fi*3.7)-.5)*.35*(.4+uSlop);
+      vec2 gp=vec2(mkF(i,p+vec2(.6,0.))-mkF(i,p-vec2(.6,0.)), mkF(i,p+vec2(0.,.6))-mkF(i,p-vec2(0.,.6)))/1.2;
+      float eP=(mkF(i,p)-thr)/max(length(gp),.025)+(h12(vec2(k*1.7+j,fi+6.1))-.42)*2.6*uSlop+(vnoise(p/1.1+fi*3.7)-.5)*.35*(.4+uSlop);
       float eF=mix(eM+sk, eP, .9), eB=mix(eM-sk, eP, .9);
       float ea=min(u-s0+sk, g>=0.? eF : 1e3), eb=min(s1-u-sk, g<0.? eB : 1e3);   // fuera de la zona (m<umbral) siempre queda fuera
       if(sgn<0.){ float t=ea; ea=eb; eb=t; }                                    // ea: extremo de salida; eb: extremo de apoyo (banda oscura)
@@ -139,9 +169,12 @@ float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zd
         float tt=ea/max(ea+eb,1.);
         float br=step(h12(vec2(j,k*2.3+fi)),.12)*(1.-smoothstep(.15,.3,tt));        // rotura rara y cerca de la salida
         fz*=1.-br*(1.-smoothstep(.18,.3,vnoise(vec2(u/3.5+j*3.,dv/(wk*.6)+k*2.))+.1)); }
+      // contra OTRO color no se deshilacha ni se rompe: ahí el papel visto es un halo, no un gesto. Se decide por TRAZO (¿qué hay
+      // justo pasado su extremo de salida?), no por píxel: si no, el deshilachado reaparece en una línea paralela a la frontera.
+      if(fast>0.){ vec2 pe=p+(sgn>0.?-dir:dir)*(clamp(ea,0.,30.)+.6); fz=mix(fz,1.,max(ct,smoothstep(.15,.4,othF(i,pe))*(1.-min(uSlop,1.)))); }
       if(fast>0.) ea=max(ea,.6)+(ea<0.?-9.:0.);                                // la salida rápida no tiene canto recto
       float eA=hw-abs(dv)+(vnoise(vec2(u/1.6,k+fi))-.5)*.09+(vnoise(p/.12+fi)-.5)*.05;
-      float eE=min(ea,eb)+(vnoise(p/.15+fi*2.)-.5)*.06;
+      float eE=min(ea,eb)+(vnoise(p/.15+fi*2.)-.5)*.06+.15*ct;                  // y los dos colores se pisan un pelo (sin él, cada uno se funde a media tinta en la frontera)
       float rc=wk*.12; vec2 q=vec2(rc-eE, rc-eA);
       float sd=length(max(q,0.))+min(max(q.x,q.y),0.)-rc;                       // rectángulo de esquinas romas
       float cov=(1.-smoothstep(-.5,.22,sd+(vnoise(p/.5+fi)-.5)*.12))*fz;        // borde húmedo: se funde ~0,7 mm con la tinta de al lado
@@ -161,7 +194,7 @@ float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zd
   return D; }
 // La hoja se gira para colorear cómodo: zonas grandes (Voronoi) con su propia orientación; dentro de una zona, todos
 // los trazos van igual. En la frontera, las dos direcciones se cruzan (se retomó la zona con la hoja girada).
-float marker(int i, vec2 p, float fi){
+float marker(int i, vec2 p, float fi, float ct){
   vec2 z=p/62.; vec2 zc=floor(z); float d1=9., d2=9.; vec2 b1=vec2(0), b2=vec2(0);
   for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++){ vec2 c=zc+vec2(x,y); vec2 q=c+vec2(h12(c+fi*.3),h12(c+fi*.7+3.1)); float d=length(z-q);
     if(d<d1){ d2=d1; b2=b1; d1=d; b1=c; } else if(d<d2){ d2=d; b2=c; } }
@@ -175,10 +208,10 @@ float marker(int i, vec2 p, float fi){
   vec2 v1=mix(vec2(cos(2.*a1),sin(2.*a1)), vec2(cos(2.*aSh),sin(2.*aSh)), wAl); a1=.5*atan(v1.y,v1.x);
   vec2 v2=mix(vec2(cos(2.*a2),sin(2.*a2)), vec2(cos(2.*aSh),sin(2.*aSh)), wAl); a2=.5*atan(v2.y,v2.x);
   float k1=tan(radians(30.*(h12(b1+fi*6.6)-.5)*2.*pow(h12(b1+fi*7.1),.7))); float z1=h12(b1+fi*8.2)<.5?-1.:1.;   // bisel y sentido por zona
-  float D=strokes(i,p,fi,a1,h12(b1)*91.,k1,z1,0.,wAl);
+  float D=strokes(i,p,fi,a1,h12(b1)*91.,k1,z1,0.,wAl,ct);
   float band=(d2-d1)*62.;                                                       // mm hasta la frontera de zona
   if(band<6.){ float k2=tan(radians(30.*(h12(b2+fi*6.6)-.5)*2.*pow(h12(b2+fi*7.1),.7))); float z2=h12(b2+fi*8.2)<.5?-1.:1.;
-    D+=strokes(i,p,fi,a2,h12(b2)*91.,k2,z2,band,wAl); }                            // la zona vecina invade con trazos sueltos, no con una franja
+    D+=strokes(i,p,fi,a2,h12(b2)*91.,k2,z2,band,wAl,ct); }                            // la zona vecina invade con trazos sueltos, no con una franja
   // tinta con alcohol húmeda sobre húmeda: la segunda pasada redisuelve la primera; el solape oscurece, pero se satura (no dobla)
   return D<=1. ? D : 1.+.3*(1.-exp(-(D-1.)/.5)); }
 float water(int i, vec2 p, vec2 pm, float fi, out float cov){
@@ -212,7 +245,8 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; vec3 T=vec3(1.);
     float zone=smoothstep(.1,.25, vnoise(mm/40.+fi*13.7)-(1.-uCover)*.9+.2);  // zonas que se quedan sin pintar
     if(zone<=0.) continue;
     float D, cov=1.;
-    if(uMed==1) D=marker(i,p,fi); else D=water(i,p,mm,fi,cov);
+    if(uMed==1) D=marker(i,p,fi,smoothstep(.15,.4,othF(i,p))*(1.-min(uSlop,1.)));   // ¿hay OTRO rotulador al otro lado del borde? Con Descuido, los huecos vuelven: son suyos
+    else D=water(i,p,mm,fi,cov);
     D*=zone*cov; if(D<=0.) continue;
     T*=pow(max(uMk[i],vec3(1e-3)), vec3(D*uStrength)); }
   o=vec4(T,1.); }`;
