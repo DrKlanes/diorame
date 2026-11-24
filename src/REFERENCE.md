@@ -1435,9 +1435,14 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.85)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.86)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.86 · fix(fx): Rotulador — extremo frente a flanco del trazo (Lab v23.9)
+
+- Decisión de Moisés: aplicar el arreglo candidato de `docs/marker-edges-attempt-4.md` §4 para juzgarlo a ojo. En `strokes()` (`FS_XCOLOR`) se distingue por píxel si el contorno cruza el trazo (extremo) o corre a su lado (flanco): el bisel `eM` va acotado y solo en extremos, la elección de extremo usa la pendiente por píxel, y el flanco recorta con la distancia real, sin deshilachar. Port 1:1 del Lab v23.9 (`xerox-v23.8-a-v23.9.diff`).
+- **Sin guardia que lo respalde** (ninguna métrica separa aún con holgura; §5 del documento). Comprobado: 7 `FS_X*` idénticos al Lab; `__superRisoHash` 18/18; `pixcheck` / `pixcheck2` 0 px; `flatcheck`, `__cinemaHash` y `dior-render` en verde. `markeredge.js`: límites de escalera 0,2 → 0,26 y halo entre colores en lo-fi 4,5 → 8, anotado en el arnés (esa guardia no ve este defecto). Coste no medido en A/B.
 
 ### 3.26.85 · docs: Rotulador, 4.º intento — reproducido en la app real, arreglo no publicado
 

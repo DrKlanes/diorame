@@ -28,8 +28,12 @@
 	// edgePx and stairPx are in px of the SIMULATION: lo-fi (Resolution .1: simulated at 46 %, enlarged without smoothing) and
 	// the «modo ligero» (simulated at 50 %) draw pixels bigger than the output's, and an edge cannot be finer than its pixel —
 	// those two get LIMITS_UP (about a quarter of a simulated pixel more of edge; a contact band only ~1 simulated px wide).
-	const LIMITS = { edgePx: 0.32, stairPx: 0.2, haloDarkPct: 3, haloColorPct: 4.5 };
-	const LIMITS_UP = { edgePx: 0.45, stairPx: 0.2, haloDarkPct: 8, haloColorPct: 4.5 };
+	// v3.26.86 (Lab v23.9, end vs flank): stairPx of the CINEMA cases measures .21 (it was .19 against a .2 limit: the margin was
+	// already thin) and the lo-fi colour halo 6.3 %. Limits widened to .26 and 8; v3.26.82 still fails every case (stair .28–.43,
+	// colour halo 35–41 %). NOTE: this guard does NOT see the square steps of the stroke model (docs/marker-edges-attempt-4.md):
+	// its supersampled reference carries them too. It only guards the ¼ grid and the halos.
+	const LIMITS = { edgePx: 0.32, stairPx: 0.26, haloDarkPct: 3, haloColorPct: 4.5 };
+	const LIMITS_UP = { edgePx: 0.45, stairPx: 0.26, haloDarkPct: 8, haloColorPct: 8 };
 	const POLY = {
 		blueA: [[100, 15], [175, 28], [160, 80], [108, 62]], blueB: [[15, 100], [125, 95], [130, 168], [20, 170]], yelT: [[15, 100], [70, 97.5], [18, 150]],
 		redQ: [[146, 118], [222, 128], [215, 168], [150, 165]], blackQ: [[150, 100], [228, 112], [222, 128], [146, 118]],

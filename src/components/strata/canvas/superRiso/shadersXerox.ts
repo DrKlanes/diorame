@@ -147,8 +147,13 @@ float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zd
       // y el mismo pasarse/quedarse corto de cada pasada.
       vec2 gp=vec2(mkF(i,p+vec2(.6,0.))-mkF(i,p-vec2(.6,0.)), mkF(i,p+vec2(0.,.6))-mkF(i,p-vec2(0.,.6)))/1.2;
       float eP=(mkF(i,p)-thr)/max(length(gp),.025)+(h12(vec2(k*1.7+j,fi+6.1))-.42)*2.6*uSlop+(vnoise(p/1.1+fi*3.7)-.5)*.35*(.4+uSlop);
-      float eF=mix(eM+sk, eP, .9), eB=mix(eM-sk, eP, .9);
-      float ea=min(u-s0+sk, g>=0.? eF : 1e3), eb=min(s1-u-sk, g<0.? eB : 1e3);   // fuera de la zona (m<umbral) siempre queda fuera
+      // ¿EXTREMO o FLANCO? El trazo pinta a lo largo de las manchas, así que casi todo su contorno corre A SU LADO. Ahí la
+      // pendiente a lo largo del trazo (g) es casi nula: dividir por ella daba ±20 mm (un bloque del ancho de la pasada) y su
+      // signo elegía extremo al azar: almenas cuadradas (v23.9). wE: 1 si el contorno CRUZA el trazo, 0 si corre a su lado.
+      float gd=dot(gp,dir), wE=smoothstep(.25,.6,abs(gd)/max(length(gp),1e-4));
+      float eC=eP+.1*wE*clamp(eM-eP,-2.,2.);                                    // el bisel, acotado y solo en extremos de verdad
+      float eF=(eC+.1*sk)/max(wE,.02), eB=(eC-.1*sk)/max(wE,.02);
+      float ea=min(u-s0+sk, gd>=0.? eF : 1e3), eb=min(s1-u-sk, gd<0.? eB : 1e3);   // fuera de la zona (m<umbral) siempre queda fuera
       if(sgn<0.){ float t=ea; ea=eb; eb=t; }                                    // ea: extremo de salida; eb: extremo de apoyo (banda oscura)
       float hw=wk*.5;
       // TRAZO RÁPIDO (calibrado con trazos reales): al levantar deprisa, la salida se deshilacha en fibras paralelas de largos
@@ -174,7 +179,7 @@ float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zd
       if(fast>0.){ vec2 pe=p+(sgn>0.?-dir:dir)*(clamp(ea,0.,30.)+.6); fz=mix(fz,1.,max(ct,smoothstep(.15,.4,othF(i,pe))*(1.-min(uSlop,1.)))); }
       if(fast>0.) ea=max(ea,.6)+(ea<0.?-9.:0.);                                // la salida rápida no tiene canto recto
       float eA=hw-abs(dv)+(vnoise(vec2(u/1.6,k+fi))-.5)*.09+(vnoise(p/.12+fi)-.5)*.05;
-      float eE=min(ea,eb)+(vnoise(p/.15+fi*2.)-.5)*.06+.15*ct;                  // y los dos colores se pisan un pelo (sin él, cada uno se funde a media tinta en la frontera)
+      float eE=min(min(ea,eb), eC/max(1.-wE,.02))+(vnoise(p/.15+fi*2.)-.5)*.06+.15*ct;   // el flanco recorta con la distancia real, sin deshilachar                  // y los dos colores se pisan un pelo (sin él, cada uno se funde a media tinta en la frontera)
       float rc=wk*.12; vec2 q=vec2(rc-eE, rc-eA);
       float sd=length(max(q,0.))+min(max(q.x,q.y),0.)-rc;                       // rectángulo de esquinas romas
       float cov=(1.-smoothstep(-.5,.22,sd+(vnoise(p/.5+fi)-.5)*.12))*fz;        // borde húmedo: se funde ~0,7 mm con la tinta de al lado
