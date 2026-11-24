@@ -74,6 +74,7 @@ export const en: Dictionary = {
 	'toast.export.timelapse.canceled': 'Timelapse canceled',
 	'toast.export.timelapse.errorTitle': 'Could not create the timelapse',
 	'topbar.snapshot.layersHint': 'One transparent PNG per layer · numbered bottom to top',
+	'topbar.snapshot.flatPaperHint': 'Flat view: with the FX, always on the paper',
 	'topbar.snapshot.layersZipSuffix': 'layers',
 	'toast.export.layersZip.successTitle': 'Layers exported',
 	'toast.export.layersZip.successDesc': '{n} PNGs in a ZIP',

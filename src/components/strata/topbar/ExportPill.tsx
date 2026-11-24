@@ -11,6 +11,8 @@ import { useTranslation } from '../../../i18n';
 // v3.25.12: the popover pieces and the DRAW «Captura» block live in their own files (no behaviour change).
 import { ExportGroupHeader, ExportGroupRow, ExportSeparator } from './exportMenuParts';
 import { DrawCaptureSection, readPngBackground, savePngBackground, type DrawFraming, type DrawOutput } from './DrawCaptureSection';
+import { FlatCaptureSection } from './FlatCaptureSection';
+import { isFlatView } from '../../../utils/flatView';
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -221,7 +223,10 @@ export function ExportPill({ dark }: ExportPillProps) {
 							expanded={sub === 'capture'}
 							onToggle={() => toggleSub('capture')}
 						/>
-						{sub === 'capture' && (
+						{sub === 'capture' && isFlatView(state) && (
+							<FlatCaptureSection dark={dark} onViewCapture={handleCapture} close={close} />
+						)}
+						{sub === 'capture' && !isFlatView(state) && (
 							<>
 								<DiSelectorOption title={t('topbar.snapshot.deviceSize')} onSelect={() => handleCapture('device')} />
 								<DiSelectorOption title={t('topbar.snapshot.highQuality')} onSelect={() => handleCapture('hq')} />

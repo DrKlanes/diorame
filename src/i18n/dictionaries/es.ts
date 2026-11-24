@@ -70,6 +70,7 @@ export const es: Dictionary = {
 	'toast.export.timelapse.canceled': 'Timelapse cancelado',
 	'toast.export.timelapse.errorTitle': 'No se pudo crear el timelapse',
 	'topbar.snapshot.layersHint': 'Un PNG transparente por capa · numerados de abajo arriba',
+	'topbar.snapshot.flatPaperHint': 'Vista plana: con los FX, siempre sobre el papel',
 	'topbar.snapshot.layersZipSuffix': 'capas',
 	'toast.export.layersZip.successTitle': 'Capas exportadas',
 	'toast.export.layersZip.successDesc': '{n} PNG en un ZIP',

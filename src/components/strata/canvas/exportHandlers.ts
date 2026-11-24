@@ -9,6 +9,7 @@ import type { TranslationParams } from '../../../i18n';
 import { renderSnapshot, renderDrawSnapshot } from './drawSnapshot';
 import { renderFormatSnapshot, renderRectSnapshot } from './formatSnapshot';
 import { drawingBounds } from './drawingBounds';
+import { isFlatView, flatViewCamera } from '../../../utils/flatView';
 import { canvasFits, sizeForLongSide, viewScale, MAX_DIMENSION } from '../../../utils/formatExport';
 import type { AnimationExportRenderOptions } from './animationExportRender';
 import type { AppMode, ExportBackground } from '../../../types/strataTypes';
@@ -79,6 +80,9 @@ const hqScale = (options: AnimationExportRenderOptions): number => viewScale(opt
  * hq:     re-renders the whole scene at 2× through the pipeline (true detail).
  * DRAW —  always a re-render (see renderDrawSnapshot): device = ×1, hq = ×2, same framing,
  *         with the background chosen via setNextPNGBackground.
+ * Flat front view (CINEMA «Plana», v3.26.75) — DRAW's framings Vista and Formato, re-rendered like DRAW (the live
+ *         canvas carries the Formato frame overlay) through DRAW's camera, always on the paper: the FX live on it (the
+ *         post-transfer ones are lost on solid/transparent; Super Riso has no alpha).
  */
 export const exportAsPNG = (
 	canvas: HTMLCanvasElement,
@@ -98,7 +102,10 @@ export const exportAsPNG = (
 	const layersZip = _nextPNGLayersZip;
 	_nextPNGLayersZip = false;
 	const isDraw = options.state.mode === 'drawing';
-	const format = isDraw && formatSize ? options.state.format : null;
+	const isFlat = isFlatView(options.state);
+	const format = (isDraw || isFlat) && formatSize ? options.state.format : null;
+	// The flat view frames through DRAW's camera; the snapshot's camera is the CINEMA tick's.
+	const framed = (o: AnimationExportRenderOptions): AnimationExportRenderOptions => (isFlat ? { ...o, camera: flatViewCamera(o.state) } : o);
 	try {
 		let src: HTMLCanvasElement;
 		// DRAW: the framing resolved once into a render function — the single PNG calls it once; «Capas (ZIP)»
@@ -114,8 +121,8 @@ export const exportAsPNG = (
 		} else if (format && formatSize) {
 			// The device may refuse a canvas this big (it comes back blank): say so instead of saving an empty PNG.
 			if (!canvasFits(formatSize.width, formatSize.height)) throw new Error(`canvas ${formatSize.width}×${formatSize.height} too big for this device`);
-			renderDraw = (o, bg) => renderFormatSnapshot(o, format, formatSize.width, formatSize.height, bg);
-		} else if (isDraw) {
+			renderDraw = (o, bg) => renderFormatSnapshot(framed(o), format, formatSize.width, formatSize.height, bg);
+		} else if (isDraw || isFlat) {
 			const scale = quality === 'hq' ? hqScale(options) : 1;
 			renderDraw = (o, bg) => renderDrawSnapshot(o, scale, bg);
 		}
@@ -135,7 +142,7 @@ export const exportAsPNG = (
 			return;
 		}
 		if (renderDraw) {
-			src = renderDraw(options, background);
+			src = renderDraw(options, isFlat ? 'paper' : background);
 		} else if (quality === 'hq') {
 			// True 2× re-render. Clamp so the physical size never exceeds MAX_DIMENSION.
 			let scale = 2;
