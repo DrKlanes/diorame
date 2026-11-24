@@ -1448,17 +1448,18 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.92)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.94)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
 
-### 3.26.88 – 3.26.92 · Carga, aviso de versión y apertura del Lab (sesión del 25 nov 2026)
+### 3.26.88 – 3.26.94 · Carga, aviso de versión y apertura del Lab (sesión del 25 nov 2026)
 
 Síntomas del 24 nov (18 deploys): el modal de bienvenida tardaba en mostrar su imagen/vídeo, el aviso de versión nueva tardaba (o no salía), y «Exportar › Super Riso» fallaba a veces con «No se pudo abrir Super Riso». Medido con `tools/load-timing/` (Chrome real, perfiles desechables, servidor tipo GitHub Pages); informe: `docs/session-report-2026-11-25.md`.
 - **3.26.88 · fix(superriso):** Diorame esperaba 8 s fijos desde el clic. El Lab en frío (shaders fuera de la caché del navegador) tardaba 8,0 s (v23.5) / 8,6 s (v23.8+); hasta el 24 nov sus shaders no cambiaban desde el 8 nov y la caché siempre estaba caliente (0,6 s). Ese día, tres deploys del Lab cambiaron shaders → la primera apertura tras cada uno, 6–6,6 s + ~1,7 s de la cadena de Diorame = en el filo. Ahora: latido `superriso:loading` (Lab v23.11) + 60 s para Labs antiguos + fin inmediato si se cierra la pestaña; toast de carga. Lab v23.11: los 19 programas WebGL se compilan en paralelo y se comprueban en su primer uso → 8,4 s → 1,2 s en frío.
 - **3.26.89 · perf(welcome):** póster (primer fotograma, WebP 6–64 KB) en el `<video>` y logo de 99 KB en lugar del PNG maestro de 1,6 MB. Frío a 10 Mbps: logo 6,55 → 1,55 s; imagen en el panel a 1,3 s (antes, nada hasta el vídeo a 1,8 s). Precache 4,30 → 2,82 MB.
 - **3.26.90 · fix(pwa):** `registration.update()` al volver al primer plano y cada 30 min. Pestaña abierta durante un deploy: el aviso no salía nunca → 0,34 s al volver.
 - **3.26.91 · fix(build):** `dior-render.js` autocontenido (segundo build, Super Riso fuera) y guardias de build (contrato con el Lab y tamaño del precache). Una copia vieja de `dior-render.js` en caché tras un deploy importaba chunks borrados → «No se pudo cargar el motor de Diorame» en el Lab (reproducido). Mismo SHA-256 que 3.26.87.
+- **3.26.93 · feat(superriso) + Lab v23.12:** «Abriendo en Super Riso Lab…» hasta que el Lab confirma la escena; el Lab, al llegar desde Diorame, muestra un estado de carga propio (fases reales, sin imagen de ejemplo, «Reintentar» / «Descargar .dior» si falla). 20/20 + 20/20 en producción. **3.26.94 · docs:** informe y capturas (`docs/media/session-2026-11-25/`).
 - **Falsos diagnósticos (medidos, NO eran la causa):** regresión entre v3.26.52 y v3.26.87 (carga idéntica: lienzo 1,08 s, vídeo 1,8 s a 10 Mbps); incidencia de GitHub Pages (githubstatus.com sin incidencias de Pages el 24–25 nov; el HTTP 408 fue de un `git push`); «precache enorme que se invalida en cada versión» (el precache era 4,3 MB y una versión re-descarga ~1,5–4,5 MB; los 20 MB de texturas van en caché de ejecución y sobreviven a los deploys); fallo de chunks de la app en pestaña sin SW tras un deploy (no se reprodujo).
 
 ### 3.26.87 · docs: Rotulador cerrado como problema conocido
