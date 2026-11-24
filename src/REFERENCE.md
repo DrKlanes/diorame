@@ -1427,9 +1427,13 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.69)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.70)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.70 · docs: propuesta de vista frontal plana en CINEMA
+
+- `docs/flat-view-proposal.md` (nuevo): investigación y propuesta, sin código. Preset nuevo «Plana» / «Flat», el primero de CINEMA: la escena de frente, como en DRAW, con los FX de CINEMA. Recomendación ⭐: proyectar la geometría con la rama de DRAW de `transformPoint` (y su cámara: la capa activa) sin tocar la puerta de FX, con niebla/DoF leyendo la distancia de la cámara de CINEMA en reposo; gestos de DRAW por condiciones ampliadas, sin cambiar el timing de los handlers; zoom/pan compartido con DRAW; `flat` aditivo en `LOAD_PROJECT`. Hallazgo: DRAW no es ortográfico (`DRAW_FOCAL_LENGTH` 10000, ~1,5 %/capa), así que «sin paralaje» e «igual que DRAW» no coinciden: decide Moisés (D1). Plan en 8 commits, riesgos, decisiones D1–D8 y matriz de escritorio + iPad. Pendiente de GO.
 
 ### 3.26.69 · fix(canvas): fuera el relanzamiento nativo del `pointerdown` del Pencil (H12, H13)
 
