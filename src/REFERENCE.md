@@ -1435,9 +1435,13 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.83)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.84)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.84 · docs: informe de la sesión desatendida del 24 nov 2026
+
+- `docs/session-report-2026-11-24.md`: las tres tareas (gestos de Plana, `pixcheck2`, Rotulador), criterios y medidas, decisiones, comandos de reversión de app y Lab, y qué mirar a ojo y en iPad.
 
 ### 3.26.83 · fix(fx): Rotulador — el borde sale del original, no de la máscara a ¼ (Lab v23.8)
 
