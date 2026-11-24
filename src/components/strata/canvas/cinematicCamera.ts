@@ -66,7 +66,9 @@ export const computeCinematicTick = (
 	// Stays null for every other preset → the DoF override gate fails → manual focus intact.
 	let focusLayerIndex: number | null = null;
 
-	if (cinematicType === 'forward') {
+	if (cinematicType === 'flat') {
+		// Flat front view (v3.26.71): static. The render projects it through DRAW's camera (utils/flatView.ts), never this one.
+	} else if (cinematicType === 'forward') {
 		nc.z -= spd; nc.x = poiX + Math.sin(t)*50; nc.y = poiY + Math.cos(t*0.7)*50;
 		if (nc.z < maxD - 1000) nc.z = 500;
 	} else if (cinematicType === 'spiral') {
@@ -240,9 +242,9 @@ export const computeCinematicTick = (
 		}
 	}
 
-	// Apply Handheld Camera Shake (if enabled)
+	// Apply Handheld Camera Shake (if enabled). Ignored by the flat view (decision D7): the project's flag stays as it is.
 	let newShake: { x: number; y: number; z: number; r?: number } = { x: 0, y: 0, z: 0 };
-	if (isHandheldEnabled) {
+	if (isHandheldEnabled && cinematicType !== 'flat') {
 		const intensityMap: Record<string, number> = { low: 0.8, medium: 2.0, high: 3.5 };
 		// Increase frequency for High intensity to simulate more frantic movement
 		const freqMap: Record<string, number> = { low: 1.0, medium: 1.0, high: 2.5 };

@@ -159,7 +159,7 @@ export function loadProject(state: AppState, action: Extract<Action, { type: 'LO
 	const safeBrushThickness = layer0Brush?.thickness ?? Math.min(Math.max(rawBrushThickness, BRUSH_THICKNESS_MIN), BRUSH_THICKNESS_MAX);
 	// Gaps take the defaults, never the previous project's values (v3.20.11 rule; until v3.26.8 these two fell back to state.*).
 	const safeIsDarkMode = typeof action.payload.isDarkMode === 'boolean' ? action.payload.isDarkMode : initialState.isDarkMode;
-	const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom', 'storytelling'].includes(action.payload.cinematicType))
+	const safeCinematicType = (typeof action.payload.cinematicType === 'string' && ['flat', 'forward', 'spiral', 'yoyo', 'pulse', 'twist', 'arc', 'crane', 'truck', 'orbit', 'zoom', 'storytelling'].includes(action.payload.cinematicType))
 		? action.payload.cinematicType as CinematicType : CINEMA_VIEW_DEFAULTS.cinematicType;
 	const rawProjectName = typeof action.payload.projectName === 'string'
 		? action.payload.projectName.slice(0, 100) : initialState.projectName;

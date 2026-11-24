@@ -39,7 +39,7 @@ export type FormatType = 'A' | '16:9' | '4:3' | '4:5' | '1:1';
 export type FormatOrientation = 'portrait' | 'landscape';
 export type DrawFormat = { type: FormatType; orientation: FormatOrientation; rect: { x: number; y: number; w: number; h: number } };
 export type ToolType = 'blob' | 'eraser' | 'text' | 'move' | 'brush';
-export type CinematicType = 'forward' | 'spiral' | 'yoyo' | 'pulse' | 'twist' | 'arc' | 'crane' | 'truck' | 'orbit' | 'zoom' | 'storytelling';
+export type CinematicType = 'flat' | 'forward' | 'spiral' | 'yoyo' | 'pulse' | 'twist' | 'arc' | 'crane' | 'truck' | 'orbit' | 'zoom' | 'storytelling';
 
 // A content centroid used as a camera waypoint by the 'storytelling' preset.
 // x,y = average of a layer's shape points; z = layer depth in cinematic space;
