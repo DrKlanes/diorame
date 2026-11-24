@@ -4,7 +4,9 @@ import { DiActionButton } from '../../../design-system';
 import { useTranslation } from '../../../i18n';
 import { analytics } from '../../../analytics/analytics';
 
+// «Plana» (v3.26.77) first: the scene head-on as in DRAW, with the FX (docs/flat-view-proposal.md).
 const PRESETS = [
+	{ type: 'flat',    icon: 'cam-flat',    tooltipKey: 'bottombar.view.preset.flat'    },
 	{ type: 'forward', icon: 'cam-forward', tooltipKey: 'bottombar.view.preset.forward' },
 	{ type: 'spiral',  icon: 'cam-spiral',  tooltipKey: 'bottombar.view.preset.spiral'  },
 	{ type: 'yoyo',    icon: 'cam-yoyo',    tooltipKey: 'bottombar.view.preset.yoyo'    },

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useStrata } from '../StrataContext';
 import { useTheme } from '../../../design-system/useTheme';
 import { useTranslation } from '../../../i18n';
+import { FormatPill } from './FormatPill';
+import { ResetViewPill } from './ResetViewPill';
 import {
 	DiPill,
 	DiActionButton,
@@ -38,17 +40,20 @@ export function POIPill() {
 	const [hovered, setHovered] = useState(false);
 	const isPoiSet = state.pointOfInterest !== null;
 	const isStorytelling = state.cinematicType === 'storytelling';
+	// The flat front view (v3.26.77) has no camera to aim: the pill becomes its framing pill — how to frame it, the Formato
+	// frame and «Centrar vista» (DRAW's ViewPills sit where the CINEMA bar is: inside the bar, they never overlap it).
+	const isFlat = state.cinematicType === 'flat';
 
 	return (
 		<div
 			style={{
-				opacity: isStorytelling ? 0.4 : (hovered ? 1 : 0.7),
+				opacity: isStorytelling ? 0.4 : (hovered || isFlat ? 1 : 0.7),
 				transition: 'opacity 0.2s ease',
 			}}
-			onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !isStorytelling) setHovered(true); }}
+			onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !isStorytelling && !isFlat) setHovered(true); }}
 			onPointerLeave={() => setHovered(false)}
 		>
-			<DiPill dark={dark} height={32} padding="0 10px" gap={6}>
+			<DiPill dark={dark} height={isFlat ? 40 : 32} padding={isFlat ? '0 4px 0 10px' : '0 10px'} gap={6}>
 				<span
 					style={{
 						fontFamily: TYPE.controlLabel.family,
@@ -59,9 +64,16 @@ export function POIPill() {
 						userSelect: 'none',
 					}}
 				>
-					{isStorytelling ? t('viewport.cinema.storytellingHint') : t('viewport.cinema.doubleTapHint')}
+					{isStorytelling ? t('viewport.cinema.storytellingHint') : isFlat ? t('viewport.cinema.flatHint') : t('viewport.cinema.doubleTapHint')}
 				</span>
-				{isPoiSet && !isStorytelling && (
+				{isFlat && (
+					<>
+						<DiVSep dark={dark} />
+						<FormatPill />
+						<ResetViewPill />
+					</>
+				)}
+				{isPoiSet && !isStorytelling && !isFlat && (
 					<>
 						<DiVSep dark={dark} />
 						<DiActionButton

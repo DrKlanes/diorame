@@ -161,6 +161,7 @@ export const es: Dictionary = {
 	'bottombar.view.preset.free': 'Libre',
 	'bottombar.view.preset.zoom': 'Zoom',
 	'bottombar.view.preset.storytelling': 'Narrativa',
+	'bottombar.view.preset.flat': 'Plana · de frente, como en Dibujo, con los FX',
 
 	'bottombar.view.handheld.label': 'Cámara en mano',
 	'bottombar.view.handheld.tooltip': 'Cámara en mano',
@@ -565,6 +566,7 @@ export const es: Dictionary = {
 	'viewport.cinema.doubleTapHint': 'Doble toque para encuadrar',
 	'viewport.cinema.resetPoi': 'Quitar encuadre',
 	'viewport.cinema.storytellingHint': 'Storytelling sigue su propio recorrido',
+	'viewport.cinema.flatHint': 'Arrastra · pellizca para zoom',
 
 	// ═══════════════════════════════════════════════
 	// MODALS

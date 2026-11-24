@@ -171,6 +171,7 @@ export const en: Dictionary = {
 	'bottombar.view.preset.free': 'Free',
 	'bottombar.view.preset.zoom': 'Zoom',
 	'bottombar.view.preset.storytelling': 'Storytelling',
+	'bottombar.view.preset.flat': 'Flat · head-on, as in Draw, with the FX',
 
 	// Camera speed / handheld
 	'bottombar.view.handheld.label': 'Handheld',
@@ -589,6 +590,7 @@ export const en: Dictionary = {
 	'viewport.cinema.doubleTapHint': 'Double tap to frame',
 	'viewport.cinema.resetPoi': 'Clear framing',
 	'viewport.cinema.storytellingHint': 'Storytelling follows its own path',
+	'viewport.cinema.flatHint': 'Drag to pan · pinch to zoom',
 
 	// ═══════════════════════════════════════════════
 	// MODALS

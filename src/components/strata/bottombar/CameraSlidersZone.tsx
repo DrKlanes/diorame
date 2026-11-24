@@ -3,6 +3,7 @@ import { useStrata } from '../StrataContext';
 import { Ico, DiMiniSlider } from '../../../design-system';
 import { T, dk } from '../../../design-system/tokens';
 import { flToMm, mmToFl } from '../../../utils/cinematic';
+import { isFlatView } from '../../../utils/flatView';
 
 interface CameraSlidersZoneProps { dark: boolean; }
 
@@ -23,10 +24,14 @@ export function CameraSlidersZone({ dark }: CameraSlidersZoneProps) {
 	const disabledStyle: React.CSSProperties = flatZMode
 		? { opacity: 0.35, pointerEvents: 'none' }
 		: {};
+	// The flat front view (v3.26.77) has no lens to move: its framing is DRAW's pan and zoom. The three sliders still feed
+	// the depth of fog and DoF there (decision D5), but they are dimmed, as with the zero-Z playback.
+	const flat = isFlatView(state);
+	const flatStyle: React.CSSProperties = flat ? { opacity: 0.35, pointerEvents: 'none' } : {};
 
 	return (
 		<div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 6px', flexShrink: 0 }}>
-			<div style={disabledStyle}>
+			<div style={flat ? flatStyle : disabledStyle}>
 				<SliderSlot
 					icon="ctrl-focal"
 					formattedValue={`${focalMm}mm`}
@@ -36,6 +41,7 @@ export function CameraSlidersZone({ dark }: CameraSlidersZoneProps) {
 					dark={dark} iconColor={iconColor}
 				/>
 			</div>
+			<div style={flatStyle}>
 			<SliderSlot
 				icon="ctrl-distance"
 				formattedValue={offsetDisplay}
@@ -44,7 +50,8 @@ export function CameraSlidersZone({ dark }: CameraSlidersZoneProps) {
 				min={-5000} max={2000} step={10}
 				dark={dark} iconColor={iconColor}
 			/>
-			<div style={disabledStyle}>
+			</div>
+			<div style={flat ? flatStyle : disabledStyle}>
 				<SliderSlot
 					icon="ctrl-spacing"
 					formattedValue={spacingPct}

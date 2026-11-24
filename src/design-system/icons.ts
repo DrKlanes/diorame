@@ -86,6 +86,9 @@ export const ICONS: Record<string, string> = {
 		`<rect x="16" y="16" width="4" height="4" fill="currentColor" stroke="none" opacity="0.4"/>`,
 
 	// ─── Camera Presets ──────────────────────────────────────────────────
+	// Flat front view (v3.26.77): PROVISIONAL — a sheet seen head-on with its lines; Moisés draws the final one.
+	'cam-flat':
+		`<rect x="5" y="5" width="14" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M8.5 10H15.5M8.5 14H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 	'cam-forward':
 		`<path d="M12 19V8M12 5V8M12 8L8 12M12 8L16 12M5 16C5 17.1 5.9 18 7 18H17C18.1 18 19 17.1 19 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
 	'cam-spiral':
@@ -370,7 +373,7 @@ export const ICON_SECTIONS: Record<string, string[]> = {
 	'Navigation & Global': ['draw-mode', 'view-mode', 'hide-ui', 'sun', 'moon', 'chevron-left', 'chevron-right', 'chevron-up', 'chevron-down'],
 	'Export':              ['snapshot', 'record'],
 	'FX':                  ['fx-grain', 'fx-vignette', 'fx-chroma', 'fx-fog', 'fx-glow', 'fx-riso', 'fx-super-riso', 'fx-distortion', 'fx-wiggle', 'fx-grunge', 'fx-particles', 'fx-dof', 'fx-pixel'],
-	'Camera Presets':      ['cam-forward', 'cam-spiral', 'cam-yoyo', 'cam-pulse', 'cam-twist', 'cam-arc', 'cam-crane', 'cam-truck', 'cam-orbit', 'cam-zoom', 'cam-storytelling'],
+	'Camera Presets':      ['cam-flat', 'cam-forward', 'cam-spiral', 'cam-yoyo', 'cam-pulse', 'cam-twist', 'cam-arc', 'cam-crane', 'cam-truck', 'cam-orbit', 'cam-zoom', 'cam-storytelling'],
 	'Camera Controls':     ['ctrl-speed', 'ctrl-handshake', 'ctrl-handshake-off', 'ctrl-focal', 'ctrl-distance', 'ctrl-spacing', 'ctrl-dof-free', 'ctrl-dof-lock'],
 	'Drawing Tools':       ['brush', 'eraser', 'blob', 'text', 'move', 'symmetry', 'smooth', 'organic', 'draw-behind', 'draw-inside', 'rotate', 'pen', 'line-tapered', 'line-uniform', 'line-ink'],
 	'File Operations':     ['new', 'open', 'save', 'export', 'undo', 'redo'],

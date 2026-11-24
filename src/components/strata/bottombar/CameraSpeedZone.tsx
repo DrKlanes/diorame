@@ -3,6 +3,7 @@ import { useStrata } from '../StrataContext';
 import { Ico, DiMiniSlider, DiActionButton } from '../../../design-system';
 import { useTranslation } from '../../../i18n';
 import { T, dk } from '../../../design-system/tokens';
+import { isFlatView } from '../../../utils/flatView';
 
 interface CameraSpeedZoneProps { dark: boolean; }
 
@@ -37,8 +38,12 @@ export function CameraSpeedZone({ dark }: CameraSpeedZoneProps) {
 		? t('bottombar.view.handheld.dynamic', { intensity: t(`bottombar.view.handheld.intensity.${intensity}`) })
 		: t('bottombar.view.handheld.label');
 
+	// The flat front view (v3.26.77) is static and ignores the handheld (decision D7): both controls dimmed, the
+	// project's handheld setting untouched.
+	const flat = isFlatView(state);
+
 	return (
-		<div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 6px', flexShrink: 0 }}>
+		<div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 6px', flexShrink: 0, ...(flat ? { opacity: 0.35, pointerEvents: 'none' as const } : {}) }}>
 			{/* Speed slider */}
 			<Ico name="ctrl-speed" size={16} color={iconColor} />
 			<DiMiniSlider

@@ -11,6 +11,7 @@ import { Shape, Point, Waypoint, GestureState } from '../../types/strataTypes';
 import paperTexture from "figma:asset/texture-paper.png";
 import grungeTexture from "figma:asset/texture-grunge.png";
 import { cn } from '../ui/utils';
+import { isFlatView } from '../../utils/flatView';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingOverlayConnected as OnboardingOverlay } from './OnboardingOverlayConnected';
 import { generateRisoGrain } from './canvas/postProcessing';
@@ -769,7 +770,7 @@ export const StrataCanvas = () => {
 	};
 
 	return (
-		<div ref={containerRef} className={cn("absolute inset-0 z-0 overflow-hidden touch-none", state.mode === 'drawing' ? (cursorOverride ? cursorOverride : (state.tool === 'move' ? (gizmoCursor || "cursor-move") : "cursor-crosshair")) : "cursor-default")} style={{ touchAction: 'none' }}>
+		<div ref={containerRef} className={cn("absolute inset-0 z-0 overflow-hidden touch-none", state.mode === 'drawing' ? (cursorOverride ? cursorOverride : (state.tool === 'move' ? (gizmoCursor || "cursor-move") : "cursor-crosshair")) : (isFlatView(state) ? (cursorOverride || "cursor-grab") : "cursor-default"))} style={{ touchAction: 'none' }}>
 			<canvas ref={canvasRef} data-drawing-canvas tabIndex={0} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} onPointerCancel={resetGestureState} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel} className="block w-full h-full" style={{ touchAction: 'none', outline: 'none' }} />
 			{/* Flip buttons overlay - positioned via render loop */}
 			<div
