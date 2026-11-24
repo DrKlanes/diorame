@@ -9,6 +9,20 @@ reaparezca, no se vuelva a diagnosticar desde cero.
 
 ---
 
+## Carga, service worker y Lab — lo que quedó abierto tras la sesión del 25 nov 2026
+
+Arreglado en v3.26.88–3.26.91 y Lab v23.11 (`docs/session-report-2026-11-25.md`, números en `tools/load-timing/README.md`). Queda:
+
+- **Las texturas de papel y grunge pesan 20 MB y se bajan en cada primera carga.** Son JPEG con extensión `.png` (`src/assets/texture-paper.png` 5000×3333, 7,1 MB; `texture-grunge.png` 5760×4320, 12,8 MB), se piden al montar `StrataCanvas` y compiten con todo lo demás; en una pestaña privada del iPad, cada vez. El grunge solo lo usan los FX de CINEMA. Reducirlas o aplazarlas cambia píxeles (pixcheck) o el momento en que se ven: decisión visual de Moisés y núcleo de `StrataCanvas` (carga de texturas). No se tocó.
+- **El motor de Super Riso de la app compila sus programas en serie**, igual que el Lab hasta v23.10 (`canvas/superRiso/engine.ts`: `COMPILE_STATUS` tras cada `compileShader`). Activar Super Riso en Diorame con la caché de shaders fría paga varios segundos de bloqueo. Candidato: portar 1:1 el cambio de `create()` del Lab v23.11 (mismo GLSL; comprobar con `__superRisoHash` before/after). No medido en la app.
+- **El Lab no es determinista en 5 de 26 estilos** (Riso «gallery», Fotocopia «photo», «munari», «lid»; Stencil «layers», «street»): dos pasadas de la MISMA versión dan hashes de lienzo distintos, también con `Math.random` sembrado (carrera del render por bloques). Por eso el cambio de compilación de v23.11 se demostró con 21/26 estilos idénticos y estables y los otros 5 variando igual en v23.10 y v23.11, no con «0 px» en los 26.
+- **Ruido de los arneses de píxel:** `__pixcheck` caso `ex-light-HQ2-L5` da 1 px entre dos pasadas del mismo código (v3.26.87 contra sí mismo); `__cinemaHash` 1–207 px en los casos con FX (código nuevo contra sí mismo: 1–117 px). Los demás casos, 0 px estables.
+- **Chunks de la app tras un deploy en una pestaña sin service worker** (primera visita, pestaña privada, recarga forzada): si un chunk perezoso (Super Riso, paper.js, mediabunny) se pide después de un deploy, su nombre viejo ya no existe en gh-pages. Se intentó reproducir con «Exportar › Super Riso» y NO falló; no se cambió nada. Si aparece: conservar los assets de la versión anterior en gh-pages (copia con poda en el CI) y, en la app, el evento `vite:preloadError` → aviso de recargar.
+- **iPad sin medir.** Todo lo de esta sesión se midió en Chrome de escritorio. El WebKit de Playwright para Windows no reproduce Safari (sin H.264 ni Metal). La comprobación en el iPad es de Moisés (lista en el informe).
+- **Cada versión renombra casi todos los chunks** (la cadena de versión está en el código compartido y los hashes caen en cascada): una actualización baja ~1,5 MB de JS aunque solo cambie un comentario. Aislar `APP_VERSION` en un chunk propio lo reduciría; no se hizo (cambia el reparto de chunks de la app).
+
+---
+
 ## Guardar `.dior` no da feedback inmediato
 
 **Estado:** documentado, sin arreglar. Causa raíz de un incidente real.

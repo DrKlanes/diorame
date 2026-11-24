@@ -40,6 +40,10 @@ ruta, el navegador no lo trata como actualización del SW existente.
    - Si el registro manual sigue en `src/pwa.ts` / `main.tsx`, déjalo o
      coméntalo; da igual: el kill-switch se auto-desregistra al activar.
 
+> Desde v3.26.91 `npm run build` hace dos builds (la app y `dior-render.js`) y termina con las guardias
+> (`tools/build-guards/check-build.mjs`). Con el kill-switch como `sw.js` la guardia lo detecta (no hay
+> precache de Workbox), lo informa y NO rompe el build: el procedimiento no cambia.
+
 3. **Build local + verificar.** `npm run build` y confirma que `build/sw.js`
    contiene el código del kill-switch (NO el de Workbox).
 
