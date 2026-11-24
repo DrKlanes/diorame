@@ -121,6 +121,37 @@
 		return summary;
 	};
 
+	// Animation in the flat view (v3.26.76): the same square on 5 layers = 5 flipbook frames. With fog and DoF on, every
+	// frame must come out identical (no flicker on playback). Controls: CINEMA 'forward' with flat Z (already uniform) must
+	// pass too; 'forward' with real depth must flicker (self-test).
+	window.__flatAnimCheck = async () => {
+		const { C, D } = await modules();
+		let st = { ...C.initialState, isWelcomeModalOpen: false };
+		for (let i = 1; i < 5; i++) st = C.appReducer(st, { type: 'ADD_LAYER' });
+		for (let i = 0; i < 5; i++) {
+			st = C.appReducer(st, { type: 'ADD_SHAPE', payload: { id: `sq${i}`, color: '#222222', zIndex: i * -150 || 0, isEraser: false, isDrawInside: false, isDrawBehind: false,
+				points: [{ x: -200, y: -150 }, { x: 200, y: -150 }, { x: 200, y: 150 }, { x: -200, y: 150 }] } });
+		}
+		const fx = { ...Object.fromEntries(Object.keys(st.postProcessingEnabled).map(k => [k, false])), fog: true, dof: true, vignette: true };
+		const base = { ...st, mode: 'cinematic', isAnimationMode: true, fxMasterEnabled: true, postProcessingEnabled: fx,
+			postProcessing: { ...st.postProcessing, fog: 0.8, dof: 0.8, vignette: 0.5, focusDist: 600 }, drawingZoom: 0.8, drawingPan: { x: 0, y: 0 } };
+		const frames = async (extra) => {
+			const out = [];
+			for (let L = 0; L < 5; L++) {
+				seed(55);
+				out.push(pixels(D.renderSnapshot(opts({ ...base, ...extra, currentLayerIndex: L }, { x: 0, y: 0, z: 500, rotation: 0 }), 1).canvas));
+				Math.random = realRandom;
+			}
+			return out.slice(1).map(f => diffPx(out[0], f));
+		};
+		const flat = await frames({ cinematicType: 'flat', isAnimationFlatZ: false });
+		const forwardFlatZ = await frames({ cinematicType: 'forward', isAnimationFlatZ: true });
+		const forwardDepth = await frames({ cinematicType: 'forward', isAnimationFlatZ: false });
+		const flatOk = flat.every(d => d === 0);
+		const selfTest = forwardDepth.some(d => d !== 0);
+		return { pass: flatOk && selfTest && forwardFlatZ.every(d => d === 0), flat, forwardFlatZ, forwardDepth };
+	};
+
 	window.__diorRenderHash = async (label) => {
 		const R = await import('/src/dior-render.ts');
 		const project = await R.parseDior(await (await fetch('/examples/diorame_onboarding.dior')).arrayBuffer());

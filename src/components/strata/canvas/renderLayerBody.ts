@@ -147,10 +147,14 @@ export function renderLayer(
 	let hasContent = false;
 	// Flat view: fog and DoF read the layer's CINEMA depth from the same camera (decision D5): CINEMA's shapeZ minus
 	// effectiveCameraZ (camera.z + viewZoomOffset), pinned layers at their own plane — the dz the CINEMA branch would give.
+	// In animation (v3.26.76) every frame takes the flat-Z depth instead (shapeZ 0, camZ = viewZoomOffset): one depth for
+	// all frames, so fog and DoF do not flicker on playback (renderFrame neutralises the DoF the same way).
 	const flatLocked = isFlat && currentState.locked3DLayers.includes(layerIndex);
-	let layerAvgZ = isFlat
-		? z * currentState.layerSpacingFactor * (flatLocked ? 1 : CINEMATIC_DEPTH_MULTIPLIER) - (flatLocked ? 0 : effectiveCameraZ)
-		: dz;
+	let layerAvgZ = !isFlat
+		? dz
+		: currentState.isAnimationMode
+			? currentCamera.z - effectiveCameraZ
+			: z * currentState.layerSpacingFactor * (flatLocked ? 1 : CINEMATIC_DEPTH_MULTIPLIER) - (flatLocked ? 0 : effectiveCameraZ);
 
 	// Transform Helper Function — extracted to canvas/transformPoint.ts
 	const layerProjection: LayerProjectionParams = {

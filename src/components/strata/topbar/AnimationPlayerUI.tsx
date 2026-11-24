@@ -4,6 +4,7 @@ import { useTheme } from '../../../design-system/useTheme';
 import { DiPill, DiVSep, DiActionButton, DiSegmentControl } from '../../../design-system';
 import { T, TYPE, dk } from '../../../design-system/tokens';
 import { getAnimationFrames } from '../../../utils/animationFrames';
+import { isFlatView } from '../../../utils/flatView';
 import { useTranslation } from '../../../i18n';
 
 const FPS_OPTIONS = [4, 6, 8];
@@ -145,6 +146,8 @@ export function AnimationPlayerUI() {
 							<DiActionButton
 								name={state.isAnimationFlatZ ? 'depth-off' : 'depth-on'}
 								onClick={() => dispatch({ type: 'TOGGLE_ANIMATION_FLAT_Z' })}
+								// The flat view (v3.26.76) is always flat: the toggle has nothing to switch there.
+								disabled={isFlatView(state)}
 								dark={dark}
 								active={state.isAnimationFlatZ}
 								activeStyle="wash"

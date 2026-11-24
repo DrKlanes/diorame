@@ -398,7 +398,9 @@ export function renderFrame(
 	// currentCamera.z - effectiveCameraZ (shapeZ=0, camZ=effectiveCameraZ-currentCamera.z).
 	// There is no depth separation to blur around, so DoF must be neutral (dofBlur = 0).
 	// Setting fxFocusDist = dz_flat ensures Math.abs(layerAvgZ - fxFocusDist) = 0 for all layers.
-	if (isCinematic && currentState.isAnimationMode && currentState.isAnimationFlatZ) {
+	// The flat view's animation (v3.26.76) always takes this path: each frame is a layer at another depth, so per-layer
+	// fog and DoF would flicker on playback; renderLayerBody gives its layers the same uniform dz.
+	if (isCinematic && currentState.isAnimationMode && (currentState.isAnimationFlatZ || isFlat)) {
 		fxFocusDist = currentCamera.z - effectiveCameraZ;
 	}
 
