@@ -11,7 +11,7 @@ import { renderLiveStroke } from './renderLiveStroke';
 import { composeLayer } from './composeLayer';
 import { paintShapeRun } from './renderShapeRun';
 import type { RenderContext, PerFrameComputed } from './renderPipeline';
-import { isFlatView } from '../../../utils/flatView';
+import { isFlatView, flatDistortionApplies, flatDistortFrame } from '../../../utils/flatView';
 
 /**
  * ensureCanvas — lazy create + resize. Mirrored from the local helper in
@@ -184,6 +184,10 @@ export function renderLayer(
 		distortionK,
 		cinematicType: currentState.cinematicType,
 		shake: rc.lastShakeRef.current,
+		// Flat view (v3.26.80): CINEMA's distortion on DRAW's projection, about the Formato frame or the viewport.
+		flatDistort: flatDistortionApplies(isFlat, distortionK, flatLocked)
+			? { ...flatDistortFrame(currentState.format, currentCamera.z, currentState.isAnimationMode, viewZoom, viewPan, centerXScreen, centerYScreen), k: distortionK }
+			: null,
 	};
 	const transformPoint = createTransformPoint(layerProjection, frameProjection);
 	const projectInto = createProjectInto(layerProjection, frameProjection);

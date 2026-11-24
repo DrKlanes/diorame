@@ -12,7 +12,6 @@ import { isWebGL2Available } from '../canvas/superRiso/flag';
 import { useIsStandalone } from '../../../hooks/useIsStandalone';
 import { useIsCameraBarCompact } from '../../../hooks/useIsCameraBarCompact';
 import { rightPanelInsets, CAMERA_BAR_HEIGHT } from '../../../utils/panelLayout';
-import { isFlatView } from '../../../utils/flatView';
 
 const STORAGE_KEY = 'diorame-fx-expanded';
 
@@ -111,7 +110,6 @@ export function FXPanel() {
 	const { state, dispatch } = useStrata();
 	const { dark } = useTheme();
 	const { t } = useTranslation();
-	const flat = isFlatView(state);
 	const [isExpanded, setIsExpanded] = useState(() => {
 		try { return localStorage.getItem(STORAGE_KEY) === 'true'; }
 		catch { return false; }
@@ -236,15 +234,12 @@ export function FXPanel() {
 					{/* Lens */}
 					<GroupLabel label={t('fx.group.lens')} />
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{/* The flat front view (v3.26.77) has no lens: distortion does not apply there and is dimmed. */}
 						{LENS_FX.map(({ fxKey, iconName, labelKey, level, valueKey, discreteOptions, compositeOptions }) => (
-							<div key={fxKey} style={fxKey === 'distortion' && flat ? { opacity: 0.35, pointerEvents: 'none' } : undefined}>
-								<FXRow fxKey={fxKey} iconName={iconName} labelKey={labelKey}
-									isActive={px[fxKey]} dark={dark}
-									onToggle={() => toggleFx(fxKey)}
-									level={level} valueKey={valueKey}
-									discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
-							</div>
+							<FXRow key={fxKey} fxKey={fxKey} iconName={iconName} labelKey={labelKey}
+								isActive={px[fxKey]} dark={dark}
+								onToggle={() => toggleFx(fxKey)}
+								level={level} valueKey={valueKey}
+								discreteOptions={discreteOptions} compositeOptions={compositeOptions} />
 						))}
 					</div>
 					<PanelHSep />
@@ -286,7 +281,7 @@ export function FXPanel() {
 				<PillHSep />
 				<DiActionButton name="fx-vignette"   onClick={fxClick('vignette')} dark={dark} active={snap ? snap.vignette : px.vignette}            tooltip={t('fx.lens.vignette.tooltip')} />
 				<DiActionButton name="fx-chroma"     onClick={fxClick('chromaticAberration')} dark={dark} active={snap ? snap.chromaticAberration : px.chromaticAberration} tooltip={t('fx.lens.chromaticAb.tooltip')} />
-				<DiActionButton name="fx-distortion" onClick={fxClick('distortion')} dark={dark} active={snap ? snap.distortion : px.distortion}          tooltip={t('fx.lens.distortion.tooltip')} disabled={flat} />
+				<DiActionButton name="fx-distortion" onClick={fxClick('distortion')} dark={dark} active={snap ? snap.distortion : px.distortion}          tooltip={t('fx.lens.distortion.tooltip')} />
 				<DiActionButton name="fx-glow"       onClick={fxClick('glow')} dark={dark} active={snap ? snap.glow : px.glow}                tooltip={t('fx.lens.glow.tooltip')} />
 				<DiActionButton name="fx-dof"        onClick={fxClick('dof')} dark={dark} active={snap ? snap.dof : px.dof}                 tooltip={t('fx.lens.dof.tooltip')} />
 				<PillHSep />

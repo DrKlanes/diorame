@@ -695,3 +695,25 @@ Al entrar en «Mixto» (candado de proporción junto al valor, v3.26.25) la píl
 ### Candado de proporción a 30×30 px (Apple recomienda 44 pt)
 
 El candado de «Mixto» mide 30×30 px; la guía de Apple recomienda 44 pt para un objetivo táctil. **Pendiente de validación en iPad:** comprobar si se acierta con el dedo y, si no, agrandar el área táctil (lo que se cruza con el ancho de la píldora del punto anterior).
+
+## Arneses de píxel: `pixcheck2` inestable en segundas pasadas de la misma página (v3.26.79)
+
+**Estado:** pendiente de arreglar (tooling). No afecta a la app.
+
+**El síntoma.** `__pixcheck2('after')` da 0 px en la primera pasada tras cargar la página y, a veces, diferencias grandes en la segunda,
+sin cambiar el código. Siempre en los casos de la vista previa del Move, que renderizan con `renderFrame` directamente y no con
+`renderSnapshot`.
+
+**La evidencia (A/B, 2026-11-24, `docs/flat-view-proposal.md` §13.5):**
+
+| Código | 1.ª pasada (página recién cargada) | 2.ª pasada (misma página) |
+|---|---|---|
+| HEAD sin cambios (v3.26.78) | 7/7 a 0 px | `draw-move-preview-text` 38 019 px |
+| Con la distorsión de Plana | 7/7 a 0 px | `draw-move-preview-ex` 582 984 px (hash `14519aaf…` frente a `0d33237d…`) |
+| Tras otros arneses en la misma página | — | `draw-move-preview-ex` 582 984 px |
+
+**Hipótesis, sin comprobar:** el backend de raster (GPU / CPU) que Chrome elige para los lienzos nuevos cambia con la presión de memoria
+de la sesión (la trampa documentada en CLAUDE.md), y esos dos casos crean sus lienzos con `document.createElement` sin
+`willReadFrequently`. Arreglo probable: forzar la CPU como `onCpu` de `timelapse.js` (o `__flatDistortCheck`).
+
+**Mientras tanto:** `pixcheck2` se mide siempre en la primera pasada de una página recién cargada.

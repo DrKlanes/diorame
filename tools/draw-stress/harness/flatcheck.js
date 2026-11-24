@@ -121,10 +121,59 @@
 		return summary;
 	};
 
+	// Distortion in the flat view (v3.26.80): with a Formato frame, the PNG Formato must equal pixel for pixel the frame's
+	// content on screen (the screen re-rendered without the guide, cropped). docs/flat-view-proposal.md §13.4 explains the
+	// set-up, measured before writing the feature:
+	// - Math.random is a CONSTANT, not seeded: the resize branch consumes ceil(w/2)·ceil(h/2) randoms before the ink texture
+	//   (consumeNoiseRandoms), so canvases of different sizes draw different textures from one seed (121 247 px apart).
+	// - every 2D context on the CPU rasterizer (willReadFrequently, as timelapse.js's onCpu): GPU/CPU antialiasing differs.
+	// - the frame's corner at (0, 0) on screen, as in the PNG: the rasterizer works in float32 at absolute positions, and the
+	//   same curve at x + 556 or x + 300 antialiases differently in the last bits (136 px, ≤ 7 levels, in plain DRAW).
+	// - only the strokes that fall wholly inside the frame (60 px margin, so the pincushion cannot push them out): a stroke
+	//   that crosses a canvas edge is clipped differently by the screen and the PNG, and Skia's antialiasing follows the clip
+	//   (1 610 px, ≤ 24 levels, in plain DRAW). The full scene is still measured and reported against DRAW's own floor.
+	// The frame stays far from the viewport's centre (240, 300 vs 683, 512), so a distortion centred on the viewport fails.
+	// Controls: distortion OFF must give 0 px (the comparison is sound); ON must differ from OFF (the distortion is there);
+	// self-test: the screen without the frame in its state (centred on the viewport) must differ from the PNG.
+	window.__flatDistortCheck = async () => {
+		const { C, D } = await modules();
+		const F = await import('/src/components/strata/canvas/formatSnapshot.ts');
+		const ex = await loader(C)('/examples/diorame_onboarding.dior');
+		const W = 1366, H = 1024, rect = { x: -300, y: -360, w: 480, h: 600 }, M = 60;
+		const format = { type: '4:5', orientation: 'portrait', rect };
+		const cam = { x: 0, y: 0, z: 0, rotation: 0 };
+		const k = (z) => 10000 / (10000 + z); // DRAW's layer scale seen from layer 0
+		const inside = ex.shapes.filter(s => s.points.every(p => p.x * k(s.zIndex) > rect.x + M && p.x * k(s.zIndex) < rect.x + rect.w - M
+			&& p.y * k(s.zIndex) > rect.y + M && p.y * k(s.zIndex) < rect.y + rect.h - M));
+		const state = (shapes, on, d) => ({
+			...ex, shapes, mode: 'cinematic', cinematicType: 'flat', currentLayerIndex: 0, fxMasterEnabled: true, format,
+			postProcessingEnabled: { ...Object.fromEntries(Object.keys(ex.postProcessingEnabled).map(k => [k, false])), distortion: on },
+			postProcessing: { ...ex.postProcessing, distortion: d },
+			drawingZoom: 1, drawingPan: { x: -W / 2 - rect.x, y: -H / 2 - rect.y },
+		});
+		const P = HTMLCanvasElement.prototype, realGet = P.getContext;
+		P.getContext = function (type, attrs) { return type === '2d' ? realGet.call(this, type, { ...(attrs || {}), willReadFrequently: true }) : realGet.call(this, type, attrs); };
+		Math.random = () => 0.5;
+		try {
+			const crop = (st) => D.renderDrawSnapshot({ ...opts(st, cam), w: W, h: H }, 1, 'paper').getContext('2d').getImageData(0, 0, rect.w, rect.h).data;
+			const exported = (st) => pixels(F.renderFormatSnapshot({ ...opts(st, cam), w: W, h: H }, format, rect.w, rect.h, 'paper'));
+			const out = { strokesInside: inside.length };
+			for (const d of [0.6, -0.5, 1, 1.6]) { const st = state(inside, true, d); out[`on ${d}`] = diffPx(crop(st), exported(st)); }
+			out.off = diffPx(crop(state(inside, false, 0.6)), exported(state(inside, false, 0.6)));
+			out.onVsOff = diffPx(crop(state(inside, true, 0.6)), crop(state(inside, false, 0.6)));
+			out.selfTestNoFrameOnScreen = diffPx(crop({ ...state(inside, true, 0.6), format: null }), exported(state(inside, true, 0.6)));
+			// Informative: the whole scene (2 369 strokes) against DRAW's own screen-vs-PNG floor.
+			const drawFloor = (() => { const st = { ...state(ex.shapes, false, 0), mode: 'drawing' }; return diffPx(crop(st), exported(st)); })();
+			out.fullScene = { drawFloor, flatOff: diffPx(crop(state(ex.shapes, false, 0.6)), exported(state(ex.shapes, false, 0.6))), flatOn06: diffPx(crop(state(ex.shapes, true, 0.6)), exported(state(ex.shapes, true, 0.6))) };
+			const pass = out['on 0.6'] === 0 && out['on -0.5'] === 0 && out['on 1'] === 0 && out['on 1.6'] === 0 && out.off === 0 && out.onVsOff > 0 && out.selfTestNoFrameOnScreen > 0;
+			return { pass, ...out };
+		} finally { P.getContext = realGet; Math.random = realRandom; }
+	};
+
 	// Animation in the flat view (v3.26.76): the same square on 5 layers = 5 flipbook frames. With fog and DoF on, every
 	// frame must come out identical (no flicker on playback). Controls: CINEMA 'forward' with flat Z (already uniform) must
-	// pass too; 'forward' with real depth must flicker (self-test).
-	window.__flatAnimCheck = async () => {
+	// pass too; 'forward' with real depth must flicker (self-test). Extra FX / settings can be passed (v3.26.80: distortion).
+	window.__flatAnimCheck = async (extraFx = {}, extraPp = {}) => {
 		const { C, D } = await modules();
 		let st = { ...C.initialState, isWelcomeModalOpen: false };
 		for (let i = 1; i < 5; i++) st = C.appReducer(st, { type: 'ADD_LAYER' });
@@ -132,9 +181,9 @@
 			st = C.appReducer(st, { type: 'ADD_SHAPE', payload: { id: `sq${i}`, color: '#222222', zIndex: i * -150 || 0, isEraser: false, isDrawInside: false, isDrawBehind: false,
 				points: [{ x: -200, y: -150 }, { x: 200, y: -150 }, { x: 200, y: 150 }, { x: -200, y: 150 }] } });
 		}
-		const fx = { ...Object.fromEntries(Object.keys(st.postProcessingEnabled).map(k => [k, false])), fog: true, dof: true, vignette: true };
+		const fx = { ...Object.fromEntries(Object.keys(st.postProcessingEnabled).map(k => [k, false])), fog: true, dof: true, vignette: true, ...extraFx };
 		const base = { ...st, mode: 'cinematic', isAnimationMode: true, fxMasterEnabled: true, postProcessingEnabled: fx,
-			postProcessing: { ...st.postProcessing, fog: 0.8, dof: 0.8, vignette: 0.5, focusDist: 600 }, drawingZoom: 0.8, drawingPan: { x: 0, y: 0 } };
+			postProcessing: { ...st.postProcessing, fog: 0.8, dof: 0.8, vignette: 0.5, focusDist: 600, ...extraPp }, drawingZoom: 0.8, drawingPan: { x: 0, y: 0 } };
 		const frames = async (extra) => {
 			const out = [];
 			for (let L = 0; L < 5; L++) {

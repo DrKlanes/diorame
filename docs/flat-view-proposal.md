@@ -100,7 +100,7 @@ DRAW y con el marco de Formato.
 | Stop Motion | Vivo | `wiggleFrame` sigue avanzando |
 | Partículas | Vivas, proyectadas en plano | Se ven distintas que en CINEMA (sin escala por profundidad) [POR MEDIR a ojo] |
 | Niebla, DoF | Por capa, con distancia de CINEMA | D5 |
-| Distorsión | **Apagada** | Es de lente; la rama de DRAW no la aplica (`transformPoint.ts:101-111`). En el panel, atenuada con «no aplica en Plana» |
+| Distorsión | **Apagada** (propuesta) → **activa desde v3.26.80** | Es de lente; la rama de DRAW no la aplicaba. Desde v3.26.80, la de CINEMA con límite monótono, centrada en el marco de Formato o el viewport (§13) |
 
 ---
 
@@ -425,7 +425,7 @@ Super Riso, Pixel Art (el dibujo no salta al hacer zoom), niebla, grano y viñet
 
 ## 13 · Distorsión en Plana (petición de Moisés, 2026-11-24)
 
-**Estado: PARADO (2026-11-24) — pendiente de decisión de Moisés (§13.6).** Los criterios formales pasan, pero la fórmula se pliega a la vista en Plana; `main` no cambia (la distorsión sigue atenuada en Plana) y el trabajo está en la rama local `wip/flat-distortion` (§13.7). Decisiones de diseño tomadas por Moisés: la misma distorsión que en los demás presets
+**Estado: HECHO — v3.26.80, opción A (límite monótono), decisión de Moisés.** Se paró en v3.26.79 porque la fórmula de CINEMA se pliega en Plana (§13.6); Moisés eligió A y se cerró con todos los criterios en verde (§13.8). §13.1–13.7 se conservan tal como se escribieron al pararla. Decisiones de diseño tomadas por Moisés: la misma distorsión que en los demás presets
 de CINEMA (misma función, mismos parámetros e intensidad del panel), aplicada a la geometría ya proyectada con la fórmula de DRAW,
 solo con `isFlatView` y la distorsión activa con intensidad > 0; nunca un warp de bitmap. Centro: el del marco de Formato si lo hay,
 si no el del viewport. El export (PNG Vista, Formato, HQ, GIF / secuencia) sale con la misma distorsión que la pantalla; el marco guía
@@ -474,7 +474,7 @@ ni se distorsiona ni se exporta. En la UI deja de estar atenuada.
 
 «El PNG Formato coincide al píxel con el contenido del marco en pantalla» **no se cumple hoy ni en DRAW puro**, sin nada de Plana: la
 pantalla (1366×1024) y su propio PNG Formato (480×600) difieren aunque la geometría sea la misma. Medido, por causas, en
-`tools/draw-stress/harness/flatcheck.js` (`__flatDistortCheck`, en la rama `wip/flat-distortion`):
+`tools/draw-stress/harness/flatcheck.js` (`__flatDistortCheck`):
 
 | Causa | Diferencia | Cómo se neutraliza en la prueba |
 |---|---|---|
@@ -548,3 +548,31 @@ zona donde CINEMA no está roto. Cambia la decisión «misma función» solo don
   0 px, parpadeo 0 px), REFERENCE.md §10 + Apéndice C, bump, merge a `main`, push. Con B: lo mismo sin el segundo commit.
 - Lo que Moisés juzga a ojo en el iPad, una vez decidido: la distorsión con pan y zoom, con Formato (el barril queda pegado al marco),
   el PNG Formato y HQ frente a la pantalla, y con Super Riso encima.
+
+### 13.8 · Cierre (v3.26.80): opción A
+
+**Decisión de Moisés: A, límite monótono.** Integrado en `main` como un solo commit (la versión B y la A encima, fusionadas y rebasadas
+sobre v3.26.79, sin merge); la rama `wip/flat-distortion` se borró.
+
+- **La fórmula** (`transformPoint.ts`, rama de DRAW, solo con `flatDistort`): `f = 1 + k · (k < 0 ? min(r², 1/(3|k|)) : r²)`. Dentro de
+  ese radio es la de CINEMA; fuera, con barril, el factor se queda en 2/3 y el mapa sigue creciendo: no se pliega. Con cojín no hay
+  límite (no se pliega nunca).
+- **Rango del panel:** intensidad −1…1 (`FXRow`, bipolar) y focal 24–300 mm (FL 384…4800): |k| ≤ ≈1,04. Test de Node: 4,8 M puntos
+  (41 intensidades × 8 focales × 5 direcciones × 60 medios marcos), ninguno cruza el centro ni vuelve hacia dentro; sin el límite el
+  mismo barrido detecta el pliegue ya con intensidad 0,05 a 24 mm.
+
+| Criterio (página recién cargada; `pixcheck`/`pixcheck2` en primera pasada) | Resultado |
+|---|---|
+| `flatcheck` | 7/7 a 0 px, mismo SHA-256; autocomprobación con `forward` falla 7/7 |
+| `pixcheck` / `pixcheck2` | 7/7 a 0 px (mismo hash) / 7/7 a 0 px |
+| `alphaleak` / `__timelapseCheck()` | `pass: true` / `pass: true` |
+| Hashes de CINEMA (8 sin Plana, incluido arc con distorsión) | 8/8 a 0 px, mismos hashes; los 2 de Plana (sin distorsión) también 0 px |
+| `dior-render.js` | mismo SHA-256 (2/2) |
+| Arnés de gestos | 137/137 idénticos |
+| Parpadeo de animación con distorsión 0,8 | 0/0/0/0 px |
+| PNG Formato = marco en pantalla (`__flatDistortCheck`) | 0 px con 0,6 / −0,5 / 1 / 1,6; sin distorsión 0 px; con / sin difieren (15 818 px); autocomprobación difiere (36 877 px); escena completa 1 130 px frente al suelo de DRAW de 923 |
+| Node | 10 tests de distorsión en `tests/flatView.test.ts` |
+
+**Lo que Moisés juzga a ojo en el iPad:** la distorsión con pan y zoom (sin Formato se queda en la pantalla, como en CINEMA; con
+Formato queda pegada al marco), barril fuerte con zoom (ya sin pliegues; fuera del marco el contenido se comprime hacia el centro,
+zona velada), el PNG Formato y el HQ frente a lo que se ve, la animación con distorsión, y la distorsión con Super Riso encima.

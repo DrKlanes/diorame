@@ -43,6 +43,9 @@ export type FrameProjectionParams = {
 	distortionK: number;
 	cinematicType: string;
 	shake: { x: number; y: number };
+	// Flat front view only (v3.26.80): CINEMA's lens distortion applied after DRAW's projection, about this centre and
+	// half-size (utils/flatView.ts, flatDistortFrame). Absent / null everywhere else: DRAW's arithmetic is untouched.
+	flatDistort?: { cx: number; cy: number; hx: number; hy: number; k: number } | null;
 };
 
 /**
@@ -107,6 +110,20 @@ export const createProjectInto = (
 		out.y = frame.centerYScreen + (sy * frame.viewZoom) + frame.viewPan.y;
 		out.scale = sDraw * frame.viewZoom;
 		out.opacity = 1;
+		// Flat front view (v3.26.80): CINEMA's lens distortion, f = 1 + k·r², on the point DRAW's projection placed, about the
+		// Formato frame (or the viewport). With k < 0 (barrel) r² is capped at 1/(3|k|), where r·(1 + k·r²) stops growing:
+		// beyond it CINEMA's formula folds — far vertices cross the centre and land inside the frame, which DRAW-scale geometry
+		// reaches (no perspective shrink, zoom, a small frame). Inside that radius it is CINEMA's function exactly
+		// (docs/flat-view-proposal.md §13.6, option A, Moisés' decision).
+		const fd = frame.flatDistort;
+		if (fd) {
+			const dx = out.x - fd.cx, dy = out.y - fd.cy;
+			const nx = dx / fd.hx, ny = dy / fd.hy;
+			const r2 = nx * nx + ny * ny;
+			const f = 1 + fd.k * (fd.k < 0 ? Math.min(r2, 1 / (-3 * fd.k)) : r2);
+			out.x = fd.cx + dx * f;
+			out.y = fd.cy + dy * f;
+		}
 		return;
 	}
 
