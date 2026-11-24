@@ -1,5 +1,5 @@
 import React from 'react';
-import logoImg from 'figma:asset/logo-symbol.png';
+import logoImg from 'figma:asset/logo-symbol-ui.png';
 import { toast } from 'sonner@2.0.3';
 import { Ico } from '../../../design-system';
 import { DiButton } from '../../../design-system/DiButton';

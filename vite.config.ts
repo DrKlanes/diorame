@@ -56,6 +56,18 @@
               },
             },
             {
+              // Pósters de los vídeos del welcome (public/welcome-posters/N.webp, 6–64 KB, v3.26.89): el primer fotograma
+              // que se ve al instante mientras llega el vídeo. Fuera del precache (solo hace falta el del vídeo que toca);
+              // CacheFirst: tras la 1ª vez, inmediato y offline. Sin hash: si cambia un vídeo, regenerar su póster con otro nombre.
+              urlPattern: /\/welcome-posters\/\d+\.webp$/,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'diorame-welcome-posters',
+                expiration: { maxEntries: 12, maxAgeSeconds: 60 * 60 * 24 * 60 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
               // Texturas de Super Riso (public/textures/superRiso/*.png, ~1,4 MB): fuera del
               // precache (globIgnores) para no cargarlas a quien no usa el FX; solo las pide el
               // chunk del motor. CacheFirst: tras la 1ª carga, offline. Sin hash en el nombre:
@@ -79,6 +91,8 @@
         'figma:asset/texture-paper.png': path.resolve(__dirname, './src/assets/texture-paper.png'),
         'figma:asset/texture-grunge.png': path.resolve(__dirname, './src/assets/texture-grunge.png'),
         'figma:asset/logo-symbol.png': path.resolve(__dirname, './src/assets/logo-symbol.png'),
+        // 360 px copy of logo-symbol.png (1992 px, 1.6 MB) for the UI: shown at ≤ 120 px wide (v3.26.89)
+        'figma:asset/logo-symbol-ui.png': path.resolve(__dirname, './src/assets/logo-symbol-ui.png'),
         'class-variance-authority@0.7.1': 'class-variance-authority',
         '@radix-ui/react-tooltip@1.1.8': '@radix-ui/react-tooltip',
         '@radix-ui/react-slot@1.1.2': '@radix-ui/react-slot',

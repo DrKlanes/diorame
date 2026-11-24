@@ -5,7 +5,7 @@ import { Ico } from '../../../design-system';
 import { Wordmark } from '../../../design-system/Wordmark';
 import { APP_VERSION } from '../../../constants/version';
 import { getWelcomeIllustration } from './welcomeIllustrations';
-import logoImg from 'figma:asset/logo-symbol.png';
+import logoImg from 'figma:asset/logo-symbol-ui.png';
 import { hasFinePointer, formatShortcut, SHORTCUTS_GROUPS } from '../../../utils/keyboardShortcuts';
 import { useTranslation } from '../../../i18n';
 import { LanguageToggle } from '../../../design-system/LanguageToggle';
@@ -69,6 +69,8 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 		'/welcome-videos/9.mp4',
 	];
 	const [videoIndex] = useState(() => Math.floor(Math.random() * WELCOME_VIDEOS.length));
+	// v3.26.89: the video's first frame, shown at once while the video (0.8–7 MB, from the network) arrives.
+	const poster = `/welcome-posters/${videoIndex + 1}.webp`;
 	const [videoFailed, setVideoFailed] = useState(false);
 
 	const handleLoadExample = async () => {
@@ -96,6 +98,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 					{!videoFailed ? (
 						<video
 							src={WELCOME_VIDEOS[videoIndex]}
+							poster={poster}
 							autoPlay
 							muted
 							loop
