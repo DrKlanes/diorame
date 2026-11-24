@@ -3,6 +3,7 @@
 // the format is saved with the project and dirties it. Out of StrataContext.tsx (v3.26.34, refactor phase 3B), moved
 // as it was.
 import { fitViewToRect, frameInView } from '../utils/formatFrame';
+import { isFlatView, flatViewCamera } from '../utils/flatView';
 import type { AppState } from '../types/strataTypes';
 import type { Action } from '../types/strataActions';
 
@@ -20,7 +21,9 @@ export function resetDrawingView(state: AppState): AppState {
 	// without one, zoom 1 at the origin as always.
 	const { w, h } = state.viewportSize;
 	if (state.format && w > 0 && h > 0) {
-		const fit = fitViewToRect(frameInView(state.format, state.camera.z, state.isAnimationMode), w, h);
+		// The flat view (v3.26.73) frames through DRAW's camera: in CINEMA state.camera is the preset's.
+		const cameraZ = isFlatView(state) ? flatViewCamera(state).z : state.camera.z;
+		const fit = fitViewToRect(frameInView(state.format, cameraZ, state.isAnimationMode), w, h);
 		return { ...state, drawingZoom: fit.zoom, drawingPan: fit.pan };
 	}
 	return { ...state, drawingZoom: 1, drawingPan: { x: 0, y: 0 } };

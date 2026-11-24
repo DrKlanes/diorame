@@ -281,18 +281,21 @@ Ronda de iPad: **un solo push** tras C6/C7 (pestaña privada de Safari, versión
 
 ---
 
-## 10 · Decisiones para Moisés
+## 10 · Decisiones (DECIDIDAS por Moisés, 2026-11-24, todas según la recomendación)
 
-| # | Pregunta | Recomendación |
+| # | Pregunta | Decisión |
 |---|---|---|
-| **D1** | ¿Plana = DRAW al píxel (con su ~1,5 %/capa) o ortográfica pura? | **Igual que DRAW** |
+| **D1** | ¿Plana = DRAW al píxel (con su ~1,5 %/capa) o ortográfica pura? | **Idéntica a DRAW al píxel** (no ortográfica) |
 | **D2** | Nombre | **«Plana» / «Flat»** |
 | **D3** | Arrastre simple (ratón / 1 dedo / Pencil) = pan en Plana | **Sí** |
 | **D4** | Zoom/pan compartido con DRAW | **Compartido** |
-| **D5** | Niebla y DoF en Plana: por capa con la distancia de CINEMA, o neutros | **Por capa**, y juzgar a ojo |
-| **D6** | Vídeo con Formato | v1 encuadre de pantalla; recorte GIF / PNG-seq al marco como commit aparte si se quiere |
-| **D7** | Cámara en mano en Plana | v1 ignorada y atenuada; temblor de pantalla como extra si se quiere |
-| **D8** | `fx-in-draw.md` tras Plana | Reevaluar después de probar Plana |
+| **D5** | Niebla y DoF en Plana | **Por capa, con la distancia de CINEMA**; se juzga a ojo |
+| **D6** | Vídeo con Formato | **v1 con el encuadre de pantalla**, sin recorte a Formato |
+| **D7** | Cámara en mano en Plana | **Ignorada y atenuada** |
+| **D8** | `fx-in-draw.md` tras Plana | **En pausa hasta probar Plana** |
+
+Orden de commits decidido: C1 → C2 → C3 → C4 → C6 → C7 → C5 (la UI, la última, es la que expone la feature) → C8. GO previo para
+C3 y C7 condicionado a sus criterios (§7).
 
 ---
 

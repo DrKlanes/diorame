@@ -15,6 +15,7 @@ import { drawSymmetryAxis } from './drawSymmetryAxis';
 import { drawCompositionGuide } from './drawCompositionGuide';
 import { drawFormatFrame } from './drawFormatFrame';
 import { frameInView } from '../../../utils/formatFrame';
+import { isFlatView, flatViewCamera } from '../../../utils/flatView';
 import { quantizePixelArtCamera } from './quantizePixelArtCamera';
 import {
 	applyRisoV2,
@@ -316,6 +317,9 @@ export function renderFrame(
 	const isCinematic = currentState.mode === 'cinematic';
 	const fxEnabled = isCinematic && currentState.fxMasterEnabled;
 	const isPixelArt = fxEnabled && currentState.postProcessingEnabled.pixelArt;
+	// Flat front view (v3.26.73, docs/flat-view-proposal.md): CINEMA's FX on DRAW's projection. Its camera is DRAW's
+	// (the active layer), read from the state every frame and never from cameraRef, which the tick writes one frame ahead.
+	const isFlat = isFlatView(currentState);
 
 	// Throttle rendering during drawing for better performance
 	const renderTime = performance.now();
@@ -329,7 +333,7 @@ export function renderFrame(
 	// Derived from Pixel Art Size to ensure 1:1 pixel stability
 	const pSize = (isPixelArt) ? Math.max(2, currentState.postProcessing.pixelArtSize || 4) : 1;
 
-	let currentCamera = { ...rc.cameraRef.current };
+	let currentCamera = isFlat ? flatViewCamera(currentState) : { ...rc.cameraRef.current };
 	let viewZoomOffset = currentState.viewZoomOffset;
 
 	const canvas = ctx.canvas;
@@ -337,7 +341,7 @@ export function renderFrame(
 	viewZoomOffset = quantizePixelArtCamera(
 		currentCamera,
 		viewZoomOffset,
-		isPixelArt,
+		isPixelArt && !isFlat, // the flat view's drawing must not jump (fx-in-draw.md §3)
 		isCinematic,
 		currentState.pointOfInterest,
 		currentState.currentLayerIndex,
@@ -468,8 +472,8 @@ export function renderFrame(
 	drawBackground(ctx, w, h, currentState.isDarkMode, isPixelArt, rc.paperImg);
 
 	// viewport calc — feeds layer loop and gizmo
-	const viewZoom = currentState.mode === 'drawing' ? currentState.drawingZoom : 1;
-	let viewPan = currentState.mode === 'drawing' ? currentState.drawingPan : { x: 0, y: 0 };
+	const viewZoom = (currentState.mode === 'drawing' || isFlat) ? currentState.drawingZoom : 1;
+	let viewPan = (currentState.mode === 'drawing' || isFlat) ? currentState.drawingPan : { x: 0, y: 0 };
 
 	// Ensure viewPan exists
 	if (!viewPan) viewPan = { x: 0, y: 0 };
@@ -688,7 +692,7 @@ export function renderFrame(
 		// uses, so it sits on the POI's own plane and drifts exactly as the camera
 		// breathes around it. That drift is the point: it is what lets a human tell a
 		// mis-computed point from a correct one the camera is orbiting.
-		if (isCinematic && poi && rc.poiMarkerSetAtRef.current > 0) {
+		if (isCinematic && !isFlat && poi && rc.poiMarkerSetAtRef.current > 0) {
 			const poiShapeZ = poi.z * currentState.layerSpacingFactor * CINEMATIC_DEPTH_MULTIPLIER;
 			const poiDz = poiShapeZ - effectiveCameraZ;
 			if (FL + poiDz > NEAR_CLIP) {
@@ -720,8 +724,8 @@ export function renderFrame(
 			drawCompositionGuide(ctx, w, h, currentState.drawingZoom || 1, currentState.drawingPan?.x || 0, currentState.drawingPan?.y || 0);
 		}
 
-		// --- Format frame (DRAW only, v3.25.5) --- same gates as the guide: never in an export or the MP4 recording.
-		if (currentState.mode === 'drawing' && currentState.format && !currentState.isUIHidden && !currentState.isExporting) {
+		// --- Format frame (DRAW and the flat view, v3.25.5 / v3.26.73) --- same gates as the guide: never in an export or the MP4 recording.
+		if ((currentState.mode === 'drawing' || isFlat) && currentState.format && !currentState.isUIHidden && !currentState.isExporting) {
 			drawFormatFrame(ctx, w, h, currentState.drawingZoom || 1, currentState.drawingPan || { x: 0, y: 0 },
 				frameInView(currentState.format, currentCamera.z, currentState.isAnimationMode), currentState.isDarkMode);
 		}

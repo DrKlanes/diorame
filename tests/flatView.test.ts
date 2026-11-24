@@ -47,6 +47,26 @@ describe('vista plana · estado', () => {
 	});
 });
 
+describe('vista plana · Centrar vista (v3.26.73)', () => {
+	const format = { type: '1:1' as const, orientation: 'portrait' as const, rect: { x: -200, y: -150, w: 400, h: 400 } };
+	const at = (extra: Partial<AppState>): AppState =>
+		run({ ...base(), viewportSize: { w: 1000, h: 800 }, format, currentLayerIndex: 3, ...extra }, { type: 'RESET_DRAWING_VIEW' });
+
+	it('encaja el Formato con la cámara de DRAW (capa activa), no con la de CINEMA', () => {
+		const draw = at({ mode: 'drawing', camera: { x: 0, y: 0, z: -450, rotation: 0 } });
+		const flat = at({ mode: 'cinematic', cinematicType: 'flat', camera: { x: 40, y: -10, z: 500, rotation: 0 } });
+		expect(flat.drawingZoom).toBe(draw.drawingZoom);
+		expect(flat.drawingPan).toEqual(draw.drawingPan);
+	});
+
+	it('los demás presets de CINEMA siguen leyendo state.camera, como antes', () => {
+		const forward = at({ mode: 'cinematic', cinematicType: 'forward', camera: { x: 0, y: 0, z: 500, rotation: 0 } });
+		const drawAt500 = at({ mode: 'drawing', camera: { x: 0, y: 0, z: 500, rotation: 0 } });
+		expect(forward.drawingPan).toEqual(drawAt500.drawingPan);
+		expect(forward.drawingZoom).toBe(drawAt500.drawingZoom);
+	});
+});
+
 describe('vista plana · tick de cámara', () => {
 	it('estática: la cámara no se mueve y no hay foco de Narrativa', () => {
 		const r = tick('flat', false);

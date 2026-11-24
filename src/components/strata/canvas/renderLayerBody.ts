@@ -11,6 +11,7 @@ import { renderLiveStroke } from './renderLiveStroke';
 import { composeLayer } from './composeLayer';
 import { paintShapeRun } from './renderShapeRun';
 import type { RenderContext, PerFrameComputed } from './renderPipeline';
+import { isFlatView } from '../../../utils/flatView';
 
 /**
  * ensureCanvas — lazy create + resize. Mirrored from the local helper in
@@ -98,7 +99,12 @@ export function renderLayer(
 	const layerIndex = Math.round(Math.abs(z / BASE_DEPTH_STEP));
 	if (currentState.hiddenLayers.includes(layerIndex)) return;
 
-	const isLocked3D = isCinematic && currentState.locked3DLayers.includes(layerIndex);
+	// Flat front view (v3.26.73): the layer projects as in DRAW — geometry, clip and fade — so `projCinematic` stands for
+	// isCinematic in all of them; only its depth for fog and DoF (layerAvgZ, below) keeps CINEMA's rule. Outside the flat
+	// view projCinematic === isCinematic and nothing changes.
+	const isFlat = isFlatView(currentState);
+	const projCinematic = isCinematic && !isFlat;
+	const isLocked3D = projCinematic && currentState.locked3DLayers.includes(layerIndex);
 	const shapes = rc.shapesByZ.get(z) || [];
 
 	// Pre-calculate Layer Projection Constants
@@ -109,21 +115,22 @@ export function renderLayer(
 	//   - CINEMA + animation mode + isAnimationFlatZ ON (user chose flat playback).
 	// CINEMA + animation mode + isAnimationFlatZ OFF → real depth, parallax lives.
 	// shapesByZ.get(z) above still uses the real z for shape lookup — only projection changes.
-	const isAnimFlat = currentState.isAnimationMode && (!isCinematic || currentState.isAnimationFlatZ);
+	const isAnimFlat = currentState.isAnimationMode && (!projCinematic || currentState.isAnimationFlatZ);
 	const baseZ  = isAnimFlat ? 0 : z * currentState.layerSpacingFactor;
-	const shapeZ = isAnimFlat ? 0 : ((!isCinematic || isLocked3D) ? baseZ : baseZ * CINEMATIC_DEPTH_MULTIPLIER);
+	const shapeZ = isAnimFlat ? 0 : ((!projCinematic || isLocked3D) ? baseZ : baseZ * CINEMATIC_DEPTH_MULTIPLIER);
 	const camX = isLocked3D ? 0 : currentCamera.x;
 	const camY = isLocked3D ? 0 : currentCamera.y;
 	// Flat CINEMA (zero-Z): use viewZoomOffset (= effectiveCameraZ - currentCamera.z)
 	// as the camera Z, so every layer shares a uniform NON-zero dz — they stay flat
 	// relative to each other, yet the zoom slider still scales the whole plane.
 	// Flat DRAW keeps camZ = 0 (no zoom there). Non-flat branch is unchanged.
+	// The flat view's camera is DRAW's, whose effective Z is camera.z itself (DRAW never adds viewZoomOffset).
 	const camZ   = isAnimFlat
-		? (isCinematic ? (effectiveCameraZ - currentCamera.z) : 0)
-		: (isLocked3D ? 0 : effectiveCameraZ);
+		? (projCinematic ? (effectiveCameraZ - currentCamera.z) : 0)
+		: (isLocked3D ? 0 : (isFlat ? currentCamera.z : effectiveCameraZ));
 	const dz = shapeZ - camZ;
 
-	const activeFL = (!isCinematic) ? DRAW_FOCAL_LENGTH : FL;
+	const activeFL = (!projCinematic) ? DRAW_FOCAL_LENGTH : FL;
 
 	if (activeFL + dz <= NEAR_CLIP) return; // Clip behind camera
 	const layerScale = activeFL / (activeFL + dz);
@@ -138,7 +145,12 @@ export function renderLayer(
 	layerCtx.globalAlpha = 1;
 	layerCtx.globalCompositeOperation = 'source-over';
 	let hasContent = false;
-	let layerAvgZ = dz;
+	// Flat view: fog and DoF read the layer's CINEMA depth from the same camera (decision D5): CINEMA's shapeZ minus
+	// effectiveCameraZ (camera.z + viewZoomOffset), pinned layers at their own plane — the dz the CINEMA branch would give.
+	const flatLocked = isFlat && currentState.locked3DLayers.includes(layerIndex);
+	let layerAvgZ = isFlat
+		? z * currentState.layerSpacingFactor * (flatLocked ? 1 : CINEMATIC_DEPTH_MULTIPLIER) - (flatLocked ? 0 : effectiveCameraZ)
+		: dz;
 
 	// Transform Helper Function — extracted to canvas/transformPoint.ts
 	const layerProjection: LayerProjectionParams = {
@@ -150,7 +162,7 @@ export function renderLayer(
 		layerOpacity,
 	};
 	const frameProjection: FrameProjectionParams = {
-		isCinematic,
+		isCinematic: projCinematic,
 		camera: currentCamera,
 		viewZoom,
 		viewPan,
