@@ -237,4 +237,18 @@ export const HANDLER_SCENARIOS: readonly HandlerScenario[] = [
 	{ name: 'flat/touch3/tap/redo', state: cinema('flat'), setup: [...threeStrokes, { type: 'UNDO' }], steps: [touch('start', [-50, 0], [0, 40], [50, 0]), tick(120), touch('end')] },
 	{ name: 'flat/double-click/no-poi', state: cinema('flat'), setup: threeLayers, steps: [p('down', 60, 40), p('up', 60, 40), tick(100), p('down', 60, 40), p('up', 60, 40)] },
 	{ name: 'flat/pen/no-stroke', state: cinema('flat', { tool: 'brush' }), steps: drag(WAVE, { type: 'pen' }) },
+	// Checked by hand in v3.26.74 (docs/flat-view-proposal.md §12.2), frozen with the handlers of v3.26.80.
+	{ name: 'flat/touch1/pan/second-finger-lands/pinch-takes-over', state: cinema('flat', { drawingPan: { x: 12, y: -7 } }), setup: threeStrokes, steps: [
+		touch('start', [0, 0]), p('down', 0, 0, { type: 'touch', id: 1 }), p('move', 30, -20, { type: 'touch', id: 1 }), p('move', 60, -10, { type: 'touch', id: 1 }),
+		touch('start', [60, -10], [160, -10]), tick(30),
+		touch('move', [40, 0], [200, 20]), p('move', 40, 0, { type: 'touch', id: 1 }), tick(16),
+		touch('move', [10, 20], [250, 50]), p('move', 10, 20, { type: 'touch', id: 1 }), tick(16),
+		touch('end', [250, 50]), p('up', 10, 20, { type: 'touch', id: 1 }), tick(400), touch('end'),
+	] },
+	{ name: 'flat/pen/pan/palm-lands/pan-not-reseeded', state: cinema('flat', { drawingPan: { x: 12, y: -7 } }), steps: [
+		p('down', 0, 0, { type: 'pen', id: 2 }), p('move', 30, -20, { type: 'pen', id: 2 }),
+		touch('start', [200, 200]), p('down', 200, 200, { type: 'touch', id: 7 }),
+		p('move', 60, -10, { type: 'pen', id: 2 }), p('move', 90, 15, { type: 'pen', id: 2 }),
+		p('up', 90, 15, { type: 'pen', id: 2 }), touch('end'),
+	] },
 ];

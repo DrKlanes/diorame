@@ -322,8 +322,8 @@ lo de arriba puede romper el trabajo; lo de abajo es juicio estético.
 
 | # | Riesgo | Caso | Esperado |
 |---|---|---|---|
-| 1 | Alto | **1 dedo arrastrando y llega el 2.º (pinch)** | El pinch toma el relevo sin saltos; al levantar un dedo, nada salta. (Cubierto solo en Node, ad hoc: §12.2) |
-| 2 | Alto | **Pencil arrastrando (pan) con la palma apoyada** | El pan sigue al Pencil; la palma no lo reinicia ni lo mueve |
+| 1 | Alto | **1 dedo arrastrando y llega el 2.º (pinch)** | El pinch toma el relevo sin saltos; al levantar un dedo, nada salta. (En la suite desde v3.26.81: `flat/touch1/pan/second-finger-lands/pinch-takes-over`) |
+| 2 | Alto | **Pencil arrastrando (pan) con la palma apoyada** | El pan sigue al Pencil; la palma no lo reinicia ni lo mueve. (En la suite desde v3.26.81 solo «no lo reinicia»: `flat/pen/pan/palm-lands/pan-not-reseeded`; si la palma emite `pointermove` o se levanta antes, ver `docs/ux-debt.md`) |
 | 3 | Alto | Pinch y pan de 2 dedos en Plana | Como en DRAW, sin tirones; tras el pinch, un dedo no deja «trazo fantasma» (no hay trazos en CINEMA) |
 | 4 | Alto | Toque de 2 dedos / 3 dedos en Plana | Deshacer / rehacer, como en DRAW (afecta al dibujo, visible en Plana) |
 | 5 | Alto | **1180×820 horizontal (iPad Air / Pro 11")** | La barra de cámara va ahora en **dos filas en TODOS los presets** (umbral 1100 → 1300, §12.3); nada solapado; el panel de FX cabe encima |

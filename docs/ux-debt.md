@@ -210,6 +210,13 @@ Medido con eventos de puntero sintéticos (v3.17.61):
 Salvedad: eventos sintéticos. iPadOS puede suprimir la palma por su cuenta cuando se usa el
 Pencil; hay que confirmarlo en hardware antes de dimensionar S2.
 
+- **S3 (Plana, leído en el código en v3.26.81, sin medir)** — un Pencil hace pan en la vista plana
+  y la palma se apoya: su `pointerdown` no vuelve a sembrar el pan (fijado en la suite:
+  `flat/pen/pan/palm-lands/pan-not-reseeded`), pero pisa `activePointerIdRef` como en S2, y la rama
+  de pan de `handlePointerMove` y el cierre de `handlePointerUp` no miran el `pointerId`: un
+  `pointermove` de la palma movería el pan con SUS coordenadas, y si la palma se levanta antes que
+  el Pencil el pan termina. Misma salvedad de hardware que S2. [POR CONFIRMAR en iPad]
+
 **Arreglo propuesto (no implementado: toca handlers de puntero y gesto):**
 1. `handlePointerUp`: si hay un puntero activo y `e.pointerId` no es él, soltar solo la captura
    de ESE puntero (si la tuviera) y salir, sin tocar el ref ni el gesto. Cubre S1 y la captura

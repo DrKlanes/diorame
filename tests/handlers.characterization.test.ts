@@ -114,6 +114,22 @@ describe('StrataCanvas handlers · what the reference itself says', () => {
 		}
 	});
 
+	it('flat view: a second finger turns a one-finger pan into a pinch from where the pan was, and a palm landing under a Pencil pan does not re-seed it', () => {
+		const pans = (name: string) => g[name].trace.flatMap(e => e.actions.filter(a => a.type === 'SET_DRAWING_ZOOM').map(a => a.payload as { zoom: number; pan: { x: number; y: number } }));
+		const takeover = g['flat/touch1/pan/second-finger-lands/pinch-takes-over'];
+		expect(dispatched(takeover)).not.toContain('UNDO');
+		const second = takeover.trace.findIndex(e => e.ev.startsWith('touchstart') && e.refs.isPanning === false);
+		expect(second).toBeGreaterThan(0);
+		// The pinch starts from the pan the finger left, and the first finger's own pointermoves no longer pan.
+		const lastPan = pans('flat/touch1/pan/second-finger-lands/pinch-takes-over')[1];
+		const pinch = takeover.trace.find(e => (e.refs.gesture as { isPinching?: boolean } | undefined)?.isPinching);
+		expect((pinch!.refs.gesture as { startPan: unknown }).startPan).toEqual(lastPan.pan);
+		expect(takeover.trace.slice(second).filter(e => e.ev.startsWith('pointermove')).every(e => e.actions.length === 0)).toBe(true);
+		expect(takeover.state.drawingZoom).toBeGreaterThan(1);
+		// Pencil pan 30 px per step from the same anchor, before and after the palm's pointerdown.
+		expect(pans('flat/pen/pan/palm-lands/pan-not-reseeded').map(p => p.pan)).toEqual([{ x: 42, y: -27 }, { x: 72, y: -17 }, { x: 102, y: 8 }]);
+	});
+
 	it('CINEMA double click frames only within 300 ms and 40 px', () => {
 		const poi = (name: string) => dispatched(g[name]).filter(t => t === 'SET_POINT_OF_INTEREST').length;
 		expect(poi('poi/double-click/299ms')).toBe(1);

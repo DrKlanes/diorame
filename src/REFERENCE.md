@@ -766,7 +766,7 @@ The safety net of the refactor (plan and invariants: `docs/audit-2026-11.md` §3
 | `helpers/fixtures.ts` | ~120 | Spines, `stroke()` (mirrors what `handlePointerUp` stamps), `richState()` (3 layers, thickness 10 / 30 / 50), measures (`spanY`, `maxDiff`, `looks`), `diorOf()` (the real `buildDiorData`, back from JSON) |
 | `helpers/actions.ts` | ~120 | `CATALOGUE`: one entry or more per reducer action, with a payload that does something on `richState(1)` |
 | `helpers/commitStrokeCases.ts` | ~75 | The 46 cases of `commitStroke.test.ts`: the slice of `AppState` that builds a shape plus the pointer samples. Self-contained (no React): the golden generator bundles it |
-| `helpers/handlerScenarios.ts` | ~205 | The 137 scripted gestures of `handlers.characterization.test.ts` (125 since v3.26.63; the 12 `flat/*` of the flat front view since v3.26.72, frozen with the handlers of v3.26.71) (pointer and touch events on a 1000×800 stand-in canvas): strokes in every tool, micro-strokes, pan (middle button, Space), two- and three-finger taps and pinch with their thresholds, CINEMA orbit, the CINEMA double click, and the Move tool (selection table, handles, dead zone, abandoned drags). Pure data: the golden generator bundles it |
+| `helpers/handlerScenarios.ts` | ~255 | The 139 scripted gestures of `handlers.characterization.test.ts` (125 since v3.26.63; the 12 `flat/*` of the flat front view since v3.26.72, frozen with the handlers of v3.26.71; 2 more `flat/*` since v3.26.81, frozen with the handlers of v3.26.80: a second finger takes a one-finger pan over as a pinch, a palm landing under a Pencil pan does not re-seed it) (pointer and touch events on a 1000×800 stand-in canvas): strokes in every tool, micro-strokes, pan (middle button, Space), two- and three-finger taps and pinch with their thresholds, CINEMA orbit, the CINEMA double click, and the Move tool (selection table, handles, dead zone, abandoned drags). Pure data: the golden generator bundles it |
 | `reducer.smoke.test.ts` | ~60 | The 91 actions (since v3.26.25) run on a state with content, alone and chained, without throwing. Reads the `case` names from wherever `appReducer` lives, so a new action without a catalogue entry fails |
 | `strokeGenerators.golden.test.ts` | ~145 | 6 spines × tapered / uniform / ink × thickness 1 / 20 / 70 against `fixtures/strokes.golden.json` (tolerance 1e-9). Guards Ink's `_inkSmoothPass` ×3 weight 0.3 (through the output: it is not exported) and the curved densify: slow stroke equal to the frozen pre-v3.26.4 reference (`fixtures/ink-slow-pre-3.26.4.json`, generated with the generator of commit `8adfc50^`), fast arc within 1 px of the curve (4.96 px with the old chords), point-count formula |
 | `history.characterization.test.ts` | ~205 | Hybrid undo contract: a 24-gesture session undone and redone step by step (I1, I2), a layer's pair only moves with its own restyle (I3, v3.26.3), view state never in a snapshot (I13), cap of 50 (I14) |
@@ -1430,9 +1430,14 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.80)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.81)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.81 · test(handlers): los dos gestos de Plana que se probaron a mano
+
+- `tests/helpers/handlerScenarios.ts` + `tests/fixtures/handlers.golden.json`: `flat/touch1/pan/second-finger-lands/pinch-takes-over` (un dedo en pan y llega el segundo: el pinch arranca desde el pan que dejó el dedo, sin deshacer, y los `pointermove` del primer dedo ya no mueven nada) y `flat/pen/pan/palm-lands/pan-not-reseeded` (el `pointerdown` de la palma no vuelve a sembrar el pan del Pencil). Generados con `--rev HEAD` (handlers de v3.26.80, sin tocar `src/`); los 137 previos, idénticos (comparación JSON caso a caso). 139 escenarios.
+- **Leído en el código, no cubierto por el escenario** (`docs/ux-debt.md`): `handlePointerMove` y `handlePointerUp` no miran el `pointerId` durante un pan; si la palma emite `pointermove` o se levanta antes que el Pencil, movería o terminaría el pan. [POR CONFIRMAR en iPad]
 
 ### 3.26.80 · feat(flat): distorsión en Plana — opción A (límite monótono)
 
