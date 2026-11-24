@@ -102,20 +102,9 @@
     build: {
       target: 'esnext',
       outDir: 'build',
-      rollupOptions: {
-        // dior-render.js (v3.22.0): the .dior renderer the Super Riso Lab imports cross-origin. A second entry, at a
-        // fixed name in the root so its URL never changes; its chunks keep their hashes under assets/.
-        input: {
-          index: path.resolve(__dirname, 'index.html'),
-          'dior-render': path.resolve(__dirname, 'src/dior-render.ts'),
-        },
-        // 'strict': the shared code goes to hashed chunks and dior-render.js only re-exports. Without it Rollup puts that
-        // code IN dior-render.js and the app imports from it: an unhashed file a stale cache can mismatch after a deploy.
-        preserveEntrySignatures: 'strict',
-        output: {
-          entryFileNames: chunk => (chunk.name === 'dior-render' ? 'dior-render.js' : 'assets/[name]-[hash].js'),
-        },
-      },
+      // dior-render.js (the .dior renderer the Super Riso Lab imports cross-origin) is NOT built here: it is a second,
+      // self-contained build (vite.dior-render.config.ts, run by `npm run build`), so the Lab never depends on a hashed
+      // chunk that the next deploy deletes (v3.26.91; before, a cached dior-render.js imported a chunk that was gone).
     },
     server: {
       port: 3000,

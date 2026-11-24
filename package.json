@@ -1,6 +1,6 @@
 {
   "name": "Diorame",
-  "version": "3.26.90",
+  "version": "3.26.91",
   "private": true,
   "type": "module",
   "dependencies": {
@@ -45,7 +45,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.dior-render.config.ts && node tools/build-guards/check-build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   }
