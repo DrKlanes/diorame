@@ -9,13 +9,30 @@ import { useTranslation } from '../i18n';
 // 'prompt', el SW nuevo queda esperando hasta que el usuario pulsa "Recargar".
 // El estilo dark-aware lo hereda del <Toaster> de ToastProvider — no crea toast propio.
 // Inerte en `npm run dev` (vite-plugin-pwa solo genera el SW en build).
+// v3.26.90: the browser only looks for a new sw.js when the page is (re)loaded, so a tab or an installed PWA that stays
+// open — or is resumed on the iPad, which does not reload it — never showed the toast. Ask again when the app comes back
+// to the foreground (at most once a minute) and every 30 minutes while it is visible.
+const UPDATE_EVERY_MS = 30 * 60 * 1000;
+const UPDATE_MIN_GAP_MS = 60 * 1000;
+function watchForUpdates(registration: ServiceWorkerRegistration) {
+	let last = Date.now();
+	const check = () => {
+		if (document.visibilityState !== 'visible' || !navigator.onLine || Date.now() - last < UPDATE_MIN_GAP_MS) return;
+		last = Date.now();
+		registration.update().catch(() => { /* offline or server hiccup: the next check retries */ });
+	};
+	document.addEventListener('visibilitychange', check);
+	window.addEventListener('online', check);
+	window.setInterval(check, UPDATE_EVERY_MS);
+}
+
 export function PwaUpdatePrompt() {
 	const { t } = useTranslation();
 	const {
 		needRefresh: [needRefresh],
 		offlineReady: [offlineReady, setOfflineReady],
 		updateServiceWorker,
-	} = useRegisterSW({ immediate: true });
+	} = useRegisterSW({ immediate: true, onRegisteredSW: (_url, registration) => { if (registration) watchForUpdates(registration); } });
 
 	// Nueva versión disponible → toast persistente con acción "Recargar".
 	useEffect(() => {
