@@ -6,8 +6,10 @@
 > cual se describe abajo, **sin guardia que lo respalde** (§5 sigue vigente). Comprobado al portar: los 7 `FS_X*` idénticos al Lab;
 > `__superRisoHash` 18/18 idénticos (Acuarela, Riso, Stencil, Fotocopia sin color); `pixcheck` / `pixcheck2` 0 px; `flatcheck` y
 > `__cinemaHash` en verde; `dior-render` igual. La guardia antigua (`markeredge.js`) queda con la escalera de CINEMA en 0,21 y el halo
-> entre colores en lo-fi en 6,3 %: sus límites se ensancharon a 0,26 y 8 (antes ya iba en 0,19 con límite 0,2). Coste no medido en A/B;
+> entre colores en lo-fi en 6,3 %: sus límites se ensancharon a 0,26 y 8 (antes ya iba en 0,19 con límite 0,2); **ese ensanchamiento se revirtió en v3.26.87**: los casos se listan como «FALLO CONOCIDO». Coste no medido en A/B;
 > el cambio no añade lecturas de textura. Reversión: `git revert` del commit de v3.26.86 en app y del de v23.9 en `lab\web`.
+
+> **Cerrado como problema conocido (v3.26.87):** estado vigente, historia completa y enfoques futuros en `docs/known-issues/marker-edges.md`.
 
 ## 1 · Reproducido: sí, por la UI real
 

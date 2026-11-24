@@ -563,6 +563,10 @@ eje cruzaba el contorno) y se arreglaron en el Lab v22 → Diorame v3.22.0 (fina
 1,5 texels de v3.20.1 se mantiene. Ninguna técnica tiene sliders de
 ajuste fino: los valores salen de `xBase()` / `sBase()` y de los `fine` de los estilos.
 
+**PROBLEMA CONOCIDO — almenas del Rotulador (v3.26.86 / Lab v23.9, aparcado el 24 nov 2026).** Los escalones cuadrados alineados con los
+ejes en los bordes del rotulador siguen apareciendo, mitigados pero no eliminados. Historia completa, por qué fallaron las guardias, cómo
+reproducirlo y la regla para el próximo intento: `docs/known-issues/marker-edges.md`.
+
 ---
 
 ## Export HQ ×2: texturas y amplitudes en píxeles fijos (v3.20.4)

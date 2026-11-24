@@ -1435,9 +1435,13 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.86)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.87)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.87 · docs: Rotulador cerrado como problema conocido
+
+- Decisión de Moisés (24 nov 2026): no más intentos por ahora. Sin cambios en `src/` ni shaders; se mantiene v3.26.86 / Lab v23.9 (mitiga, no elimina las almenas). Documento para retomarlo: `docs/known-issues/marker-edges.md`. Guardia `markeredge.js`: umbrales originales restaurados (escalera 0,2; halo de color lo-fi 4,5); tres casos listados como «FALLO CONOCIDO» (cinema-normal y cinema-png-hq2 en escalera, cinema-lofi en halo de color) y aviso de que la guardia NO ve las almenas. La entrada «Marker edges: the real cause and the fix» de §14 NO es causa definitiva: cubre solo la rejilla ¼ y los halos.
 
 ### 3.26.86 · fix(fx): Rotulador — extremo frente a flanco del trazo (Lab v23.9)
 

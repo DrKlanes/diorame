@@ -28,12 +28,17 @@
 	// edgePx and stairPx are in px of the SIMULATION: lo-fi (Resolution .1: simulated at 46 %, enlarged without smoothing) and
 	// the «modo ligero» (simulated at 50 %) draw pixels bigger than the output's, and an edge cannot be finer than its pixel —
 	// those two get LIMITS_UP (about a quarter of a simulated pixel more of edge; a contact band only ~1 simulated px wide).
-	// v3.26.86 (Lab v23.9, end vs flank): stairPx of the CINEMA cases measures .21 (it was .19 against a .2 limit: the margin was
-	// already thin) and the lo-fi colour halo 6.3 %. Limits widened to .26 and 8; v3.26.82 still fails every case (stair .28–.43,
-	// colour halo 35–41 %). NOTE: this guard does NOT see the square steps of the stroke model (docs/marker-edges-attempt-4.md):
-	// its supersampled reference carries them too. It only guards the ¼ grid and the halos.
-	const LIMITS = { edgePx: 0.32, stairPx: 0.26, haloDarkPct: 3, haloColorPct: 4.5 };
-	const LIMITS_UP = { edgePx: 0.45, stairPx: 0.26, haloDarkPct: 8, haloColorPct: 8 };
+	// Original limits (v3.26.83). v3.26.86 (Lab v23.9, end vs flank) pushed three values over them; the widening of v3.26.86 was
+	// REVERTED on purpose (known-issue closure, 2026-11-24): those cases are listed in KNOWN below and reported as KNOWN FAILURE.
+	// WARNING: this guard does NOT see the square steps (battlements) at the end of a marker stroke (docs/known-issues/marker-edges.md,
+	// attempt 4): its supersampled reference carries them too. It only guards the ¼ grid and the halos. A pass here says nothing
+	// about those steps.
+	const LIMITS = { edgePx: 0.32, stairPx: 0.2, haloDarkPct: 3, haloColorPct: 4.5 };
+	const LIMITS_UP = { edgePx: 0.45, stairPx: 0.2, haloDarkPct: 8, haloColorPct: 4.5 };
+	// Known failures: case → metric → value measured in v3.26.86 (2026-11-24). Over the original limit but ≤ value × 1.10 = KNOWN
+	// FAILURE (does not fail the guard); worse than that by more than 10 %, or any metric/case not listed over its limit = normal FAILURE.
+	const KNOWN = { 'cinema-normal': { stairPx: 0.206 }, 'cinema-png-hq2': { stairPx: 0.211 }, 'cinema-lofi': { haloColorPct: 6.3 } };
+	const KNOWN_TAG = 'FALLO CONOCIDO — ver docs/known-issues/marker-edges.md';
 	const POLY = {
 		blueA: [[100, 15], [175, 28], [160, 80], [108, 62]], blueB: [[15, 100], [125, 95], [130, 168], [20, 170]], yelT: [[15, 100], [70, 97.5], [18, 150]],
 		redQ: [[146, 118], [222, 128], [215, 168], [150, 165]], blackQ: [[150, 100], [228, 112], [222, 128], [146, 118]],
@@ -192,7 +197,9 @@
 		const L = up > 1 ? LIMITS_UP : LIMITS;
 		const row = { name, size: `${target.width}x${target.height}`, simPx: +up.toFixed(2), edgePx: +(edgePx(T, Rf) / up).toFixed(3), stairPx: +((amps.length ? Math.sqrt(amps.reduce((s, v) => s + v * v, 0) / amps.length) : 0) / up).toFixed(3),
 			haloDarkPct: +worst('dark').toFixed(1), haloColorPct: +worst('color').toFixed(1), limits: up > 1 ? 'up' : 'full' };
-		row.pass = row.edgePx <= L.edgePx && row.stairPx <= L.stairPx && row.haloDarkPct <= L.haloDarkPct && row.haloColorPct <= L.haloColorPct;
+		const bad = [], known = [];
+		for (const k of Object.keys(L)) if (row[k] > L[k]) { const kv = (KNOWN[name] || {})[k]; (kv != null && row[k] <= kv * 1.1 ? known : bad).push(k); }
+		row.pass = bad.length === 0; row.status = bad.length ? 'FALLO: ' + bad.join(', ') : known.length ? KNOWN_TAG + ': ' + known.join(', ') : 'ok';
 		return keep ? { row, target, ref, tidy: tidyCv } : { row };
 	}
 
@@ -207,7 +214,7 @@
 	window.__markerEdgeCheck = async ({ keep = false, cases = CASES } = {}) => {
 		const m = await modules(); await ready(m); const out = [], images = {};
 		for (const c of cases) { const r = await measureCase(m, c, keep); out.push(r.row); if (keep) images[c[0]] = { target: r.target, ref: r.ref, tidy: r.tidy }; }
-		const res = { pass: out.every(r => r.pass), limits: { full: LIMITS, up: LIMITS_UP }, cases: out }; if (keep) res.images = images; return res;
+		const res = { pass: out.every(r => r.pass), knownFailures: out.filter(r => r.pass && r.status !== 'ok').length, note: 'This guard does NOT see the battlements at the end of a marker stroke (docs/known-issues/marker-edges.md).', limits: { full: LIMITS, up: LIMITS_UP }, cases: out }; if (keep) res.images = images; return res;
 	};
 
 	// Everything of Super Riso that is NOT Fotocopia + marker, on the example scene, CINEMA forward and flat view: before / after.
