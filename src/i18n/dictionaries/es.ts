@@ -711,6 +711,8 @@ export const es: Dictionary = {
 	'toast.save.successTitle': 'Proyecto guardado',
 	'toast.save.successDesc': '{filename}',
 	'toast.save.errorTitle': 'Error al guardar',
+	'toast.superRiso.opening': 'Abriendo Super Riso…',
+	'toast.superRiso.openingDesc': 'La primera vez el Lab tarda unos segundos en arrancar',
 	'toast.superRiso.opened': 'Abierto en Super Riso',
 	'toast.superRiso.failedTitle': 'No se pudo abrir Super Riso',
 	'toast.superRiso.failedDesc': 'Descarga el .dior y ábrelo allí',

@@ -748,6 +748,8 @@ export const en: Dictionary = {
 	'toast.save.successTitle': 'Project saved',
 	'toast.save.successDesc': '{filename}',
 	'toast.save.errorTitle': 'Failed to save',
+	'toast.superRiso.opening': 'Opening Super Riso…',
+	'toast.superRiso.openingDesc': 'The first time, the Lab takes a few seconds to start',
 	'toast.superRiso.opened': 'Opened in Super Riso',
 	'toast.superRiso.failedTitle': 'Could not open Super Riso',
 	'toast.superRiso.failedDesc': 'Download the .dior and open it there',

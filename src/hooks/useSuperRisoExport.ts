@@ -23,12 +23,13 @@ export function useSuperRisoExport() {
 		const h = box?.clientHeight || window.innerHeight;
 		const name = state.projectName === UNTITLED_PROJECT_SENTINEL ? t('topbar.file.untitledProject') : state.projectName;
 		const filename = `${projectFileStem(name)}.dior`;
-		const emptyToast = () => toast.error(t('toast.superRiso.emptyTitle'), { description: t('toast.superRiso.emptyDesc') });
+		const TOAST_ID = 'superriso-launch';  // the "opening" toast becomes the result toast
+		const emptyToast = () => toast.error(t('toast.superRiso.emptyTitle'), { id: TOAST_ID, description: t('toast.superRiso.emptyDesc') });
 		if (state.shapes.length === 0) { emptyToast(); return; }
 
 		let empty = false;
 		// First thing, still inside the click: popup blockers let a window open only from the gesture itself.
-		launchSuperRiso(async () => {
+		const launched = launchSuperRiso(async () => {
 			const fileMeta: DiorFileMeta = {
 				formatVersion: DIOR_FORMAT_VERSION, ...state.projectMeta,
 				shapeCount: state.shapes.length,
@@ -43,10 +44,14 @@ export function useSuperRisoExport() {
 			// camera. For the frame this is format.rect itself (outside animation); the protocol does not change.
 			const seen = state.format ? frameInView(state.format, state.camera.z, state.isAnimationMode) : visibleDrawView(state, w, h);
 			return { blob, name: filename, drawView: scaleRect(seen, 1 / layer0Scale(state.camera.z)) };
-		}).then(({ ok, payload }) => {
-			if (ok) { toast.success(t('toast.superRiso.opened'), { duration: 2000 }); return; }
+		});
+		// A cold Lab takes several seconds to start (superRisoBridge.ts, READY_MS): say that something is happening.
+		toast.loading(t('toast.superRiso.opening'), { id: TOAST_ID, description: t('toast.superRiso.openingDesc') });
+		launched.then(({ ok, payload }) => {
+			if (ok) { toast.success(t('toast.superRiso.opened'), { id: TOAST_ID, duration: 2000 }); return; }
 			if (empty) { closeSuperRisoWindow(); emptyToast(); return; }
 			toast.error(t('toast.superRiso.failedTitle'), {
+				id: TOAST_ID,
 				description: t('toast.superRiso.failedDesc'),
 				duration: 15000,
 				action: {
