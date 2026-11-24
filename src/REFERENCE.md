@@ -1430,9 +1430,14 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.81)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.82)
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
+
+### 3.26.82 · chore(tools): `pixcheck2` estable en pasadas repetidas
+
+- **Causa [VERIFICADO]:** los casos de la vista previa del Move hacían `await import()` entre `seedRandom()` y el render; con la app viva animando en CINEMA su RAF consumía el `Math.random` sembrado (global) y la textura salía distinta (38 019–591 244 px). No era el backend GPU/CPU ni estado residual entre pasadas. Arreglo en `tools/draw-stress/harness/pixcheck2.js` (import fuera del bucle, fuentes cargadas antes del primer render) y la misma trampa en `flatcheck.js` · `__diorRenderHash` (render de calentamiento). Sin tocar `src/`.
+- Verificado con la app en CINEMA: tres `after` seguidos a 0 px, fallo plantado cazado, `__diorRenderHash` mismo SHA-256 en tres pasadas. `docs/ux-debt.md` (entrada cerrada, con los falsos diagnósticos); regla en CLAUDE.md «Verificación», junto a la de limpieza de temporales.
 
 ### 3.26.81 · test(handlers): los dos gestos de Plana que se probaron a mano
 

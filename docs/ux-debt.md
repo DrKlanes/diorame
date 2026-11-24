@@ -703,24 +703,34 @@ Al entrar en «Mixto» (candado de proporción junto al valor, v3.26.25) la píl
 
 El candado de «Mixto» mide 30×30 px; la guía de Apple recomienda 44 pt para un objetivo táctil. **Pendiente de validación en iPad:** comprobar si se acierta con el dedo y, si no, agrandar el área táctil (lo que se cruza con el ancho de la píldora del punto anterior).
 
-## Arneses de píxel: `pixcheck2` inestable en segundas pasadas de la misma página (v3.26.79)
+## Arneses de píxel: `pixcheck2` inestable en segundas pasadas de la misma página (v3.26.79) — RESUELTO en v3.26.82
 
-**Estado:** pendiente de arreglar (tooling). No afecta a la app.
+**Estado:** resuelto (tooling, `tools/draw-stress/harness/`). No afectaba a la app.
 
-**El síntoma.** `__pixcheck2('after')` da 0 px en la primera pasada tras cargar la página y, a veces, diferencias grandes en la segunda,
-sin cambiar el código. Siempre en los casos de la vista previa del Move, que renderizan con `renderFrame` directamente y no con
-`renderSnapshot`.
+**El síntoma.** `__pixcheck2('after')` daba 0 px en la primera pasada tras cargar la página y, a veces, diferencias grandes en la
+segunda, sin cambiar el código. Siempre en los casos de la vista previa del Move (38 019 – 582 984 px).
 
-**La evidencia (A/B, 2026-11-24, `docs/flat-view-proposal.md` §13.5):**
+**La causa [VERIFICADO].** `Math.random` es global. Los dos casos del Move hacían `await import('…/renderPipeline.ts')` ENTRE
+`seedRandom()` y el render; ese `await` cede el hilo, y si la app viva está animando (CINEMA con temblor, partículas o grano: ~60
+llamadas a `Math.random` por segundo, medidas) su RAF consume números de la secuencia sembrada. El render del arnés arranca entonces en
+otro punto de la secuencia y la textura de tinta sale distinta. Los otros cinco casos no esperan nada entre la siembra y la lectura, y
+por eso nunca fallaban. «Segunda pasada» era una coincidencia: lo que cambiaba entre pasadas era que la app había pasado a CINEMA, no
+la página. Reproducido a voluntad: con la app en DRAW y en reposo (no repinta, 0 llamadas) 4 pasadas a 0 px; con la escena de ejemplo
+en CINEMA, el arnés SIN tocar da `draw-move-preview-ex` 591 244 px y, alargando la espera, `draw-move-preview-text` 38 789 px.
 
-| Código | 1.ª pasada (página recién cargada) | 2.ª pasada (misma página) |
-|---|---|---|
-| HEAD sin cambios (v3.26.78) | 7/7 a 0 px | `draw-move-preview-text` 38 019 px |
-| Con la distorsión de Plana | 7/7 a 0 px | `draw-move-preview-ex` 582 984 px (hash `14519aaf…` frente a `0d33237d…`) |
-| Tras otros arneses en la misma página | — | `draw-move-preview-ex` 582 984 px |
+**Segundo defecto, independiente:** los casos de texto de la primera pasada se pintaban con la fuente de reserva si las fuentes aún no
+habían cargado (138 585 y 70 820 px entre la 1.ª y la 2.ª pasada); el README pedía una pasada de calentamiento a mano.
 
-**Hipótesis, sin comprobar:** el backend de raster (GPU / CPU) que Chrome elige para los lienzos nuevos cambia con la presión de memoria
-de la sesión (la trampa documentada en CLAUDE.md), y esos dos casos crean sus lienzos con `document.createElement` sin
-`willReadFrequently`. Arreglo probable: forzar la CPU como `onCpu` de `timelapse.js` (o `__flatDistortCheck`).
+**El arreglo.** `pixcheck2.js`: el `import` de `renderPipeline` sale del bucle (nada se espera entre `seedRandom()` y `getImageData`)
+y todas las fuentes declaradas se cargan antes del primer render. `flatcheck.js` · `__diorRenderHash` tenía la misma trampa
+(`renderDior` espera el papel y las fuentes tras la siembra: `same: false` con la app en CINEMA): un render de calentamiento sin
+semilla deja ambos en caché y las esperas del render sembrado se resuelven en microtareas.
 
-**Mientras tanto:** `pixcheck2` se mide siempre en la primera pasada de una página recién cargada.
+**Verificado** (página recién cargada, escena de ejemplo en CINEMA, la app viva consumiendo ~90 `Math.random` cada 1,5 s): `before` +
+tres `after` seguidos, 7/7 a 0 px; fallo plantado (cada `lineTo` medio píxel a la derecha) cazado en 4 casos (8 704 – 23 980 px; los
+de texto no usan `lineTo`); al retirarlo, 0 px. `__diorRenderHash`: tres `after`, mismo SHA-256. `pixcheck`, `__cinemaHash` y
+`__flatCheck` ya eran estables en esas condiciones.
+
+**Lo que NO era la causa:** el backend de raster GPU/CPU de los lienzos nuevos (la hipótesis anterior), estado residual entre pasadas,
+cachés de lienzo ni otros arneses ejecutados antes en la misma página (`pixcheck`, `flatcheck`, `alphaleak`, `mergedrift`,
+`__cinemaHash`, `__flatDistortCheck`, `__flatAnimCheck`: probados uno a uno, 0 px después de cada uno).

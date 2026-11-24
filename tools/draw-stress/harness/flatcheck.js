@@ -207,6 +207,10 @@
 		const frame = R.frameOf(project);
 		const out = {};
 		for (const [name, args] of [['w1200', { width: 1200 }], ['w800-view', { width: 800, view: { x: frame.x0 + 50, y: frame.y0 + 40, w: 600, h: 450 } }]]) {
+			// Warm-up, unseeded: renderDior awaits the paper and the fonts. On the first call that wait hands the thread to the
+			// live app's RAF, which draws from the seeded Math.random when it is animating (same trap as pixcheck2, v3.26.82).
+			// With both cached the awaits resolve in microtasks and nothing runs between the seed and the readback.
+			await R.renderDior(project, args);
 			seed(4242);
 			const cv = await R.renderDior(project, args);
 			const px = pixels(cv);

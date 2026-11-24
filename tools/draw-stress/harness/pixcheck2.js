@@ -2,6 +2,13 @@
 window.__pixcheck2 = async (label) => {
 	const C = await import('/src/components/strata/StrataContext.tsx');
 	const D = await import('/src/components/strata/canvas/drawSnapshot.ts');
+	// Imported HERE, not inside the loop: nothing may be awaited between seedRandom() and the readback. Math.random is
+	// global, and an await hands the thread to the live app's RAF, which draws from the seeded sequence when it is
+	// animating (CINEMA: wiggle, particles, grain) — the Move cases then came out 38 019 – 591 244 px off (v3.26.82).
+	const P = await import('/src/components/strata/canvas/renderPipeline.ts');
+	// Text cases: every declared face loaded before the first render, or the first pass paints fallback fonts.
+	await Promise.all([...document.fonts].map(f => f.load().catch(() => null)));
+	await document.fonts.ready;
 	const load = async (url) => C.appReducer(C.initialState, { type: 'LOAD_PROJECT', payload: await (await fetch(url)).json() });
 	const ex = await load('/examples/diorame_onboarding.dior');
 	const tx = await load('/tools/svg-diff/fixtures/text-legacy-v3.17.55.dior');
@@ -35,7 +42,6 @@ window.__pixcheck2 = async (label) => {
 		// renderSnapshot builds its own idle transformState; for the Move cases render through renderFrame directly
 		let cv;
 		if (o.transformState) {
-			const P = await import('/src/components/strata/canvas/renderPipeline.ts');
 			const out = document.createElement('canvas'); const ctx = out.getContext('2d', { alpha: false });
 			const mk = () => ({ current: document.createElement('canvas') });
 			P.renderFrame(ctx, { ...o, isDrawing: false, currentPoints: [], cameraRef: { current: { ...o.camera } }, storyFocusRef: { current: null }, lastShakeRef: { current: { x: 0, y: 0, z: 0 } },
