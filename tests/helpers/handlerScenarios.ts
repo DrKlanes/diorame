@@ -222,4 +222,19 @@ export const HANDLER_SCENARIOS: readonly HandlerScenario[] = [
 	{ name: 'move/hover/orphaned-transform-does-not-drag', ...moveSetup, steps: [withHandles, ref('transformRef', { isActive: true, mode: 'move', startP: { x: 100, y: 100 } }, true), p('move', 180, 160), p('move', 260, 220)] },
 	{ name: 'move/hidden-layer/toast', state: { tool: 'move', hiddenLayers: [0] }, setup: moveSetup.setup, steps: [withHandles, ...drag([[180, 160], [230, 190]])] },
 	{ name: 'move/layer-2/drag', state: { tool: 'move' }, setup: [{ type: 'ADD_LAYER' }, { type: 'ADD_LAYER' }, add(square('sq2', 2))], steps: [withHandles, ...drag([[180, 160], [230, 190], [260, 140]])] },
+
+	// Flat front view (CINEMA preset 'flat', v3.26.71; docs/flat-view-proposal.md §2): DRAW's pan and zoom instead of the
+	// orbit. Frozen with the handlers of v3.26.71, before the flat view had gestures; the commit that gives them inverts these.
+	{ name: 'flat/space/drag-pans', state: cinema('flat', { drawingPan: { x: 12, y: -7 } }), steps: [ref('isSpaceDownRef', true), ...drag([[0, 0], [2, 0], [3, 0], [40, -30], [1, 0]], { type: 'pen' })] },
+	{ name: 'flat/middle-button/pans', state: cinema('flat', { drawingZoom: 1.5, drawingPan: { x: 12, y: -7 } }), steps: drag([[0, 0], [40, 25], [-90, 60]], { button: 1 }) },
+	{ name: 'flat/mouse/drag-pans', state: cinema('flat', { drawingPan: { x: 12, y: -7 } }), steps: drag([[0, 0], [40, 25], [-90, 60]]) },
+	{ name: 'flat/mouse/drag-pans/clamped', state: cinema('flat', { drawingZoom: 2 }), steps: drag([[0, 0], [2000, -4000], [3100, 1]]) },
+	{ name: 'flat/touch1/drag-pans', state: cinema('flat'), steps: [touch('start', [0, 0]), ...drag([[0, 0], [30, -20], [75, 10]], { type: 'touch' }), touch('end')] },
+	{ name: 'flat/pen/drag-pans', state: cinema('flat'), steps: drag([[0, 0], [30, -20], [75, 10]], { type: 'pen' }) },
+	{ name: 'flat/touch2/pinch/zoom-in-with-moving-centre', state: cinema('flat'), setup: threeStrokes, steps: [touch('start', [-50, 0], [50, 0]), touch('move', [-70, 10], [70, 10]), touch('move', [-120, 40], [130, 40]), touch('end', [130, 40]), touch('end')] },
+	{ name: 'flat/touch2/pinch/zoom-out/pan-clamped', state: cinema('flat', { drawingPan: { x: 700, y: -700 } }), steps: [touch('start', [-200, 0], [200, 0]), touch('move', [400, -450], [600, -450]), touch('end')] },
+	{ name: 'flat/touch2/tap/undo', state: cinema('flat'), setup: threeStrokes, steps: [touch('start', [-50, 0], [50, 0]), tick(120), touch('end')] },
+	{ name: 'flat/touch3/tap/redo', state: cinema('flat'), setup: [...threeStrokes, { type: 'UNDO' }], steps: [touch('start', [-50, 0], [0, 40], [50, 0]), tick(120), touch('end')] },
+	{ name: 'flat/double-click/no-poi', state: cinema('flat'), setup: threeLayers, steps: [p('down', 60, 40), p('up', 60, 40), tick(100), p('down', 60, 40), p('up', 60, 40)] },
+	{ name: 'flat/pen/no-stroke', state: cinema('flat', { tool: 'brush' }), steps: drag(WAVE, { type: 'pen' }) },
 ];
