@@ -31,6 +31,10 @@ y los builds de comparación van a la carpeta temporal, nunca dentro de `Diorame
   El build de Diorame tiene que apuntar al Lab local: `VITE_SUPER_RISO_LAB_URL='http://127.0.0.1:4175/?diorame=http://127.0.0.1:4173/dior-render.js'`.
 - `labstages.mjs <labUrl> <profileDir> [--cold]` — arranque del Lab: `engine`, `ready` y el tiempo dentro de las llamadas
   WebGL de compilación/enlace. `--cold`: sin caché de shaders.
+- `srstart.mjs <url> <profileDir> [--cold] [--xerox] [--xwait=ms]` — (v3.26.95) Super Riso en la app por la UI: escena de
+  ejemplo → «Cine» → botón de Super Riso (panel de FX desplegado); con `--xerox`, después cambia la técnica a Fotocopia.
+  Por etapa: bloqueos del hilo principal (`longTasks`, el número a comparar), tiempo dentro de compilar/enlazar y programas
+  enlazados. `--cold` con un perfil NUEVO por llamada; el mismo perfil sin `--cold` = caliente (la 1.ª sesión ceba la caché).
 
 Regla del proyecto: rendimiento solo en A/B alternado, viejo y nuevo en la misma sesión.
 
@@ -40,6 +44,10 @@ Regla del proyecto: rendimiento solo en A/B alternado, viejo y nuevo en la misma
 |---|---|---|
 | Lab en frío hasta `ready` (`labstages --cold`, 3 rondas) | v23.5 8,05 s · v23.8–23.10 8,65 s (≈7,6 s compilando 19 programas en serie) | v23.11 **1,19 s** |
 | Lab en caliente | 0,62 s | 0,58 s |
+| App: activar Super Riso en CINEMA, en frío (`srstart --cold`, 4 rondas alternadas, v3.26.94 → v3.26.95) | 1,04 s | **0,72 s** |
+| App: pasar a Fotocopia en frío | 6,2 s (`FS_XCOLOR` solo: ~5,7 s) | 5,9 s |
+| App: Super Riso / Fotocopia en caliente (2.ª y 3.ª sesión del mismo perfil) | 0,09–0,10 s / 0,10–0,11 s | 0,06–0,16 s / 0,09–0,12 s |
+| App, DESCARTADO: lanzar al crear el motor los programas de Fotocopia y Stencil | — | Fotocopia en frío 0,1 s (esperando 8 s) / 3,7 s, pero la 2.ª sesión 4,1–4,3 s (3/3): no quedaba en la caché |
 | Primera apertura tras un deploy del Lab que cambia shaders (caché caliente de la versión anterior) | 6,0–6,6 s | ~1,2 s (como en frío) |
 | Diorame → Lab, Chrome nuevo por apertura (`bridge --restart`) | v3.26.87 + v23.10: 9/10 ok, ~10 s cada una | v3.26.91 + v23.11: **20/20**, mediana 3,0 s |
 | Diorame → Lab, pestaña del Lab reutilizada (`bridge`) | 20/20, 1,4 s | 20/20, 1,4 s |

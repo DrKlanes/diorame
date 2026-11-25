@@ -104,18 +104,33 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 	const gl = canvas.getContext('webgl2', { preserveDrawingBuffer: opts.preserveDrawingBuffer ?? true, antialias: false, premultipliedAlpha: false }) as WebGL2RenderingContext | null;
 	if (!gl) throw new Error('WebGL2 no disponible');
 	const MAXTEX: number = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+	// Lab v23.11: compile() only issues the compile and the link; status and uniforms are read at the program's FIRST USE
+	// (the `u` getter, read by run()). Asking for a status right after each compile made the driver compile each batch (Riso's
+	// at creation, Fotocopia's / Stencil's at their first render) one program after another; now a batch compiles in parallel
+	// (KHR_parallel_shader_compile where available). Same GLSL, same programs, same errors (thrown at first use).
+	// Do NOT issue Fotocopia's / Stencil's programs at creation, as the Lab does: a program whose parallel link ends long before
+	// its first use did not reach Chrome's shader disk cache (measured, v3.26.95), so the NEXT session paid FS_XCOLOR again (~4 s).
+	gl.getExtension('KHR_parallel_shader_compile');
 	function compile(fs: string): Program {
-		const p = gl!.createProgram()!;
+		const p = gl!.createProgram()!, sh: WebGLShader[] = [];
 		for (const [t, src] of [[gl!.VERTEX_SHADER, VS], [gl!.FRAGMENT_SHADER, fs]] as const) {
-			const s = gl!.createShader(t)!; gl!.shaderSource(s, src); gl!.compileShader(s);
-			if (!gl!.getShaderParameter(s, gl!.COMPILE_STATUS)) { const e = gl!.getShaderInfoLog(s); throw new Error(e ?? 'shader compile error'); }
-			gl!.attachShader(p, s);
+			const s = gl!.createShader(t)!; gl!.shaderSource(s, src); gl!.compileShader(s); gl!.attachShader(p, s); sh.push(s);
 		}
 		gl!.bindAttribLocation(p, 0, 'p'); gl!.linkProgram(p);
-		if (!gl!.getProgramParameter(p, gl!.LINK_STATUS)) throw new Error(gl!.getProgramInfoLog(p) ?? 'program link error');
-		const u: Program['u'] = {}; const n: number = gl!.getProgramParameter(p, gl!.ACTIVE_UNIFORMS);
-		for (let i = 0; i < n; i++) { const info = gl!.getActiveUniform(p, i)!; u[info.name.replace(/\[0\]$/, '')] = gl!.getUniformLocation(p, info.name); }
-		return { p, u };
+		let u: Program['u'] | null = null;
+		return {
+			p,
+			get u() {
+				if (u) return u;
+				if (!gl!.getProgramParameter(p, gl!.LINK_STATUS)) {
+					const bad = sh.find(s => !gl!.getShaderParameter(s, gl!.COMPILE_STATUS));
+					throw new Error((bad ? gl!.getShaderInfoLog(bad) ?? 'shader compile error' : gl!.getProgramInfoLog(p) ?? 'program link error'));
+				}
+				const U: Program['u'] = {}; const n: number = gl!.getProgramParameter(p, gl!.ACTIVE_UNIFORMS);
+				for (let i = 0; i < n; i++) { const info = gl!.getActiveUniform(p, i)!; U[info.name.replace(/\[0\]$/, '')] = gl!.getUniformLocation(p, info.name); }
+				return (u = U);
+			},
+		};
 	}
 	// C2a variants, compiled on first use.
 	const variants = new Map<string, Program>();
@@ -146,8 +161,9 @@ export function createEngine(canvas: GLCanvas, assets: EngineAssets, opts: Engin
 	const profiler = createPassProfiler(gl);
 	function run(name: string, prog: Program, tg: Target | null, setup?: (a: RunApi) => void) {
 		const w = tg ? tg.w : canvas.width, h = tg ? tg.h : canvas.height;
+		const U = prog.u;                                       // first use: waits for this program's compile and checks it (throws)
 		gl!.useProgram(prog.p); gl!.bindFramebuffer(gl!.FRAMEBUFFER, tg ? tg.f : null); gl!.viewport(0, 0, w, h);
-		let unit = 0; const U = prog.u;
+		let unit = 0;
 		const api: RunApi = {
 			t(name, texture) { if (U[name] == null) return; gl!.activeTexture(gl!.TEXTURE0 + unit); gl!.bindTexture(gl!.TEXTURE_2D, texture); gl!.uniform1i(U[name], unit); unit++; },
 			f(name, ...v) { const l = U[name]; if (l == null) return; if (v.length === 1) gl!.uniform1f(l, v[0]); else if (v.length === 2) gl!.uniform2f(l, v[0], v[1]); else if (v.length === 3) gl!.uniform3f(l, v[0], v[1], v[2]); else gl!.uniform4f(l, v[0], v[1], v[2], v[3]); },
