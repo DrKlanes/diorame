@@ -1,7 +1,7 @@
 # Fotocopia v2 — Fase 0: investigación y propuesta
 
 25 nov 2026 · Diorame v3.26.96 · Super Riso Lab v23.13 (`c94e8c8`). **Solo investigación: ningún shader ni lógica tocados.**
-Estado: **propuesta, pendiente de las decisiones de Moisés (§8).** Nada de lo de aquí está implementado.
+Estado (v3.26.98): **decisiones tomadas (§8); fases 0.5, 1 y 2 HECHAS en el Lab (v23.14, §7).** Fases 3 a 5 sin empezar: ningún shader tocado todavía.
 
 Marcas: **[VERIFICADO]** = medido en esta sesión · **[POR CONFIRMAR]** = hipótesis o dato que falta.
 
@@ -283,6 +283,18 @@ Calibración de «arreglado»: G1 da 3,5 % sobre la misma hoja renderizada 4× m
 la acuarela. **La referencia supermuestreada solo calibra G1** (su defecto va en píxeles); para el rotulador no vale (el
 defecto va en mm y se cancela: el error de v3.26.83) y por eso G2 mide contra la geometría de la hoja.
 
+**Actualización (fase 1, guardias implantadas en `lab\tools\measure\guards\`).** Cambios respecto a la tabla de arriba, que se
+conserva como quedó en la fase 0:
+
+- **G2** mide ahora contra la geometría de la hoja también en **flancos curvos** (arcos, elipses, banda en S) y con **3 semillas**. El
+  umbral de muro subió de 0,25 a **0,35 mm**: con 0,25 la acuarela, que no tiene trazos, daba 4,4 en curvas (ruido de la medida).
+  Hoy: rectos 2,30–2,99, curvos 5,77–7,40; acuarela 0,28 / 0,21. Límite **0,7** → margen ×3,3 en el peor caso.
+- **G3a** ya no es «bordes nítidos durante el gesto» (una impresión ampliada no puede ser nítida) sino **fotogramas con dibujo crudo
+  durante el gesto**: 24/24 en v23.13, límite 0.
+- **G3b:** el 0,76 s de la fase 0 estaba **mal medido** (la espera podía cerrarse con un texto de estado anterior). Contado desde el
+  último paso de rueda, v23.13 tarda **1,7–2,0 s**. El límite sigue en 0,25 s.
+- G1 (43,2 %, límite 12) y G4 (5,9 s, límite 1,2) no cambian.
+
 Avisos honestos: **G2 pasa el listón de ×3 por poco**, solo ve flancos rectos alineados con los ejes y está medida con una
 semilla; antes de la fase 4 hay que reforzarla (más semillas, Descuido 0, contornos curvos). G3b en el iPad no se puede
 fijar sin medirlo allí. Y la regla de siempre: guardia en verde no es efecto validado; decide el ojo de Moisés.
@@ -305,9 +317,54 @@ Lab primero; cada fase es un commit en `lab\web` (+ fuentes en `tools\studio\`) 
 
 Las fases 2 y 3 son independientes entre sí; la 4 no depende de la 3.
 
+### Estado de las fases (25 nov 2026)
+
+**Fase 0.5 · proteger la fuente canónica — HECHO.** Solo `lab\web` estaba versionado (repo público `DrKlanes/super-riso`, lo que
+sirve GitHub Pages). `lab\tools\` entero (fuentes del motor, shaders e interfaz en `studio\`, medidas, texturas) no tenía control
+de versiones. Ahora es un repo propio **privado**, `DrKlanes/super-riso-lab-tools`, con raíz en `lab\tools\`; primer commit = estado
+exacto de v23.13 (verificado: los cuatro `.js` y la interfaz están, literales, dentro de la página publicada). No va dentro del
+repo de `web` porque ese es público y sirve su raíz tal cual (`tools\textures\data` son medidas sobre escaneos de terceros: «no subir
+al repo público»). La publicación no cambió. Siguen sin versionar, por tamaño (1,5 GB): `inputs`, `papeles`, `refs`, `renders`,
+`lab` (versiones antiguas) y `research` (1,6 MB de anatomías: candidato a entrar).
+
+**Fase 1 · guardias — HECHO.** `lab\tools\measure\guards\` (`guards.mjs`, `lib.mjs`, `export-hash.mjs`, `README.md`,
+`baseline-v23.13.json`). Las cuatro fallan con v23.13 con margen ≥ ×3,3: G1 43,2 % (12), G2 7,4 muros/100 mm (0,7), G3 24/24 crudos ·
+1,7–2,0 s · ×1,23, G4 5,9 s (1,2). Una guardia cuya fase no se ha hecho sale como «PENDIENTE DE FASE N», no como fallo.
+**No hecho:** las guardias en Diorame (hoja sintética como `.dior`); van con el primer port (3p).
+
+**Fase 2 · resolución y zoom del Lab — HECHO, Lab v23.14** (publicado; solo interfaz, motor y shaders sin tocar).
+
+| | v23.13 | v23.14 |
+|---|---|---|
+| Fotogramas del zoom con dibujo crudo (Riso / Fotocopia / Stencil, 8 cada uno) | 8 · 8 · 8 | **0 · 0 · 0** |
+| Tiempo hasta nítido, 1920×1080 (Riso / Fotocopia / Stencil) | 1,69 · 1,70 · 1,99 s | **0,14 · 0,21 · 0,13 s** |
+| Tiempo hasta nítido, Fotocopia, en 1366×1024, 1920×1080 y 2560×1440 a DPR 1 y 2 | 1,74–1,85 s | 0,20–0,32 s |
+| Vista estirada a 1920×1080@2 · 2560×1440@1,5 · 2560×1440@2 | ×1,19 · ×1,23 · ×1,63 | ×1,00 · ×0,98 · ×0,99 |
+| Exportación (huella, 7 casos) y vista en reposo a 2048 px | — | **idénticas** (14/14) |
+
+Qué cambió: durante el gesto se reencuadra la última impresión (lo no cubierto, color del papel; en «Sin efecto», el dibujo sin
+desenfoque añadido); la vista se calcula a los píxeles de dispositivo del escenario, con mínimo 2048 px (como antes), tope 4096 px
+(2048 en tabletas, móviles y poca memoria) y nunca más que la exportación; al parar, 80 ms de espera (antes 300), sin rodeo por
+PNG y sin repetir el análisis de tintas del dibujo entero (los ~1,3 s que se iban eran eso, no el motor).
+
+Límites, dichos claro: **Fotocopia queda en el filo del límite** (0,20–0,32 s según pasada y pantalla; su mapa de zonas depende del
+encuadre y cuesta ~0,1 s de CPU). **Tóner y rotulador no cambian de píxel en reposo salvo por la resolución:** con la pantalla por
+debajo de 2048 px de dispositivo, la vista es byte a byte la de v23.13; por encima se calcula con más px/mm (hasta ×2), así que
+grano, motas y escalones salen más finos, como en una exportación mayor. **iPad sin medir** (tope de 2048 px: mismo coste que antes
+salvo la copia del lienzo al empezar el gesto). La exportación tiene un ruido previo, ya en v23.13: una de cada ~14 da otra huella
+entre dos pasadas idénticas; por eso se compararon conjuntos de pasadas.
+
 ---
 
 ## 8 · Decisiones para Moisés
+
+**DECIDIDAS (Moisés, 25 nov 2026):** D1 tóner **T-A** (rampa de 1 px) · D2 **la vista previa predice la exportación** · D3 rotulador
+por **tabla de trazos**; geometría solo si luego hace falta · D4 zoom del Lab = **reencuadre (R1)**, nítido y sin dibujo crudo
+durante el zoom · D5 la borrosidad que ve es la **(a)**: solo durante el zoom; al soltar se ve bien; lo que percibe es el salto de
+«dibujo crudo borroso» a «efecto» · D6 el fundido de aerógrafo de las zonas sin pintar **se corrige en la fase 4** · D7 **fase 2
+antes que el tóner** · D8 **port por fases**, con ronda de iPad cada una · D9 **«≈ 1 s»** de compilación vale como hecho de la fase 4.
+
+La lista original, con las alternativas que se descartaron:
 
 1. **Tóner.** ⭐ T-A (umbral con rampa de 1 px, sin pasadas nuevas). Alternativa: T-B (supermuestreo, carácter exacto, ×4 de
    coste en esas pasadas).
