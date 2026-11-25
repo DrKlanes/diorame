@@ -77,3 +77,7 @@ c. **Regla de entrada:** el próximo intento empieza con una guardia que **falle
 
 Mitigado en v3.26.86 / Lab v23.9; aparcado por decisión de Moisés el 24 nov 2026. Reversión de la mitigación, si hiciera falta: `git revert` del
 commit de v3.26.86 en `app` y del de v23.9 en `lab\web`.
+
+**Siguiente paso propuesto (v3.26.97, sin implementar):** `docs/fotocopia-v2-proposal.md` — el rotulador dentro de un proyecto único
+con el tóner, el zoom del Lab y la compilación; trae la guardia del §6.b prototipada (hoja de manchas alargadas, saltos por 100 mm de
+flanco contra la geometría conocida: 4,32 hoy, 6,91 en v23.8, 1,06 la acuarela) y sus límites (separa ×3 por poco, una semilla).

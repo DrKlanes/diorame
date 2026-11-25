@@ -731,6 +731,7 @@ decisions that the code cannot express on its own.
 | `analytics.md` | The GA4 measurement plan: which events exist and why, the 12 `format` values of `artwork_exported` (framing and output live inside `format`) and why the PNG/MP4 variants are kept apart, the real meaning of the `layers` parameter, and the "hook into the success branch, never `onFinish`" rule. Read before touching `src/analytics/analytics.ts` — GA4 data cannot be split retroactively once it starts arriving merged. |
 | `super-riso.md` | Super Riso product description, design rationale and measured numbers (desktop and iPad). The code map is §14 |
 | `ux-debt.md` | Running list of known UX debt, with the reasoning behind each accepted quirk. |
+| `fotocopia-v2-proposal.md` | **Proposal, awaiting Moisés's decisions (phase 0, v3.26.97).** Fotocopia's four open problems as one project: jagged toner edges (binary per simulated pixel; not a regression), the Lab's zoom (raw blurred drawing while zooming, preview capped at 2048 px; not a regression), the marker's battlements (stroke end decided per pixel) and `FS_XCOLOR`'s cold compile (superlinear in body size: marker + watercolour 8–9 s, watercolour alone 0.6 s, marker with one `strokes()` call 1.1 s). Engine anatomy, the proposal (1-px-ramp threshold, per-stroke table, two programs, screen-resolution preview), the four guards that fail today with their prototypes (`docs/media/fotocopia-v2/proto/`, not wired into `tools/`), the phase plan and nine numbered decisions. **Nothing in it is implemented.** |
 | `fx-in-draw.md` | **Paused project (F0 done, F1 next):** FX also in DRAW. Goal, the 8 base decisions, Moisés's answers, the accepted UX (two-face inspector, cards, accordion, reveal, compare), the inventory (FX verdict table, Super Riso heights, usable height per viewport), the composition risks, phases F0–F6 with model and risk, what to test on the iPad and how it was measured. Read it before touching `FXPanel`, the `renderFrame` FX gate or the DRAW PNG export |
 | `BRIEF-CLAUDE-CODE.md` | Project brief. |
 | `audit-2026-11.md` | **Refactor in progress (from v3.26.6).** The Phase 0 audit (monoliths, cut proposals, the brush thickness model measured with the real reducer, the test plan, the phase order, documentation drift) and, appended as they close, the decisions taken (D1–D8) and the result of each phase. The detailed record |
@@ -1452,7 +1453,11 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.96)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.97)
+
+### 3.26.97 · docs: Fotocopia v2, fase 0 — investigación y propuesta
+
+- Solo documentación: `docs/fotocopia-v2-proposal.md` (tóner dentado, zoom del Lab, rotulador y compilación de `FS_XCOLOR` como un único proyecto; ninguno es regresión; guardias que fallan hoy; decisiones pendientes de Moisés) y su evidencia en `docs/media/fotocopia-v2/`. Ningún shader ni lógica tocados.
 
 > Super Riso series (3.17.68 → 3.18.0): it was built behind a URL flag, `?superriso=1`, while it was measured on desktop and iPad, and the entries below describe it as it was at each step. The flag was removed in 3.18.0 and the final state is in §14. The `srpipe` / `srhold` / `srbitmap` / … knobs mentioned below survive only behind `?srdebug=1`.
 
