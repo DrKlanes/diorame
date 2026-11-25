@@ -465,6 +465,7 @@ export function renderFrame(
 		shapes: currentState.shapes,
 		hiddenLayers: currentState.hiddenLayers,
 		isLive: !rc.skipCinematicOverlays,
+		renderScale: S,
 		exportFrame: rc.exportFrame,
 		info: { preset: currentState.cinematicType, speed: currentState.cinematicSpeed ?? 1 },
 	};

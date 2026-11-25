@@ -1,7 +1,7 @@
 # Fotocopia v2 — Fase 0: investigación y propuesta
 
 25 nov 2026 · Diorame v3.26.96 · Super Riso Lab v23.13 (`c94e8c8`). **Solo investigación: ningún shader ni lógica tocados.**
-Estado (v3.26.100): **decisiones tomadas (§8); fases 0.5, 1, 2 y 3 HECHAS en el Lab (v23.15) y el tóner PORTADO a Diorame (fase 3p, §7).** Fases 4 y 5 sin empezar.
+Estado (v3.26.101): **decisiones tomadas (§8); fases 0.5, 1, 2 y 3 HECHAS en el Lab (v23.15) y el tóner PORTADO a Diorame (fase 3p, §7).** Fases 4 y 5 sin empezar.
 
 Marcas: **[VERIFICADO]** = medido en esta sesión · **[POR CONFIRMAR]** = hipótesis o dato que falta.
 
@@ -407,9 +407,11 @@ cada render.
   de motor en escritorio, sin errores.
 - **Ruido previo, no del port:** las huellas `…/forward-hq2` de Riso bailan entre dos valores en pasadas idénticas del MISMO
   código (3 repeticiones: `riso/forward-hq2` alterna entre la huella de «antes» y otra). El arnés no es estable en HQ ×2.
-- **No hecho:** (1) `renderScale` no llega a Super Riso: `SuperRisoInput.renderScale` existe y `frame.prepare` lo lee, pero
-  rellenarlo es una línea en el objeto que `renderFrame` entrega a `beginSuperRisoFrame` (zona protegida: pide GO de Moisés).
-  Mientras tanto una exportación HQ ×2 aplana con la celda de 1×: sobre ~16 celdas en vez de 49. (2) Las guardias G1–G4 en
+- **`renderScale` llega a Super Riso desde v3.26.101** (GO de Moisés, 25 nov 2026): una línea, `renderScale: S`, en el objeto que
+  `renderFrame` entrega a `beginSuperRisoFrame`. Nada se mueve ni se envuelve; solo lo lee `frame.prepare` para Fotocopia. Con
+  S = 1 (vivo, GIF, secuencia) el valor es el de antes: 14 huellas de ×1 idénticas; cambian solo las tres de Fotocopia en HQ ×2,
+  que ahora aplanan la textura de tinta sobre las 49 celdas, como en vivo. `__markerEdgeCheck` 6/6.
+- **No hecho:** (2) Las guardias G1–G4 en
   Diorame (hoja sintética como `.dior`). (3) iPad: `XGEN` hace 15 lecturas por generación (antes 2) y `XLUM` 49 más en vivo.
   (4) El aspecto en Diorame, a ~4,7 px/mm, es algo más blando que en el Lab: lo juzga Moisés en `localhost:3000`.
 
