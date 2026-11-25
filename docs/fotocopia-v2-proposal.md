@@ -1,7 +1,7 @@
 # Fotocopia v2 — Fase 0: investigación y propuesta
 
 25 nov 2026 · Diorame v3.26.96 · Super Riso Lab v23.13 (`c94e8c8`). **Solo investigación: ningún shader ni lógica tocados.**
-Estado (v3.26.98): **decisiones tomadas (§8); fases 0.5, 1 y 2 HECHAS en el Lab (v23.14, §7).** Fases 3 a 5 sin empezar: ningún shader tocado todavía.
+Estado (v3.26.99): **decisiones tomadas (§8); fases 0.5, 1, 2 y 3 HECHAS en el Lab (v23.15, §7).** Port del tóner a Diorame (3p) y fases 4 y 5 sin empezar: en la app no hay ningún shader tocado.
 
 Marcas: **[VERIFICADO]** = medido en esta sesión · **[POR CONFIRMAR]** = hipótesis o dato que falta.
 
@@ -353,6 +353,45 @@ debajo de 2048 px de dispositivo, la vista es byte a byte la de v23.13; por enci
 grano, motas y escalones salen más finos, como en una exportación mayor. **iPad sin medir** (tope de 2048 px: mismo coste que antes
 salvo la copia del lienzo al empezar el gesto). La exportación tiene un ruido previo, ya en v23.13: una de cada ~14 da otra huella
 entre dos pasadas idénticas; por eso se compararon conjuntos de pasadas.
+
+**Fase 3 · tóner — HECHO en el Lab, v23.15** (publicado tras validarlo Moisés a ojo en local; `shaders.xerox.js`, y un parámetro
+nuevo en motor e interfaz). **Pendiente: ronda de iPad y port 3p.**
+
+| | v23.14 | v23.15 |
+|---|---|---|
+| G1, escalones del tóner (hoja sintética, Suciedad 0, 3 semillas) | 40,3–40,7 % | **6,2–6,5 %** (límite 12) |
+| G3, zoom | pasa | pasa (0/24 crudos; 0,13–0,20 s) |
+| Riso y Stencil: exportación y vista en reposo | — | **idénticas** (8/8 huellas) |
+| Fotocopia | — | cambia entera, también al exportar |
+
+Qué cambió:
+
+- **Contornos (T-A, decisión D1).** El umbral de `XLUM` y el de cada generación de `XGEN` abarcan al menos un píxel de la señal
+  que umbralizan (pendiente por diferencias de 4 lecturas; sin `dFdx`/`fwidth`).
+- **Motas, velo y polvo (D2).** Radio mínimo de 0,07 mm de hoja y cobertura proporcional cuando no llenan un píxel; pelos,
+  arañazos y rayas del tambor con borde de un píxel. Antes eran píxeles sueltos enteros.
+- **Tonos medios — no estaba en la propuesta; lo encontró Moisés.** En un `.dior` acercado, un tono medio salía como un damero.
+  **Causa medida:** la textura de tinta de Diorame es ruido de celdas cuadradas de ±1 % (`createNoise(256, 256, 15, 1, .3, S)`:
+  una celda = una unidad de proyecto, así que crece con el zoom) y el umbral de la copiadora la amplificaba ×20. Arreglo en tres
+  partes: `XLUM` aplana esa textura antes de umbralizar (media de 7×7 vecinos parecidos a 1,3 celdas; `uTexPx` lo da la interfaz
+  desde el encuadre y vale 0 en imágenes); el racimo de tóner nunca es más fino que 1,25 px (en hojas grandes la vista previa va
+  a ~3,4 px/mm y el grano se leía por debajo del píxel: trama); y el grano lleva un moteado a dos escalas (≈1 y ≈0,45 mm), con
+  los racimos leídos en dos giros para que no sigan los ejes de su textura.
+
+**Lo que NO era la causa / descartado** (no repetir): el grano de la copiadora como origen del damero (era el dibujo); aplanar con
+25 celdas (dejaba un moteado con el ritmo de las celdas); quedarse con el vecino más claro en vez de la media (la textura es ruido
+continuo, no motas sueltas: aclaraba la zona hasta el blanco); una rampa más estrecha (más nítida, pero G1 en 10,9–12,4 %);
+atenuar las motas por área sin tamaño mínimo («Copia de copia» perdía la suciedad).
+
+**Lecciones de método:** (1) **una comparación de huellas con `Math.random` fijado apaga la textura de tinta de Diorame**: sirve
+para comprobar que algo NO cambia, nunca para juzgar el aspecto de un `.dior`; el damero no salía en mi banco y sí en la pantalla
+de Moisés. (2) G1 se mide con Suciedad a 0: las motas que tocan un contorno contaban como escalón (11,6 % con suciedad).
+
+Límites: el moteado cambia TODOS los tonos medios de Fotocopia, también en imágenes planas; en la vista previa de una hoja grande
+el grano sale algo más grueso en mm que al exportar; `XGEN` pasa de 2 a 15 lecturas por generación y `XLUM` hace hasta 49 más con
+un `.dior` acercado (sin diferencia medible en escritorio, **iPad sin medir**); **Stencil umbraliza la misma textura de tinta y
+puede tener el mismo damero a zoom alto: sin mirar**; en Diorame (CINEMA) la textura de tinta también llega al umbral: el port 3p
+tiene que decidir de dónde saca el tamaño de celda.
 
 ---
 
