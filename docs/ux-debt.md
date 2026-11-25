@@ -538,6 +538,34 @@ tras el push.
 
 ---
 
+## Fotocopia v2 (v3.26.97–3.26.101, Lab v23.14–v23.16): lo que quedó abierto el 25 nov 2026
+
+**Estado:** fases 0.5, 1, 2, 3 y 3p hechas; plan, números y decisiones en `docs/fotocopia-v2-proposal.md`; relato de la sesión en
+`docs/session-report-2026-11-25-fotocopia-v2.md`. Lo de abajo NO está hecho.
+
+- **iPad sin medir** [POR CONFIRMAR]. El tóner nuevo lee mucha más textura: `XGEN` 15 lecturas por generación (antes 2) y `XLUM`
+  hasta 53 más. En escritorio no se nota (1,3 ms de GPU de motor a 1366×1024). En iPad puede empujar Fotocopia al modo ligero o
+  ir a tirones. Si pasa: reducir el aplanado de la textura a 5×5 en el nivel *preview*, o saltarlo en movimiento.
+- **Stencil puede tener el damero de la textura de tinta** [POR CONFIRMAR]. `SCUT` umbraliza el mismo original que Fotocopia. En
+  Diorame la celda de la textura mide ~1 px (poco visible); en el Lab, con un `.dior` acercado, varias. Sin mirar.
+- **Guardias G1–G4 en Diorame: sin hacer.** Existen en el Lab (`lab\tools\measure\guards\`). En la app solo corren
+  `__superRisoHash` y `__markerEdgeCheck`. Falta la hoja sintética como `.dior` o dibujada por puntero.
+- **Las huellas `…-hq2` de `__superRisoHash` no son estables** [VERIFICADO]: `riso/forward-hq2` y `riso-fanzine/forward-hq2`
+  alternan entre dos valores en pasadas idénticas del mismo código. Las de ×1 sí son estables. Causa sin aislar. Hasta arreglarlo,
+  una diferencia SOLO en un caso `-hq2` de Riso no prueba nada; repetir tres veces.
+- **La exportación del Lab tampoco es del todo determinista** [VERIFICADO]: una de cada ~14 exportaciones da otra huella entre dos
+  pasadas idénticas, ya en v23.13. Por eso `export-hash.mjs` compara conjuntos de pasadas. Causa sin aislar (motor o GPU).
+- **En el Lab el deslizador «Tamaño de trama» no gobierna el grano de Fotocopia** (va fijo en 0,06 mm; en Diorame sí lo gobierna
+  desde v3.19.2). Diferencia heredada, no decidida: o se iguala el Lab a Diorame o se documenta como intencionada.
+- **En Diorame el grano del tóner está limitado por el píxel de simulación** (~0,2 mm de hoja a Resolución .85): entre «trama al
+  mínimo» y «35 %» la diferencia es pequeña. No es un fallo; si molesta, la palanca es la Resolución por defecto de Fotocopia.
+- **Fase 4 (rotulador por tabla de trazos, `FS_XCOLOR` en dos programas) y fase 5 (geometría): sin empezar.** G2 (7,3 muros por
+  100 mm, límite 0,7) y G4 (5,8 s de compilación en frío, límite 1,2 s) siguen fallando a propósito. El fundido de aerógrafo de las
+  zonas sin pintar del rotulador (decisión D6) va en la fase 4.
+- **`lab\research` (1,6 MB de anatomías) sigue sin control de versiones**; `lab\tools` y `lab\web` sí lo tienen.
+- **La lista `KNOWN` de `markeredge.js`** conserva tres «fallos conocidos» que ya no se dan (pasa 6/6 desde v3.26.100). Se deja a
+  propósito como red; se puede limpiar cuando la fase 4 sustituya esa guardia.
+
 ## Super Riso · Fotocopia y Stencil (v3.19.0–3.20.1): pendientes y decisiones abiertas
 
 **Estado:** registradas en la auditoría de v3.20.1, sin programar. Detalle técnico: REFERENCE.md §14.

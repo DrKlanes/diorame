@@ -56,7 +56,8 @@ de color, Capas de color, Callejero sucio y Plantilla de letras.
 - Fotocopia y Stencil toman el color de fondo del lienzo como papel de origen («imprime lo que ves»; blanco en
   oscuro); el Lab toma el claro dominante del dibujo, así que con las mismas entradas coinciden pero con las
   automáticas pueden diferir.
-- El escáner de Fotocopia y Stencil sigue la Resolución compartida: un poco más blando que en el Lab.
+- El escáner de Stencil sigue la Resolución compartida: un poco más blando que en el Lab. El de Fotocopia usa desde v3.26.100 los 0,06 mm de hoja del Lab (con la Resolución compartida, ~0,7 px, el grano del tóner salía en manchas blandas); su ruido sí sigue a Resolución.
+- Fotocopia, tóner (v3.26.100, Lab v23.16): contornos con cobertura en vez de escalera, grano y moteado de tóner orgánicos en los tonos medios, motas con tamaño mínimo, y la textura de tinta de las capas aplanada antes del umbral. En Diorame el grano no puede ser más fino que un píxel de simulación (~0,2 mm de hoja con Resolución al 85 %): subir Resolución lo afina. Detalle: `docs/fotocopia-v2-proposal.md` §7.
 - Fotocopia y Stencil aún no se han medido en iPad real (el nivel y el aviso de efecto exigente son los de Riso).
 - Los mapas en CPU hacen que la primera activación de Stencil (campo de spray, ~150 ms) y las exportaciones con
   muchas capas tarden algo más.
