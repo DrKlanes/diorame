@@ -65,7 +65,7 @@ export function createXerox(H: XeroxHost) {
 		const run = (name: string, prog: Program, tg: Target | null, setup: (a: RunApi) => void) =>
 			H.run(name, prog, tg, a => { a.f('uOff', 0, 0); a.f('uImg', w, h); setup(a); });
 		run('PREP', H.PR.prep, S.prep, a => { a.t('uSrc', srcTex); a.f('uSrcRes', srcW, srcH); a.f('uSmoothPx', P.smooth * srcW / P.printW); a.f('uSrcPaper', ...(P.srcPaper || [1, 1, 1])); a.f('uPaper', 1, 1, 1); });
-		run('XLUM', R.xlum, X.xa, a => { a.f('uPxMm', pxmm); a.t('uPrep', S.prep.t[0]); a.f('uDark', P.dark); a.f('uSoft', P.soft); a.f('uMotion', P.motion); a.f('uPhoto', P.photo); a.f('uLpi', P.lpi); a.f('uLid', P.lid); });
+		run('XLUM', R.xlum, X.xa, a => { a.f('uPxMm', pxmm); a.t('uPrep', S.prep.t[0]); a.f('uDark', P.dark); a.f('uSoft', P.soft); a.f('uMotion', P.motion); a.f('uPhoto', P.photo); a.f('uLpi', P.lpi); a.f('uLid', P.lid); a.f('uTexPx', P.tex); });
 		const bl = (label: string, src: Target, dst: Target, dx: number, dy: number, sig: number) => run(`BLUR ${label}`, H.PR.blur, dst, a => { a.t('uTexA', src.t[0]); a.t('uTexB', src.t[src.t.length > 1 ? 1 : 0]); a.f('uDir', dx, dy); a.f('uSig', sig); });
 		const G = light ? 1 : Math.max(1, Math.round(P.gens));
 		for (let g = 1; g <= G; g++) {

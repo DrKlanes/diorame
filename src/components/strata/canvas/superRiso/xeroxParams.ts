@@ -10,6 +10,8 @@ import { resolutionParams } from './panel';
 
 export type XeroxEngineParams = {
 	tech: 'xerox'; printW: number; pxmm: number; seed: number; smooth: number;
+	/** Simulated px per cell of Diorame's ink texture (lab v23.15, XLUM flattens it before the threshold); 0 = off. Set by frame.prepare. */
+	tex: number;
 	dark: number; soft: number; motion: number; photo: number; lpi: number; lid: number;
 	gens: number; genSpread: number; thr: number; grain: number; dust: number; fog: number; streak: number; hollow: number; band: number;
 	hand: number; colorSmooth: number; sloppy: number; offset: number; wobble: number; cover: number; stroke: number; strokeAng: number; overlap: number; strength: number;
@@ -22,7 +24,7 @@ export type XeroxEngineParams = {
 };
 
 export const XDEFAULTS: XeroxEngineParams = {
-	tech: 'xerox', printW: 240, pxmm: 11.8, seed: 1, smooth: .12, dark: .5, soft: .05, motion: 0, photo: 0, lpi: 40, lid: 0,
+	tech: 'xerox', printW: 240, pxmm: 11.8, seed: 1, tex: 0, smooth: .12, dark: .5, soft: .05, motion: 0, photo: 0, lpi: 40, lid: 0,
 	gens: 2, genSpread: .05, thr: .44, grain: .06, dust: .4, fog: .4, streak: .3, hollow: .35, band: .3,
 	hand: 0, markers: [], keys: null, colorSmooth: .6, sloppy: .5, offset: .8, wobble: .5, cover: 1, stroke: 5, strokeAng: 35, overlap: .34, strength: 1,
 	paper: '#f6f6f2', paperTex: .12, fibers: .1, scanBlur: .6, scanNoise: .3, srcPaper: [1, 1, 1],
@@ -53,5 +55,9 @@ function xBase(x: XeroxSettings) {
  * scanner softness and noise: panel.resolutionParams). Style `fine` overrides go on top, as in the lab.
  */
 export function xeroxParams(x: XeroxSettings, frameW: number, resolution: number): Partial<XeroxEngineParams> {
-	return { ...resolutionParams(resolution, frameW), ...Object.assign(xBase(x), x.fine), tech: 'xerox' };
+	// scanBlur: the lab's .06 mm of sheet (v3.26.100), not the shared Resolution softness (1 → .65 px, v3.19.2): with the toner now
+	// antialiased (lab v23.15), ~.7 px of scanner blur on top turned the grain into soft blobs — «a coarse screen» at ~4.7 px/mm.
+	// The scanner NOISE still follows Resolution.
+	const rp = resolutionParams(resolution, frameW);
+	return { ...rp, scanBlur: Math.max(.05, .06 * rp.pxmm), ...Object.assign(xBase(x), x.fine), tech: 'xerox' };
 }

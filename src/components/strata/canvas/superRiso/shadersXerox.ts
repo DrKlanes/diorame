@@ -9,17 +9,34 @@ import { HEADX, OKLAB, MRT } from './shadersCommon';
 // XLUM: original → densidad de tóner suave (dial de oscuridad), modo foto (trama gruesa), barrido movido (Munari), tapa abierta
 export const FS_XLUM = HEADX+`
 out vec4 o;
-uniform sampler2D uPrep; uniform float uDark, uSoft, uMotion, uPhoto, uLpi, uLid;
+uniform sampler2D uPrep; uniform float uDark, uSoft, uMotion, uPhoto, uLpi, uLid, uTexPx;
 float lumP(vec3 c){ vec3 l=s2l(c); return pow(dot(l,vec3(.2126,.7152,.0722)),1./2.2); }
 void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm;
   float L=lumP(texture(uPrep,uv).rgb);
+  // v23.15 — textura de tinta de Diorame. Un .dior trae en sus tintas un ruido de celdas CUADRADAS de contraste mínimo (±1 %),
+  // y su celda crece con el zoom del encuadre. En un tono medio el umbral lo amplificaba ×20: un damero. Antes de umbralizar,
+  // el tono de cada píxel es la media de los 7×7 vecinos, a 1,3 celdas de distancia, que se le parecen (±0,03): con 49 celdas
+  // el residuo queda muy por debajo del grano de la copiadora (con 25 aún dejaba un moteado con el ritmo de las celdas), y decide
+  // el tóner. Un contorno o una línea no se parecen a sus vecinos y quedan como estaban. uTexPx = px por celda (0 en una imagen
+  // normal: no hace nada). Descartado: quedarse con el vecino más claro (la textura es ruido continuo: aclaraba toda la zona).
+  if(uTexPx>.75){ float a=0., ws=0.;
+    for(int j=-3;j<=3;j++) for(int i=-3;i<=3;i++){ float l=lumP(texture(uPrep,uv+vec2(i,j)*1.3*uTexPx/uRes).rgb), w=exp(-(l-L)*(l-L)/.0012); a+=l*w; ws+=w; }
+    L=a/ws; }
   if(uMotion>0.){ for(int k=1;k<=14;k++){ float t=float(k)/14.; vec2 off=vec2(0.,-t*uMotion*uPxMm)/uRes;
       L=min(L, mix(lumP(texture(uPrep,uv+off).rgb),1.,t*t*.8)); } }               // estela oscura en la dirección del barrido
   float scr=0.;
   if(uPhoto>0.){ vec2 r=mat2(.7071,.7071,-.7071,.7071)*mm*(uLpi/25.4);              // modo foto: trama de líneas gruesa a 45°
     scr=(abs(fract(r.x)-.5)*2.-.5)*.55*uPhoto*smoothstep(.04,.25,L)*smoothstep(.98,.75,L); }
   float t=mix(.26,.74,uDark);
-  float v=(t-L+scr)/max(uSoft,.004);
+  // v23.15 — el umbral nunca es más brusco que UN píxel de la señal. Antes dividía por uSoft fijo (0,05): una rampa de
+  // antialiasing de 1 px del original quedaba en ~0,05 px, o sea, cada píxel decidía negro o blanco y las curvas salían en
+  // escalera a cualquier resolución. Ahora el ancho es el mayor entre uSoft y lo que la señal cambia en un píxel: el contorno
+  // conserva su posición sub-píxel (cobertura), y en zonas planas o degradados nada cambia. Pendiente por diferencias de 4
+  // lecturas (sin dFdx/fwidth: no valen en ANGLE/D3D dentro de estos shaders).
+  vec2 p1=1./uRes;
+  vec2 gL=vec2(lumP(texture(uPrep,uv+vec2(p1.x,0.)).rgb)-lumP(texture(uPrep,uv-vec2(p1.x,0.)).rgb), lumP(texture(uPrep,uv+vec2(0.,p1.y)).rgb)-lumP(texture(uPrep,uv-vec2(0.,p1.y)).rgb))*.5;
+  float gS=uPhoto>0. ? 1.1*uPhoto*(uLpi/25.4)/uPxMm : 0.;                            // lo que cambia la trama del modo foto en un píxel
+  float v=(t-L+scr)/max(max(uSoft,.004), length(gL)*2.2+gS*.9);
   float d=clamp(.5+v,0.,1.);
   if(uLid>0.){ vec2 g=gpx(); float m=uLid*.07*min(uImg.x,uImg.y);                 // tapa abierta: marco negro fuera del original
     vec2 e=min(g, uImg-g); float out_=m-min(e.x,e.y);
@@ -33,22 +50,42 @@ export const FS_XGEN = HEADX+`
 out vec4 o;
 uniform sampler2D uD, uGreen; uniform float uThr, uGrain, uDust, uFog, uStreak, uGen;
 float seg(vec2 p, vec2 a, vec2 b){ vec2 pa=p-a, ba=b-a; float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.); return length(pa-ba*h); }
+// v23.15 — grano del tóner (racimos + grano fino) como campo continuo. Antes el ruido en racimos se leía alineado con la
+// rejilla de su textura y el fino iba por debajo del píxel: al umbralizarlo, un tono medio salía como un damero de cuadraditos.
+// Ahora los racimos son dos lecturas giradas (sin ejes) y el grano fino solo cuenta en la medida en que un píxel puede verlo.
+// El racimo nunca es más fino que lo que la rejilla puede enseñar (1 px; 1,25 hasta v23.15): a pocos px/mm (hoja grande en la vista previa) la
+// textura se leía por debajo del píxel y salía una trama. Y un moteado a dos escalas: el tóner no se deposita parejo, así que
+// un tono medio rompe en manchas irregulares y no en un punteado uniforme. v23.16: el moteado sigue al tamaño de trama (15 y
+// 6 veces uGrain: ≈1 y ≈0,45 mm con la trama por defecto, la mitad con la trama al mínimo) y pesa menos (0,09; era 0,12 a
+// escala fija, y con la trama al mínimo quedaba una mancha gruesa que el deslizador no movía).
+float grainF(vec2 mm, float g, float pm){ vec2 q=mm/max(uGrain*3.,pm)/1024.;
+  float n=(texture(uGreen, mat2(.891,.454,-.454,.891)*q+vec2(g*.31,g*.17)).r+texture(uGreen, mat2(.454,.891,-.891,.454)*q+vec2(g*.17+.37,g*.31+.61)).r-1.)*.7071;
+  float n2=(vnoise(mat2(.8,.6,-.6,.8)*mm/.03+g*3.7)-.5)*1.7*min(1.,.06/pm);
+  float mo=(vnoise(mat2(.8,.6,-.6,.8)*mm/max(uGrain*15.,3.*pm)+g*5.1)-.5)+.5*(vnoise(mat2(.6,-.8,.8,.6)*mm/max(uGrain*6.,1.5*pm)+g*2.3)-.5);
+  return n*.13+n2*.11+mo*.09; }
 void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; float g=uGen+uSeed*.137;
   float d=texture(uD,uv).r;
-  float n=texture(uGreen, mm/(uGrain*3.)/1024.*vec2(1.,1.)+vec2(g*.31,g*.17)).r-.5;   // grano de tóner: racimos
-  float n2=(vnoise(mat2(.8,.6,-.6,.8)*mm/.03+g*3.7)-.5)*1.7;                         // grano fino sin celdas cuadradas
-  float on=smoothstep(uThr-.06,uThr+.06, d + n*.13 + n2*.11);
+  // v23.15 — mismo criterio que en XLUM, aplicado a densidad + grano: el umbral de cada generación abarca al menos un píxel de
+  // lo que umbraliza. Un contorno da cobertura (no escalera) y cada grano sale con su borde, no como un píxel entero.
+  float pm=1./uPxMm; vec2 p1=1./uRes;                                                // pm: mm que mide un píxel
+  float F=d+grainF(mm,g,pm);
+  // v23.16: la pendiente de la densidad (los contornos de las formas) cuenta entera; la del grano, la mitad. Con el grano a
+  // rampa completa cada mota salía blanda y, a pocos px/mm, el tono medio parecía una trama gruesa en vez de tóner.
+  vec2 gD=vec2(texture(uD,uv+vec2(p1.x,0.)).r-texture(uD,uv-vec2(p1.x,0.)).r, texture(uD,uv+vec2(0.,p1.y)).r-texture(uD,uv-vec2(0.,p1.y)).r)*.5;
+  vec2 gN=vec2(grainF(mm+vec2(pm,0.),g,pm)-grainF(mm-vec2(pm,0.),g,pm), grainF(mm+vec2(0.,pm),g,pm)-grainF(mm-vec2(0.,pm),g,pm))*.5;
+  float wT=max(.06, length(gD)*1.4+length(gN)*.5);
+  float on=smoothstep(uThr-wT,uThr+wT, F);
   // motas del cristal (fijas en la hoja para toda la tirada; cada generación añade su cristal)
   vec2 c=floor(mm/1.6); float hs=h12(c+g*11.3);
-  if(hs<uDust*.05){ vec2 ctr=(c+vec2(h12(c+1.7+g),h12(c+5.3+g)))*1.6; float r=.035+.16*pow(h12(c+9.1+g),3.);
-    on=max(on, smoothstep(r, r*.55, length(mm-ctr)+(vnoise(mm*9.)-.5)*.03)); }
+  if(hs<uDust*.05){ vec2 ctr=(c+vec2(h12(c+1.7+g),h12(c+5.3+g)))*1.6; float r=max(.07,.035+.16*pow(h12(c+9.1+g),3.));   // v23.15: radio mínimo 0,07 mm
+    on=max(on, smoothstep(r+.35*pm, r*.55-.35*pm, length(mm-ctr)+(vnoise(mm*9.)-.5)*.03)*min(1.,2.*r*r/(pm*pm))); }   // v23.15: lo que no llena un píxel lo cubre en proporción (antes: un píxel negro entero o nada)
   // velo de fondo: tóner suelto sobre el blanco
-  { vec2 q=mat2(.83,.56,-.56,.83)*mm/.25+g*2.3; vec2 c=floor(q), f=fract(q); float r=mix(.07,.18,h12(c+3.1));
+  { vec2 q=mat2(.83,.56,-.56,.83)*mm/.25+g*2.3; vec2 c=floor(q), f=fract(q); float r=mix(.27,.38,h12(c+3.1));   // v23.15: 0,07–0,095 mm (antes 0,02–0,045: menos que un píxel, salían como píxeles sueltos)
     vec2 ctr=vec2(r)+(1.-2.*r)*vec2(h12(c+1.7),h12(c+4.9));
-    on=max(on, step(h12(c), uFog*.15)*.85*(1.-smoothstep(r*.6,r,length(f-ctr)))); }
+    float pc=4.*pm; on=max(on, step(h12(c), uFog*.15)*.85*(1.-smoothstep(r*.6,r,length(f-ctr)))*min(1.,2.*r*r/(pc*pc))); }   // v23.15: ídem (pc: un píxel en unidades de celda)
   // rayas del tambor: líneas finas en la dirección de avance (vertical), con intensidad que va y viene
   float col=floor(mm.x/.09); float hr=h12(vec2(col,7.7));
-  if(hr<uStreak*.006){ float inten=smoothstep(.35,.7,vnoise(vec2(col*3.1, mm.y/35.))); on=max(on, inten*(.6+.4*h12(vec2(col,mm.y*3.)))); }
+  if(hr<uStreak*.006){ float inten=smoothstep(.35,.7,vnoise(vec2(col*3.1, mm.y/35.))); on=max(on, inten*(.6+.4*h12(vec2(col,mm.y*3.)))*min(1.,.09/pm)); }   // v23.15: la raya mide 0,09 mm; en un píxel más ancho ocupa esa fracción
   o=vec4(on,0.,0.,1.); }`;
 
 // XID: color del original (suavizado) → máscara del rotulador más cercano (a ¼ de resolución). Solo zonas de color:
@@ -268,9 +305,9 @@ float curve(vec2 p, vec2 a, float th, float L, float turn, float wig, float w0, 
   for(int s=0;s<12;s++){ if(s>=N) break; float t=(float(s)+.5)/float(N);
     ang+=turn+(h12(vec2(sd,float(s)))-.5)*wig; vec2 n=q+vec2(cos(ang),sin(ang))*l;
     float w=w0*(.35+.65*sin(3.14159*t));
-    best=max(best, 1.-smoothstep(w*.5, w*.5+.02, seg(p,q,n))); q=n; }
+    float pm=1./uPxMm; best=max(best, (1.-smoothstep(w*.5-.35*pm, w*.5+.02+.35*pm, seg(p,q,n)))*min(1.,(w+.02)/pm)); q=n; }   // v23.15: borde de un píxel y, si el pelo es más fino que el píxel, cubre su fracción
   return best; }
-void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; float sd=uSeed*.731;
+void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; float sd=uSeed*.731, pm=1./uPxMm;
   float d=texture(uD,uv).r; float dirt=0.;
   // pelos: largos, curvados, negros (están sobre el cristal: salen nítidos)
   vec2 c0=floor(mm/34.);
@@ -285,15 +322,15 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; float sd=uSeed*.
   // racimos de polvo
   vec2 c2=floor(mm/14.); float hc=h12(c2+sd+3.3);
   if(hc<uHair*.25){ vec2 ctr=(c2+vec2(h12(c2+.7),h12(c2+.9)))*14.; float r=length(mm-ctr);
-    if(r<3.){ vec2 q=mat2(.6,.8,-.8,.6)*mm/.2; vec2 g=floor(q), f=fract(q); float rr=mix(.1,.24,h12(g+c2+2.2));
+    if(r<3.){ vec2 q=mat2(.6,.8,-.8,.6)*mm/.2; vec2 g=floor(q), f=fract(q); float rr=mix(.35,.47,h12(g+c2+2.2));   // v23.15: 0,07–0,094 mm
       vec2 ce=vec2(rr)+(1.-2.*rr)*vec2(h12(g+c2+.4),h12(g+c2+6.1));
-      dirt=max(dirt, step(h12(g+c2), .45*(1.-r/3.))*.95*(1.-smoothstep(rr*.6,rr,length(f-ce)))); } }
+      float pc=5.*pm; dirt=max(dirt, step(h12(g+c2), .45*(1.-r/3.))*.95*(1.-smoothstep(rr*.6,rr,length(f-ce)))*min(1.,2.*rr*rr/(pc*pc))); } }   // v23.15
   // arañazos del cristal: rectos, largos y finos, grises
   vec2 c3=floor(mm/70.);
   for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++){ vec2 c=c3+vec2(x,y); float h=h12(c+sd*.3+11.);
     if(h<uScratch*.5){ vec2 a=(c+vec2(h12(c+1.),h12(c+2.)))*70.; float an=h12(c+3.)*3.1416; vec2 b=a+vec2(cos(an),sin(an))*(30.+80.*h12(c+4.));
       float dd=seg(mm,a,b); float dash=step(.25,vnoise(vec2(dot(mm-a,normalize(b-a))/6.,h*9.)));
-      dirt=max(dirt, (1.-smoothstep(.012,.035,dd))*(.35+.3*h12(c+5.))*dash); } }
+      dirt=max(dirt, (1.-smoothstep(.012-.35*pm,.035+.35*pm,dd))*min(1.,.047/pm)*(.35+.3*h12(c+5.))*dash); } }   // v23.15
   // huellas: crestas de tóner en un óvalo, débiles
   vec2 c4=floor(mm/90.); float hf=h12(c4+sd+17.);
   if(hf<uPrint*.45){ vec2 ctr=(c4+vec2(.2+.6*h12(c4+1.),.2+.6*h12(c4+2.)))*90.; float an=h12(c4+3.)*3.14;

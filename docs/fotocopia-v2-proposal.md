@@ -1,7 +1,7 @@
 # Fotocopia v2 — Fase 0: investigación y propuesta
 
 25 nov 2026 · Diorame v3.26.96 · Super Riso Lab v23.13 (`c94e8c8`). **Solo investigación: ningún shader ni lógica tocados.**
-Estado (v3.26.99): **decisiones tomadas (§8); fases 0.5, 1, 2 y 3 HECHAS en el Lab (v23.15, §7).** Port del tóner a Diorame (3p) y fases 4 y 5 sin empezar: en la app no hay ningún shader tocado.
+Estado (v3.26.100): **decisiones tomadas (§8); fases 0.5, 1, 2 y 3 HECHAS en el Lab (v23.15) y el tóner PORTADO a Diorame (fase 3p, §7).** Fases 4 y 5 sin empezar.
 
 Marcas: **[VERIFICADO]** = medido en esta sesión · **[POR CONFIRMAR]** = hipótesis o dato que falta.
 
@@ -392,6 +392,45 @@ el grano sale algo más grueso en mm que al exportar; `XGEN` pasa de 2 a 15 lect
 un `.dior` acercado (sin diferencia medible en escritorio, **iPad sin medir**); **Stencil umbraliza la misma textura de tinta y
 puede tener el mismo damero a zoom alto: sin mirar**; en Diorame (CINEMA) la textura de tinta también llega al umbral: el port 3p
 tiene que decidir de dónde saca el tamaño de celda.
+
+**Fase 3p · port del tóner a Diorame — HECHO en v3.26.100.** Los siete cuerpos `FS_X*` de `shadersXerox.ts` son idénticos, byte a
+byte, a `shaders.xerox.js` del Lab v23.15 (cambian `XLUM`, `XGEN` y `XDIRT`). Un parámetro nuevo, `tex` → `uTexPx`, fijado en
+cada render.
+
+- **De dónde sale el tamaño de celda en Diorame.** En la app la textura de tinta se pinta como patrón en píxeles de pantalla
+  (`composeLayer`), no en unidades del dibujo: una celda = 1 px lógico (`renderScale` px de dispositivo). En px de simulación,
+  `tex = renderScale · simW / w` (`frame.prepare`): ~0,91 en vivo con Resolución .85. Por debajo de 0,75 (lo-fi, modo ligero) el
+  aplanado no actúa: la celda ya es menor que el píxel simulado.
+- **Comprobado** (servidor de desarrollo, Chrome desechable): `__superRisoHash` — Riso y Stencil idénticos, Fotocopia cambia
+  entera (acuarela, flyer, foto); `__markerEdgeCheck` `pass: true` con el mismo fallo conocido de antes (6/6 casos, valores
+  prácticamente iguales); typecheck, 738 tests y build en verde; en vivo por la UI real, cinco estilos, 60 fps y 1,3 ms de GPU
+  de motor en escritorio, sin errores.
+- **Ruido previo, no del port:** las huellas `…/forward-hq2` de Riso bailan entre dos valores en pasadas idénticas del MISMO
+  código (3 repeticiones: `riso/forward-hq2` alterna entre la huella de «antes» y otra). El arnés no es estable en HQ ×2.
+- **No hecho:** (1) `renderScale` no llega a Super Riso: `SuperRisoInput.renderScale` existe y `frame.prepare` lo lee, pero
+  rellenarlo es una línea en el objeto que `renderFrame` entrega a `beginSuperRisoFrame` (zona protegida: pide GO de Moisés).
+  Mientras tanto una exportación HQ ×2 aplana con la celda de 1×: sobre ~16 celdas en vez de 49. (2) Las guardias G1–G4 en
+  Diorame (hoja sintética como `.dior`). (3) iPad: `XGEN` hace 15 lecturas por generación (antes 2) y `XLUM` 49 más en vivo.
+  (4) El aspecto en Diorame, a ~4,7 px/mm, es algo más blando que en el Lab: lo juzga Moisés en `localhost:3000`.
+
+**Segunda vuelta de la 3p, antes de subir (Moisés, en `localhost:3000`: «incluso con el tamaño de trama al mínimo queda una trama
+demasiado gruesa y poco natural»).** Va en el mismo v3.26.100; en el Lab es la **v23.16** (cambia `XGEN`).
+
+- **Causa medida** (mismo fotograma fijo y sembrado, por la ruta de exportación; `media/fotocopia-v2/11-…`): **el desenfoque final
+  del escáner.** Desde v3.19.2 Diorame le da a Fotocopia la suavidad compartida de Resolución (1 → 0,65 px; ~0,7 px por defecto);
+  el Lab usa 0,06 mm de hoja, que a 4,7 px/mm son ~0,3 px. Sobre un grano de ~1 px ya antialiasado, 0,7 px lo convertía en
+  manchas blandas de 3–4 px. **Arreglo (solo app):** `xeroxParams` usa los 0,06 mm del Lab; el RUIDO del escáner sigue a Resolución.
+- **En el shader (Lab v23.16, portado 1:1):** la pendiente del grano cuenta la mitad en el ancho del umbral (la de los contornos,
+  entera): motas más nítidas; el racimo puede bajar a 1 px (era 1,25); y el moteado sigue al tamaño de trama (15 y 6 veces
+  `uGrain`) con peso 0,09 (era 0,12 a escala fija).
+- **Lo que NO era** (probado sobre el mismo fotograma, apenas movían nada): la escala fija del moteado; el suavizado del grano en
+  el umbral, por sí solo. Mi primer cambio (atar el moteado al deslizador) no se notaba: lo que mandaba era el escáner.
+- **Comprobado:** Lab G1 6,2 % y G3 pasa; en la app, Riso y Stencil idénticos a ×1, `__markerEdgeCheck` 6/6 **sin ningún fallo
+  conocido** (el halo entre colores en lo-fi baja de 6 % a 0,1 %: era el mismo desenfoque); typecheck, tests y build en verde.
+- **Límite que no se puede saltar:** en Diorame el grano no puede ser más fino que un píxel de simulación (~0,2 mm de hoja a
+  Resolución .85), así que entre «trama al mínimo» y «35 %» la diferencia es pequeña. Subir Resolución lo afina.
+- Herramienta: `__markerEdgeShot` acepta `xerox: { … }` (parche de ajustes de Fotocopia) para renderizar un fotograma fijo con
+  cualquier oscuridad o tamaño de trama; en vivo la cámara de la escena de ejemplo se mueve y dos capturas no son comparables.
 
 ---
 

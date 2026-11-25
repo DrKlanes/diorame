@@ -203,12 +203,14 @@
 		return keep ? { row, target, ref, tidy: tidyCv } : { row };
 	}
 
+	// xerox: a patch over the Fotocopia settings of the shot (e.g. { style: 'flyer' } or { hand: 'none', dark: .5, screenSize: 0 }): a style id is applied first, then the rest, re-sanitised.
+	const withXerox = (m, sr, patch) => { if (!patch) return sr; const { style, ...rest } = patch; return m.K.sanitizeSuperRiso({ ...sr, xerox: { ...(style ? m.X.applyXeroxStyle(sr.xerox, style) : sr.xerox), ...rest } }); };
 	/** One frame of the test sheet, for looking at it: view 'forward' | 'flat'; settings: zine by default, null = no Super Riso. */
-	window.__markerEdgeShot = async ({ view = 'forward', width = 1000, scale = 1, resolution = 0.85, sloppy, superRiso = true, example = false } = {}) => {
+	window.__markerEdgeShot = async ({ view = 'forward', width = 1000, scale = 1, resolution = 0.85, sloppy, superRiso = true, example = false, xerox = null } = {}) => {
 		const m = await modules(); await ready(m);
 		const base = example ? m.C.appReducer(m.C.initialState, { type: 'LOAD_PROJECT', payload: await (await fetch('/examples/diorame_onboarding.dior')).json() }) : { ...m.C.initialState, shapes: sheetShapes(width / 250) };
 		const cam = example && view === 'forward' ? { x: 30, y: -12, z: 480, rotation: 0.05 } : CAM[view];
-		seed(4711); const cv = m.D.renderSnapshot(optsOf(cinemaState(m, base, view, superRiso ? zine(m, { resolution, sloppy }) : null), cam, width, width * 0.75), scale).canvas; Math.random = realRandom; return cv;
+		seed(4711); const cv = m.D.renderSnapshot(optsOf(cinemaState(m, base, view, superRiso ? withXerox(m, zine(m, { resolution, sloppy }), xerox) : null), cam, width, width * 0.75), scale).canvas; Math.random = realRandom; return cv;
 	};
 
 	window.__markerEdgeCheck = async ({ keep = false, cases = CASES } = {}) => {

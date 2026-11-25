@@ -11,7 +11,7 @@ import { fromPanel } from './panel';
 import { sceneInks } from './sceneInks';
 import { levelFor } from './quality';
 import { cfg as KNOBS } from './runtimeConfig';
-import { xeroxParams } from './xeroxParams';
+import { xeroxParams, type XeroxEngineParams } from './xeroxParams';
 import { xeroxMarkers, type XeroxMarkers } from './xeroxMarkers';
 import { xeroxMaps, xeroxMapsVersion } from './xeroxMaps';
 import { setXeroxPalette, setStencilPalette } from './xeroxPalette';
@@ -58,6 +58,8 @@ export type SuperRisoInput = {
 	hiddenLayers: readonly number[];
 	/** false for export renders (skipCinematicOverlays). */
 	isLive: boolean;
+	/** RenderContext.renderScale (HQ export). Absent = 1. Only Fotocopia reads it (the ink texture's cell, `tex`). */
+	renderScale?: number;
 	/** GIF / PNG-sequence: frame index, frame count and fps of the export (RenderContext.exportFrame). */
 	exportFrame?: ExportFrame;
 	/** Live, filled in phase 3: what the user moves (camera without handheld, optics, gizmo) and the state
@@ -81,6 +83,9 @@ export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Fra
 	const xr = s.technique === 'xerox', sn = s.technique === 'stencil';
 	const style = xr ? xeroxParams(s.xerox, w * m.res, s.resolution) : sn ? stencilParams(s.stencil, w * m.res, s.resolution) : fromPanel(s, w * m.res);
 	const simW = Math.round(240 * style.pxmm!);
+	// Fotocopia (lab v23.15): the ink texture of the layers (composeLayer's pattern) is cell noise of 1 logical px (renderScale
+	// device px). Its cell in simulated px goes to XLUM, which flattens it before the threshold (no checkerboard in mid-tones).
+	if (xr) (style as Partial<XeroxEngineParams>).tex = (inp.renderScale ?? 1) * simW / w;
 	const simH = Math.round(simW * h / w);
 	// sim: flatten straight at the simulation size (the 2D draw IS the reduction pass).
 	const fw = m.sim ? Math.min(w, simW) : w;
