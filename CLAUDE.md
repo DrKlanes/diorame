@@ -25,6 +25,7 @@ Para documentación de producto y UX, ver `src/REFERENCE.md`.
 - **Responder siempre en español**
 - **Análisis exhaustivo antes de modificar cualquier cosa** — leer los archivos relevantes, documentar hallazgos, proponer el plan, esperar confirmación
 - **No hacer cambios especulativos** — solo lo que fue explícitamente pedido
+- **Una sesión por proyecto:** la de la app se abre en `app\`, la del Lab en `lab\tools`; en la carpeta madre `Diorame\` solo de forma excepcional
 - **No añadir comentarios, docstrings ni type annotations** a código que no se modificó
 
 ---
@@ -304,6 +305,11 @@ Lecciones de método (Fotocopia v2, sesión del 25/11/2026 — `docs/session-rep
 - **`git stash` / `checkout` reescriben la copia de trabajo con CRLF** (`core.autocrlf`): una comparación byte a byte de un shader contra el Lab da falso negativo. Comparar contra el contenido del commit (`git show HEAD:…`), que va en LF.
 - **Cambios que alteran el aspecto de un efecto ya validado:** candidata en commit local, Moisés la juzga en `localhost` (app: `:3000`; Lab: servidor estático de `lab\web` en `127.0.0.1`), y solo entonces se sube. Funcionó tres veces seguidas en esta sesión y evitó publicar dos candidatas que él rechazó.
 - **El Lab tiene dos repos** (25/11/2026): `lab\web` (público, GitHub Pages) y `lab\tools` (privado, fuentes canónicas y guardias). Un cambio del Lab se aplica con el MISMO reemplazo de texto exacto en `tools\studio\*` y en `web\index.html`, y se commitea y etiqueta (`vNN`) en los dos. Antes de publicar: `lab\tools\measure\guards\guards.mjs` y, si no debe cambiar la exportación, `export-hash.mjs`.
+- **El carácter visual lo decide Moisés con variantes lado a lado;** las métricas solo vigilan defectos (escalones, damero, coste). Ante una duda estética, un tablero de variantes, no una métrica nueva.
+- **Dejar intacto un camino de shader al añadir una opción:** `if (uniform) { nuevo } else { texto exacto anterior }`. Un ternario sobre un uniform en lugar de una constante cambia píxeles aunque el valor sea el mismo.
+- **Identidad («esto no cambia»):** conjuntos de ≥ 3 pasadas por versión; una contra una da falsos «distinto».
+- **Coste de GPU:** ≥ 6 rondas alternadas entre versiones, mirando mínimo y mediana (el reloj de la GPU salta entre rondas).
+- **El escáner de Fotocopia a 0,06 mm sostiene G1** (escalones del tóner): no se afina sin revisar G1 con Moisés (`lab\tools\measure\guards\README.md`, v23.17).
 
 Lecciones de método (serie v3.17.43–48):
 - Un SVG que "se ve perfecto" no demuestra nada: hacen falta **dos fuentes distintas** (render de Canvas vs SVG rasterizado) **y la prueba en la herramienta de destino** (Illustrator: Ctrl+Y y Buscatrazos ignoran máscaras).

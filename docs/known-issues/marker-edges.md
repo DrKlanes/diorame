@@ -83,3 +83,25 @@ commit de v3.26.86 en `app` y del de v23.9 en `lab\web`.
 **Siguiente paso propuesto (v3.26.97, sin implementar):** `docs/fotocopia-v2-proposal.md` — el rotulador dentro de un proyecto único
 con el tóner, el zoom del Lab y la compilación; trae la guardia del §6.b prototipada (hoja de manchas alargadas, saltos por 100 mm de
 flanco contra la geometría conocida: 4,32 hoy, 6,91 en v23.8, 1,06 la acuarela) y sus límites (separa ×3 por poco, una semilla).
+
+## 8 · Después del aparcado (25 nov 2026, proyecto Fotocopia v2)
+
+Ningún intento nuevo sobre el shader del rotulador después del §2: Fotocopia v2 cambió el tóner, no el fin de trazo. Lo que sí
+hay de nuevo:
+
+- **Hoja sintética con geometría conocida** [VERIFICADO, fase 0]: saltos ≥ 0,25 mm por 100 mm de flanco: v23.5 5,75 · v23.8 6,91 ·
+  v23.13 4,32 · acuarela (sin trazos) 1,06. El orden coincide con el ojo de Moisés (`docs/fotocopia-v2-proposal.md` §2.3).
+- **Guardia G2 implantada en el Lab** (`lab\tools\measure\guards\guards.mjs`): muros ≥ 0,35 mm por 100 mm de contorno, sobre el
+  canvas visible por la UI, dos hojas y tres semillas. **7,3 frente a un límite de 0,7** (v23.13: 7,4; la acuarela, 0,21–0,28).
+  Falla a propósito («PENDIENTE DE FASE 4») y cumple la regla de entrada del §6.c. No mide lo mismo que la tabla de la fase 0
+  (otra hoja, otro umbral): no comparar sus números. No existe en Diorame.
+- **Aviso sobre el límite en curvas:** un rotulador decidido por trazo puede dejar, con razón, finales de pasada escalonados en
+  contornos curvos; ese límite se revisa con el ojo de Moisés delante.
+- **Plan de la fase 4 (sin empezar):** (1) partir `FS_XCOLOR` en dos programas, rotulador y acuarela, con `strokes()` una sola vez
+  (compilación medida en variantes: ~1,1 s y ~0,6 s); (2) **tabla de trazos**: una pasada pequeña decide UNA vez por trazo dónde
+  entra y sale, y `strokes()` lo lee en vez de decidirlo por píxel (`docs/fotocopia-v2-proposal.md` §4.2 y §4.4); (3) candidata
+  en local para juzgar el carácter; (4) port. Geometría instanciada solo si con la tabla no llega.
+
+**Dónde lo ve peor Moisés (25 nov 2026):** en **Diorame con Descuido alto** y en el **Lab con «Zonas que se colorean» alto**.
+Sin reproducir ni diagnosticar en esas dos condiciones [POR CONFIRMAR]: el próximo intento debe incluirlas en su banco.
+

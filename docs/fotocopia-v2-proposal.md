@@ -1,7 +1,7 @@
 # Fotocopia v2 — Fase 0: investigación y propuesta
 
 25 nov 2026 · Diorame v3.26.96 · Super Riso Lab v23.13 (`c94e8c8`). **Solo investigación: ningún shader ni lógica tocados.**
-Estado (v3.26.101): **decisiones tomadas (§8); fases 0.5, 1, 2 y 3 HECHAS en el Lab (v23.15) y el tóner PORTADO a Diorame (fase 3p, §7).** Fases 4 y 5 sin empezar.
+Estado (v3.26.103): **PROYECTO EN PAUSA (Moisés, 25 nov 2026).** Fases 0, 0.5, 1, 2, 3 y 3p hechas; el tóner de Lab v23.17 está publicado en el Lab y **NO portado**; fase 4 sin empezar (§7). Para retomar: `docs/RETOMAR-fotocopia.md`.
 
 Marcas: **[VERIFICADO]** = medido en esta sesión · **[POR CONFIRMAR]** = hipótesis o dato que falta.
 
@@ -316,6 +316,27 @@ Lab primero; cada fase es un commit en `lab\web` (+ fuentes en `tools\studio\`) 
 | **5 · Geometría** (condicional) | Trazos instanciados | Coste de `XCOLOR` en iPad y compilación dentro de objetivo | Igual que la 4 |
 
 Las fases 2 y 3 son independientes entre sí; la 4 no depende de la 3.
+
+### Estado real y PAUSA (25 nov 2026, cierre)
+
+**PAUSA por decisión de Moisés.** No se toca código ni shaders, no se publica nada visual y no se porta la v23.17 hasta que
+Moisés lo retome (`docs/RETOMAR-fotocopia.md`). Quedan publicados Diorame v3.26.102 (la v3.26.103 es solo documentación) y el
+Super Riso Lab v23.17.
+
+| Fase | Estado | Versiones |
+|---|---|---|
+| 0 · investigación y propuesta | Hecha | app v3.26.97 |
+| 0.5 · fuentes del Lab versionadas | Hecha | repo privado `super-riso-lab-tools`, desde v23.13 |
+| 1 · guardias | Hecha en el Lab; en Diorame no existen | `lab\tools\measure\guards\` |
+| 2 · resolución y zoom del Lab | Hecha | Lab v23.14 (solo Lab) |
+| 3 · tóner | Hecha | Lab v23.15 y v23.16 |
+| 3p · port del tóner | Hecha hasta la v23.16 | app v3.26.100 y v3.26.101 |
+| 3 bis · tóner seco con color a mano (`uTDry`) | Publicado en el Lab, **NO portado** | Lab v23.17 |
+| 4 · rotulador por tabla de trazos y `FS_XCOLOR` partido | **Sin empezar** | — |
+| 4p, 5 | Sin empezar | — |
+
+La ronda de iPad sigue pendiente (Diorame y Lab). La valoración de Moisés al pausar está en `docs/ux-debt.md`, «Fotocopia v2».
+Los apartados fechados de abajo son el relato de cada fase en su momento.
 
 ### Estado de las fases (25 nov 2026)
 

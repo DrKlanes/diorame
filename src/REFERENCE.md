@@ -732,6 +732,7 @@ decisions that the code cannot express on its own.
 | `super-riso.md` | Super Riso product description, design rationale and measured numbers (desktop and iPad). The code map is §14 |
 | `ux-debt.md` | Running list of known UX debt, with the reasoning behind each accepted quirk. |
 | `session-report-2026-11-25-fotocopia-v2.md` | Report of the Fotocopia v2 session of 25 Nov 2026 (v3.26.97 → v3.26.101, Lab v23.14 → v23.16): what was published, measured causes, false diagnoses, method lessons, repo state and what is left. Written to be handed to another assistant session. |
+| `RETOMAR-fotocopia.md` | **Entry document of the paused Fotocopia v2 project** (25 Nov 2026), in plain Spanish: what is published, what works and what does not, decisions, order for resuming and where everything is. |
 | `fotocopia-v2-proposal.md` | **Decisions taken; phases 0.5–3 done in the Lab (v23.15) and the toner ported to the app (3p, v3.26.100); phases 4–5 not started.** Fotocopia's four open problems as one project: jagged toner edges (binary per simulated pixel; not a regression), the Lab's zoom (raw blurred drawing while zooming, preview capped at 2048 px; not a regression), the marker's battlements (stroke end decided per pixel) and `FS_XCOLOR`'s cold compile (superlinear in body size: marker + watercolour 8–9 s, watercolour alone 0.6 s, marker with one `strokes()` call 1.1 s). Engine anatomy, the proposal (1-px-ramp threshold, per-stroke table, two programs, screen-resolution preview), the four guards that fail today with their prototypes (`docs/media/fotocopia-v2/proto/`, not wired into `tools/`), the phase plan and the nine decisions (taken on 25 Nov 2026). |
 | `fx-in-draw.md` | **Paused project (F0 done, F1 next):** FX also in DRAW. Goal, the 8 base decisions, Moisés's answers, the accepted UX (two-face inspector, cards, accordion, reveal, compare), the inventory (FX verdict table, Super Riso heights, usable height per viewport), the composition risks, phases F0–F6 with model and risk, what to test on the iPad and how it was measured. Read it before touching `FXPanel`, the `renderFrame` FX gate or the DRAW PNG export |
 | `BRIEF-CLAUDE-CODE.md` | Project brief. |
@@ -1398,6 +1399,9 @@ The **Super Riso Lab** (`C:\Users\Usuario\Desktop\Diorame\lab`, outside this rep
 | v23.14 | Fotocopia v2, phase 2 (UI only; engine and shaders untouched): while zooming / panning a `.dior` the Lab shows the LAST PRINT reframed, never the raw drawing blurred; the preview is computed at the stage's device pixels (floor 2048 px as before, cap 4096 px, 2048 on tablets / phones / low memory, never above the export); back to sharp in 0.13–0.21 s instead of 1.7–2.0 s (80 ms debounce, no PNG round trip, whole-drawing ink analysis memoised per drawing). Export and preview at rest byte-identical to v23.13. `docs/fotocopia-v2-proposal.md` §7 | — (Lab only, no app change) |
 | v23.15 | Fotocopia v2, phase 3 · toner (`shaders.xerox.js`; one new engine parameter, `tex` → `uTexPx`): the thresholds of `XLUM` and of each `XGEN` generation span at least one pixel of their signal (edges get coverage instead of a staircase: guard G1 40.7 % → 6.5 %); specks, fog and dust have a 0.07 mm minimum radius and proportional coverage; mid-tones no longer show a checkerboard — Diorame's ink texture (square-cell noise of ±1 %, one cell per project unit, so it grows with the Lab's zoom) is flattened before the threshold, the toner cluster is never finer than 1.25 px, and the grain carries a two-scale mottle. Riso and Stencil byte-identical. `docs/fotocopia-v2-proposal.md` §7 | 3.26.100 |
 | v23.16 | Fotocopia · toner grain (`XGEN`): the grain's gradient counts half in the threshold width (crisper specks), the cluster may go down to 1 px (was 1.25) and the mottle follows the grain size (15 × and 6 × `uGrain`, weight .09) | 3.26.100 |
+| v23.17 | Fotocopia · «dry toner» only with hand colouring (`XGEN`, `XCOMP`, uniform `uTDry` ← `tonerDry` = marker or watercolour); without colour, identical to v23.16 | **NOT in Diorame** (port pending; project paused, `docs/RETOMAR-fotocopia.md`) |
+
+**Lab v23.17 (`uTDry`, dry toner with hand colouring) is NOT in Diorame:** the app's Fotocopia is still Lab v23.16.
 
 **Product decision: the Riso paper colour only affects what is printed.** In Diorame the paper colour chosen in Super Riso tints the print (inks over that paper), not the canvas background; in the Lab (v22.7) it also tints the page behind the image. This is deliberate, not an accidental difference: in Diorame the background is the drawing's own (paper texture / dark mode). Do not "fix" it to match the Lab.
 
@@ -1459,7 +1463,11 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.102)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.103)
+
+### 3.26.103 · docs: cierre y pausa de Fotocopia v2
+
+- Solo documentación (el único cambio en `src/` es `APP_VERSION`). Nuevo `docs/RETOMAR-fotocopia.md`; estado real y pausa en la propuesta §7; valoración de Moisés en `ux-debt.md`; hallazgos y plan de la fase 4 en `known-issues/marker-edges.md` §8; §14: el Lab v23.17 no está en Diorame; reglas de trabajo en `CLAUDE.md`.
 
 ### 3.26.102 · docs: cierre de la sesión de Fotocopia v2 del 25 nov 2026
 

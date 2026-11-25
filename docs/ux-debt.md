@@ -540,7 +540,20 @@ tras el push.
 
 ## Fotocopia v2 (v3.26.97–3.26.101, Lab v23.14–v23.16): lo que quedó abierto el 25 nov 2026
 
-**Estado:** fases 0.5, 1, 2, 3 y 3p hechas; plan, números y decisiones en `docs/fotocopia-v2-proposal.md`; relato de la sesión en
+**PROYECTO EN PAUSA (Moisés, 25 nov 2026).** Para retomarlo: **[`docs/RETOMAR-fotocopia.md`](RETOMAR-fotocopia.md)**.
+
+### Valoración de Moisés al pausar (25 nov 2026)
+
+- **El efecto en conjunto todavía no le convence.**
+- **El dentado del rotulador le sigue pareciendo horrible.** Donde peor lo ve: en **Diorame con Descuido alto** y en el **Lab con
+  «Zonas que se colorean» alto**.
+- **Tóner:** en **B/N prefiere el de la v23.16**; **con color a mano, el «tóner seco» (V1)**. Eso es lo que publica el Lab v23.17.
+- **Las texturas que le gustan nacen donde un color cae justo en el umbral de la Oscuridad.** Idea futura (sin diseñar): un
+  control que acerque los colores del dibujo a ese umbral.
+
+### Lo que quedó abierto
+
+**Estado:** fases 0.5, 1, 2, 3 y 3p hechas; el tóner seco de Lab v23.17 **no está en Diorame**; plan, números y decisiones en `docs/fotocopia-v2-proposal.md`; relato de la sesión en
 `docs/session-report-2026-11-25-fotocopia-v2.md`. Lo de abajo NO está hecho.
 
 - **iPad sin medir** [POR CONFIRMAR]. El tóner nuevo lee mucha más textura: `XGEN` 15 lecturas por generación (antes 2) y `XLUM`
