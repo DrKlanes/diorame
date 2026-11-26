@@ -311,6 +311,13 @@ Lecciones de método (Fotocopia v2, sesión del 25/11/2026 — `docs/session-rep
 - **Coste de GPU:** ≥ 6 rondas alternadas entre versiones, mirando mínimo y mediana (el reloj de la GPU salta entre rondas).
 - **El escáner de Fotocopia a 0,06 mm sostiene G1** (escalones del tóner): no se afina sin revisar G1 con Moisés (`lab\tools\measure\guards\README.md`, v23.17).
 
+Lecciones de método (port Lab → Diorame, v3.26.104 — Lab v23.17 + v23.18):
+- **«Comparar con el Lab con las mismas entradas» es una prueba con número, no una impresión** [VERIFICADO]. `tools/draw-stress/harness/labcompare.js` monta el motor del Lab desde las fuentes de un tag en la página de Diorame y le da la MISMA imagen, los mismos parámetros y el mismo mapa de orientación. El residuo de bloques del Lab (0,001–0,010 de diferencia media) es la línea base: se mide también el par anterior (app vieja ↔ tag viejo, debe dar lo mismo) y el cruce (app nueva ↔ tag viejo, debe salir distinto) para demostrar que el instrumento ve el cambio.
+- **Una versión «antes» sin `stash`, sin cambiar de rama y sin worktree dentro de `Diorame\`** [VERIFICADO]: `git archive HEAD | tar -x` al scratchpad, unión (junction) a `app\node_modules`, `cacheDir` propio en su `vite.config.ts` y `npx vite --port 3001 --strictPort --open false`. La unión se quita con `cmd /c rmdir`: un borrado recursivo vaciaría el `node_modules` real.
+- **Un fallo de UI se demuestra reproduciéndolo en la versión vieja con el MISMO guion** (aquí, dos zonas parecidas — rojo y rojo oscuro — en un `.dior` de prueba cargado por «Cargar archivo»): el guion que lo caza en la vieja y no en la nueva es la prueba [VERIFICADO].
+- **FALSO DIAGNÓSTICO — «el arreglo no funciona»: era una pestaña en segundo plano** [VERIFICADO]. Las filas del panel de Fotocopia las publica `frame.ts` en fotogramas vivos; en una pestaña del navegador integrado que no está delante no hay `rAF`, el estado cambia pero el panel no se repinta. Antes de leer el panel, poner la pestaña delante (`tabs_select`).
+- **`npm run dev` abre un navegador** (`open: true` en `vite.config.ts`): puede ser el navegador real de Moisés. Para pruebas: `npm run dev -- --open false`.
+
 Lecciones de método (serie v3.17.43–48):
 - Un SVG que "se ve perfecto" no demuestra nada: hacen falta **dos fuentes distintas** (render de Canvas vs SVG rasterizado) **y la prueba en la herramienta de destino** (Illustrator: Ctrl+Y y Buscatrazos ignoran máscaras).
 - Las métricas globales diluyen fallos locales (un remate perdido entre 2 000 formas) → auditoría pieza a pieza.

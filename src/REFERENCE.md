@@ -1371,7 +1371,7 @@ Every item cost a bug. They are the checklist for porting or touching any Super 
 6. **No specks or pores on fixed grid cells.** Cell hashes show the grid when enlarged. Use value noise, or round specks on rotated grids of different scales, grouped by patches (`pores()`, XGEN fog, XDIRT dust).
 7. **Source paper.** `srcPaper` = the canvas background in light mode and **white in dark mode** (the dark background is ink/paint, as in Riso and Fotocopia); Stencil only normalises it when it is light (`stencilPaper`). Stencil's thresholds are measured **on the drawing alone**: pixels of the background colour are left out of the histogram (fallback to the whole one below 5 %), and the cache is keyed by that colour. Fog in dark mode tints the drawing itself and is not caught by that exclusion (pending list).
 8. **CPU maps and the frame.** The flatten canvas is overwritten next frame: copy it (at map size) before computing in an idle callback. The maps' version goes into the frame key. Never recompute per live frame. «At rest» means the camera only (motion indices 0–6 and 9): the line wiggle and the particles do not count, and with a cinematic preset playing the camera never rests.
-9. **Compare with the lab using the SAME inputs** (source paper, markers/layers, thresholds, `pxmm`, scanner). Most "differences" found were inputs, not shaders; the shader bodies are verified byte for byte against `tools/studio/shaders.*.js`.
+9. **Compare with the lab using the SAME inputs** (source paper, markers/layers, thresholds, `pxmm`, scanner). Most "differences" found were inputs, not shaders; the shader bodies are verified byte for byte against `tools/studio/shaders.*.js`. Instrument since v3.26.104: `tools/draw-stress/harness/labcompare.js` (the Lab engine built from a tag's sources in the Diorame page, same inputs; baseline residual 0.001–0.010 mean |Δ|).
 10. **Test pitfalls** (see also CLAUDE.md, «Lecciones de medición»): `import()` of an app module from the console may load a second instance (Vite's `?t=`): use the exact URL from `performance.getEntriesByType('resource')`; a hidden or narrow browser pane freezes the `rAF`.
 11. **Shader start-up (v3.26.95, Lab v23.11).** Never ask for `COMPILE_STATUS` / `LINK_STATUS` right after issuing a compile: it serialises the batch (cold shader cache: after a deploy that changes shaders, a private tab, a new device). `compile()` issues; `Program.u` checks at first use. Measured with `tools/load-timing/srstart.mjs --cold` (RTX 5070 Ti, ANGLE/D3D11, 4 alternated rounds): switching Super Riso on (Riso, 11 programs) blocks 1.04 → 0.72 s; switching to Fotocopia 6.2 → 5.9 s, because **`FS_XCOLOR` alone takes ~5.7 s to compile cold** on Direct3D (the other six ~0.2 s) and no parallelism shortens one program [VERIFICADO desktop; iPad / Metal not measured]. Warm unchanged (0.06–0.16 s). **Do NOT issue Fotocopia's / Stencil's programs at engine creation** to hide `FS_XCOLOR` (what the Lab does): measured (3/3), a program whose parallel link ends long before its first use did not reach Chrome's shader disk cache, so the NEXT session paid `FS_XCOLOR` again (4.1–4.3 s instead of 0.1 s); it only hid the cold cost (0.1 s if the user waited 8 s before switching, 3.7 s if not). Shortening Fotocopia cold means changing `FS_XCOLOR` — Lab first (`docs/ux-debt.md`).
 
@@ -1464,7 +1464,11 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ---
 
-## Appendix C: Changelog Highlights (1.7.3 → 3.26.103)
+## Appendix C: Changelog Highlights (1.7.3 → 3.26.104)
+
+### 3.26.104 · feat(fx): Fotocopia — Lab v23.17 + v23.18 (candidata local, pendiente del OK visual de Moisés)
+
+- Tóner seco con color a mano (`uTDry` ← `tonerDry`; sin color, idéntico), rotulador sin dientes de sierra (`FS_XCOLOR` nuevo, mapa de orientación por color, `uOriRows`) y colores a mano emparejados uno a uno (`xOverBind`; cada fila borra solo su elección). Los siete `FS_X*` idénticos byte a byte al tag `v23.18`; comparado con el motor del Lab con las mismas entradas (`tools/draw-stress/harness/labcompare.js`). Detalle y medidas: §14, «Port of v23.17 + v23.18».
 
 ### 3.26.103 · docs: cierre y pausa de Fotocopia v2
 

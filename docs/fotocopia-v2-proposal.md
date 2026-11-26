@@ -1,7 +1,7 @@
 # Fotocopia v2 — Fase 0: investigación y propuesta
 
 25 nov 2026 · Diorame v3.26.96 · Super Riso Lab v23.13 (`c94e8c8`). **Solo investigación: ningún shader ni lógica tocados.**
-Estado (v3.26.103): **PROYECTO EN PAUSA (Moisés, 25 nov 2026).** Fases 0, 0.5, 1, 2, 3 y 3p hechas; el tóner de Lab v23.17 está publicado en el Lab y **NO portado**; fase 4 sin empezar (§7). Para retomar: `docs/RETOMAR-fotocopia.md`.
+Estado (v3.26.103): **PROYECTO EN PAUSA (Moisés, 25 nov 2026).** Fases 0, 0.5, 1, 2, 3 y 3p hechas; el tóner de Lab v23.17 está publicado en el Lab y **NO portado**; fase 4 sin empezar (§7). **26 nov 2026:** Lab v23.17 + v23.18 portados en la candidata local v3.26.104 (sin publicar, pendiente del OK de Moisés); v23.18 hizo en el Lab parte de la fase 4 (rotulador sin dientes de sierra, sin la tabla de trazos). Para retomar: `docs/RETOMAR-fotocopia.md`.
 
 Marcas: **[VERIFICADO]** = medido en esta sesión · **[POR CONFIRMAR]** = hipótesis o dato que falta.
 
@@ -331,7 +331,8 @@ Super Riso Lab v23.17.
 | 2 · resolución y zoom del Lab | Hecha | Lab v23.14 (solo Lab) |
 | 3 · tóner | Hecha | Lab v23.15 y v23.16 |
 | 3p · port del tóner | Hecha hasta la v23.16 | app v3.26.100 y v3.26.101 |
-| 3 bis · tóner seco con color a mano (`uTDry`) | Publicado en el Lab, **NO portado** | Lab v23.17 |
+| 3 bis · tóner seco con color a mano (`uTDry`) | Publicado en el Lab; portado en candidata local | Lab v23.17 · app v3.26.104 (sin publicar) |
+| rotulador sin dientes de sierra + colores a mano uno a uno | Publicado en el Lab; portado en candidata local | Lab v23.18 · app v3.26.104 (sin publicar) |
 | 4 · rotulador por tabla de trazos y `FS_XCOLOR` partido | **Sin empezar** | — |
 | 4p, 5 | Sin empezar | — |
 
