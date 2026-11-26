@@ -81,16 +81,19 @@ export const lastFrame: { inks: PickedInks | null; params: AnyParams | null } = 
 // Fotocopia at the device px of the screen (v3.26.105, as the Lab's preview since v23.14). The canvas is in CSS px and the
 // browser stretches it by the DPR, so the toner grain's 1-px floor measured 1.65 screen px at DPR 1.5: «Tamaño de trama» at
 // 0 could not get finer. The engine now simulates at canvas width / renderScale × DPR (cap 4096 px; 2048 on tablets, phones
-// and low-memory devices, like the Lab) and bridge.drawFrom reduces it into the canvas. Live and export ×1 alike (the
-// preview predicts the export); HQ ×2 already simulates above the screen at DPR ≤ 2 and does not change. Riso and Stencil: ×1.
+// and low-memory devices, like the Lab) and bridge.drawFrom reduces it into the canvas. Exports that re-render (isLive false:
+// PNG of the flat view / DRAW / Formato, GIF, PNG sequence) use a FIXED DPR 2 instead of the device's (v3.26.106, Moisés's
+// decision): the same .dior exports the same pixels on any screen; same caps. HQ ×2 is unchanged (canvas / 2 × 2 = ×1).
+// Riso and Stencil: ×1.
 const XEROX_CAP = typeof navigator !== 'undefined' && (/iPad|iPhone|Android/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
 	|| ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) <= 4) ? 2048 : 4096;
-const xeroxScale = (w: number, rs = 1) => Math.max(1, Math.min(XEROX_CAP, w / rs * ((typeof window !== 'undefined' && window.devicePixelRatio) || 1)) / w);
+const XEROX_EXPORT_DPR = 2;
+const xeroxScale = (w: number, rs = 1, live = true) => Math.max(1, Math.min(XEROX_CAP, w / rs * (live ? (typeof window !== 'undefined' && window.devicePixelRatio) || 1 : XEROX_EXPORT_DPR)) / w);
 
 export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Frame {
 	const { settings: s, isDarkMode, isPixelArt } = inp;
 	const xr = s.technique === 'xerox', sn = s.technique === 'stencil';
-	const xk = xr ? xeroxScale(w, inp.renderScale) : 1;
+	const xk = xr ? xeroxScale(w, inp.renderScale, inp.isLive) : 1;
 	const style = xr ? xeroxParams(s.xerox, w * m.res * xk, s.resolution) : sn ? stencilParams(s.stencil, w * m.res, s.resolution) : fromPanel(s, w * m.res);
 	const simW = Math.round(240 * style.pxmm!);
 	// Fotocopia (lab v23.15): the ink texture of the layers (composeLayer's pattern) is cell noise of 1 logical px (renderScale

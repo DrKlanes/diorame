@@ -576,12 +576,18 @@ tras el push.
   pasa de 1,65 a 1,1 px de pantalla a DPR 1,5 (el A3 del Lab). Elegida por Moisés con tablero V0/V1/V2. Quedan abiertos:
   - **iPad sin medir** [POR CONFIRMAR]: 1,5× píxeles (también en el modo ligero) y ~224 MB de GPU por motor (100 antes). Si no
     cabe, la palanca es un tope menor en los dispositivos *preview*.
-  - **Las exportaciones ×1 dependen ahora del DPR del equipo** (PNG, GIF, secuencia PNG se simulan a la densidad de la pantalla,
-    para que la vista prediga la exportación). HQ ×2 no cambia. Decisión tomada por defecto; si molesta, la exportación podría
-    fijar un DPR (p. ej. 2) en lugar del del equipo.
-  - **G1 en Diorame** (la hoja de tóner del Lab como escena, medida en el lienzo de salida): v3.26.104 daba 14,0–14,7 % (por
-    encima del límite 12 del Lab, sin guardia que lo viera); v3.26.105, 6,5–9,0 %. Sigue sin ser una guardia de la app: el
-    código de medida vive solo en el scratchpad de la sesión (porta `stair()` de `lab\tools\measure\guards\lib.mjs`).
+  - ~~Las exportaciones ×1 dependen del DPR del equipo~~ **Cerrado en v3.26.106** (decisión de Moisés): las exportaciones que
+    re-renderizan (PNG de Plana, DRAW y Formato, GIF, secuencia PNG) usan un DPR 2 fijo; misma huella a DPR 1, 1,5 y 2
+    [VERIFICADO]. Mismos topes que la vista: en tabletas, 2048 px (una exportación de iPad de un lienzo > 1024 px difiere de la
+    de escritorio). El PNG «Vista» de CINEMA no re-renderiza: es el lienzo vivo ampliado a px de dispositivo, y sigue a la
+    pantalla como siempre. En pantallas con DPR ≠ 2 la exportación sale algo más fina que la vista (a DPR 1,5 apenas; a DPR 1,
+    claramente).
+  - ~~G1 no existe en la app~~ **Cerrado en v3.26.106**: `tools/draw-stress/harness/g1toner.js` (`__g1Check`), sobre el lienzo
+    visible. v3.26.104 falla (13,8–14,0 %); v3.26.106 pasa a DPR 1,5 (6,3–6,5 %) y 2 (5,1–5,4 %). G2, G2 interno, G3 y G4
+    siguen solo en el Lab.
+  - **Abierto — G1 falla a DPR 1** [VERIFICADO, 13,8–14,1 %]: en una pantalla DPR 1 la vista se simula a px de lienzo (la
+    resolución de v3.26.104), así que el tóner en vivo conserva sus escalones; las exportaciones (DPR 2) no. Palanca, sin
+    decidir: un factor mínimo de 1,5 en la vista aunque la pantalla sea DPR 1 (supermuestreo; coste ×2,25 en esas pantallas).
   - El tramo muerto del deslizador baja a 0–0,08 (lienzo de 1366 a DPR 1,5); no se ha remapeado.
 - **Fase 4 (rotulador por tabla de trazos, `FS_XCOLOR` en dos programas) y fase 5 (geometría): sin empezar.** G2 (7,3 muros por
   100 mm, límite 0,7) y G4 (5,8 s de compilación en frío, límite 1,2 s) siguen fallando a propósito. El fundido de aerógrafo de las
