@@ -1468,7 +1468,7 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ## Appendix C: Changelog Highlights (1.7.3 → 3.26.105)
 
-### 3.26.105 · feat(fx): Fotocopia a resolución de pantalla — grano más fino con «Tamaño de trama» al mínimo (candidata local, 26 nov 2026)
+### 3.26.105 · feat(fx): Fotocopia a resolución de pantalla — grano más fino con «Tamaño de trama» al mínimo (publicada el 26 nov 2026 tras el OK de Moisés en local)
 
 - El grano del tóner tenía un suelo de 1 px de simulación, y la simulación iba a px de lienzo (px CSS, estirados ×DPR): al mínimo, la mota medía 1,65 px de pantalla a DPR 1,5 y el tramo 0–0,28 del deslizador no hacía nada (bajar el mínimo daba un render idéntico byte a byte). Fotocopia se simula ahora a lienzo × DPR (tope 4096 px; 2048 en tabletas), como la vista previa del Lab v23.14, y se reduce al lienzo: mota de 1,1 px de pantalla. Ningún shader cambia. G1 14,0–14,7 % → 6,5–9,0 %; `__markerEdgeCheck` 6/6; Riso, Stencil y HQ ×2 idénticos; GPU del motor 2,1 → 4,4 ms y 100 → 224 MB en escritorio; **iPad sin medir**. Detalle: §14, «Fotocopia at screen resolution».
 
