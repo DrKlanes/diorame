@@ -112,6 +112,7 @@ export function drawFrom(offCtx: CanvasRenderingContext2D, src: CanvasImageSourc
 		offCtx.globalAlpha = 1;
 		offCtx.globalCompositeOperation = 'copy';
 		offCtx.imageSmoothingEnabled = !crisp;
+		if (ew > w) offCtx.imageSmoothingQuality = 'high';          // Fotocopia at screen px (frame.ts, v3.26.105): a real reduction
 		offCtx.drawImage(src, 0, 0, ew, eh, 0, 0, w, h);
 	} finally {
 		offCtx.restore();

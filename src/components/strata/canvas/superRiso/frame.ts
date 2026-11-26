@@ -78,10 +78,20 @@ export type Frame = { style: AnyParams; fw: number; fh: number; base: string; sr
 /** srdebug: the inks and parameters of the last live frame. */
 export const lastFrame: { inks: PickedInks | null; params: AnyParams | null } = { inks: null, params: null };
 
+// Fotocopia at the device px of the screen (v3.26.105, as the Lab's preview since v23.14). The canvas is in CSS px and the
+// browser stretches it by the DPR, so the toner grain's 1-px floor measured 1.65 screen px at DPR 1.5: «Tamaño de trama» at
+// 0 could not get finer. The engine now simulates at canvas width / renderScale × DPR (cap 4096 px; 2048 on tablets, phones
+// and low-memory devices, like the Lab) and bridge.drawFrom reduces it into the canvas. Live and export ×1 alike (the
+// preview predicts the export); HQ ×2 already simulates above the screen at DPR ≤ 2 and does not change. Riso and Stencil: ×1.
+const XEROX_CAP = typeof navigator !== 'undefined' && (/iPad|iPhone|Android/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
+	|| ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) <= 4) ? 2048 : 4096;
+const xeroxScale = (w: number, rs = 1) => Math.max(1, Math.min(XEROX_CAP, w / rs * ((typeof window !== 'undefined' && window.devicePixelRatio) || 1)) / w);
+
 export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Frame {
 	const { settings: s, isDarkMode, isPixelArt } = inp;
 	const xr = s.technique === 'xerox', sn = s.technique === 'stencil';
-	const style = xr ? xeroxParams(s.xerox, w * m.res, s.resolution) : sn ? stencilParams(s.stencil, w * m.res, s.resolution) : fromPanel(s, w * m.res);
+	const xk = xr ? xeroxScale(w, inp.renderScale) : 1;
+	const style = xr ? xeroxParams(s.xerox, w * m.res * xk, s.resolution) : sn ? stencilParams(s.stencil, w * m.res, s.resolution) : fromPanel(s, w * m.res);
 	const simW = Math.round(240 * style.pxmm!);
 	// Fotocopia (lab v23.15): the ink texture of the layers (composeLayer's pattern) is cell noise of 1 logical px (renderScale
 	// device px). Its cell in simulated px goes to XLUM, which flattens it before the threshold (no checkerboard in mid-tones).
@@ -105,7 +115,7 @@ export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Fra
 	// out the version of the CPU maps (Fotocopia / Stencil, redone every ~300 ms in motion): a held result keeps being shown
 	// until the next tick prints the new maps, instead of a synchronous frame (v3.20.14).
 	const hk = [w, h, +isDarkMode, +isPixelArt, m.res, +m.sim, m.preview, +m.lossless, m.pipe, +KNOBS.mip, +KNOBS.offscreenBack, +KNOBS.preserveDrawingBuffer, +KNOBS.darkPaperFromBase,
-		s.technique, ...(mk ? [s.resolution, JSON.stringify(s.xerox), (mk.keys ?? []).join(',')] : sn ? [s.resolution, JSON.stringify(s.stencil)]
+		s.technique, xk, ...(mk ? [s.resolution, JSON.stringify(s.xerox), (mk.keys ?? []).join(',')] : sn ? [s.resolution, JSON.stringify(s.stencil)]
 			: [s.paper, s.screen, s.screenSize, s.imperfection, s.resolution]), inks.inks.join(',')].join('|');
 	const key = `${hk}|${mk ? xeroxMapsVersion() : sn ? stencilMapsVersion() : 0}`;
 	const xerox = mk ? { x: s.xerox, mk, isLive: inp.isLive, motion: inp.motion && [...inp.motion, ...(inp.anim ?? [])], scene: inp.scene } : undefined;

@@ -570,8 +570,19 @@ tras el push.
   pasadas idénticas, ya en v23.13. Por eso `export-hash.mjs` compara conjuntos de pasadas. Causa sin aislar (motor o GPU).
 - **En el Lab el deslizador «Tamaño de trama» no gobierna el grano de Fotocopia** (va fijo en 0,06 mm; en Diorame sí lo gobierna
   desde v3.19.2). Diferencia heredada, no decidida: o se iguala el Lab a Diorame o se documenta como intencionada.
-- **En Diorame el grano del tóner está limitado por el píxel de simulación** (~0,2 mm de hoja a Resolución .85): entre «trama al
-  mínimo» y «35 %» la diferencia es pequeña. No es un fallo; si molesta, la palanca es la Resolución por defecto de Fotocopia.
+- ~~**En Diorame el grano del tóner está limitado por el píxel de simulación**~~ **Resuelto en v3.26.105** [VERIFICADO en escritorio]:
+  el límite era la resolución de proceso, no el deslizador (bajar su mínimo daba un render idéntico byte a byte; el tramo 0–0,28
+  no hacía nada). Fotocopia se simula ahora a lienzo × DPR (tope 4096; 2048 en tabletas) y se reduce al lienzo: la mota mínima
+  pasa de 1,65 a 1,1 px de pantalla a DPR 1,5 (el A3 del Lab). Elegida por Moisés con tablero V0/V1/V2. Quedan abiertos:
+  - **iPad sin medir** [POR CONFIRMAR]: 1,5× píxeles (también en el modo ligero) y ~224 MB de GPU por motor (100 antes). Si no
+    cabe, la palanca es un tope menor en los dispositivos *preview*.
+  - **Las exportaciones ×1 dependen ahora del DPR del equipo** (PNG, GIF, secuencia PNG se simulan a la densidad de la pantalla,
+    para que la vista prediga la exportación). HQ ×2 no cambia. Decisión tomada por defecto; si molesta, la exportación podría
+    fijar un DPR (p. ej. 2) en lugar del del equipo.
+  - **G1 en Diorame** (la hoja de tóner del Lab como escena, medida en el lienzo de salida): v3.26.104 daba 14,0–14,7 % (por
+    encima del límite 12 del Lab, sin guardia que lo viera); v3.26.105, 6,5–9,0 %. Sigue sin ser una guardia de la app: el
+    código de medida vive solo en el scratchpad de la sesión (porta `stair()` de `lab\tools\measure\guards\lib.mjs`).
+  - El tramo muerto del deslizador baja a 0–0,08 (lienzo de 1366 a DPR 1,5); no se ha remapeado.
 - **Fase 4 (rotulador por tabla de trazos, `FS_XCOLOR` en dos programas) y fase 5 (geometría): sin empezar.** G2 (7,3 muros por
   100 mm, límite 0,7) y G4 (5,8 s de compilación en frío, límite 1,2 s) siguen fallando a propósito. El fundido de aerógrafo de las
   zonas sin pintar del rotulador (decisión D6) va en la fase 4.
