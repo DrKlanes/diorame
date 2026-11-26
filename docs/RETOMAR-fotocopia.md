@@ -7,6 +7,7 @@
 - **Diorame:** el efecto de la **v3.26.102** (la v3.26.103 solo añade documentos). Su Fotocopia es la del Lab v23.16.
 - **Super Riso Lab:** **v23.17** ([super-riso.dumaker.com](https://super-riso.dumaker.com/)).
 - **Diferencia:** el «tóner seco» cuando hay color a mano (rotulador o acuarela) **está solo en el Lab**. Sin color, los dos se ven con el mismo tóner.
+- **26 nov 2026 · candidata local v3.26.104 (SIN publicar, pendiente de tu OK en `localhost:3000`):** Diorame portado a Lab v23.18 (tóner seco, rotulador sin dientes, colores a mano uno a uno). Comprobación: REFERENCE.md §14, «Port of v23.17 + v23.18».
 
 ## Cómo está
 

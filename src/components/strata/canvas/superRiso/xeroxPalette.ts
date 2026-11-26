@@ -6,8 +6,9 @@ import type { XeroxMarkerId } from '../../../../types/strataTypes';
 
 /** id: one of the 16 markers of the library; without it, a colour of the drawing. */
 export type XeroxMarker = { hex: string; id?: XeroxMarkerId };
-/** A panel row: a colour zone of the drawing (`zone`, with `over` if its colour was picked by hand), or a marker of the box (`box` index). */
-export type XeroxRow = XeroxMarker & { zone?: string; over?: boolean; box?: number };
+/** A panel row: a colour zone of the drawing (`zone`, with `over` = the key of its entry in `xerox.over` if its colour was
+ *  picked by hand), or a marker of the box (`box` index). */
+export type XeroxRow = XeroxMarker & { zone?: string; over?: string; box?: number };
 /** what: the effective "what it colours" (auto resolved). zones: colour zones the drawing has. */
 export type XeroxPaletteView = { rows: readonly XeroxRow[]; what: 'color' | 'fill'; zones: number };
 

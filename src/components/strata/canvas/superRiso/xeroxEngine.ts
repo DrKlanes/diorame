@@ -7,6 +7,7 @@ import { FS_XLUM, FS_XGEN, FS_XID, FS_XEDGE, FS_XCOLOR, FS_XCOMP, FS_XDIRT } fro
 import { hex2rgb, lin, rng } from './inks';
 import { XDEFAULTS, type XeroxEngineParams } from './xeroxParams';
 import type { Program, Target, RunApi, TexOpts } from './engine';
+import type { OriMap } from './xeroxMaps';
 
 export type XeroxHost = {
 	gl: WebGL2RenderingContext;
@@ -71,7 +72,7 @@ export function createXerox(H: XeroxHost) {
 		for (let g = 1; g <= G; g++) {
 			const sig = Math.max(.05, P.genSpread * pxmm * (g === 1 ? .6 : 1));
 			bl(`gen${g} H`, X.xa, X.xb, 1, 0, sig); bl(`gen${g} V`, X.xb, X.xc, 0, 1, sig);
-			run(`XGEN ${g}`, R.xgen, X.xa, a => { a.f('uPxMm', pxmm); a.f('uSeed', P.seed); a.t('uD', X.xc.t[0]); a.t('uGreen', H.greenTex); a.f('uThr', P.thr); a.f('uGrain', P.grain); a.f('uDust', P.dust); a.f('uFog', P.fog); a.f('uStreak', P.streak); a.f('uGen', g); });
+			run(`XGEN ${g}`, R.xgen, X.xa, a => { a.f('uPxMm', pxmm); a.f('uSeed', P.seed); a.t('uD', X.xc.t[0]); a.t('uGreen', H.greenTex); a.f('uThr', P.thr); a.f('uGrain', P.grain); a.f('uDust', P.dust); a.f('uFog', P.fog); a.f('uStreak', P.streak); a.f('uGen', g); a.f('uTDry', P.tonerDry ? 1 : 0); });
 		}
 		// physical dirt of the sheet (hairs, lint, scratches, prints, fuser smear) over the last copy
 		run('XDIRT', R.xdirt, X.xb, a => { a.f('uPxMm', pxmm); a.f('uSeed', P.seed); a.t('uD', X.xa.t[0]); a.f('uHair', P.hairs); a.f('uScratch', P.scratch); a.f('uPrint', P.prints); a.f('uSmear', P.smear); });
@@ -108,12 +109,12 @@ export function createXerox(H: XeroxHost) {
 				a.fv('uCOff', off, 2); a.f('uWobble', P.wobble); a.f('uCover', P.cover); a.f('uStroke', P.stroke); a.f('uAng', P.strokeAng * Math.PI / 180); a.f('uOverlap', P.overlap); a.f('uStrength', P.strength);
 				a.f('uSlop', P.slop); a.f('uDry', P.dry); a.f('uFast', P.fast);
 				if (oriSrc === undefined) { H.texFrom(blankOri(), { filter: gl.NEAREST }, oriTex); oriSrc = null; }
-				a.t('uOri', oriTex); a.f('uSheetMm', w / pxmm, h / pxmm); a.f('uWobMm', P.wobMm); a.f('uGran', P.gran); a.f('uDryB', P.dryB); a.f('uBloom', P.bloom);
+				a.t('uOri', oriTex); a.i('uOriRows', ((oriSrc as OriMap | null)?.__srOriRows ?? 0) | 0); a.f('uSheetMm', w / pxmm, h / pxmm); a.f('uWobMm', P.wobMm); a.f('uGran', P.gran); a.f('uDryB', P.dryB); a.f('uBloom', P.bloom);
 			});
 		}
 		run('XCOMP', R.xcomp, S.comp, a => {
 			a.f('uPxMm', pxmm); a.t('uD', DT.t[0]); a.t('uSolX', X.xs.t[0]); a.f('uTonerK', P.tonerK); a.t('uC', X.xc.t[0]); a.t('uFib', H.fibTex); a.f('uPaper', ...paperLin);
-			a.f('uHollow', P.hollow); a.f('uBand', P.band); a.f('uPaperTex', P.paperTex); a.f('uFibers', P.fibers); a.f('uHasColor', hasColor ? 1 : 0);
+			a.f('uHollow', P.hollow); a.f('uBand', P.band); a.f('uPaperTex', P.paperTex); a.f('uFibers', P.fibers); a.f('uHasColor', hasColor ? 1 : 0); a.f('uTDry', P.tonerDry ? 1 : 0);
 		});
 		run('SCAN', H.PR.scan, toTexture ? S.out : null, a => { a.f('uSeed', P.seed); a.t('uComp', S.comp.t[0]); a.f('uBlurPx', P.scanBlur); a.f('uNoise', P.scanNoise); a.i('uNorm', 0); a.f('uPaper', ...paperLin); });
 	}

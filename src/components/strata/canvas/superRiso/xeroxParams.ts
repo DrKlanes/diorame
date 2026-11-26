@@ -16,7 +16,8 @@ export type XeroxEngineParams = {
 	gens: number; genSpread: number; thr: number; grain: number; dust: number; fog: number; streak: number; hollow: number; band: number;
 	hand: number; colorSmooth: number; sloppy: number; offset: number; wobble: number; cover: number; stroke: number; strokeAng: number; overlap: number; strength: number;
 	paper: string; paperTex: number; fibers: number; scanBlur: number; scanNoise: number; srcPaper: RGB;
-	tonerK: number; fast: number; hairs: number; scratch: number; prints: number; smear: number; slop: number; dry: number; wobMm: number; gran: number; dryB: number; bloom: number;
+	/** Lab v23.17: «dry toner» (XGEN, XCOMP) only with hand colouring; 0 = the B/N toner of v23.16, unchanged. */
+	tonerK: number; tonerDry: number; fast: number; hairs: number; scratch: number; prints: number; smear: number; slop: number; dry: number; wobMm: number; gran: number; dryB: number; bloom: number;
 	/** Paint colour of each marker, and the colour of the ORIGINAL that marks its zone (lab: markers.paint / markers.keys). */
 	markers: string[]; keys: string[] | null;
 	/** CPU maps (xeroxMaps.ts): marker ids of the "white gaps" mode, and stroke orientation per colour patch. */
@@ -28,7 +29,7 @@ export const XDEFAULTS: XeroxEngineParams = {
 	gens: 2, genSpread: .05, thr: .44, grain: .06, dust: .4, fog: .4, streak: .3, hollow: .35, band: .3,
 	hand: 0, markers: [], keys: null, colorSmooth: .6, sloppy: .5, offset: .8, wobble: .5, cover: 1, stroke: 5, strokeAng: 35, overlap: .34, strength: 1,
 	paper: '#f6f6f2', paperTex: .12, fibers: .1, scanBlur: .6, scanNoise: .3, srcPaper: [1, 1, 1],
-	tonerK: .75, fast: .35, hairs: .4, scratch: .3, prints: .15, smear: .2, slop: .5, dry: .5, wobMm: .6, gran: .6, dryB: .3, bloom: .5,
+	tonerK: .75, tonerDry: 0, fast: .35, hairs: .4, scratch: .3, prints: .15, smear: .2, slop: .5, dry: .5, wobMm: .6, gran: .6, dryB: .3, bloom: .5,
 	regionMap: null, orientMap: null,
 };
 
@@ -39,7 +40,7 @@ function xBase(x: XeroxSettings) {
 	const d = x.dirt, sl = x.sloppy;
 	const pap = x.paper === 'custom' ? { paper: x.paperHex, fibers: .15, paperTex: .12 } : XEROX_PAPERS[x.paper];
 	return {
-		dark: x.dark, tonerK: x.toner, soft: .05,
+		dark: x.dark, tonerK: x.toner, tonerDry: x.hand !== 'none' ? 1 : 0, soft: .05,
 		hairs: lerp(.1, 1, d), scratch: lerp(0, .7, d), prints: lerp(0, .45, d), smear: lerp(0, .5, d),
 		slop: sl, dry: .5, fast: .35, wobMm: lerp(.3, 1.2, sl), gran: .6, dryB: .3, bloom: .5, gens: x.gens, photo: x.mode === 'photo' ? 1 : 0, lpi: Math.round(80 - 65 * Math.pow(x.screenSize, .7)), motion: 0, lid: 0,
 		dust: lerp(.05, 1, d), fog: lerp(.05, 1, d), streak: lerp(0, .8, d), band: lerp(.1, .8, d), hollow: lerp(.2, .7, d), grain: lerp(.035, .14, x.screenSize), thr: .44, genSpread: .05,

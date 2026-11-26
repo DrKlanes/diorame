@@ -48,7 +48,7 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm;
 // umbral con grano de tóner (racimos), motas del cristal, pelos, velo de fondo y rayas del tambor.
 export const FS_XGEN = HEADX+`
 out vec4 o;
-uniform sampler2D uD, uGreen; uniform float uThr, uGrain, uDust, uFog, uStreak, uGen;
+uniform sampler2D uD, uGreen; uniform float uThr, uGrain, uDust, uFog, uStreak, uGen, uTDry;
 float seg(vec2 p, vec2 a, vec2 b){ vec2 pa=p-a, ba=b-a; float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.); return length(pa-ba*h); }
 // v23.15 — grano del tóner (racimos + grano fino) como campo continuo. Antes el ruido en racimos se leía alineado con la
 // rejilla de su textura y el fino iba por debajo del píxel: al umbralizarlo, un tono medio salía como un damero de cuadraditos.
@@ -58,10 +58,18 @@ float seg(vec2 p, vec2 a, vec2 b){ vec2 pa=p-a, ba=b-a; float h=clamp(dot(pa,ba)
 // un tono medio rompe en manchas irregulares y no en un punteado uniforme. v23.16: el moteado sigue al tamaño de trama (15 y
 // 6 veces uGrain: ≈1 y ≈0,45 mm con la trama por defecto, la mitad con la trama al mínimo) y pesa menos (0,09; era 0,12 a
 // escala fija, y con la trama al mínimo quedaba una mancha gruesa que el deslizador no movía).
+// v23.17 — tóner SECO con color a mano (uTDry = 1: rotulador o acuarela; 0: B/N, idéntico a v23.16). Con color debajo, una mota
+// gris y blanda deja ver el color a medias y lo ensucia; el tóner es polvo fundido: tapa o no tapa. Con uTDry: el grano fino de
+// 0,03 mm solo entra cuando un píxel puede verlo (≥ 33 px/mm; por debajo era ruido por píxel que inflaba la rampa → grises) y el
+// moteado de baja frecuencia pesa un 70 % menos (0,027; las manchas de varios mm eran la «nube»). Decisión de Moisés con tablero
+// de variantes (tóner seco en todo, V1, frente a v23.16): en B/N prefiere el de siempre; con color, el seco.
 float grainF(vec2 mm, float g, float pm){ vec2 q=mm/max(uGrain*3.,pm)/1024.;
   float n=(texture(uGreen, mat2(.891,.454,-.454,.891)*q+vec2(g*.31,g*.17)).r+texture(uGreen, mat2(.454,.891,-.891,.454)*q+vec2(g*.17+.37,g*.31+.61)).r-1.)*.7071;
-  float n2=(vnoise(mat2(.8,.6,-.6,.8)*mm/.03+g*3.7)-.5)*1.7*min(1.,.06/pm);
   float mo=(vnoise(mat2(.8,.6,-.6,.8)*mm/max(uGrain*15.,3.*pm)+g*5.1)-.5)+.5*(vnoise(mat2(.6,-.8,.8,.6)*mm/max(uGrain*6.,1.5*pm)+g*2.3)-.5);
+  if(uTDry>.5){ float w2=clamp(.06/pm-1.,0.,1.); float n2=w2>0. ? (vnoise(mat2(.8,.6,-.6,.8)*mm/.03+g*3.7)-.5)*1.7*w2 : 0.;
+    return n*.13+n2*.11+mo*.027; }
+  // sin color: el texto exacto de v23.16 (el camino B/N no debe cambiar ni un bit)
+  float n2=(vnoise(mat2(.8,.6,-.6,.8)*mm/.03+g*3.7)-.5)*1.7*min(1.,.06/pm);
   return n*.13+n2*.11+mo*.09; }
 void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; float g=uGen+uSeed*.137;
   float d=texture(uD,uv).r;
@@ -73,7 +81,9 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; float g=uGen+uSe
   // rampa completa cada mota salía blanda y, a pocos px/mm, el tono medio parecía una trama gruesa en vez de tóner.
   vec2 gD=vec2(texture(uD,uv+vec2(p1.x,0.)).r-texture(uD,uv-vec2(p1.x,0.)).r, texture(uD,uv+vec2(0.,p1.y)).r-texture(uD,uv-vec2(0.,p1.y)).r)*.5;
   vec2 gN=vec2(grainF(mm+vec2(pm,0.),g,pm)-grainF(mm-vec2(pm,0.),g,pm), grainF(mm+vec2(0.,pm),g,pm)-grainF(mm-vec2(0.,pm),g,pm))*.5;
-  float wT=max(.06, length(gD)*1.4+length(gN)*.5);
+  // v23.17, tóner seco: sin el suelo de 0,06 cada partícula tiene el borde de un píxel (donde el grano cambia despacio, el suelo
+  // alargaba la transición varios píxeles: grises de aerógrafo). Los contornos conservan su rampa (G1).
+  float wT=uTDry>.5 ? max(.012, length(gD)*1.4+length(gN)*.5) : max(.06, length(gD)*1.4+length(gN)*.5);
   float on=smoothstep(uThr-wT,uThr+wT, F);
   // motas del cristal (fijas en la hoja para toda la tirada; cada generación añade su cristal)
   vec2 c=floor(mm/1.6); float hs=h12(c+g*11.3);
@@ -142,7 +152,7 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes;
 //  que sigue la textura del papel, el pigmento se acumula abajo y pincel seco en las crestas del papel.
 export const FS_XCOLOR = HEADX+`
 out vec4 o;
-uniform sampler2D uMA, uMB, uFA, uFB, uOri; uniform vec2 uSheetMm; uniform vec3 uMk[6]; uniform int uNk, uMed; uniform vec2 uCOff[6];
+uniform sampler2D uMA, uMB, uFA, uFB, uOri; uniform vec2 uSheetMm; uniform vec3 uMk[6]; uniform int uNk, uMed, uOriRows; uniform vec2 uCOff[6];
 uniform float uWobble, uCover, uStroke, uAng, uOverlap, uStrength, uSlop, uDry, uWobMm, uGran, uDryB, uBloom, uFast;
 float fbm(vec2 p){ float a=.5,s=0.; for(int i=0;i<4;i++){ s+=a*vnoise(p); p=p*2.07+11.3; a*=.5; } return s/.9375; }
 float mkA(int i, vec2 pmm){ vec2 q=(pmm*uPxMm-uOff)/uRes; return pick(texture(uMA,q),texture(uMB,q),i); }
@@ -153,24 +163,32 @@ float othF(int i, vec2 pmm){ vec2 q=(pmm*uPxMm-uOff)/uRes; vec4 a=texture(uFA,q)
 // Trazo de rotulador de punta biselada, calibrado con trazos reales (Moisés, 24-oct): extremos casi rectos con esquinas romas,
 // banda oscura al FINAL (la punta se para y descarga) y filo fino al empezar; filo oscuro estrecho en los bordes largos (marca
 // las costuras al solapar); grano fino de tinta; estrías claras cuando va seco; pulso imperfecto; casi siempre el mismo sentido.
-float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zdir, float lim, float tidy, float ct){
+float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zdir, float lim, float glim, float tidy, float ct){
   vec2 dir=vec2(cos(ang),sin(ang)), nr=vec2(-dir.y,dir.x);
   float u=dot(p,dir), v=dot(p,nr);
   float W=uStroke, sp=W*(1.-uOverlap);
   float kc=floor(v/sp); float D=0.;
-  for(int dk=-1; dk<=2; dk++){
+  // v23.18: ventanas de candidatos COMPLETAS. Con dk −1…2 y dj −1…0 se perdían trazos que sí llegaban a este píxel (la pasada
+  // se curva y se inclina hasta ~7 mm; el trazo siguiente empieza antes de su celda): cada pérdida dejaba un corte seco y recto
+  // (rendija de papel con canto en escalera). Ahora −5…5 y −1…1, con un descarte barato antes de leer nada.
+  for(int dk=-5; dk<=5; dk++){
     float k=kc+float(dk); float hk=h12(vec2(k,fi*7.3+uSeed*.17+zs));
     float wk=W*(.95+.25*h12(vec2(k,fi+2.2+zs)));
     float vc=(k+.5)*sp+(hk-.5)*sp*.45;                                        // separación irregular entre pasadas
     float slope=(h12(vec2(k,fi+5.5+zs))-.5)*.022*(1.-.85*tidy);                 // en figuras alargadas se va recto a lo largo
     float sgn= h12(vec2(k,fi+9.9+zs))<.8 ? zdir : -zdir;
-    if(lim>1.+6.*h12(vec2(k,fi+12.1+zs))) continue;                               // trazos de la zona vecina: cada uno entra hasta donde llega
+    // trazos de la zona vecina: cada uno entra hasta donde llega (≤ 6 mm). v23.18: el corte, con un píxel de rampa a lo largo de la
+    // distancia real a su límite (glim = pendiente de la distancia de banda), no seco: era una línea oblicua en escalera
+    float lw=1.;
+    if(lim>0.){ lw=clamp(.5+(min(1.+6.*h12(vec2(k,fi+12.1+zs)),6.)-lim)/max(glim,.05)*uPxMm,0.,1.); if(lw<=0.) continue; }
     float P=90.+140.*h12(vec2(k,fi+8.8+zs)); float uo=h12(vec2(k,fi+1.1+zs))*P;   // trazos largos: casi siempre acaban en el contorno
+    float Lh=.66*P+3.; if(abs(v-vc)>abs(slope)*Lh+.00025*Lh*Lh+.12+wk*.6) continue;   // esta pasada no llega a este píxel
     float j0=floor((u+uo)/P);
-    for(int dj=-1; dj<=0; dj++){
+    for(int dj=-1; dj<=1; dj++){
       float j=j0+float(dj); float hj=h12(vec2(k*13.1+j,fi+3.3+zs));
       float hn=h12(vec2(k*13.1+j+1.,fi+3.3+zs));
       float s0=j*P-uo+(hj-.5)*P*.2, s1=(j+1.)*P-uo+(hn-.5)*P*.2+P*(.02+.1*h12(vec2(j,k+fi)));   // el siguiente trazo empieza antes de que este acabe: sin huecos
+      if(u<s0-3. || u>s1+3.) continue;                                          // fuera del trazo (con bisel y punta)
       float um=(s0+s1)*.5; float cur=(h12(vec2(j,k*3.+fi))-.5)*.0005;
       float vcc=vc+slope*(u-um)+cur*(u-um)*(u-um)+(vnoise(vec2(u/9.,k*3.+fi))-.5)*.22;   // el pulso no es perfecto
       float dv=v-vcc; if(abs(dv)>wk*.6) continue;
@@ -187,10 +205,13 @@ float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zd
       // ¿EXTREMO o FLANCO? El trazo pinta a lo largo de las manchas, así que casi todo su contorno corre A SU LADO. Ahí la
       // pendiente a lo largo del trazo (g) es casi nula: dividir por ella daba ±20 mm (un bloque del ancho de la pasada) y su
       // signo elegía extremo al azar: almenas cuadradas (v23.9). wE: 1 si el contorno CRUZA el trazo, 0 si corre a su lado.
-      float gd=dot(gp,dir), wE=smoothstep(.25,.6,abs(gd)/max(length(gp),1e-4));
+      float cg=dot(gp,dir)/max(length(gp),1e-4), wE=smoothstep(.25,.6,abs(cg));
       float eC=eP+.1*wE*clamp(eM-eP,-2.,2.);                                    // el bisel, acotado y solo en extremos de verdad
-      float eF=(eC+.1*sk)/max(wE,.02), eB=(eC-.1*sk)/max(wE,.02);
-      float ea=min(u-s0+sk, gd>=0.? eF : 1e3), eb=min(s1-u-sk, gd<0.? eB : 1e3);   // fuera de la zona (m<umbral) siempre queda fuera
+      // v23.18: el contorno es una DISTANCIA en mm (pendiente 1) y su papel de extremo crece con wE, sin decidir por el signo de la
+      // pendiente en cada píxel. Antes: eF/eB divididos por max(wE,.02) (×50) y elegidos por gd ≥ 0 píxel a píxel; en flancos y
+      // contactos el signo bailaba y el corte saltaba ±0,1·bisel entre píxeles vecinos: diente de sierra.
+      float eK=eC+.1*sk*wE*clamp(cg*4.,-1.,1.);                                 // con bisel solo en los extremos de verdad
+      float ea=min(u-s0+sk, mix(30.,eK,cg>0.?wE:0.)), eb=min(s1-u-sk, mix(30.,eK,cg<0.?wE:0.));
       if(sgn<0.){ float t=ea; ea=eb; eb=t; }                                    // ea: extremo de salida; eb: extremo de apoyo (banda oscura)
       float hw=wk*.5;
       // TRAZO RÁPIDO (calibrado con trazos reales): al levantar deprisa, la salida se deshilacha en fibras paralelas de largos
@@ -201,10 +222,13 @@ float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zd
       float fz=1.;
       if(Lf>0. && ea<Lf){
         float t=clamp(ea/Lf,0.,1.);                                             // 0 en la punta, 1 donde empieza el cuerpo
-        float fid=floor((dv/hw*.5+.5)*15.);
-        float len=.2+.8*pow(h12(vec2(fid,k*5.+j+fi)),.6);
-        float reach=len*(.5+.5*side)+.12;                                       // el lado largo llega más lejos
-        float fibOn=smoothstep(1.-t-.04,1.-t+.04,reach);
+        // v23.18: cada fibra se funde con la vecina en el último medio píxel (antes, canto seco entre fibras: escalera en diagonal);
+        // la punta, con al menos un píxel de rampa
+        float fx=(dv/hw*.5+.5)*15., fid=floor(fx), fr=fx-fid, fn=fid+(fr<.5?-1.:1.);
+        float wn=clamp(.5-(.5-abs(fr-.5))*wk/15.*uPxMm,0.,.5), ft=max(.04,.5/(Lf*uPxMm));
+        float r0=(.2+.8*pow(h12(vec2(fid,k*5.+j+fi)),.6))*(.5+.5*side)+.12;    // el lado largo llega más lejos
+        float r1=(.2+.8*pow(h12(vec2(fn,k*5.+j+fi)),.6))*(.5+.5*side)+.12;
+        float fibOn=mix(smoothstep(1.-t-ft,1.-t+ft,r0), smoothstep(1.-t-ft,1.-t+ft,r1), wn);
         float gap=smoothstep(.45,.62,vnoise(vec2(dv/(wk*.03),u/7.+k)));          // huecos finos entre fibras
         fz=fibOn*mix(1.-gap*.9,1.,smoothstep(.65,1.,t))*mix(.55,1.,t); }
       if(fast>0.){                                                              // a veces se rompe a medio camino y deja islas
@@ -214,12 +238,14 @@ float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zd
       // contra OTRO color no se deshilacha ni se rompe: ahí el papel visto es un halo, no un gesto. Se decide por TRAZO (¿qué hay
       // justo pasado su extremo de salida?), no por píxel: si no, el deshilachado reaparece en una línea paralela a la frontera.
       if(fast>0.){ vec2 pe=p+(sgn>0.?-dir:dir)*(clamp(ea,0.,30.)+.6); fz=mix(fz,1.,max(ct,smoothstep(.15,.4,othF(i,pe))*(1.-min(uSlop,1.)))); }
-      if(fast>0.) ea=max(ea,.6)+(ea<0.?-9.:0.);                                // la salida rápida no tiene canto recto
+      float cutF=1.;                                                            // la salida rápida no tiene canto recto: su punta se corta
+      if(fast>0.){ cutF=clamp(.5+ea*uPxMm,0.,1.); ea=max(ea,.6); }              // con un píxel de rampa (antes, salto de −9 mm: canto seco)
       float eA=hw-abs(dv)+(vnoise(vec2(u/1.6,k+fi))-.5)*.09+(vnoise(p/.12+fi)-.5)*.05;
-      float eE=min(min(ea,eb), eC/max(1.-wE,.02))+(vnoise(p/.15+fi*2.)-.5)*.06+.15*ct;   // el flanco recorta con la distancia real, sin deshilachar                  // y los dos colores se pisan un pelo (sin él, cada uno se funde a media tinta en la frontera)
+      float eE=min(min(ea,eb), eK)+(vnoise(p/.15+fi*2.)-.5)*.06+.15*ct;   // el flanco recorta con la distancia real, sin deshilachar                  // y los dos colores se pisan un pelo (sin él, cada uno se funde a media tinta en la frontera)
       float rc=wk*.12; vec2 q=vec2(rc-eE, rc-eA);
       float sd=length(max(q,0.))+min(max(q.x,q.y),0.)-rc;                       // rectángulo de esquinas romas
       float cov=(1.-smoothstep(-.5,.22,sd+(vnoise(p/.5+fi)-.5)*.12))*fz;        // borde húmedo: se funde ~0,7 mm con la tinta de al lado
+      cov*=clamp(.5+eC*uPxMm,0.,1.)*cutF*lw;                                     // v23.18: fuera de la zona, fuera — con un píxel de rampa (antes ×50: escalón)
       if(cov<=0.) continue;
       float x=clamp(abs(dv)/hw,0.,1.);
       float rim=1.+.1*smoothstep(.6,1.,x);                                      // filo oscuro en los bordes largos, muy suave
@@ -236,12 +262,11 @@ float strokes(int i, vec2 p, float fi, float ang, float zs, float kcut, float zd
   return D; }
 // La hoja se gira para colorear cómodo: zonas grandes (Voronoi) con su propia orientación; dentro de una zona, todos
 // los trazos van igual. En la frontera, las dos direcciones se cruzan (se retomó la zona con la hoja girada).
-float marker(int i, vec2 p, float fi, float ct){
-  vec2 z=p/62.; vec2 zc=floor(z); float d1=9., d2=9.; vec2 b1=vec2(0), b2=vec2(0);
+float markerO(int i, vec2 p, float fi, float ct, vec3 ori){
+  vec2 z=p/62.; vec2 zc=floor(z); float d1=9., d2=9.; vec2 b1=vec2(0), b2=vec2(0), q1=vec2(0), q2=vec2(0);
   for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++){ vec2 c=zc+vec2(x,y); vec2 q=c+vec2(h12(c+fi*.3),h12(c+fi*.7+3.1)); float d=length(z-q);
-    if(d<d1){ d2=d1; b2=b1; d1=d; b1=c; } else if(d<d2){ d2=d; b2=c; } }
+    if(d<d1){ d2=d1; b2=b1; q2=q1; d1=d; b1=c; q1=q; } else if(d<d2){ d2=d; b2=c; q2=q; } }
   // forma de cada mancha de color (analizada una vez, en CPU): si es alargada, se colorea a lo largo de su eje
-  vec4 ori=texture(uOri, p/uSheetMm);
   float aSh=.5*atan(ori.g*2.-1., ori.r*2.-1.); float wAl=ori.b;
   float rot[4]=float[4](0.,1.5708,-.785,.9);
   float a1=uAng+rot[int(floor(h12(b1+fi*1.9)*3.999))]*step(.35,h12(b1+fi*2.3))+(h12(b1+fi*5.1)-.5)*.3;
@@ -250,12 +275,31 @@ float marker(int i, vec2 p, float fi, float ct){
   vec2 v1=mix(vec2(cos(2.*a1),sin(2.*a1)), vec2(cos(2.*aSh),sin(2.*aSh)), wAl); a1=.5*atan(v1.y,v1.x);
   vec2 v2=mix(vec2(cos(2.*a2),sin(2.*a2)), vec2(cos(2.*aSh),sin(2.*aSh)), wAl); a2=.5*atan(v2.y,v2.x);
   float k1=tan(radians(30.*(h12(b1+fi*6.6)-.5)*2.*pow(h12(b1+fi*7.1),.7))); float z1=h12(b1+fi*8.2)<.5?-1.:1.;   // bisel y sentido por zona
-  float D=strokes(i,p,fi,a1,h12(b1)*91.,k1,z1,0.,wAl,ct);
-  float band=(d2-d1)*62.;                                                       // mm hasta la frontera de zona
-  if(band<6.){ float k2=tan(radians(30.*(h12(b2+fi*6.6)-.5)*2.*pow(h12(b2+fi*7.1),.7))); float z2=h12(b2+fi*8.2)<.5?-1.:1.;
-    D+=strokes(i,p,fi,a2,h12(b2)*91.,k2,z2,band,wAl,ct); }                            // la zona vecina invade con trazos sueltos, no con una franja
+  float band=(d2-d1)*62., gb=length((z-q2)/max(d2,1e-5)-(z-q1)/max(d1,1e-5));     // mm hasta la frontera de zona, y su pendiente
+  float k2=tan(radians(30.*(h12(b2+fi*6.6)-.5)*2.*pow(h12(b2+fi*7.1),.7))); float z2=h12(b2+fi*8.2)<.5?-1.:1.;
+  // la zona vecina invade con trazos sueltos, no con una franja. Una sola llamada a strokes() (compilación): zona 0 = la mía, 1 = la vecina
+  float D=0.; int nz=band<6.+2./uPxMm ? 2 : 1;
+  for(int zz=0; zz<nz; zz++){ bool nb=zz==1; D+=strokes(i,p,fi,nb?a2:a1,h12(nb?b2:b1)*91.,nb?k2:k1,nb?z2:z1,nb?band:0.,nb?gb:1.,wAl,ct); }
   // tinta con alcohol húmeda sobre húmeda: la segunda pasada redisuelve la primera; el solape oscurece, pero se satura (no dobla)
   return D<=1. ? D : 1.+.3*(1.-exp(-(D-1.)/.5)); }
+// v23.18: orientación de la mancha de MI color más cercana (fila i del mapa: A = la mía, B = la otra más cercana, δ = distancia a la
+// bisectriz entre las dos, en texels). La costura entre dos manchas se decide con δ interpolado (+ hacia A del texel más cercano),
+// no con la celda del mapa: sin mosaico de bloques ni orientaciones de otro color.
+float oriSeam(int i, vec2 p, out vec3 oA, out vec3 oB){
+  ivec2 sz=textureSize(uOri,0); int W=sz.x/3, H=sz.y/max(uOriRows,1); ivec2 o=ivec2(0,i*H), mx=ivec2(W-1,H-1);
+  vec2 t=clamp(p/uSheetMm,0.,1.)*vec2(W,H);
+  ivec2 q=clamp(ivec2(t),ivec2(0),mx); oA=texelFetch(uOri,q+o,0).rgb; oB=texelFetch(uOri,q+o+ivec2(W,0),0).rgb;
+  vec2 tc=t-.5; ivec2 b=ivec2(floor(tc)); vec2 f=tc-vec2(b); float s[4];
+  for(int n=0;n<4;n++){ ivec2 qn=clamp(b+ivec2(n&1,n>>1),ivec2(0),mx)+o; float d=texelFetch(uOri,qn+ivec2(2*W,0),0).r*255./60.;
+    s[n]=all(equal(texelFetch(uOri,qn,0).rgb,oA)) ? d : -d; }
+  return mix(mix(s[0],s[1],f.x),mix(s[2],s[3],f.x),f.y)*uSheetMm.x/float(W); }   // mm con signo: + del lado de A
+float marker(int i, vec2 p, float fi, float ct){                               // una sola llamada a markerO (compilación)
+  vec3 oA, oB; float w=1.;
+  if(uOriRows>0){ float sg=oriSeam(i,p,oA,oB); w=clamp(.5+sg*uPxMm,0.,1.); }    // costura entre manchas: un píxel de rampa
+  else { oA=texture(uOri, p/uSheetMm).rgb; oB=oA; }
+  int s0=w>=1.?0:(w<=0.?1:0), s1=w<=0.?1:(w>=1.?0:1); float D=0.;           // junto a la costura, las dos orientaciones; si no, una
+  for(int s=s0;s<=s1;s++) D+=(s==0?w:1.-w)*markerO(i,p,fi,ct,s==0?oA:oB);
+  return D; }
 float water(int i, vec2 p, vec2 pm, float fi, out float cov){
   vec2 w=vec2(fbm(p/6.+fi),fbm(p/6.+fi+7.7))-.5;
   w+=(vec2(vnoise(p/1.3+fi*3.),vnoise(p/1.3+fi*5.))-.5)*.45+(vec2(vnoise(p/.35+fi),vnoise(p/.35+fi+2.))-.5)*.12;
@@ -287,6 +331,8 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; vec3 T=vec3(1.);
     float zone=smoothstep(.1,.25, vnoise(mm/40.+fi*13.7)-(1.-uCover)*.9+.2);  // zonas que se quedan sin pintar
     if(zone<=0.) continue;
     float D, cov=1.;
+    // v23.18: lejos de la zona de este rotulador (campo < 0,003, ≥ 2 mm fuera) ningún trazo puede pintar (eP ≈ −20 mm): no se evalúa
+    if(uMed==1 && mkF(i,p)<.003) continue;
     if(uMed==1) D=marker(i,p,fi,smoothstep(.15,.4,othF(i,p))*(1.-min(uSlop,1.)));   // ¿hay OTRO rotulador al otro lado del borde? Con Descuido, los huecos vuelven: son suyos
     else D=water(i,p,mm,fi,cov);
     D*=zone*cov; if(D<=0.) continue;
@@ -346,7 +392,7 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm; float sd=uSeed*.
 // XCOMP: papel × color a mano, y encima el tóner opaco con sólidos huecos (efecto borde), bandas y brillo de tóner.
 export const FS_XCOMP = HEADX+`
 out vec4 o;
-uniform sampler2D uD, uSolX, uC, uFib; uniform vec3 uPaper; uniform float uHollow, uBand, uPaperTex, uFibers, uHasColor, uTonerK;
+uniform sampler2D uD, uSolX, uC, uFib; uniform vec3 uPaper; uniform float uHollow, uBand, uPaperTex, uFibers, uHasColor, uTonerK, uTDry;
 float fbm3(vec2 p){ float a=.5,s=0.; for(int i=0;i<3;i++){ s+=a*vnoise(p); p=p*2.03+17.1; a*=.5; } return s/.875; }
 void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm;
   vec4 F=texture(uFib, mm/12.);
@@ -356,8 +402,13 @@ void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 mm=gpx()/uPxMm;
   float d=texture(uD,uv).r, S=texture(uSolX,uv).r;
   float inner=smoothstep(.62,.95,S);                                               // dentro de un sólido grande
   float mot=.55*vnoise(mm/.45)+.3*vnoise(mm/.13)+.15*vnoise(mat2(.8,.6,-.6,.8)*mm/.035);
-  float dT=d*(1.-uHollow*(1.-.75*uTonerK)*inner*(.006+.08*mot));
-  dT*=1.-uBand*.05*smoothstep(.4,.9,vnoise(vec2(mm.x/9.,.5)));                      // bandas claras en la dirección de avance
+  // v23.17, tóner seco (uTDry): el sólido no se vela de gris. Hueco y bandas restan cobertura de forma CONTINUA y, como la mezcla es
+  // lineal, un 2–3 % de papel (o de color) ya convierte el negro en gris con bandas: pesan un 65 % menos y el tóner tapa del todo.
+  float dT;
+  if(uTDry>.5){ dT=d*(1.-uHollow*(1.-.75*uTonerK)*inner*(.006+.08*mot)*.35);
+    dT*=1.-uBand*.05*.35*smoothstep(.4,.9,vnoise(vec2(mm.x/9.,.5))); }
+  else{ dT=d*(1.-uHollow*(1.-.75*uTonerK)*inner*(.006+.08*mot));
+    dT*=1.-uBand*.05*smoothstep(.4,.9,vnoise(vec2(mm.x/9.,.5))); }                     // bandas claras en la dirección de avance
   vec3 toner=vec3(1.,1.,1.08)*mix(.045,.0018,uTonerK)*(1.+.6*vnoise(mat2(.6,.8,-.8,.6)*mm/.028));    // negro del tóner: de gris gastado a negro profundo
-  c=mix(cp, toner*mix(vec3(1.),T,.04), clamp(dT,0.,1.)*.995);                     // el tóner tapa; el color encima apenas lo tiñe
+  c=uTDry>.5 ? mix(cp, toner*mix(vec3(1.),T,.04), clamp(dT,0.,1.)) : mix(cp, toner*mix(vec3(1.),T,.04), clamp(dT,0.,1.)*.995);   // el tóner tapa; el color encima apenas lo tiñe
   o=vec4(l2s(min(c,vec3(1.))),1.); }`;

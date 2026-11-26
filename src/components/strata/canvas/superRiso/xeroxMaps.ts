@@ -1,7 +1,8 @@
 // Super Riso · Fotocopia — zone maps on the CPU (low resolution, whole frame). Ported 1:1 from the lab
 // (engine.studio.js regionMaps):
 //   ids  which marker paints each zone (only in "white gaps": the zones closed by the line, as a person colours)
-//   ori  stroke direction per colour patch (principal axis), to colour along elongated shapes
+//   ori  stroke direction per colour patch (principal axis), to colour along elongated shapes; since lab v23.18 one row per
+//        marker at half resolution (the nearest patch of ITS colour, the next one and the distance to the seam between both)
 // They are EXPENSIVE (getImageData + flood fills): never per live frame. Policy (xeroxMaps below):
 //   export   computed synchronously from the export frame, every frame (GIF / sequence included).
 //   live     computed at once when what they depend on changes (markers, mode, gaps, seed); otherwise the last result
@@ -13,7 +14,9 @@ import type { XeroxSettings } from '../../../../types/strataTypes';
 import { oklab, hex2rgb, rng, type RGB } from './inks';
 import type { XeroxMarkers } from './xeroxMarkers';
 
-export type XeroxMaps = { ori: HTMLCanvasElement; ids: HTMLCanvasElement | null };
+/** The orientation map (lab v23.18): one row of 3 columns per marker; __srOriRows = rows (XCOLOR's uOriRows). */
+export type OriMap = HTMLCanvasElement & { __srOriRows?: number };
+export type XeroxMaps = { ori: OriMap; ids: HTMLCanvasElement | null };
 type MapOpts = { keys: string[]; srcPaper: RGB; fill: boolean; nk: number; cover: number; seed: number };
 
 const mapSize = (W0: number, H0: number, fill: boolean): [number, number] => {
@@ -73,7 +76,7 @@ function regionMaps(src: HTMLCanvasElement, { keys, srcPaper, fill, nk, cover, s
 	}
 	const lab = new Int32Array(N).fill(-1), out = x.createImageData(w, h), stack = new Int32Array(N);
 	for (let i = 0; i < N; i++) { out.data[i * 4] = 255; out.data[i * 4 + 1] = 128; out.data[i * 4 + 2] = 0; out.data[i * 4 + 3] = 255; }
-	let nl = 0;
+	let nl = 0; const csz: number[] = [];
 	for (let s0 = 0; s0 < N; s0++) {
 		if (id[s0] < 0 || lab[s0] >= 0) continue; const col = id[s0]; let sp = 0; stack[sp++] = s0; lab[s0] = nl; const mem: number[] = [];
 		let n = 0, sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0;
@@ -82,7 +85,7 @@ function regionMaps(src: HTMLCanvasElement, { keys, srcPaper, fill, nk, cover, s
 			if (px > 0 && id[p - 1] === col && lab[p - 1] < 0) { lab[p - 1] = nl; stack[sp++] = p - 1; } if (px < w - 1 && id[p + 1] === col && lab[p + 1] < 0) { lab[p + 1] = nl; stack[sp++] = p + 1; }
 			if (py > 0 && id[p - w] === col && lab[p - w] < 0) { lab[p - w] = nl; stack[sp++] = p - w; } if (py < h - 1 && id[p + w] === col && lab[p + w] < 0) { lab[p + w] = nl; stack[sp++] = p + w; }
 		}
-		nl++; if (n < 6) continue;
+		nl++; csz.push(n); if (n < 6) continue;
 		const mx = sx / n, my = sy / n, cxx = sxx / n - mx * mx, cyy = syy / n - my * my, cxy = sxy / n - mx * my;
 		const th = .5 * Math.atan2(2 * cxy, cxx - cyy); const tr = cxx + cyy, det = cxx * cyy - cxy * cxy, disc = Math.sqrt(Math.max(0, tr * tr / 4 - det));
 		const l1 = tr / 2 + disc, l2 = Math.max(1e-6, tr / 2 - disc); const asp = Math.sqrt(l2 / l1);          // 1 = round, 0 = a line
@@ -90,19 +93,76 @@ function regionMaps(src: HTMLCanvasElement, { keys, srcPaper, fill, nk, cover, s
 		const Rr = Math.round(127.5 + 127.5 * Math.cos(2 * th)), G = Math.round(127.5 + 127.5 * Math.sin(2 * th)), B = Math.round(255 * wAl);
 		for (const p of mem) { out.data[p * 4] = Rr; out.data[p * 4 + 1] = G; out.data[p * 4 + 2] = B; }
 	}
-	// patches grow 2 px so strokes that leave the edge keep their patch's direction
-	const o2 = new Uint8ClampedArray(out.data);
-	for (let it = 0; it < 2; it++) {
-		const src2 = new Uint8ClampedArray(o2);
-		for (let py = 0; py < h; py++) for (let px = 0; px < w; px++) {
-			const i = py * w + px; if (src2[i * 4 + 2] > 0) continue;
-			for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-				const qx = px + dx, qy = py + dy; if (qx < 0 || qy < 0 || qx >= w || qy >= h) continue; const j = qy * w + qx;
-				if (src2[j * 4 + 2] > 0) { o2[i * 4] = src2[j * 4]; o2[i * 4 + 1] = src2[j * 4 + 1]; o2[i * 4 + 2] = src2[j * 4 + 2]; break; }
+	// Lab v23.18 · orientation PER COLOUR and without cells. It used to be one map (every patch of every colour, grown 2 px) read
+	// with NEAREST: strokes that left their patch read the orientation of the neighbouring patch, of another colour or the default,
+	// cell by cell (0.5 mm): a mosaic of blocks. Now, for each marker k, each texel carries the orientation of the nearest patch of
+	// ITS colour (crumbs under ~0.04 % of the image inherit, they do not rule), and beside it the next nearest one and the distance
+	// to the bisector between both: the shader decides the seam with that distance, interpolated, not with the grid. Canvas: 3
+	// columns (mine, the other, distance in texels ×60) × nk rows (__srOriRows). At half resolution (≤ 280 texels): the seam does
+	// not come from the cell but from the interpolated distance, and the map stays cheap. A texel is a seed if any of its 4 children is.
+	const w2 = (w + 1) >> 1, h2 = (h + 1) >> 1, N2 = w2 * h2;
+	const nkT = Math.max(1, Math.min(6, fill ? nk : keys.length)), minA = Math.max(6, Math.round(N * .0004));
+	const T: OriMap = document.createElement('canvas'); T.width = 3 * w2; T.height = nkT * h2;
+	const tx = T.getContext('2d')!, tim = tx.createImageData(3 * w2, nkT * h2), td = tim.data, DEF = (255 << 16) | (128 << 8);
+	const cl = new Int32Array(N2), sx1 = new Int16Array(N2), sy1 = new Int16Array(N2), d1 = new Float32Array(N2), near = new Uint8Array(N2), nr2 = new Uint8Array(N2), M = 8;
+	const t32 = new Uint32Array(td.buffer), pk = (v: number) => (255 << 24 | (v & 255) << 16 | (v >> 8 & 255) << 8 | v >> 16) >>> 0, DEFp = pk(DEF), D4 = (255 << 24 | 240) >>> 0;
+	const bx0 = new Array<number>(nkT).fill(w2), bx1 = new Array<number>(nkT).fill(-1), by0 = new Array<number>(nkT).fill(h2), by1 = new Array<number>(nkT).fill(-1);
+	for (let py = 0, i = 0; py < h; py++) for (let px = 0; px < w; px++, i++) {
+		const k = id[i]; if (k < 0 || k >= nkT) continue; const qx = px >> 1, qy = py >> 1;
+		if (qx < bx0[k]) bx0[k] = qx; if (qx > bx1[k]) bx1[k] = qx; if (qy < by0[k]) by0[k] = qy; if (qy > by1[k]) by1[k] = qy;
+	}
+	const ori = (i: number) => (out.data[i * 4] << 16) | (out.data[i * 4 + 1] << 8) | out.data[i * 4 + 2];
+	for (let k = 0; k < nkT; k++) {
+		// outside this marker's box (its texels + 8) it does not paint: default orientation, no seam
+		for (let py = 0; py < h2; py++) { const r = (k * h2 + py) * 3 * w2; t32.fill(DEFp, r, r + 2 * w2); t32.fill(D4, r + 2 * w2, r + 3 * w2); }
+		if (bx1[k] < 0) continue;
+		const x0 = Math.max(0, bx0[k] - M), x1 = Math.min(w2 - 1, bx1[k] + M), y0 = Math.max(0, by0[k] - M), y1 = Math.min(h2 - 1, by1[k] + M); let any = false;
+		for (let py = y0; py <= y1; py++) for (let px = x0; px <= x1; px++) {
+			const i = py * w2 + px; cl[i] = -1; d1[i] = 1e9; near[i] = 0;
+			for (let c = 0; c < 4 && cl[i] < 0; c++) {
+				const fx = 2 * px + (c & 1), fy = 2 * py + (c >> 1); if (fx >= w || fy >= h) continue; const j = fy * w + fx;
+				if (id[j] === k && csz[lab[j]] >= minA) { cl[i] = ori(j); sx1[i] = px; sy1[i] = py; d1[i] = 0; any = true; }
 			}
 		}
+		if (!any) continue;
+		// the nearest patch (Euclidean distance to the seed texel, propagated in one forward and one backward sweep)
+		const relax = (i: number, px: number, py: number, j: number) => {
+			if (cl[j] < 0) return; const ex = px - sx1[j], ey = py - sy1[j], dd = ex * ex + ey * ey;
+			if (dd < d1[i]) { d1[i] = dd; cl[i] = cl[j]; sx1[i] = sx1[j]; sy1[i] = sy1[j]; }
+		};
+		for (let py = y0; py <= y1; py++) for (let px = x0; px <= x1; px++) {
+			const i = py * w2 + px;
+			if (px > x0) { relax(i, px, py, i - 1); if (py > y0) relax(i, px, py, i - w2 - 1); } if (py > y0) { relax(i, px, py, i - w2); if (px < x1) relax(i, px, py, i - w2 + 1); }
+		}
+		for (let py = y1; py >= y0; py--) for (let px = x1; px >= x0; px--) {
+			const i = py * w2 + px;
+			if (px < x1) { relax(i, px, py, i + 1); if (py < y1) relax(i, px, py, i + w2 + 1); } if (py < y1) { relax(i, px, py, i + w2); if (px > x0) relax(i, px, py, i + w2 - 1); }
+		}
+		// only the texels within 3 of a seam look for the other patch (label edge grown 3 texels, by rows and columns)
+		for (let py = y0; py <= y1; py++) for (let px = x0; px <= x1; px++) {
+			const i = py * w2 + px;
+			if ((px < x1 && cl[i + 1] !== cl[i]) || (py < y1 && cl[i + w2] !== cl[i])) { near[i] = 1; if (px < x1) near[i + 1] = 1; if (py < y1) near[i + w2] = 1; }
+		}
+		for (let py = y0; py <= y1; py++) for (let px = x0; px <= x1; px++) { let m = 0; for (let d = -3; d <= 3 && !m; d++) { const qx = px + d; if (qx >= x0 && qx <= x1) m = near[py * w2 + qx]; } nr2[py * w2 + px] = m; }
+		for (let py = y0; py <= y1; py++) for (let px = x0; px <= x1; px++) { let m = 0; for (let d = -3; d <= 3 && !m; d++) { const qy = py + d; if (qy >= y0 && qy <= y1) m = nr2[qy * w2 + px]; } near[py * w2 + px] = m; }
+		for (let py = y0; py <= y1; py++) for (let px = x0; px <= x1; px++) {
+			const i = py * w2 + px, A = cl[i] >= 0 ? cl[i] : DEF;
+			// the other nearest patch with ANOTHER orientation, among the neighbours up to 3 texels: distance to the bisector
+			let B = A, sg = 4;
+			if (near[i] && cl[i] >= 0) {
+				let best = 1e9;
+				for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+					const qx = px + dx, qy = py + dy; if (qx < x0 || qy < y0 || qx > x1 || qy > y1) continue; const j = qy * w2 + qx; if (cl[j] === A || cl[j] < 0) continue;
+					const ax = sx1[i] - px, ay = sy1[i] - py, bx = sx1[j] - px, by = sy1[j] - py, ab = Math.hypot(sx1[j] - sx1[i], sy1[j] - sy1[i]);
+					if (ab < 1e-3) continue; const dl = (bx * bx + by * by - ax * ax - ay * ay) / (2 * ab); if (dl < best) { best = dl; B = cl[j]; }
+				}
+				if (B !== A) sg = Math.min(4, Math.max(0, best));
+			}
+			const o = px + (k * h2 + py) * 3 * w2; t32[o] = pk(A); t32[o + w2] = pk(B); t32[o + 2 * w2] = (255 << 24 | Math.round(sg * 60)) >>> 0;
+		}
 	}
-	out.data.set(o2); x.putImageData(out, 0, 0); return { ori: c, ids };
+	tx.putImageData(tim, 0, 0); T.__srOriRows = nkT;
+	return { ori: T, ids };
 }
 
 // ── Live policy ────────────────────────────────────────────────────────────────────────────────

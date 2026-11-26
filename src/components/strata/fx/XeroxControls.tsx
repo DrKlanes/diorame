@@ -5,7 +5,6 @@ import { useTranslation } from '../../../i18n';
 import { XEROX_MARKERS } from '../../../constants/superRisoXerox';
 import type { SuperRisoPatch } from '../../../constants/superRiso';
 import { getXeroxPalette, subscribeXeroxPalette, type XeroxRow } from '../canvas/superRiso/xeroxPalette';
-import { xOverFor } from '../canvas/superRiso/xeroxMarkers';
 import type { XeroxSettings } from '../../../types/strataTypes';
 import { Field, segmentWrap, pct, labelStyle, Divider } from './superRisoFields';
 
@@ -23,7 +22,7 @@ export function XeroxControls({ dark, muted, x, set }: XeroxControlsProps) {
 	const { t } = useTranslation();
 	const palette = useSyncExternalStore(subscribeXeroxPalette, getXeroxPalette);
 	// Picker target: a colour zone of the drawing, a slot of the box (-1 adds one), or closed.
-	type Target = { zone: string } | { box: number };
+	type Target = { zone: string; over?: string } | { box: number };
 	const [picking, setPicking] = useState<Target | null>(null);
 	const setX = (patch: Partial<XeroxSettings>) => set({ xerox: patch });
 	const rows: readonly XeroxRow[] = palette?.rows ?? [];
@@ -32,12 +31,11 @@ export function XeroxControls({ dark, muted, x, set }: XeroxControlsProps) {
 	const nameOf = (m: XeroxRow) => m.id ? t(`fx.superRiso.xerox.marker.${m.id}`) : t('fx.superRiso.xerox.ownColor');
 	const isPicking = (v: string | number) => !!picking && (typeof v === 'string' ? 'zone' in picking && picking.zone === v : 'box' in picking && picking.box === v);
 	const count = x.hand === 'none' ? t('fx.superRiso.xerox.bw') : what === 'fill' ? t('fx.superRiso.xerox.inBox', { n: rows.length }) : t('fx.superRiso.xerox.colorsN', { n: rows.length });
-	// An override is tied to the nearest zone colour (xOverFor), so editing a row only touches that zone's entry.
-	const withoutZone = (zone: string) => { const out = { ...x.over }, k = xOverFor(x.over, zone); if (k) delete out[k]; return out; };
-	const resetZone = (zone: string) => setX({ over: withoutZone(zone) });
+	// Editing a row removes ITS OWN entry (row.over, bound one to one in xeroxMarkers.ts), never the nearest one (lab v23.18).
+	const withoutOver = (k?: string) => { const out = { ...x.over }; if (k) delete out[k]; return out; };
 	const pick = (hex: string) => {
 		const tgt = picking; setPicking(null); if (!tgt) return;
-		if ('zone' in tgt) setX({ over: { ...withoutZone(tgt.zone), [tgt.zone]: hex } });
+		if ('zone' in tgt) setX({ over: { ...withoutOver(tgt.over), [tgt.zone]: hex } });
 		else { const box = rows.map(q => q.hex); if (tgt.box < 0) box.push(hex); else box[tgt.box] = hex; setX({ box: box.slice(0, 6) }); }
 	};
 	const sectionTitle = (key: string) => <span style={{ ...labelStyle, color: dk(dark, T.dark, T.textDark) as string }}>{t(key)}</span>;
@@ -121,9 +119,9 @@ export function XeroxControls({ dark, muted, x, set }: XeroxControlsProps) {
 												<span title={t('fx.superRiso.xerox.zone')} style={{ width: 14, height: 14, borderRadius: '50%', flexShrink: 0, background: r.zone, boxShadow: `inset 0 0 0 1px ${dk(dark, 'rgba(0,0,0,0.25)', 'rgba(255,255,255,0.35)')}` }} />
 												<span aria-hidden style={{ ...labelStyle, color: dk(dark, T.muted, T.textDarkMuted) as string }}>→</span>
 												<DiChip dark={dark} swatch={r.hex} label={nameOf(r)} active={isPicking(r.zone!)}
-													tooltip={t('fx.superRiso.xerox.changeZone')} onClick={() => setPicking(isPicking(r.zone!) ? null : { zone: r.zone! })} />
+													tooltip={t('fx.superRiso.xerox.changeZone')} onClick={() => setPicking(isPicking(r.zone!) ? null : { zone: r.zone!, over: r.over })} />
 												{r.over && (
-													<button onClick={() => { setPicking(null); resetZone(r.zone!); }} onMouseDown={(e) => e.preventDefault()}
+													<button onClick={() => { setPicking(null); setX({ over: withoutOver(r.over) }); }} onMouseDown={(e) => e.preventDefault()}
 														aria-label={t('fx.superRiso.xerox.resetZone')} title={t('fx.superRiso.xerox.resetZone')}
 														style={{ ...labelStyle, width: 18, flexShrink: 0, border: 'none', padding: 0, background: 'transparent', cursor: 'pointer', color: T.purple }}>↺</button>
 												)}

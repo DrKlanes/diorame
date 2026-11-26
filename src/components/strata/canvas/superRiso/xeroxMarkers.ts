@@ -24,12 +24,17 @@ export function xPool(s: SuperRisoSettings, shapes: readonly Shape[], hidden: re
 		.sort((a, b) => { const A = oklab(hex2rgb(a)), B = oklab(hex2rgb(b)); return Math.hypot(B[1], B[2]) - Math.hypot(A[1], A[2]); }).slice(0, 6);
 }
 
-/** The pool colour an override is tied to: the nearest one within tolerance, not the exact hex (the drawing changes
- *  while it is painted and its colours drift a little), as the lab's xOverFor. */
-export function xOverFor(over: Record<string, string>, zone: string): string | null {
-	const L = oklab(hex2rgb(zone)); let best: string | null = null, bd = .012;
-	for (const k of Object.keys(over)) { const d = okd(L, oklab(hex2rgb(k))); if (d < bd) { bd = d; best = k; } }
-	return best;
+/** The override key each zone takes (null: none). An override is tied to the nearest zone colour within tolerance, not to
+ *  the exact hex (the drawing changes while it is painted and its colours drift a little). Lab v23.18 xOverBind: ONE TO ONE —
+ *  each override goes to its nearest zone and each zone takes one at most. Before, each zone took the nearest override within
+ *  the tolerance (.012 in squared distance ≈ 0.11 OKLab): two similar zones (two reds) shared the same override, and changing
+ *  one row changed the other too. */
+function xOverBind(over: Record<string, string>, zones: readonly string[]): (string | null)[] {
+	const Z = zones.map(h => oklab(hex2rgb(h))), pairs: [number, string, number][] = [];
+	for (const k of Object.keys(over)) { const K = oklab(hex2rgb(k)); Z.forEach((z, i) => { const d = okd(K, z); if (d < .012) pairs.push([d, k, i]); }); }
+	pairs.sort((a, b) => a[0] - b[0]); const zk: (string | null)[] = zones.map(() => null), done = new Set<string>();
+	for (const [, k, i] of pairs) { if (zk[i] !== null || done.has(k)) continue; zk[i] = k; done.add(k); }
+	return zk;
 }
 
 function build(s: SuperRisoSettings, shapes: readonly Shape[], hidden: readonly number[], srcPaper: RGB, darkBase: string | null): XeroxMarkers {
@@ -41,8 +46,9 @@ function build(s: SuperRisoSettings, shapes: readonly Shape[], hidden: readonly 
 	} else {
 		// Each row is a ZONE of the drawing → the colour it is painted with. Editing a row only touches its own entry.
 		const zones = pool.slice(0, Math.max(1, Math.min(x.n, pool.length))), used = new Set<string>();
-		rows = zones.map(zone => {
-			const ok = xOverFor(x.over, zone); let hex = ok ? x.over[ok] : null;
+		const ovr = xOverBind(x.over, zones);
+		rows = zones.map((zone, zi) => {
+			const ok = ovr[zi]; let hex = ok ? x.over[ok] : null;
 			if (!hex) {
 				if (x.pal === 'own') hex = zone;
 				else { // the nearest marker not yet used, zones by chroma (lab updateMarkers)
@@ -51,7 +57,7 @@ function build(s: SuperRisoSettings, shapes: readonly Shape[], hidden: readonly 
 				}
 			}
 			used.add(hex!);
-			return { hex: hex!, id: x.pal === 'own' && !ok ? undefined : xeroxMarkerId(hex!), zone, over: !!ok };
+			return { hex: hex!, id: x.pal === 'own' && !ok ? undefined : xeroxMarkerId(hex!), zone, over: ok ?? undefined };
 		});
 		keys = zones.slice();
 	}
