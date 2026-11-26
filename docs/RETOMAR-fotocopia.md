@@ -4,10 +4,9 @@
 
 ## Qué hay publicado
 
-- **Diorame:** el efecto de la **v3.26.102** (la v3.26.103 solo añade documentos). Su Fotocopia es la del Lab v23.16.
-- **Super Riso Lab:** **v23.17** ([super-riso.dumaker.com](https://super-riso.dumaker.com/)).
-- **Diferencia:** el «tóner seco» cuando hay color a mano (rotulador o acuarela) **está solo en el Lab**. Sin color, los dos se ven con el mismo tóner.
-- **26 nov 2026 · candidata local v3.26.104 (SIN publicar, pendiente de tu OK en `localhost:3000`):** Diorame portado a Lab v23.18 (tóner seco, rotulador sin dientes, colores a mano uno a uno). Comprobación: REFERENCE.md §14, «Port of v23.17 + v23.18».
+- **Diorame:** **v3.26.104** (publicada el 26 nov 2026 tras tu OK en local). Su Fotocopia es la del Lab v23.18: tóner seco con color a mano, rotulador sin dientes de sierra, colores a mano uno a uno. Comprobación: REFERENCE.md §14, «Port of v23.17 + v23.18».
+- **Super Riso Lab:** **v23.18** ([super-riso.dumaker.com](https://super-riso.dumaker.com/)).
+- **Diferencia en Fotocopia:** ninguna (shaders idénticos byte a byte). Lo único solo del Lab en v23.18 es el arreglo del «×» de las tintas de Riso (su interfaz).
 
 ## Cómo está
 
@@ -23,10 +22,9 @@
 
 ## Al retomar, en este orden
 
-1. Mirar el Lab v23.17 con calma y decidir si el tóner va en buena dirección.
-2. Si va bien: llevarlo a Diorame, mirándolo antes en tu ordenador (sin publicar).
-3. Fase 4: el rotulador.
-4. Ronda de iPad (Diorame y Lab; todo sin medir ahí).
+1. ~~Mirar el Lab v23.17 y llevarlo a Diorame~~ — hecho (v23.17 + v23.18 en Diorame v3.26.104, 26 nov 2026).
+2. Fase 4: el rotulador (v23.18 ya quitó los dientes de sierra; queda la tabla de trazos y partir `FS_XCOLOR`).
+3. Ronda de iPad (Diorame y Lab; todo sin medir ahí).
 
 ## Dónde está cada cosa
 

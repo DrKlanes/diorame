@@ -1466,7 +1466,7 @@ Source of truth: `utils/keyboardShortcuts.ts` (`SHORTCUTS_GROUPS`, the list the 
 
 ## Appendix C: Changelog Highlights (1.7.3 → 3.26.104)
 
-### 3.26.104 · feat(fx): Fotocopia — Lab v23.17 + v23.18 (candidata local, pendiente del OK visual de Moisés)
+### 3.26.104 · feat(fx): Fotocopia — Lab v23.17 + v23.18 (publicada el 26 nov 2026 tras el OK visual de Moisés en local)
 
 - Tóner seco con color a mano (`uTDry` ← `tonerDry`; sin color, idéntico), rotulador sin dientes de sierra (`FS_XCOLOR` nuevo, mapa de orientación por color, `uOriRows`) y colores a mano emparejados uno a uno (`xOverBind`; cada fila borra solo su elección). Los siete `FS_X*` idénticos byte a byte al tag `v23.18`; comparado con el motor del Lab con las mismas entradas (`tools/draw-stress/harness/labcompare.js`). Detalle y medidas: §14, «Port of v23.17 + v23.18».
 

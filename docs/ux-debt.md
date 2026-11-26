@@ -553,7 +553,7 @@ tras el push.
 
 ### Lo que quedó abierto
 
-**Estado:** fases 0.5, 1, 2, 3 y 3p hechas; el tóner seco de Lab v23.17 **no está en Diorame** (26 nov 2026: v23.17 + v23.18 portados en la candidata local v3.26.104, sin publicar); plan, números y decisiones en `docs/fotocopia-v2-proposal.md`; relato de la sesión en
+**Estado:** fases 0.5, 1, 2, 3 y 3p hechas; el tóner seco de Lab v23.17 **no está en Diorame** (26 nov 2026: v23.17 + v23.18 portados y publicados en v3.26.104); plan, números y decisiones en `docs/fotocopia-v2-proposal.md`; relato de la sesión en
 `docs/session-report-2026-11-25-fotocopia-v2.md`. Lo de abajo NO está hecho.
 
 - **iPad sin medir** [POR CONFIRMAR]. El tóner nuevo lee mucha más textura: `XGEN` 15 lecturas por generación (antes 2) y `XLUM`
