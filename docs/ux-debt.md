@@ -585,9 +585,10 @@ tras el push.
   - ~~G1 no existe en la app~~ **Cerrado en v3.26.106**: `tools/draw-stress/harness/g1toner.js` (`__g1Check`), sobre el lienzo
     visible. v3.26.104 falla (13,8–14,0 %); v3.26.106 pasa a DPR 1,5 (6,3–6,5 %) y 2 (5,1–5,4 %). G2, G2 interno, G3 y G4
     siguen solo en el Lab.
-  - **Abierto — G1 falla a DPR 1** [VERIFICADO, 13,8–14,1 %]: en una pantalla DPR 1 la vista se simula a px de lienzo (la
-    resolución de v3.26.104), así que el tóner en vivo conserva sus escalones; las exportaciones (DPR 2) no. Palanca, sin
-    decidir: un factor mínimo de 1,5 en la vista aunque la pantalla sea DPR 1 (supermuestreo; coste ×2,25 en esas pantallas).
+  - ~~G1 falla a DPR 1~~ **Cerrado en v3.26.107** (decisión de Moisés): en escritorio la vista en vivo se simula a
+    `max(1,5, DPR)`; G1 a DPR 1 pasa de 13,8–14,1 % a 6,3–6,5 % [VERIFICADO]. Coste medido a DPR 1 (1366×1024, escritorio):
+    GPU del motor 2,14 → 4,42 ms, 100 → 224 MB. Tabletas, móviles y ≤ 4 GB sin cambios; exportaciones idénticas a v3.26.106.
+    En una pantalla DPR 1 la exportación (×2) sigue saliendo algo más fina que la vista (×1,5).
   - El tramo muerto del deslizador baja a 0–0,08 (lienzo de 1366 a DPR 1,5); no se ha remapeado.
 - **Fase 4 (rotulador por tabla de trazos, `FS_XCOLOR` en dos programas) y fase 5 (geometría): sin empezar.** G2 (7,3 muros por
   100 mm, límite 0,7) y G4 (5,8 s de compilación en frío, límite 1,2 s) siguen fallando a propósito. El fundido de aerógrafo de las

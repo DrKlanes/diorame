@@ -16,7 +16,8 @@
 // Run it on a fresh page (no unsaved changes: the «unsaved changes» dialog would stop the drop) at a fixed viewport
 // (1366×1024 is the reference; the panel of the built-in browser must be visible, or rAF stops).
 //
-// Calibration (2026-11-26, RTX 5070 Ti, 1366×1024, DPR 1.5): v3.26.104 FAILS 14.0–14.1 %; v3.26.105 PASSES 6.5 %.
+// Calibration (2026-11-26, RTX 5070 Ti, 1366×1024): v3.26.104 FAILS 13.8–14.0 %; v3.26.106 PASSES 6.3–6.5 % at DPR 1.5 and
+// 5.1–5.4 % at DPR 2 but FAILS 13.8–14.1 % at DPR 1; v3.26.107 (desktop view ≥ ×1.5) PASSES 6.3–6.5 % at DPR 1 too.
 // G2 (marker walls), G2 interno, G3 (zoom) and G4 (compile) exist only in the Lab (lab\tools\measure\guards).
 (() => {
 	const LIMIT = 12;
@@ -104,13 +105,16 @@
 		const sims = new Set(), proto = WebGL2RenderingContext.prototype, vp = proto.viewport;
 		proto.viewport = function (...a) { sims.add(a[2] + 'x' + a[3]); return vp.apply(this, a); };
 		try {
-			for (const pan of pans) {
+			// Warm-up, not measured (v3.26.107): on a cold page the first print can settle on a transitional frame while the
+			// quality level is still being decided (measured once: 9.9 % against 6.5 % for the same frame warm).
+			for (const [pan, warm] of [[pans[0] + 0.5, true], ...pans.map(p => [p, false])]) {
 				await dropFile(await diorFile(cv.width, pan));
 				await until(() => [...document.querySelectorAll('button')].some(b => b.textContent.trim() === `g1-toner-${pan}`), 8000, 'project loaded');
 				const cine = await until(() => buttonByText('Cine') || buttonByText('Cinema'), 3000, 'Cine button'); cine.click();
 				// Cold start: the engine chunk, its textures and programs load on demand; the raw drawing can sit still meanwhile.
 				sims.clear(); await until(() => sims.size, 30000, 'Super Riso printing the frame');
 				const im = await settledCanvas(cv);
+				if (warm) { (buttonByText('Dibujar') || buttonByText('Draw'))?.click(); await sleep(300); continue; }
 				const r = stair({ w: im.width, h: im.height, d: im.data }); runs.push({ pan, J: +r.J.toFixed(2), edgePx: r.edgePx });
 				if (keep) { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; c.getContext('2d').putImageData(im, 0, 0); shots.push(c); }
 				(buttonByText('Dibujar') || buttonByText('Draw'))?.click(); await sleep(300);

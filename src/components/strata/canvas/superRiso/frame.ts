@@ -84,11 +84,14 @@ export const lastFrame: { inks: PickedInks | null; params: AnyParams | null } = 
 // and low-memory devices, like the Lab) and bridge.drawFrom reduces it into the canvas. Exports that re-render (isLive false:
 // PNG of the flat view / DRAW / Formato, GIF, PNG sequence) use a FIXED DPR 2 instead of the device's (v3.26.106, Moisés's
 // decision): the same .dior exports the same pixels on any screen; same caps. HQ ×2 is unchanged (canvas / 2 × 2 = ×1).
-// Riso and Stencil: ×1.
-const XEROX_CAP = typeof navigator !== 'undefined' && (/iPad|iPhone|Android/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
-	|| ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) <= 4) ? 2048 : 4096;
+// On desktop the live view never goes below ×1.5 (v3.26.107, Moisés's decision): at DPR 1 the view simulated at canvas px
+// and kept the toner's steps (G1 13.8–14.1 %). Tablets, phones and low-memory devices keep the real DPR. Riso and Stencil: ×1.
+const XEROX_SMALL = typeof navigator !== 'undefined' && (/iPad|iPhone|Android/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
+	|| ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) <= 4);
+const XEROX_CAP = XEROX_SMALL ? 2048 : 4096;
 const XEROX_EXPORT_DPR = 2;
-const xeroxScale = (w: number, rs = 1, live = true) => Math.max(1, Math.min(XEROX_CAP, w / rs * (live ? (typeof window !== 'undefined' && window.devicePixelRatio) || 1 : XEROX_EXPORT_DPR)) / w);
+const XEROX_LIVE_MIN = XEROX_SMALL ? 1 : 1.5;
+const xeroxScale = (w: number, rs = 1, live = true) => Math.max(1, Math.min(XEROX_CAP, w / rs * (live ? Math.max(XEROX_LIVE_MIN, (typeof window !== 'undefined' && window.devicePixelRatio) || 1) : XEROX_EXPORT_DPR)) / w);
 
 export function prepare(w: number, h: number, inp: SuperRisoInput, m: Mode): Frame {
 	const { settings: s, isDarkMode, isPixelArt } = inp;
