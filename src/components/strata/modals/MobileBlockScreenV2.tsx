@@ -9,6 +9,7 @@ import { useTranslation } from '../../../i18n';
 import type { Language } from '../../../i18n';
 import { analytics } from '../../../analytics/analytics';
 import { PRESENTATION_URL } from '../../../constants/videos';
+import { PrivacyNotice } from './PrivacyNotice';
 
 // Same pill geometry as the DiModal *ActionLg buttons (Welcome): RADIUS.pill, 44px, 18px padding, 13/600.
 // DiButton wraps shadcn's Button, whose base class is rounded-md, so the radius is set inline.
@@ -207,6 +208,10 @@ export function MobileBlockScreenV2() {
 						>
 							{t('modal.mobile.about')}
 						</a>
+					</div>
+
+					<div style={{ marginTop: 20, maxWidth: 320 }}>
+						<PrivacyNotice color="var(--mbs-muted)" />
 					</div>
 				</div>
 			</div>

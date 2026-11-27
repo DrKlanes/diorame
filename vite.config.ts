@@ -22,7 +22,7 @@
           globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}', 'tour/*.webp'],  // covers of the tour modal (offline)
           globIgnores: ['**/welcome-videos/**', '**/texture-*.png', '**/textures/superRiso/**'],
           navigateFallback: '/index.html',   // SPA offline
-          navigateFallbackDenylist: [/\/welcome-videos\//],  // los .mp4 NUNCA caen al fallback HTML
+          navigateFallbackDenylist: [/\/welcome-videos\//, /\/tour\/video\//],  // los .mp4 NUNCA caen al fallback HTML
           cleanupOutdatedCaches: true,       // purga precaches viejos al activar
           // maximumFileSizeToCacheInBytes: default 2 MiB → texturas grandes fuera del PRECACHE
           // (siguen fuera; se cachean por RUNTIME abajo, no por precache).
@@ -34,7 +34,8 @@
               // (Sin esto, las Range requests de <video> que pasan por el fetch handler se
               // rompen → el vídeo se para tras ~1s o descarga a trompicones.) NO cachea: los
               // vídeos siguen bajo demanda, sin offline, por diseño.
-              urlPattern: /\/welcome-videos\/.*\.mp4$/,
+              // El vídeo del tour (tour/video/*.mp4, v3.26.108) sigue la misma estrategia.
+              urlPattern: /\/(welcome-videos|tour\/video)\/.*\.mp4$/,
               handler: 'NetworkOnly',
             },
             {

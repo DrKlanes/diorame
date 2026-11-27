@@ -1,23 +1,20 @@
 /**
  * Diorame · analytics.ts
  * ---------------------------------------------------------------------------
- * Único punto de contacto de la app con Google Analytics 4.
+ * Única puerta de la analítica de la app (GoatCounter, sin cookies).
  *
- * POR QUÉ UN MÓDULO Y NO gtag() SUELTO POR EL CÓDIGO:
+ * POR QUÉ UN MÓDULO Y NO LLAMADAS SUELTAS POR EL CÓDIGO:
  *  - Los nombres de evento están tipados: si te equivocas al escribir uno,
- *    TypeScript te avisa antes de compilar. GA4 no valida nada: un typo crea
- *    un evento nuevo y silencioso que ensucia la propiedad para siempre.
- *  - Se puede apagar todo desde un sitio (dev, consentimiento, tests).
+ *    TypeScript te avisa antes de compilar. GoatCounter no valida nada: un typo
+ *    crea un evento nuevo y silencioso.
+ *  - Se puede apagar todo desde un sitio (dev, tráfico interno, tests).
  *  - La lógica de "esto solo se manda una vez por sesión" vive aquí, no
  *    repartida por los componentes.
- *
- * REQUISITO PREVIO: el snippet de GA4 (gtag.js) ya debe estar en index.html.
- * Si no existe window.gtag, este módulo no rompe nada: simplemente no envía.
  * ---------------------------------------------------------------------------
  */
 
 import type { DioramEventMap } from './events';
-import { track, initInternalTraffic } from './transport';
+import { track, initTransport } from './transport';
 import { state, elapsedSeconds, STROKE_MILESTONES } from './session';
 import { createErrorReporter, classifyDevice, rawFromRejection, reportBoundaryError, type RawError } from './errors';
 import { APP_VERSION } from '../constants/version';
@@ -26,7 +23,7 @@ import { APP_VERSION } from '../constants/version';
 let reportRaw: ((raw: RawError) => boolean) | null = null;
 
 export type { DioramEventMap, DioramEventName } from './events';
-export { track, setAnalyticsConsent } from './transport';
+export { track } from './transport';
 
 /* ===========================================================================
  * 5 · API PÚBLICA — esto es lo único que llamas desde los componentes
@@ -167,15 +164,6 @@ export const analytics = {
 		state.tool = tool;
 	},
 
-	/** Llamar al pulsar compartir. target: 'link' | 'twitter' | 'download' ... */
-	shareClicked(target: string): void {
-		track('share_clicked', { target });
-	},
-
-	onboardingStep(step: number, action: 'complete' | 'skip'): void {
-		track('onboarding_step', { step, action });
-	},
-
 	/**
 	 * Llamar al CERRAR el modal de bienvenida. Solo cuenta el primer cierre de
 	 * la sesión: ver SessionState.welcomeModalSent.
@@ -204,11 +192,6 @@ export const analytics = {
 		method: DioramEventMap['layers_tooltip_dismissed']['method'],
 	): void {
 		track('layers_tooltip_dismissed', { method });
-	},
-
-	/** Errores capturados en UI. `where` identifica el punto del código. */
-	uiError(where: string, message: string): void {
-		track('ui_error', { where, message });
 	},
 };
 
@@ -298,7 +281,7 @@ export function installAnalytics(): void {
 	if (installed || typeof document === 'undefined') return;
 	installed = true;
 
-	initInternalTraffic();
+	initTransport();
 	installErrorCapture();
 
 	document.addEventListener('visibilitychange', () => {

@@ -18,7 +18,7 @@ const cond = mbps ? { offline: false, latency: 40, downloadThroughput: mbps * 12
 
 async function wire(session, bucket) {
 	await session.send('Network.enable');
-	await session.send('Network.setBlockedURLs', { urls: ['*googletagmanager.com*', '*google-analytics.com*'] }).catch(() => {});
+	await session.send('Network.setBlockedURLs', { urls: ['*gc.zgo.at*', '*goatcounter.com*'] }).catch(() => {});
 	if (cond) await session.send('Network.emulateNetworkConditions', cond);
 	session.on('Network.requestWillBeSent', e => bucket.set(e.requestId, { url: e.request.url, t0: e.timestamp }));
 	session.on('Network.responseReceived', e => { const r = bucket.get(e.requestId); if (r) Object.assign(r, { status: e.response.status, fromSW: e.response.fromServiceWorker, fromDisk: e.response.fromDiskCache, fromCacheStorage: e.response.fromEarlyHints }); });

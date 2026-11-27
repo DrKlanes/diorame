@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { DiModal } from './index';
-import { T, TYPE, RADIUS } from '../../../design-system/tokens';
+import { T, TYPE, RADIUS, dk } from '../../../design-system/tokens';
 import { useTranslation } from '../../../i18n';
-import { INTERFACE_TOUR_ID, INTERFACE_TOUR_URL, INTERFACE_TOUR_COVER } from '../../../constants/videos';
+import { INTERFACE_TOUR_SRC, INTERFACE_TOUR_CAPTIONS, INTERFACE_TOUR_COVER } from '../../../constants/videos';
 import { analytics } from '../../../analytics/analytics';
-
-const LOAD_TIMEOUT_MS = 12000;
 
 interface TourModalV2Props {
 	open:    boolean;
@@ -16,22 +14,12 @@ interface TourModalV2Props {
 export function TourModalV2({ open, onClose, dark }: TourModalV2Props) {
 	const { t, language } = useTranslation();
 	const [playing, setPlaying] = useState(false);
-	const [loaded, setLoaded] = useState(false);
 	const [failed, setFailed] = useState(false);
 
 	useEffect(() => {
 		if (open) { analytics.tourVideo('shown'); return; }
-		setPlaying(false); setLoaded(false); setFailed(false);
+		setPlaying(false); setFailed(false);
 	}, [open]);
-
-	// Cross-origin iframes do not report load errors: offline mid-play or a stalled load falls back to the link.
-	useEffect(() => {
-		if (!playing || loaded || failed) return;
-		const timer = setTimeout(() => setFailed(true), LOAD_TIMEOUT_MS);
-		const onOffline = () => setFailed(true);
-		window.addEventListener('offline', onOffline);
-		return () => { clearTimeout(timer); window.removeEventListener('offline', onOffline); };
-	}, [playing, loaded, failed]);
 
 	const handlePlay = () => {
 		if (!navigator.onLine) { setFailed(true); return; }
@@ -39,7 +27,6 @@ export function TourModalV2({ open, onClose, dark }: TourModalV2Props) {
 		analytics.tourVideo('played');
 	};
 
-	const id = INTERFACE_TOUR_ID[language];
 	const box: React.CSSProperties = {
 		position: 'relative',
 		width: '100%',
@@ -60,25 +47,21 @@ export function TourModalV2({ open, onClose, dark }: TourModalV2Props) {
 							alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16, textAlign: 'center',
 						}}>
 							<span>{t('modal.tour.fallback')}</span>
-							<a
-								href={INTERFACE_TOUR_URL[language]}
-								target="_blank"
-								rel="noopener noreferrer"
-								style={{ color: T.purple, fontFamily: TYPE.controlLabel.family, fontWeight: 600 }}
-							>
-								{t('modal.tour.fallbackLink')}
-							</a>
 						</div>
 					) : playing ? (
-						<iframe
-							src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-							title={t('modal.tour.iframeTitle')}
-							allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-							allowFullScreen
-							referrerPolicy="strict-origin-when-cross-origin"
-							onLoad={() => setLoaded(true)}
-							style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
-						/>
+						<video
+							src={INTERFACE_TOUR_SRC[language]}
+							poster={INTERFACE_TOUR_COVER[language]}
+							aria-label={t('modal.tour.videoLabel')}
+							controls
+							autoPlay
+							playsInline
+							preload="auto"
+							onError={() => setFailed(true)}
+							style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
+						>
+							<track kind="captions" src={INTERFACE_TOUR_CAPTIONS[language]} srcLang={language} label={t('modal.tour.captions')} />
+						</video>
 					) : (
 						<button
 							onClick={handlePlay}
@@ -103,6 +86,13 @@ export function TourModalV2({ open, onClose, dark }: TourModalV2Props) {
 						</button>
 					)}
 				</div>
+				{/* CC BY 4.0: the music credit goes with every publication of the video. */}
+				<p style={{
+					margin: '8px 0 0', fontSize: TYPE.numericValue.size, lineHeight: 1.5,
+					color: dk(dark, T.muted, T.textDarkMuted) as string,
+				}}>
+					{t('modal.tour.musicCredit')}
+				</p>
 			</DiModal.Body>
 			<DiModal.Footer>
 				<DiModal.PrimaryActionLg onClick={onClose}>{t('modal.tour.start')}</DiModal.PrimaryActionLg>

@@ -1,9 +1,9 @@
 /**
  * Diorame · analytics/errors.ts
  * ---------------------------------------------------------------------------
- * Captura silenciosa de errores no controlados → evento GA4 `exception`.
+ * Captura silenciosa de errores no controlados → evento `exception`.
  *
- * Núcleo PURO: sin window, sin gtag, sin transport. Todo lo de fuera entra por
+ * Núcleo PURO: sin window, sin transport. Todo lo de fuera entra por
  * `deps` (emisor, contexto, origen), de modo que los tests de Node ejecutan
  * este mismo código. El cableado a window vive en `installErrorCapture`.
  *
@@ -46,7 +46,7 @@ export type ReporterDeps = {
  * ------------------------------------------------------------------------ */
 
 const EXTENSION_RE = /(?:chrome|moz|safari(?:-web)?)-extension:\/\//i;
-const THIRD_PARTY_RE = /googletagmanager|google-analytics|doubleclick/i;
+const THIRD_PARTY_RE = /googletagmanager|google-analytics|doubleclick|goatcounter|gc\.zgo\.at/i;
 
 /** Último segmento de una ruta o URL, sin query ni hash. */
 export function baseName(path: string): string {
@@ -80,7 +80,7 @@ export function firstStackFrame(stack: string): string {
 	return '';
 }
 
-/** Mensaje + primer frame útil, ≤100 caracteres (límite de GA4), sin rutas ni query strings. */
+/** Mensaje + primer frame útil, ≤100 caracteres, sin rutas ni query strings. */
 export function buildDescription(message: string, frame: string): string {
 	const msg = cleanText(message) || 'Unknown error';
 	if (!frame) return msg.slice(0, MAX_DESCRIPTION);

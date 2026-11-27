@@ -616,14 +616,17 @@ export const en: Dictionary = {
 	'modal.welcome.sounds.credits': 'Sound credits',
 	'modal.welcome.sounds.creditPrefix': 'Sounds by',
 	'modal.welcome.sounds.creditSuffix': '(Pixabay)',
+	'modal.privacy.title': 'Privacy',
+	'modal.privacy.body': 'We measure usage anonymously with GoatCounter: no cookies, and no personal data stored. Your drawings are never sent to a server; your browser only keeps the autosave and your preferences.',
 
 	// Bug report email (dinámico)
 	'modal.tour.title': 'Diorame inside out (2 min)',
 	'modal.tour.play': 'Play video',
-	'modal.tour.iframeTitle': 'Diorame interface tour',
+	'modal.tour.videoLabel': 'Diorame interface tour',
+	'modal.tour.captions': 'English',
+	'modal.tour.musicCredit': 'Music: "Stick or Snake" by Gagmesharkoff (freemusicarchive.org), CC BY 4.0. Edited for this video.',
 	'modal.tour.start': 'Start drawing',
-	'modal.tour.fallback': 'The video could not load.',
-	'modal.tour.fallbackLink': 'Watch on YouTube',
+	'modal.tour.fallback': 'The video could not load. Check your connection.',
 	'modal.welcome.bugReport.subject': 'Diorame bug report — v{version}',
 	'modal.welcome.bugReport.body': 'What I expected:\n\n\nWhat happened instead:\n\n\nSteps to reproduce:\n\n\n---\nBrowser:\nOS:',
 

@@ -12,11 +12,13 @@ import { LanguageToggle } from '../../../design-system/LanguageToggle';
 import { useStrata } from '../StrataContext';
 import { useSaveLoad } from '../../../hooks/useSaveLoad';
 import { diorAccept } from '../../../utils/appleTouch';
-import { INTERFACE_TOUR_URL } from '../../../constants/videos';
+import { INTERFACE_TOUR_SRC } from '../../../constants/videos';
+import { setTourOpen } from '../../../utils/tourFirstRun';
+import { PrivacyNotice } from './PrivacyNotice';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
-function ResourceLink({ href, children, mutedColor }: { href: string; children: React.ReactNode; mutedColor?: string }) {
+function ResourceLink({ href, children, mutedColor, onClick }: { href: string; children: React.ReactNode; mutedColor?: string; onClick?: React.MouseEventHandler }) {
 	const [hovered, setHovered] = useState(false);
 	const isMuted = mutedColor !== undefined;
 	return (
@@ -24,6 +26,7 @@ function ResourceLink({ href, children, mutedColor }: { href: string; children: 
 			href={href}
 			target="_blank"
 			rel="noopener noreferrer"
+			onClick={onClick}
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
 			style={{
@@ -235,7 +238,7 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 						lineHeight: 1.5,
 					}}>
 						<div>
-							<ResourceLink href={INTERFACE_TOUR_URL[language]}>{t('modal.welcome.tutorial')}</ResourceLink>
+							<ResourceLink href={INTERFACE_TOUR_SRC[language]} onClick={e => { e.preventDefault(); setTourOpen(true); }}>{t('modal.welcome.tutorial')}</ResourceLink>
 						</div>
 						<div>
 							<ResourceLink href="https://www.instagram.com/dumaker/">{t('modal.welcome.dumaker')}</ResourceLink>
@@ -370,6 +373,9 @@ export function WelcomeModalV2({ open, onClose, onLoadExample, dark, onRestoreAu
 									{' '}{t('modal.welcome.sounds.creditSuffix')}
 								</div>
 							)}
+						</div>
+						<div style={{ marginTop: 6 }}>
+							<PrivacyNotice color={muted} />
 						</div>
 						<div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 10 }}>
 							<LanguageToggle />

@@ -1,28 +1,73 @@
 # Analítica de Diorame — qué mide cada número
 
 Documento vivo. Existe para que dentro de seis meses se sepa qué significa
-exactamente cada evento de GA4, y qué NO significa.
+exactamente cada evento, y qué NO significa.
 
-- **Propiedad GA4:** Measurement ID `G-8812T7T7G9`
-- **Etiqueta:** el snippet de gtag.js vive en `index.html`. El módulo
-  **consume** ese `window.gtag`; nunca llama a `gtag('config', ...)` ni inyecta
-  la etiqueta. Duplicar la config produciría `page_view` dobles y falsearía
-  todos los porcentajes del embudo.
-- **Contrato de eventos:** `DioramEventMap` en `src/analytics/analytics.ts`.
-  Es la fuente única. Añadir un evento = añadir una línea ahí.
-- **Por qué existe cada evento:** ver `docs/BRIEF-CLAUDE-CODE.md`.
+- **Herramienta (v3.26.108):** GoatCounter alojado, cuenta `diorame`
+  (<https://diorame.goatcounter.com>). **Sin cookies y sin escribir nada en el
+  navegador** (solo lee `localStorage.skipgc`). Google Analytics 4 se retiró por
+  completo; sus datos históricos quedan en la propiedad `G-8812T7T7G9` y no se
+  migran.
+- **Carga:** la hace `src/analytics/transport.ts`, no `index.html`:
+  `https://gc.zgo.at/count.v5.js` con `integrity` (SRI) y `crossorigin`, mismo
+  enfoque y mismo hash que `landing/assets/analytics.js`. **Solo en el hostname
+  `diorame.dumaker.com`** y nunca con tráfico interno. En cualquier otro host:
+  **modo consola** (`[analytics] modo consola · …`), sin red.
+- **Única puerta:** los componentes llaman a `analytics.*`
+  (`src/analytics/analytics.ts`). El contrato de eventos es `DioramEventMap`
+  (`events.ts`) y la traducción a GoatCounter, `eventNames.ts`.
+- **Por qué existe cada evento:** ver `docs/BRIEF-CLAUDE-CODE.md` (histórico,
+  escrito para GA4).
 
 ---
 
-## Estado de la instrumentación
+## Qué llega a GoatCounter
 
-Embudo completo instrumentado (v3.16.0). Todos los eventos del contrato tienen
-disparador salvo `stroke_milestone` (automático: 10/50/200 trazos),
-`share_clicked` y `onboarding_step`, que no tienen UI que los emita.
+GoatCounter no admite parámetros: un evento es solo un nombre,
+`app_<evento>[/<parámetro clave>]`. El resto de parámetros se queda en la app.
+
+| Nombre en GoatCounter | Parámetro del nombre | Parámetros que ya no se miden |
+|---|---|---|
+| `app_canvas_ready` | — | — |
+| `app_mobile_blocked` | — | `viewport_width` (GoatCounter ya guarda el tamaño de pantalla) |
+| `app_first_stroke/<tool>` | `blob`, `brush`, `eraser`, `text` | `seconds_to_first_stroke` |
+| `app_stroke_milestone/<strokes>` | `10`, `50`, `200` | `tool` |
+| `app_layer_added` | — | `layer_count` |
+| `app_camera_preset_used/<preset>` | preset de cámara | — |
+| `app_filter_applied/<filter>` | FX | — |
+| `app_artwork_exported/<format>` | los 12 valores de abajo | `strokes`, `layers`, `mode`, `background` |
+| `app_project_saved` | — | — |
+| `app_project_loaded` | — | — |
+| `app_welcome_modal/<action>` | `load_example`, `restore_autosave`, `dismissed` | — |
+| `app_tour_video/<action>` | `shown`, `played` | — |
+| `app_layers_tooltip_shown` | — | `shapes_at_trigger`, `seconds_at_trigger` |
+| `app_layers_tooltip_dismissed/<method>` | `layer_added`, `timeout`, `close_button`, `click_outside` | — |
+| `app_mobile_link_shared` · `app_mobile_link_copied` · `app_mobile_video_opened` · `app_mobile_landing_opened` | — | `lang` (GoatCounter ya guarda el idioma) |
+| `app_exception/<fatal o error>/<clase>` | gravedad y clase (`TypeError`…, u `other`) | `description`, versión, modo, herramienta, dispositivo, PWA |
+| `app_session_depth/<reached>` | `bounced`, `drew`, `exported` | `strokes`, `layers`, `exported`, `seconds` |
+
+**Descartados:** `mobile_gate_shown` (sin `lang` duplica a `app_mobile_blocked`;
+`analytics.mobileGateShown` sigue existiendo y no envía) y `share_clicked`,
+`onboarding_step`, `ui_error` (nunca tuvieron llamador; borrados del contrato).
+
+**Nada personal en los nombres:** solo llegan enumerados de la app. De un error
+viaja su clase si está en una lista cerrada; nunca el mensaje, la pila ni
+nombres de archivo (`tests/analyticsNames.test.ts`).
+
+**Lo que envía además `count.js` en cada hit:** ruta (`/`, fijada sin query),
+referrer (solo en la vista; vacío en los eventos), título, tamaño de pantalla,
+marca de bot y la query de la URL (parámetros de campaña `utm_*`). El servidor
+ve IP y User-Agent, como cualquier servidor web.
+
+**Cómo leerlo:** GoatCounter cuenta por defecto **visitas**: un mismo nombre
+repetido en la misma sesión (varias capas, varios exports PNG) suma una vez.
+Los números son «sesiones que hicieron X», no «veces que se hizo X».
 
 ---
 
-## Eventos activos
+## Disparadores dentro de la app
+
+Los nombres de esta sección son los internos (`DioramEventMap`) y sus parámetros; lo que se envía está en la tabla de arriba.
 
 | Evento | Dónde se dispara | Flag `once` | Qué mide |
 |---|---|---|---|
@@ -45,7 +90,6 @@ disparador salvo `stroke_milestone` (automático: 10/50/200 trazos),
 | `mobile_landing_opened` | `MobileBlockScreenV2.tsx` | No | Pulsó «Conocer Diorame» (diorame.com/es|en) |
 | `layers_tooltip_shown` | `hooks/useLayersDiscoveryTooltip.ts` | Propio | Se mostró el tooltip de descubrimiento de capas (primera sesión real, dibujando sin haber añadido capa). Params `shapes_at_trigger`, `seconds_at_trigger`. Cruzar con `layer_added` de la misma sesión |
 | `layers_tooltip_dismissed` | `hooks/useLayersDiscoveryTooltip.ts` | Propio | Cierre del tooltip. `method`: `layer_added` (conversión), `timeout` (indiferencia), `close_button` (rechazo activo), `click_outside` |
-| `ui_error` | — (definido en el contrato `DioramEventMap`; `analytics.uiError(where, message)` no tiene ningún llamador hoy) | — | Reservado para errores de UI capturados. No se llama `error` porque el nombre está reservado por GA4 |
 | `exception` | `window` `error` + `unhandledrejection`, registrados por `installAnalytics()` (`src/analytics/errors.ts`) | Dedupe por firma (mensaje + archivo + línea) y tope de 10 por sesión | Errores no controlados, en silencio. Parámetros: `description` (≤100 car., sin rutas ni query strings), `fatal` (false desde `window`; true desde el `AppErrorBoundary` raíz, v3.26.68: el error rompió el render y el usuario vio la pantalla «Algo ha fallado». En dev un error de render sale dos veces, false y true; en producción solo true), `app_version`, `mode` (`draw`/`cinema`), `tool`, `device_class` (`ipad`/`tablet`/`desktop`/`mobile`), `standalone` (`yes`/`no`). Descarta extensiones del navegador, `ResizeObserver loop`, `Script error.` opaco y scripts de terceros. Nunca lleva contenido del dibujo ni texto del usuario |
 | `session_depth` | `visibilitychange` + `pagehide`, registrados por `installAnalytics()` en `src/main.tsx` | Propio (`depthSent`) | Resumen de sesión al salir |
 
@@ -78,44 +122,10 @@ Los nombres salen del propio código, no de una convención inventada:
 vídeo la decide el parámetro `animation` de `exportAsMP4`. `svg`/`svgz` usan el
 valor literal de `exportRequest`.
 
-⚠️ **Una vez GA4 empiece a recoger un `png` mezclado, no se puede separar
-retroactivamente.** Por eso la granularidad se decide antes de desplegar.
-
 ⚠️ **Se engancha en la rama de éxito de cada handler, NUNCA en `onFinish`.**
 `onFinish()` se llama también cuando la exportación falla (`toBlob` devuelve
 `null`, `catch`, escena vacía). Engancharlo ahí contaría todos los fallos como
 exportaciones.
-
-### Los parámetros `mode` y `background` (v3.17.66)
-
-Desde que DRAW también exporta PNG, `png` y `png_hq` salen de los dos modos y por
-sí solos no dicen de cuál. `artwork_exported` lleva por tanto:
-
-- `mode`: `'drawing'` | `'cinematic'`. Lo llevan **todos** los formatos (los cinco
-  handlers lo reciben como parámetro; no se deduce de dónde se llame).
-- `background`: `'paper'` | `'solid'` | `'transparent'`. Solo los exports de DRAW que
-  lo eligen: los PNG de DRAW (`png`, `png_hq`, `png_format`, `png_drawing`),
-  `png_layers_zip` (siempre `transparent`) y `timelapse` (`paper` / `solid`); en el
-  resto de exports el parámetro no viaja.
-
-Los eventos anteriores a v3.17.66 no tienen `mode`, pero se deduce del formato:
-hasta entonces `svg`/`svgz` solo salían de DRAW y `png`, `png_hq`, `mp4`,
-`mp4_animation`, `gif` y `png_sequence` solo de CINEMA.
-
-### El parámetro `layers`
-
-Viaja en `artwork_exported` y en `session_depth`, y es el **número total de
-capas del documento** en ese momento — no un índice, no "capas creadas a mano".
-Un documento recién abierto reporta `layers: 1`.
-
-Se mantiene al día desde `App.tsx:47` (efecto con dependencia `state.totalLayers`),
-que llama a `analytics.layerCount()`. Ese setter **no emite evento**: solo
-sincroniza el contador.
-
-Hasta v3.16.0 el contador solo se escribía dentro de `layerAdded`, así que
-cualquiera que no pulsara "añadir capa" exportaba con `layers: 0` — incluido
-quien cargara un `.dior` de ocho capas. Un cero mentiroso que dentro de seis
-meses se habría leído como "nadie usa capas".
 
 `installAnalytics()` se llama **una sola vez**, en `src/main.tsx`, antes del
 primer render.
@@ -169,7 +179,7 @@ previo (`if (!px[key])`). Apagar un FX no cuenta.
 `ADD_SHAPE`, así que no pasan por el `handlePointerUp` del canvas. Se enganchan
 aparte en `TextSessionPanel.tsx:53` y cuentan como `first_stroke` con
 `tool: 'text'`. Sin esto, quien creara una pieza **solo con texto** no emitiría
-`first_stroke` y contaría en GA4 como alguien que entró y no hizo nada: un
+`first_stroke` y contaría como alguien que entró y no hizo nada: un
 falso negativo en el paso más importante del embudo. La llamada replica la
 guarda del reducer (contenido no vacío) para no contar confirmaciones vacías.
 
@@ -197,7 +207,7 @@ zanjaron: no fue doble clic ni autorrepetición de teclado, sino que el usuario
 pulsó, la app pareció colgada, esperó y volvió a pulsar. La causa raíz es falta
 de feedback en la interfaz — ver `docs/ux-debt.md`.
 
-**Cómo leerlo en GA4:** si aparecen guardados repetidos en ventanas cortas, la
+**Cómo leerlo:** si alguna vez aparecen guardados repetidos en ventanas cortas, la
 hipótesis principal **NO es un bug de código**: es que el usuario no sabe si
 guardó. Mirar la UX antes que el código.
 
@@ -211,20 +221,19 @@ Abre **una vez** en cada navegador que quieras excluir:
 https://diorame.dumaker.com/?internal=1
 ```
 
-El parámetro escribe un flag `diorame_internal` en `localStorage` y a partir de
-ahí **persiste sin el parámetro**. Desde ese momento cada evento lleva
-`traffic_type: 'internal'`, y además se fija como user property de GA4.
-
-Para desactivarlo: `?internal=0`.
+Escribe `diorame_internal` y **`skipgc`** (la clave que consulta el filtro de
+GoatCounter) en `localStorage` y **persiste sin el parámetro**. Un navegador
+interno **no carga `count.js`**: no sale ninguna petición. Para desactivarlo:
+`?internal=0` (borra las dos claves). La landing usa las mismas claves, pero en
+su propio origen (`diorame.com`) y propaga `?internal=1` en sus enlaces a la app.
 
 **Confirmación visible.** Al cargar con el flag activo, la consola muestra:
 
 ```
-[analytics] INTERNAL TRAFFIC — este navegador no cuenta como usuario real.
+[analytics] INTERNAL TRAFFIC — este navegador no se cuenta.
 ```
 
-Sin ese aviso el flag sería invisible y no habría forma de saber si sigue
-puesto.
+Se excluye, no se etiqueta: esas sesiones no aparecen en ningún sitio.
 
 ### ⚠️ El flag es por CONTEXTO DE NAVEGADOR — ni por persona ni por dispositivo
 
@@ -238,30 +247,46 @@ Hay que activarlo **por separado** en cada uno:
   activa en la PWA.
 
 Y se pierde en cuanto se borren los datos del navegador, o en ventana privada.
-Si borras datos, hay que volver a abrir la URL.
 
-**Por qué en cliente y no por IP en GA4:** la IP doméstica es dinámica, el
-filtro caduca solo y sin avisar, y en modo Activo descarta datos de forma
-permanente e irreversible. El flag sobrevive a cambios de IP y no destruye
-nada: en GA4 se segmenta por comparación cuando haga falta.
+---
+
+## Privacidad y terceros (auditoría v3.26.108)
+
+**Se carga solo desde otro dominio:** únicamente GoatCounter en producción:
+`gc.zgo.at/count.v5.js` y `diorame.goatcounter.com/count`. Fuentes, iconos,
+texturas, sonidos y vídeos (Welcome y tour) son propios. **La app no
+incrusta nada de terceros** (sin iframes).
+
+**Solo por acción del usuario:**
+
+| Qué | Cuándo | Almacenamiento |
+|---|---|---|
+| Super Riso Lab, `super-riso.dumaker.com` (propio) | «Exportar › Super Riso ↗» (pestaña nueva) | Solo preferencias en `localStorage`; sin recursos de terceros. El dibujo viaja por `postMessage` dentro del navegador |
+| Enlaces: YouTube (vídeo de presentación, solo en la pantalla móvil), Instagram, Ko-fi, App Store, Pixabay, diorame.com, `mailto:` | Clic | Navegación fuera de la app |
+
+**Propio (sin consentimiento):** `localStorage` de preferencias y flags de «ya
+visto», `diorame_internal`/`skipgc`, IndexedDB del autoguardado y la caché del
+service worker. El alojamiento (GitHub Pages) registra IP como cualquier
+servidor.
+
+**Restos de GA4:** quien usó la app antes de v3.26.108 puede conservar cookies
+`_ga*` en `.dumaker.com` hasta que caduquen; la app ya no las crea ni las lee.
+
+Aviso visible: `modals/PrivacyNotice.tsx` (Welcome y pantalla de bloqueo móvil,
+textos `modal.privacy.*`) y el pie de la landing.
 
 ---
 
 ## Qué NO se mide, y por qué
 
-- **Sesiones offline.** Diorame es una PWA que funciona sin red por diseño.
-  Cuando no hay conexión, los eventos no salen y no hay forma barata de
-  arreglarlo. Es una consecuencia conocida de la arquitectura, **no un fallo de
-  instrumentación**: no interpretar una caída de números como un bug.
-- **Fuera de producción no se envía nada.** El módulo loguea en consola con el prefijo
-  `[analytics]` pero `canSend()` devuelve `false` mientras `import.meta.env.DEV` sea true
-  **o el host no sea `diorame.dumaker.com`** (v3.17.67: antes un `vite preview` en
-  localhost sí enviaba). Además `index.html` ni siquiera carga `gtag.js` fuera de ese
-  host. Para enviar de verdad desde local haría falta `VITE_GA_DEBUG=1`.
-- **Bloqueadores de anuncios.** Si `window.gtag` no existe, el módulo no envía y
-  no lanza. Esas sesiones son invisibles.
+- **Sesiones offline.** Diorame es una PWA que funciona sin red. Sin conexión
+  `count.js` no carga y los eventos se pierden: **no interpretar una caída de
+  números como un bug**.
+- **Fuera de producción no se envía nada.** Modo consola: `import.meta.env.DEV`
+  o un host distinto de `diorame.dumaker.com` (incluido `vite preview`).
+- **Bloqueadores.** Si `count.js` no carga, el módulo no envía y no lanza.
 - **Nada personal.** Ni texto del usuario, ni nombres de archivo, ni contenido
-  del dibujo. Solo contadores y enumerados.
+  del dibujo.
 - **El autosave** (`useAutoSave.ts`, IndexedDB: cada 30 s, 1,5 s tras el último
   cambio y al ocultar la página, desde 3.20.5) **no se mide.** Ojo al interpretar `project_saved` bajo: puede que la gente no
   necesite guardar a mano porque el autosave ya le cubre.

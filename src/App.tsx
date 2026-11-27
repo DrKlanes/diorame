@@ -156,7 +156,8 @@ function AppContent() {
       <StrataCanvas />
       <ControlsV2 />
       <WelcomeModalV2
-        open={state.isWelcomeModalOpen}
+        // Hidden under the tour, never stacked: Escape would close both, and closing the welcome drops the autosave.
+        open={state.isWelcomeModalOpen && !tourOpen}
         onClose={handleCloseWelcome}
         onStart={handleStart}
         onLoadExample={handleLoadExample}

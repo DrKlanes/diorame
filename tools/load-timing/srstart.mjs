@@ -15,8 +15,8 @@ const cold = process.argv.includes('--cold'), xerox = process.argv.includes('--x
 const browser = await puppeteer.launch({ executablePath: (process.env.CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe'), headless: true, userDataDir: profile,
 	args: ['--no-first-run', '--window-size=1366,1024'].concat(cold ? ['--disable-gpu-shader-disk-cache'] : []), defaultViewport: { width: 1366, height: 1024 } });
 const page = await browser.newPage();
-// never send analytics from a measurement (the production host loads gtag)
-const cdp = await page.createCDPSession(); await cdp.send('Network.enable'); await cdp.send('Network.setBlockedURLs', { urls: ['*googletagmanager.com*', '*google-analytics.com*'] });
+// never send analytics from a measurement (the production host loads GoatCounter)
+const cdp = await page.createCDPSession(); await cdp.send('Network.enable'); await cdp.send('Network.setBlockedURLs', { urls: ['*gc.zgo.at*', '*goatcounter.com*'] });
 const errs = []; page.on('console', m => { if (/SuperRiso|error/i.test(m.text())) errs.push(m.text().slice(0, 200)); }); page.on('pageerror', e => errs.push(String(e).slice(0, 200)));
 await page.evaluateOnNewDocument(() => {
 	try { localStorage.setItem('diorame-fx-expanded', 'true'); } catch (_) {}            // FX panel expanded: the technique selector

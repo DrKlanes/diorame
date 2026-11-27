@@ -20,8 +20,8 @@ async function session(first, count) {
 	const args = ['--no-first-run', '--window-size=1366,1024'].concat(opt.restart ? ['--disable-gpu-shader-disk-cache'] : []);
 	const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, userDataDir: profile, args, defaultViewport: { width: 1366, height: 1024 } });
 	const page = await browser.newPage();
-	// never send analytics from a measurement (the production host loads gtag)
-	const cdp = await page.createCDPSession(); await cdp.send('Network.enable'); await cdp.send('Network.setBlockedURLs', { urls: ['*googletagmanager.com*', '*google-analytics.com*'] });
+	// never send analytics from a measurement (the production host loads GoatCounter)
+	const cdp = await page.createCDPSession(); await cdp.send('Network.enable'); await cdp.send('Network.setBlockedURLs', { urls: ['*gc.zgo.at*', '*goatcounter.com*'] });
 	page.on('console', m => { if (/superriso|Failed to fetch|dynamically imported/i.test(m.text())) console.error('[diorame]', m.text().slice(0, 200)); });
 	await page.goto(url, { waitUntil: 'networkidle2', timeout: 90000 });
 	const clickText = async re => page.evaluate(src => {

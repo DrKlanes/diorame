@@ -1,55 +1,63 @@
 /**
  * Diorame · analytics/transport.ts
  * ---------------------------------------------------------------------------
- * Configuración, tráfico interno, saneado y envío a GA4 (gtag).
+ * Carga de GoatCounter, tráfico interno y envío. Sin cookies: count.js solo
+ * LEE `localStorage.skipgc` y envía con sendBeacon.
  * ---------------------------------------------------------------------------
  */
 
 import type { DioramEventMap, DioramEventName } from './events';
+import { goatEventName } from './eventNames';
 
 /* ===========================================================================
  * 2 · CONFIGURACIÓN
  * ======================================================================== */
 
 /** Host de producción (public/CNAME). En cualquier otro host (localhost, vite preview, previews
- *  de deploy) la analítica se comporta como en dev: log a consola, nada sale a la red. */
+ *  de deploy) la analítica va en modo consola: no se carga count.js ni sale nada a la red. */
 const PRODUCTION_HOST = 'diorame.dumaker.com';
-const IS_DEV = import.meta.env.DEV
-	|| (typeof window !== 'undefined' && window.location.hostname !== PRODUCTION_HOST);
-/** Pon VITE_GA_DEBUG=1 en .env.local si quieres enviar de verdad desde dev. */
-const FORCE_SEND = import.meta.env.VITE_GA_DEBUG === '1';
+const ENDPOINT = 'https://diorame.goatcounter.com/count';
+const SCRIPT_SRC = 'https://gc.zgo.at/count.v5.js';
+const SCRIPT_SRI = 'sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ';
 
-const MAX_PARAMS = 25;
-const MAX_VALUE_LEN = 100;
+const IS_PROD = !import.meta.env.DEV
+	&& typeof window !== 'undefined' && window.location.hostname === PRODUCTION_HOST;
+
+/** Eventos en espera mientras llega count.js. */
+const MAX_QUEUE = 50;
 
 /* ---------------------------------------------------------------------------
  * TRÁFICO INTERNO
  * ---------------------------------------------------------------------------
- * Se marca en CLIENTE, no por IP en GA4: la IP doméstica es dinámica, el filtro
- * caduca solo y sin avisar, y en modo Activo descarta datos de forma permanente
- * e irreversible. Un flag en localStorage sobrevive a cambios de IP y no
- * destruye nada: en GA4 se segmenta por comparación cuando haga falta.
+ * Se marca en CLIENTE con un flag en localStorage (misma clave que la landing).
+ * Un navegador interno no carga count.js; además se escribe `skipgc`, la clave
+ * que consulta el filtro de GoatCounter.
  *
  * Alcance: es por CONTEXTO DE NAVEGADOR, no por persona ni por dispositivo.
  * Ver docs/analytics.md.
  * ======================================================================== */
 
 const INTERNAL_FLAG_KEY = 'diorame_internal';
+const SKIP_KEY = 'skipgc';
 
 let isInternalTraffic = false;
 
 /**
  * Lee `?internal=1` (activa) o `?internal=0` (desactiva) y persiste el flag.
- * Nunca lanza: si localStorage está bloqueado, el tráfico cuenta como normal.
+ * Nunca lanza: sin localStorage, `?internal=1` excluye al menos esta carga.
  */
-export function initInternalTraffic(): void {
+function initInternalTraffic(): void {
 	try {
 		const param = new URLSearchParams(window.location.search).get('internal');
 		if (param === '1') localStorage.setItem(INTERNAL_FLAG_KEY, '1');
-		else if (param === '0') localStorage.removeItem(INTERNAL_FLAG_KEY);
+		else if (param === '0') {
+			localStorage.removeItem(INTERNAL_FLAG_KEY);
+			localStorage.removeItem(SKIP_KEY);
+		}
 		isInternalTraffic = localStorage.getItem(INTERNAL_FLAG_KEY) === '1';
+		if (isInternalTraffic) localStorage.setItem(SKIP_KEY, 't');
 	} catch {
-		isInternalTraffic = false;
+		isInternalTraffic = /[?&]internal=1(&|$)/.test(window.location.search);
 	}
 
 	if (!isInternalTraffic) return;
@@ -57,80 +65,73 @@ export function initInternalTraffic(): void {
 	// El flag es invisible y se pierde al borrar datos del navegador. Sin esta
 	// confirmación no hay forma de saber si sigue puesto.
 	console.warn(
-		'[analytics] INTERNAL TRAFFIC — este navegador no cuenta como usuario real.',
+		'[analytics] INTERNAL TRAFFIC — este navegador no se cuenta.',
 	);
-
-	// User property de ámbito de usuario. NO es gtag('config'): no reconfigura la
-	// etiqueta ni genera page_view.
-	try {
-		window.gtag?.('set', 'user_properties', { traffic_type: 'internal' });
-	} catch {
-		/* la analítica nunca tumba la app */
-	}
-}
-
-function canSend(): boolean {
-	if (typeof window === 'undefined') return false;
-	if (typeof window.gtag !== 'function') return false;
-	if (IS_DEV && !FORCE_SEND) return false;
-	return true;
 }
 
 /* ===========================================================================
- * 3 · EMISOR
+ * 3 · CARGA Y EMISOR
  * ======================================================================== */
 
-function sanitize(params: Record<string, unknown>): Record<string, unknown> {
-	const out: Record<string, unknown> = {};
-	let n = 0;
-	for (const [key, value] of Object.entries(params)) {
-		if (value === undefined || value === null) continue;
-		if (n >= MAX_PARAMS) break;
-		out[key.slice(0, 40)] =
-			typeof value === 'string' ? value.slice(0, MAX_VALUE_LEN) : value;
-		n += 1;
+type CountVars = { path: string; title: string; referrer: string; event: true };
+
+let status: 'off' | 'loading' | 'ready' = 'off';
+const queue: CountVars[] = [];
+
+function count(vars: CountVars): void {
+	try { window.goatcounter?.count?.(vars); } catch { /* la analítica nunca tumba la app */ }
+}
+
+function loadCounter(): void {
+	try {
+		// La página se cuenta sola al cargar el script. `path` sin query: la ruta de la vista es siempre la misma
+		// (count.js envía los parámetros de campaña aparte).
+		window.goatcounter = { no_events: true, path: window.location.pathname };
+		const s = document.createElement('script');
+		s.async = true;
+		s.src = SCRIPT_SRC;
+		s.integrity = SCRIPT_SRI;
+		s.crossOrigin = 'anonymous';
+		s.setAttribute('data-goatcounter', ENDPOINT);
+		s.onload = () => { status = 'ready'; queue.splice(0).forEach(count); };
+		// Offline o bloqueado: se pierde lo de esta sesión, sin reintentos.
+		s.onerror = () => { status = 'off'; queue.length = 0; };
+		status = 'loading';
+		document.head.appendChild(s);
+	} catch {
+		status = 'off';
 	}
-	return out;
+}
+
+/** Una vez, al arrancar: resuelve el tráfico interno ANTES de cargar nada. */
+export function initTransport(): void {
+	initInternalTraffic();
+	if (!IS_PROD) {
+		console.info('[analytics] modo consola · pageview', window.location.pathname);
+		return;
+	}
+	if (!isInternalTraffic) loadCounter();
 }
 
 /**
- * Envía un evento a GA4. Nunca lanza: la analítica jamás debe tumbar la app.
+ * Envía un evento a GoatCounter. Nunca lanza: la analítica jamás debe tumbar la app.
+ * Los parámetros no viajan: solo el nombre que devuelve goatEventName (eventNames.ts).
  */
 export function track<K extends DioramEventName>(
 	name: K,
 	params: DioramEventMap[K],
 ): void {
-	const payload = sanitize(params as Record<string, unknown>);
-
-	if (IS_DEV) {
-		// En dev ves el evento en consola aunque no se envíe.
-		console.debug('%c[analytics]', 'color:#8b5cf6', name, payload);
-	}
-
-	if (!canSend()) return;
-
 	try {
-		window.gtag!('event', name, {
-			...payload,
-			...(isInternalTraffic ? { traffic_type: 'internal' } : {}),
-			// 'beacon' permite que el evento salga aunque la pestaña se esté cerrando.
-			transport_type: 'beacon',
-		});
-	} catch (err) {
-		if (IS_DEV) console.warn('[analytics] envío fallido:', name, err);
+		const path = goatEventName(name, params);
+		if (!IS_PROD) {
+			console.info('[analytics] modo consola · event', path ?? `${name} (no se envía)`);
+			return;
+		}
+		if (!path || status === 'off') return;
+		const vars: CountVars = { path, title: path, referrer: '', event: true };
+		if (status === 'ready') count(vars);
+		else if (queue.length < MAX_QUEUE) queue.push(vars);
+	} catch {
+		/* la analítica nunca tumba la app */
 	}
-}
-
-/* ===========================================================================
- * 7 · CONSENTIMIENTO (RGPD)
- * ---------------------------------------------------------------------------
- * Estás en la UE y tienes tráfico europeo. Si algún día pones banner de
- * cookies, esta es la palanca. Hasta entonces no la llames.
- * ======================================================================== */
-
-export function setAnalyticsConsent(granted: boolean): void {
-	if (typeof window === 'undefined' || typeof window.gtag !== 'function') return;
-	window.gtag('consent', 'update', {
-		analytics_storage: granted ? 'granted' : 'denied',
-	});
 }

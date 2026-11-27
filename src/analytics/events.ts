@@ -1,16 +1,17 @@
 /**
  * Diorame · analytics/events.ts
  * ---------------------------------------------------------------------------
- * Contrato tipado de eventos GA4 y tipado global de window.gtag.
+ * Contrato tipado de eventos y tipado global de window.goatcounter.
  * ---------------------------------------------------------------------------
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 declare global {
 	interface Window {
-		gtag?: (...args: any[]) => void;
-		dataLayer?: unknown[];
+		goatcounter?: {
+			no_events?: boolean;
+			path?: string;
+			count?: (vars: { path: string; title: string; referrer: string; event: boolean }) => void;
+		};
 	}
 }
 
@@ -18,12 +19,8 @@ declare global {
  * 1 · CONTRATO DE EVENTOS
  * ---------------------------------------------------------------------------
  * Esta es LA fuente de verdad. Añadir un evento = añadir una línea aquí.
- * Reglas de GA4 que este contrato ya respeta:
- *   · snake_case, máx. 40 caracteres, sensible a mayúsculas
- *   · máx. 25 parámetros por evento
- *   · valores de texto máx. 100 caracteres
- *   · nombres reservados prohibidos: session_start, first_visit, error,
- *     user_engagement, first_open, app_*  (por eso usamos ui_error, no error)
+ * Los parámetros describen el evento dentro de la app; a GoatCounter solo llega
+ * el nombre que decide eventNames.ts (`app_<evento>[/<parámetro>]`).
  * ======================================================================== */
 
 export type DioramEventMap = {
@@ -69,8 +66,7 @@ export type DioramEventMap = {
 
 	/**
 	 * Se llevó algo a casa. EVENTO CLAVE: mide valor entregado.
-	 * `mode`: el modo en que estaba la app al exportar. Sin él, un PNG de DRAW y uno de
-	 * CINEMA (ambos `png` / `png_hq`) son indistinguibles en GA4.
+	 * `mode`: el modo en que estaba la app al exportar (hoy no viaja a GoatCounter: solo `format`).
 	 * `background`: solo en el PNG de DRAW; el resto de exports no lo llevan.
 	 */
 	artwork_exported: {
@@ -86,10 +82,6 @@ export type DioramEventMap = {
 
 	/** Carga de un .dior completada CON ÉXITO. Única señal de retorno real. */
 	project_loaded: Record<string, never>;
-
-	share_clicked: { target: string };
-
-	onboarding_step: { step: number; action: 'complete' | 'skip' };
 
 	/** Cierre del modal de bienvenida, por cualquiera de sus tres salidas. */
 	welcome_modal: { action: 'load_example' | 'restore_autosave' | 'dismissed' };
@@ -110,11 +102,8 @@ export type DioramEventMap = {
 	 */
 	layers_tooltip_dismissed: { method: 'close_button' | 'click_outside' | 'timeout' | 'layer_added' };
 
-	/** Errores de UI capturados. No uses el nombre "error": está reservado. */
-	ui_error: { where: string; message: string };
-
 	/**
-	 * Error no controlado (v3.26.66). Evento recomendado de GA4. `description` ≤100 caracteres:
+	 * Error no controlado (v3.26.66). `description` ≤100 caracteres:
 	 * mensaje + primer frame útil, sin rutas ni query strings. `fatal` solo true desde un
 	 * ErrorBoundary (hoy no existe). Contexto: versión, modo (draw/cinema), herramienta, clase
 	 * de dispositivo y PWA instalada. Nunca contenido del dibujo ni nada identificable.
@@ -135,7 +124,7 @@ export type DioramEventMap = {
 		layers: number;
 		exported: boolean;
 		seconds: number;
-		/** Embudo colapsado en una sola dimensión, cómodo para segmentar en GA4. */
+		/** Embudo colapsado en una sola dimensión. */
 		reached: 'bounced' | 'drew' | 'exported';
 	};
 };
